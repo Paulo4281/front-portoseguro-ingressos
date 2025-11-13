@@ -1,0 +1,94 @@
+---
+alwaysApply: true
+---
+
+# Context
+context: |
+    Projeto: Plataforma de venda de ingressos online exclusiva para a cidade de Porto Seguro - Bahia.
+
+    Objetivo:
+    Criar um portal local onde organizadores possam cadastrar seus eventos e vender ingressos de forma prática e segura, com taxas reduzidas e foco regional.
+
+    Descrição geral:
+    - Usuários podem navegar, comprar e visualizar ingressos de eventos.
+    - Organizadores podem criar eventos, definir preços e acompanhar vendas em tempo real.
+    - Pagamentos são processados via API do Asaas.
+    - A plataforma retém o valor dos ingressos até a data do evento e realiza o repasse ao organizador após o evento, garantindo segurança para compradores e produtores.
+    - Repasses serão feitos diretamente da conta principal da plataforma para a conta bancária dos organizadores cadastrados.
+
+    Funcionalidades principais:
+    - Cadastro e autenticação de usuários e organizadores.
+    - Área do organizador (criação, edição e controle de eventos e vendas).
+    - Área do comprador (explorar eventos, comprar ingressos, baixar QR Code).
+    - Integração com a API do Asaas (pagamentos, webhooks, transferências).
+    - Painel administrativo (gerenciar eventos, usuários, transações e repasses).
+    - Sistema de verificação de organizadores (CNPJ, documentos e conta bancária).
+    - Controle de taxas (1% fixo acima de R$39,90 e R$1 fixo abaixo disso).
+    - Repasses automáticos pós-evento.
+    - Suporte a notificações via webhook (confirmações de pagamento, estornos, etc).
+
+    Público-alvo:
+    - Moradores e turistas de Porto Seguro que compram ingressos.
+    - Casas de show, cabanas de praia e organizadores locais.
+
+    Diferenciais:
+    - Foco regional (apenas eventos de Porto Seguro).
+    - Taxas muito mais baixas que concorrentes nacionais.
+    - Repasse rápido e transparente após o evento.
+    - Suporte humano e personalizado para produtores locais.
+
+# Padrão de código
+code_style:
+    naming_convention: "camelCase para variáveis, funções, arquivos, etc. kebab-case para classes e ids."
+    typescript: true
+    eslint: true
+    imports_order:
+        - React e bibliotecas nativas
+        - Componentes internos
+        - Estilos e utilitários
+
+# Regras gerais
+rules:
+    - note: "Não usar framer-motion ou animações desnecessárias."
+    - note: "Não utilizar svgs ao criar ícones. Utilize sempre a lib lucide-react."
+    - note: "Ao criar botões, sempre utilize <Button> do shadcn/ui. Nunca <Link> ou <a> para criar botões."
+    - note: "Evite adicionar className em <Button>; deixe toda a estilização com o variant."
+    - note: |
+            Sempre que precisar criar estilos que utilizem breakpoints do TailwindCSS (ex: sm:, md:, lg:, 2xl:, etc.)
+            Deixe sempre uma quebra de linha para cada tipo de breakpoint. Exemplo:
+            w-[200px]
+            sm: w-[300px]
+            md: w-[400px]
+            lg: w-[500px]
+            Assim por diante...
+    - note: "Sempre utilizar componentes do shadcn/ui antes de criar novos."
+    - note: "Evitar CSS puro; preferir classes utilitárias do TailwindCSS."
+    - note: "Não incluir comentários no código."
+    - note: "Garantir acessibilidade (aria-labels, alt text e foco visível)."
+    - note: "Seguir com tom visual sofisticado, limpo e profissional."
+    - note: "Utilizar estratégias de SEO a fim de melhorar o rankeamento nos motores de busca."
+    - note: "Utilize o yarn como package manager."
+
+# Stack
+stack:
+    language: "TypeScript"
+    framework: "Next.js 16"
+    backend: "Node.js + Nest.js"
+    database: "PostgreSQL"
+    ui_library: "Shadcn/ui"
+    css_framework: "TailwindCSS"
+    payment_provider: "Asaas API"
+    design_system: "Design minimalista e sofisticado"
+    api_style: "REST"
+
+# Estilo visual
+style:
+    pallete:
+        psi-primary: "#1E293B"
+        psi-secondary: "#475569"
+        psi-tertiary: "#CBD5E1"
+        background: "#F9FAFB"
+    note: |
+        Manter tipografia elegante e espaçamento generoso.
+        Evitar cores vibrantes ou saturadas — o visual deve transmitir confiança, solidez e maturidade de marca.
+        Priorizar contraste suave e hierarquia visual clara.
