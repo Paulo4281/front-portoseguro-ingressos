@@ -1,6 +1,6 @@
 import { Toast } from "@/components/Toast/Toast"
 import axios, { AxiosError, AxiosResponse } from "axios"
-import { APIErrorHandler } from "@/utils/Helpers/APIErrorHandler"
+import { APIErrorHandler } from "@/utils/Errors/APIErrorHandler"
 
 type Prefixes =
     "/auth"

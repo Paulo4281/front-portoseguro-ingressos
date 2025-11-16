@@ -84,9 +84,11 @@ stack:
 # Estilo visual
 style:
     pallete:
-        psi-primary: "#1E293B"
-        psi-secondary: "#475569"
-        psi-tertiary: "#CBD5E1"
+        psi-primary: #6C4BFF
+        psi-secondary: #FF6F91
+        psi-tertiary: #FFD447
+        psi-dark: #1A1A1A
+        psi-light: #F7F7F7
         background: "#F9FAFB"
     note: |
         Manter tipografia elegante e espaçamento generoso.

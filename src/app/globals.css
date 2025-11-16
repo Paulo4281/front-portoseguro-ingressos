@@ -5,9 +5,11 @@
 @theme {
   --breakpoint-3xl: 120rem;
 
-  --color-psi-primary: #ff8f59;
-  --color-psi-secondary: #144c52;
-  --color-psi-tertiary: #DF6F25;
+  --color-psi-primary: #6C4BFF;
+  --color-psi-secondary: #FF6F91;
+  --color-psi-tertiary: #FFD447;
+  --color-psi-dark: #1A1A1A;
+  --color-psi-light: #F7F7F7;
 }
 
 @theme inline {
