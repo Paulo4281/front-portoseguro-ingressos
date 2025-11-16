@@ -2,7 +2,6 @@ type TFieldErrorProps = {
     message: string
 }
 
-
 const FieldErrorComponent = (
     {
         message
@@ -10,7 +9,13 @@ const FieldErrorComponent = (
 ) => {
     return (
         <>
-        { message && <p className="text-red-500 text-sm">{ message }</p> }
+        { message && (
+            <p className="text-red-500
+            text-sm
+            animate-[fadeIn_0.2s_ease-in-out_forwards]">
+                { message }
+            </p>
+        ) }
         </>
     )
 }

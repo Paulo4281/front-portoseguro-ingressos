@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Menu as MenuIcon, X, Home, LogIn } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Logo from "@/components/Logo/Logo"
+import { usePathname } from "next/navigation"
 
 type MenuLink = {
     href: string
@@ -26,6 +27,17 @@ const menuLinks: MenuLink[] = [
 ]
 
 const Menu = () => {
+    const pathname = usePathname()
+
+    const blockedPages = [
+        "/login",
+        "/cadastro",
+        "/cadastro-confirmar",
+        "/recuperar-senha"
+    ]
+
+    if (blockedPages.includes(pathname)) return null
+
     const [isOpen, setIsOpen] = useState(false)
 
     const toggleMenu = () => {

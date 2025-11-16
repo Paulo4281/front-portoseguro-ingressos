@@ -1,4 +1,5 @@
 import "./globals.css"
+import "@/styles/KeyFrames.css"
 import { ToastContainer } from "react-toastify"
 import { Providers } from "@/providers"
 import { Menu } from "@/components/Menu/Menu"

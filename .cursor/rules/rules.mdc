@@ -68,6 +68,14 @@ rules:
     - note: "Seguir com tom visual sofisticado, limpo e profissional."
     - note: "Utilizar estratégias de SEO a fim de melhorar o rankeamento nos motores de busca."
     - note: "Utilize o yarn como package manager."
+    - note: "Use sempre <Controller> do react-hook-form nos formulários"
+    - note: "Nas novas versões do Zod a mensagem de erro deve ficar { error: "message" } em vez de { message: "message" }."
+    - note: "O Zod não utiliza mais z.string().email() para validar email. Agora utiliza-se z.email() somente."
+    - note: "O Zod não utiliza mais code: z.ZodIssueCode.custom. Usa-se "custom"."
+    - note: "Evite importar React como React from "React", preferencialmente importe apenas o que for realmente utilizar. Por exemplo: import { useState } from "React".
+    - note: "Evite importar toda a lib. Preferencialmente importe somente as funções, classes, etc. Que for realmente utilizar dessa lib."
+    - note: "Mesmo que a validação dos inputs sejam feitas usando o zod. Utilize também o required nativo do HTML."
+    - note: "Em formulários adicione sempre loadings nos botões e deixe-os desativados (disabled) enquanto a requisição ao servidor estiver sendo executada."
 
 # Stack
 stack:

@@ -32,7 +32,7 @@ const mockEvents: TEvent[] = [
 ]
 
 class EventService {
-    find() {
+    async find(): Promise<any> {
         return mockEvents
     }
 }
