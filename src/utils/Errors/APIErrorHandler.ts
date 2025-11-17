@@ -5,4 +5,5 @@ export const APIErrorHandler: Record<number, string> = {
     4: "Código de confirmação inválido",
     5: "Código para redefinição de senha já foi enviado",
     6: "E-mail não encontrado",
+    7: "E-mail ainda não foi confirmado",
 }

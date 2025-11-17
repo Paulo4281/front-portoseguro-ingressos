@@ -18,7 +18,7 @@ const HomeHero = () => {
                     backgroundImage: 'url(https://images.pexels.com/photos/2263683/pexels-photo-2263683.jpeg)'
                 }}
             />
-            <div className="absolute inset-0 bg-black/60" />
+            <div className="absolute inset-0 bg-black/50" />
             
             <div className="relative container mx-auto px-4 flex flex-col flex-1
             sm:px-6
@@ -33,7 +33,7 @@ const HomeHero = () => {
                     md:text-6xl
                     lg:text-7xl">
                         Seus eventos favoritos em
-                        <span className="text-psi-secondary block mt-2">Porto Seguro</span>
+                        <span className="text-psi-tertiary block mt-2">Porto Seguro</span>
                     </h1>
                     
                     <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto
@@ -42,22 +42,6 @@ const HomeHero = () => {
                     lg:mb-12">
                         Descubra os melhores eventos da cidade. Compre ingressos de forma rápida, segura e com as menores taxas do mercado.
                     </p>
-
-                    <div className="flex flex-col
-                    sm:flex-row
-                    items-center justify-center">
-                        <Button
-                        asChild
-                        size="2xl"
-                        variant="secondary"
-                        className="text-xl"
-                        >
-                            <Link href="/eventos" className="flex items-center">
-                                <Ticket className="size-6" />
-                                <span>Explorar Eventos</span>
-                            </Link>
-                        </Button>
-                    </div>
                 </div>
 
                 {events && events.length > 0 && (

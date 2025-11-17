@@ -17,11 +17,11 @@ export default function RootLayout({
       >
         <Providers>
           <ToastContainer />
-          <Menu />
-          <main className="w-full min-h-screen">
-            {children}
-          </main>
-          <Footer />
+            <Menu />
+            <main className="w-full min-h-screen">
+              {children}
+            </main>
+            <Footer />
         </Providers>
       </body>
     </html>

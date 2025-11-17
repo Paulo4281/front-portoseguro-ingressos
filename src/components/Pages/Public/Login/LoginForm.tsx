@@ -10,14 +10,27 @@ import { Button } from "@/components/ui/button"
 import { FieldError } from "@/components/FieldError/FieldError"
 import { Input } from "@/components/Input/Input"
 import { Icon } from "@/components/Icon/Icon"
+import { useAuthLogin } from "@/hooks/Auth/useAuthLogin"
+import { useRouter } from "next/navigation"
+import { LoadingButton } from "@/components/Loading/LoadingButton"
+import { useAuthStore } from "@/stores/Auth/AuthStore"
+import { Toast } from "@/components/Toast/Toast"
 
 const LoginForm = () => {
     const form = useForm<TAuth>({
         resolver: zodResolver(AuthValidator)
     })
 
+    const routerService = useRouter()
+    const { mutateAsync: loginUser, isPending: isLoggingIn } = useAuthLogin()
+    const { setUser } = useAuthStore()
+
     const handleSubmit = async (data: TAuth) => {
-        console.log(data)
+        const response = await loginUser(data)
+        if (response && response.success && response.data?.user) {
+            setUser(response.data.user)
+            routerService.push("/")
+        }
     }
 
     return (
@@ -138,8 +151,15 @@ const LoginForm = () => {
                             variant="primary"
                             className="w-full"
                             size="lg"
+                            disabled={isLoggingIn}
                         >
-                            Entrar
+                            {
+                                isLoggingIn ? (
+                                    <LoadingButton />
+                                ) : (
+                                    "Entrar"
+                                )
+                            }
                         </Button>
                     </form>
 
