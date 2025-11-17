@@ -3,7 +3,8 @@ import axios, { AxiosError, AxiosResponse } from "axios"
 import { APIErrorHandler } from "@/utils/Errors/APIErrorHandler"
 
 type Prefixes =
-    "/auth"
+    "/auth" |
+    "/user"
 
 type TAPIParams = {
     prefix: Prefixes
@@ -17,8 +18,8 @@ type TAPIError = {
     internalCode?: number
 }
 
-export class API {
-    static async POST(params: TAPIParams): Promise<AxiosResponse<any, any, {}> | undefined> {
+class ApiClass {
+    async POST(params: TAPIParams): Promise<AxiosResponse<any, any, {}> | undefined> {
         try {
             const response = await axios.post(
                 `${process.env.NEXT_PUBLIC_API_URL}${params.prefix}${params.url}`,
@@ -36,7 +37,7 @@ export class API {
         }
     }
 
-    static async GET(params: TAPIParams): Promise<AxiosResponse<any, any, {}> | undefined> {
+    async GET(params: TAPIParams): Promise<AxiosResponse<any, any, {}> | undefined> {
         try {
             const response = await axios.get(
                 `${process.env.NEXT_PUBLIC_API_URL}${params.prefix}${params.url}`,
@@ -53,7 +54,7 @@ export class API {
         }
     }
 
-    static async PUT(params: TAPIParams): Promise<AxiosResponse<any, any, {}> | undefined> {
+    async PUT(params: TAPIParams): Promise<AxiosResponse<any, any, {}> | undefined> {
         try {
             const response = await axios.put(
                 `${process.env.NEXT_PUBLIC_API_URL}${params.prefix}${params.url}`,
@@ -71,7 +72,7 @@ export class API {
         }
     }
 
-    static async PATCH(params: TAPIParams): Promise<AxiosResponse<any, any, {}> | undefined> {
+    async PATCH(params: TAPIParams): Promise<AxiosResponse<any, any, {}> | undefined> {
         try {
             const response = await axios.patch(
                 `${process.env.NEXT_PUBLIC_API_URL}${params.prefix}${params.url}`,
@@ -89,7 +90,7 @@ export class API {
         }
     }
 
-    static async PATCH_FILE(params: TAPIParams & { formData: FormData }): Promise<AxiosResponse<any, any, {}> | undefined> {
+    async PATCH_FILE(params: TAPIParams & { formData: FormData }): Promise<AxiosResponse<any, any, {}> | undefined> {
         try {
             const response = await axios.patch(
                 `${process.env.NEXT_PUBLIC_API_URL}${params.prefix}${params.url}`,
@@ -107,7 +108,7 @@ export class API {
         }
     }
 
-    static async DELETE(params: TAPIParams): Promise<AxiosResponse<any, any, {}> | undefined> {
+    async DELETE(params: TAPIParams): Promise<AxiosResponse<any, any, {}> | undefined> {
         try {
             const response = await axios.delete(
                 `${process.env.NEXT_PUBLIC_API_URL}${params.prefix}${params.url}`,
@@ -124,11 +125,11 @@ export class API {
         }
     }
 
-    static HandleSuccess() {
+    HandleSuccess() {
         Toast.success("Operação realizada com sucesso")
     }
 
-    static HandleError(error: AxiosError) {
+    HandleError(error: AxiosError) {
         const errorData = error.response?.data as TAPIError
         
         if (errorData?.internalCode && APIErrorHandler[errorData.internalCode]) {
@@ -143,3 +144,5 @@ export class API {
 export type {
     TAPIError
 }
+
+export const API = new ApiClass()

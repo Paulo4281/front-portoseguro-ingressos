@@ -6,14 +6,15 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { ArrowLeft, Loader2, CheckCircle2, LogIn } from "lucide-react"
 import { LoadingButton } from "@/components/Loading/LoadingButton"
+import { Timer } from "@/components/Timer/Timer"
 import { UserCreateConfirmValidator } from "@/validators/User/UserValidator"
 import { TUserCreateConfirm } from "@/types/User/TUser"
 import { Button } from "@/components/ui/button"
 import { FieldError } from "@/components/FieldError/FieldError"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import { useSearchParamsHook } from "@/hooks/useSearchParams"
-import { useUserConfirmByLink } from "@/hooks/User/useUserConfirmByLink"
 import { useUserConfirmByCode } from "@/hooks/User/useUserConfirmByCode"
+import { useUserResendConfirmation } from "@/hooks/User/useUserResendConfirmation"
 import { Toast } from "@/components/Toast/Toast"
 
 type TSearchParams = {
@@ -24,16 +25,28 @@ type TSearchParams = {
 
 const CadastroConfirmarForm = () => {
     const searchParams = useSearchParamsHook<TSearchParams>(["name", "email", "link"])
-    const { mutateAsync: confirmByLink, isPending: isConfirmingByLinkMutation } = useUserConfirmByLink()
     const { mutateAsync: confirmByCode, isPending: isConfirmingByCodeMutation } = useUserConfirmByCode()
+    const { mutateAsync: resendConfirmation, isPending: isResendingConfirmation } = useUserResendConfirmation()
     const [isConfirmed, setIsConfirmed] = useState(false)
+    const [canResend, setCanResend] = useState(false)
+    const [timerKey, setTimerKey] = useState(0)
+
+    useEffect(() => {
+        if (!searchParams.link) {
+            setCanResend(false)
+            setTimerKey((prev) => prev + 1)
+        }
+    }, [searchParams.link])
 
     useEffect(() => {
         if (searchParams.link) {
             const handleConfirmByLink = async () => {
                 try {
-                    const response = await confirmByLink(searchParams.link!)
-                    if (response.isValid) {
+                    const response = await confirmByCode({
+                        code: searchParams.link!,
+                        email: searchParams.email!
+                    })
+                    if (response.success && response.data?.isValid) {
                         setIsConfirmed(true)
                     }
                 } catch (error) {
@@ -42,7 +55,7 @@ const CadastroConfirmarForm = () => {
             }
             handleConfirmByLink()
         }
-    }, [searchParams.link, confirmByLink])
+    }, [searchParams.link, confirmByCode])
     
     const form = useForm<TUserCreateConfirm>({
         resolver: zodResolver(UserCreateConfirmValidator),
@@ -52,13 +65,12 @@ const CadastroConfirmarForm = () => {
     })
 
     const handleSubmit = async (data: TUserCreateConfirm) => {
-        try {
-            const response = await confirmByCode(data.code)
-            if (response.isValid) {
-                setIsConfirmed(true)
-            }
-        } catch (error) {
-            Toast.error("Código inválido. Tente novamente.")
+        const response = await confirmByCode({
+            code: data.code,
+            email: searchParams.email!
+        })
+        if (response.success && response.data?.isValid) {
+            setIsConfirmed(true)
         }
     }
 
@@ -217,7 +229,7 @@ const CadastroConfirmarForm = () => {
                         </div>
 
                         <div className="flex flex-col items-center justify-center py-2">
-                            {isConfirmingByLinkMutation ? (
+                            {isConfirmingByCodeMutation ? (
                                 <>
                                     <Loader2 className="size-12 text-psi-primary animate-spin mb-4" />
                                     <p className="text-muted-foreground text-center">
@@ -356,12 +368,35 @@ const CadastroConfirmarForm = () => {
                     <div className="mt-6 text-center space-y-4">
                         <p className="text-sm text-muted-foreground">
                             Não recebeu o código?{" "}
-                            <button
-                                type="button"
-                                className="text-psi-primary hover:underline"
-                            >
-                                Reenviar
-                            </button>
+                            {canResend ? (
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        try {
+                                            await resendConfirmation(searchParams.email!)
+                                            Toast.success("Código reenviado com sucesso!")
+                                            setCanResend(false)
+                                            setTimerKey((prev) => prev + 1)
+                                        } catch (error) {
+                                            Toast.error("Erro ao reenviar código. Tente novamente.")
+                                        }
+                                    }}
+                                    disabled={isResendingConfirmation}
+                                    className="text-psi-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isResendingConfirmation ? "Reenviando..." : "Reenviar"}
+                                </button>
+                            ) : (
+                                <>
+                                    <span className="text-muted-foreground">Reenviar em </span>
+                                    <Timer
+                                        key={timerKey}
+                                        seconds={120}
+                                        onFinish={() => setCanResend(true)}
+                                        variant="badge"
+                                    />
+                                </>
+                            )}
                         </p>
                         <Button
                             asChild

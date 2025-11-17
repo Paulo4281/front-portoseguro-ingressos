@@ -12,6 +12,9 @@ import { FieldError } from "@/components/FieldError/FieldError"
 import { Input } from "@/components/Input/Input"
 import { InputMask } from "@/components/Input/InputMask"
 import { PasswordStrength } from "@/components/PasswordStrength/PasswordStrength"
+import { useUserCreate } from "@/hooks/User/useUserCreate"
+import { useRouter } from "next/navigation"
+import { LoadingButton } from "@/components/Loading/LoadingButton"
 
 const CadastroForm = () => {
     const [selectedRole, setSelectedRole] = useState<"CUSTOMER" | "ORGANIZER" | null>(null)
@@ -24,6 +27,10 @@ const CadastroForm = () => {
             password: ""
         }
     })
+
+    const routerService = useRouter()
+
+    const { mutateAsync: createUser, isPending: isCreatingUser } = useUserCreate()
 
     const passwordValue = form.watch("password")
 
@@ -38,7 +45,12 @@ const CadastroForm = () => {
     }
 
     const handleSubmit = async (data: TUserCreate) => {
-        console.log(data)
+        const response = await createUser(data)
+        if (response.success) {
+            routerService.push(
+                `/cadastro-confirmar?name=${data.firstName}&email=${data.email}`
+            )
+        }
     }
 
     if (!selectedRole) {
@@ -382,8 +394,13 @@ const CadastroForm = () => {
                             variant="primary"
                             className="w-full"
                             size="lg"
+                            disabled={isCreatingUser}
                         >
-                            Criar Conta
+                            {isCreatingUser ? (
+                                <LoadingButton />
+                            ) : (
+                                "Criar Conta"
+                            )}
                         </Button>
                     </form>
 

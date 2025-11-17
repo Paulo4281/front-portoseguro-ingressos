@@ -22,6 +22,10 @@ type TUserCreate = z.infer<typeof UserValidator>
 
 type TUserCreateConfirm = z.infer<typeof UserCreateConfirmValidator>
 
+type TUserCreateConfirmRequest = TUserCreateConfirm & {
+    email: string
+}
+
 type TUserConfirmByLinkResponse = {
     isValid: boolean
 }
@@ -35,7 +39,8 @@ export type {
     TUserCreate,
     TUserCreateConfirm,
     TUserConfirmByLinkResponse,
-    TUserConfirmByCodeResponse
+    TUserConfirmByCodeResponse,
+    TUserCreateConfirmRequest
 }
 
 export {
