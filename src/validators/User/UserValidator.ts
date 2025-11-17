@@ -2,10 +2,6 @@ import { UserRoles } from "@/types/User/TUser"
 import { z } from "zod"
 import { DefaultFormErrors } from "@/utils/Errors/DefaultFormErrors"
 
-const UserCreateConfirmValidator = z.object({
-    code: z.string({ error: DefaultFormErrors.required }).length(6, { error: DefaultFormErrors.length }),
-})
-
 const UserValidator = z.object({
     firstName: z.string({ error: DefaultFormErrors.required }),
     lastName: z.string({ error: DefaultFormErrors.required }),
@@ -46,6 +42,5 @@ const UserValidator = z.object({
 })
 
 export {
-    UserValidator,
-    UserCreateConfirmValidator
+    UserValidator
 }

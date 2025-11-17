@@ -7,14 +7,14 @@ import Link from "next/link"
 import { ArrowLeft, Loader2, CheckCircle2, LogIn } from "lucide-react"
 import { LoadingButton } from "@/components/Loading/LoadingButton"
 import { Timer } from "@/components/Timer/Timer"
-import { UserCreateConfirmValidator } from "@/validators/User/UserValidator"
-import { TUserCreateConfirm } from "@/types/User/TUser"
+import { UserCreateConfirmValidator } from "@/validators/User/UserConfirmationValidator"
+import { TUserCreateConfirm } from "@/types/User/TUserConfirmation"
 import { Button } from "@/components/ui/button"
 import { FieldError } from "@/components/FieldError/FieldError"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import { useSearchParamsHook } from "@/hooks/useSearchParams"
-import { useUserConfirmByCode } from "@/hooks/User/useUserConfirmByCode"
-import { useUserResendConfirmation } from "@/hooks/User/useUserResendConfirmation"
+import { useUserConfirmByCode } from "@/hooks/UserConfirmation/useUserConfirmationConfirmByCode"
+import { useUserResendConfirmation } from "@/hooks/UserConfirmation/useUserConfirmationResendConfirmation"
 import { Toast } from "@/components/Toast/Toast"
 
 type TSearchParams = {
@@ -30,27 +30,24 @@ const CadastroConfirmarForm = () => {
     const [isConfirmed, setIsConfirmed] = useState(false)
     const [canResend, setCanResend] = useState(false)
     const [timerKey, setTimerKey] = useState(0)
+    const [hasResent, setHasResent] = useState(false)
 
     useEffect(() => {
-        if (!searchParams.link) {
+        if (!searchParams.link && !hasResent) {
             setCanResend(false)
             setTimerKey((prev) => prev + 1)
         }
-    }, [searchParams.link])
+    }, [searchParams.link, hasResent])
 
     useEffect(() => {
         if (searchParams.link) {
             const handleConfirmByLink = async () => {
-                try {
-                    const response = await confirmByCode({
-                        code: searchParams.link!,
-                        email: searchParams.email!
-                    })
-                    if (response.success && response.data?.isValid) {
-                        setIsConfirmed(true)
-                    }
-                } catch (error) {
-                    Toast.error("Erro ao confirmar cadastro. Tente novamente.")
+                const response = await confirmByCode({
+                    code: searchParams.link!,
+                    email: searchParams.email!
+                })
+                if (response.success && response.data?.isValid) {
+                    setIsConfirmed(true)
                 }
             }
             handleConfirmByLink()
@@ -69,12 +66,12 @@ const CadastroConfirmarForm = () => {
             code: data.code,
             email: searchParams.email!
         })
-        if (response.success && response.data?.isValid) {
+        if (response &&response.success && response.data?.isValid) {
             setIsConfirmed(true)
         }
     }
 
-    const firstName = searchParams.name?.split(" ")[0] || "usuário"
+    const firstName = searchParams.name?.split(" ")[0] || "Usuário"
     const isConfirmingByLink = !!searchParams.link
 
     if (isConfirmed) {
@@ -347,7 +344,9 @@ const CadastroConfirmarForm = () => {
                                     </div>
                                 )}
                             />
-                            <FieldError message={form.formState.errors.code?.message || ""} />
+                            <div className="text-center">
+                                <FieldError message={form.formState.errors.code?.message || ""} />
+                            </div>
                         </div>
 
                         <Button
@@ -367,21 +366,28 @@ const CadastroConfirmarForm = () => {
 
                     <div className="mt-6 text-center space-y-4">
                         <p className="text-sm text-muted-foreground">
-                            Não recebeu o código?{" "}
-                            {canResend ? (
+                            Ainda não recebeu o código?{" "}
+                            {hasResent ? (
+                                <span className="text-muted-foreground text-sm block">
+                                    Se o código ainda não chegou aguarde. Ou entre em contato com o suporte.
+                                </span>
+                            ) : canResend ? (
                                 <button
                                     type="button"
                                     onClick={async () => {
+                                        if (hasResent) {
+                                            return
+                                        }
                                         try {
+                                            setHasResent(true)
                                             await resendConfirmation(searchParams.email!)
                                             Toast.success("Código reenviado com sucesso!")
-                                            setCanResend(false)
-                                            setTimerKey((prev) => prev + 1)
                                         } catch (error) {
                                             Toast.error("Erro ao reenviar código. Tente novamente.")
+                                            setHasResent(true)
                                         }
                                     }}
-                                    disabled={isResendingConfirmation}
+                                    disabled={isResendingConfirmation || hasResent}
                                     className="text-psi-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isResendingConfirmation ? "Reenviando..." : "Reenviar"}
@@ -391,7 +397,7 @@ const CadastroConfirmarForm = () => {
                                     <span className="text-muted-foreground">Reenviar em </span>
                                     <Timer
                                         key={timerKey}
-                                        seconds={120}
+                                        seconds={10}
                                         onFinish={() => setCanResend(true)}
                                         variant="badge"
                                     />

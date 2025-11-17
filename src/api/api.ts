@@ -4,7 +4,8 @@ import { APIErrorHandler } from "@/utils/Errors/APIErrorHandler"
 
 type Prefixes =
     "/auth" |
-    "/user"
+    "/user" |
+    "/user-confirmation"
 
 type TAPIParams = {
     prefix: Prefixes

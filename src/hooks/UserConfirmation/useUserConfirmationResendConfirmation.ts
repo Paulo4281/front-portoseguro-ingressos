@@ -1,5 +1,5 @@
 import { useMutationHook } from "../useMutation"
-import { UserService } from "@/services/UserService/UserService"
+import { UserConfirmationService } from "@/services/User/UserConfirmationService"
 import type { TApiResponse } from "@/types/TApiResponse"
 
 export const useUserResendConfirmation = () => {
@@ -7,7 +7,7 @@ export const useUserResendConfirmation = () => {
         mutateAsync,
         isPending
     } = useMutationHook<string, TApiResponse>({
-        mutationFn: (email: string) => UserService.resendConfirmation(email)
+        mutationFn: (email: string) => UserConfirmationService.resendConfirmation(email)
     })
 
     return {

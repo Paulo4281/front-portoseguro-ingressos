@@ -1,6 +1,6 @@
 import { useMutationHook } from "../useMutation"
-import { UserService } from "@/services/UserService/UserService"
-import type { TUserCreateConfirmRequest, TUserConfirmByCodeResponse } from "@/types/User/TUser"
+import { UserConfirmationService } from "@/services/User/UserConfirmationService"
+import type { TUserCreateConfirmRequest, TUserConfirmByCodeResponse } from "@/types/User/TUserConfirmation"
 import type { TApiResponse } from "@/types/TApiResponse"
 
 export const useUserConfirmByCode = () => {
@@ -8,7 +8,7 @@ export const useUserConfirmByCode = () => {
         mutateAsync,
         isPending
     } = useMutationHook<TUserCreateConfirmRequest, TApiResponse<TUserConfirmByCodeResponse>>({
-        mutationFn: (params: TUserCreateConfirmRequest) => UserService.confirmByCode(params)
+        mutationFn: (params: TUserCreateConfirmRequest) => UserConfirmationService.confirmByCode(params)
     })
 
     return {

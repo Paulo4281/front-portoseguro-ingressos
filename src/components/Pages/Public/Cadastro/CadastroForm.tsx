@@ -120,7 +120,7 @@ const CadastroForm = () => {
                             <Button
                                 type="button"
                                 variant="outline"
-                                className="w-full h-auto p-6 flex flex-col items-center justify-center gap-3"
+                                className="rounded-lg w-full h-auto p-6 flex flex-col items-center justify-center gap-3"
                                 onClick={() => handleRoleSelect("CUSTOMER")}
                             >
                                 <User className="size-8" />
@@ -135,7 +135,7 @@ const CadastroForm = () => {
                             <Button
                                 type="button"
                                 variant="outline"
-                                className="w-full h-auto p-6 flex flex-col items-center justify-center gap-3"
+                                className="rounded-lg w-full h-auto p-6 flex flex-col items-center justify-center gap-3"
                                 onClick={() => handleRoleSelect("ORGANIZER")}
                             >
                                 <Building2 className="size-8" />

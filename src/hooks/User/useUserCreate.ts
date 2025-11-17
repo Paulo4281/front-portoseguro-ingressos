@@ -1,5 +1,5 @@
 import { useMutationHook } from "../useMutation"
-import { UserService } from "@/services/UserService/UserService"
+import { UserService } from "@/services/User/UserService"
 import type { TUserCreate } from "@/types/User/TUser"
 import type { TApiResponse } from "@/types/TApiResponse"
 

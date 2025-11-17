@@ -56,11 +56,12 @@ rules:
     - note: |
             Sempre que precisar criar estilos que utilizem breakpoints do TailwindCSS (ex: sm:, md:, lg:, 2xl:, etc.)
             Deixe sempre uma quebra de linha para cada tipo de breakpoint. Exemplo:
-            w-[200px]
+            w-[200px] bg-white text-black
             sm: w-[300px]
             md: w-[400px]
             lg: w-[500px]
             Assim por diante...
+            Ou seja, enquanto ser o mesmo breakpoint (ex: sm:, md:, lg: etc.) deixe na mesma linha.
     - note: "Sempre utilizar componentes do shadcn/ui antes de criar novos."
     - note: "Evitar CSS puro; preferir classes utilitárias do TailwindCSS."
     - note: "Não incluir comentários no código."
