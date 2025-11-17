@@ -1,13 +1,14 @@
 import { useMutationHook } from "../useMutation"
 import { UserConfirmationService } from "@/services/User/UserConfirmationService"
+import type { TUserForgotPassword } from "@/types/User/TUserConfirmation"
 import type { TApiResponse } from "@/types/TApiResponse"
 
-export const useUserConfirmationResendConfirmation = () => {
+export const useUserConfirmationForgotPassword = () => {
     const {
         mutateAsync,
         isPending
-    } = useMutationHook<string, TApiResponse>({
-        mutationFn: (email: string) => UserConfirmationService.resendConfirmation(email)
+    } = useMutationHook<TUserForgotPassword, TApiResponse>({
+        mutationFn: (data: TUserForgotPassword) => UserConfirmationService.forgotPassword(data)
     })
 
     return {
@@ -15,4 +16,3 @@ export const useUserConfirmationResendConfirmation = () => {
         isPending
     }
 }
-

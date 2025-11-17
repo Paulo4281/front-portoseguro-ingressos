@@ -7,14 +7,14 @@ import Link from "next/link"
 import { ArrowLeft, Loader2, CheckCircle2, LogIn } from "lucide-react"
 import { LoadingButton } from "@/components/Loading/LoadingButton"
 import { Timer } from "@/components/Timer/Timer"
-import { UserCreateConfirmValidator } from "@/validators/User/UserConfirmationValidator"
+import { UserConfirmationCreateConfirmValidator } from "@/validators/User/UserConfirmationValidator"
 import { TUserCreateConfirm } from "@/types/User/TUserConfirmation"
 import { Button } from "@/components/ui/button"
 import { FieldError } from "@/components/FieldError/FieldError"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import { useSearchParamsHook } from "@/hooks/useSearchParams"
-import { useUserConfirmByCode } from "@/hooks/UserConfirmation/useUserConfirmationConfirmByCode"
-import { useUserResendConfirmation } from "@/hooks/UserConfirmation/useUserConfirmationResendConfirmation"
+import { useUserConfirmationConfirmByCode } from "@/hooks/UserConfirmation/useUserConfirmationConfirmByCode"
+import { useUserConfirmationResendConfirmation } from "@/hooks/UserConfirmation/useUserConfirmationResendConfirmation"
 import { Toast } from "@/components/Toast/Toast"
 
 type TSearchParams = {
@@ -25,8 +25,8 @@ type TSearchParams = {
 
 const CadastroConfirmarForm = () => {
     const searchParams = useSearchParamsHook<TSearchParams>(["name", "email", "link"])
-    const { mutateAsync: confirmByCode, isPending: isConfirmingByCodeMutation } = useUserConfirmByCode()
-    const { mutateAsync: resendConfirmation, isPending: isResendingConfirmation } = useUserResendConfirmation()
+    const { mutateAsync: confirmByCode, isPending: isConfirmingByCodeMutation } = useUserConfirmationConfirmByCode()
+    const { mutateAsync: resendConfirmation, isPending: isResendingConfirmation } = useUserConfirmationResendConfirmation()
     const [isConfirmed, setIsConfirmed] = useState(false)
     const [canResend, setCanResend] = useState(false)
     const [timerKey, setTimerKey] = useState(0)
@@ -55,7 +55,7 @@ const CadastroConfirmarForm = () => {
     }, [searchParams.link, confirmByCode])
     
     const form = useForm<TUserCreateConfirm>({
-        resolver: zodResolver(UserCreateConfirmValidator),
+        resolver: zodResolver(UserConfirmationCreateConfirmValidator),
         defaultValues: {
             code: ""
         }

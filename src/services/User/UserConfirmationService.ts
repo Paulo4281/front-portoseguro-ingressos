@@ -1,5 +1,5 @@
 import { API } from "@/api/api"
-import type { TUserCreateConfirmRequest, TUserConfirmByCodeResponse } from "@/types/User/TUser"
+import type { TUserCreateConfirmRequest, TUserForgotPassword } from "@/types/User/TUserConfirmation"
 import type { AxiosResponse } from "axios"
 
 class UserConfirmationServiceClass {
@@ -17,6 +17,15 @@ class UserConfirmationServiceClass {
             prefix: "/user-confirmation",
             url: "/resend-code",
             data: { email }
+        }))?.data
+        return response
+    }
+
+    async forgotPassword(data: TUserForgotPassword): Promise<AxiosResponse["data"]> {
+        const response = (await API.POST({
+            prefix: "/user-confirmation",
+            url: "/forgot-password",
+            data: data
         }))?.data
         return response
     }

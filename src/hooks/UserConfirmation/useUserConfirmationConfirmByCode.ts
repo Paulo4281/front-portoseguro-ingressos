@@ -3,7 +3,7 @@ import { UserConfirmationService } from "@/services/User/UserConfirmationService
 import type { TUserCreateConfirmRequest, TUserConfirmByCodeResponse } from "@/types/User/TUserConfirmation"
 import type { TApiResponse } from "@/types/TApiResponse"
 
-export const useUserConfirmByCode = () => {
+export const useUserConfirmationConfirmByCode = () => {
     const {
         mutateAsync,
         isPending

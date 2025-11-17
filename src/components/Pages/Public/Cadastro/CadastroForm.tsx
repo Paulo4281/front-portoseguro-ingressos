@@ -5,7 +5,7 @@ import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { User, Building2, Mail, Phone, UserCircle, ArrowLeft, Lock, Eye, EyeOff } from "lucide-react"
-import { UserValidator } from "@/validators/User/UserValidator"
+import { UserCreateValidator } from "@/validators/User/UserValidator"
 import { TUserCreate, UserRoles } from "@/types/User/TUser"
 import { Button } from "@/components/ui/button"
 import { FieldError } from "@/components/FieldError/FieldError"
@@ -21,7 +21,7 @@ const CadastroForm = () => {
     const [showPassword, setShowPassword] = useState(false)
 
     const form = useForm<TUserCreate>({
-        resolver: zodResolver(UserValidator),
+        resolver: zodResolver(UserCreateValidator),
         defaultValues: {
             role: undefined,
             password: ""
