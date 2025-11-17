@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { UserCreateValidator, UserResetPasswordByCodeValidator } from "@/validators/User/UserValidator"
+import { UserCreateValidator, UserResetPasswordValidator, UserResetPasswordByCodeValidator } from "@/validators/User/UserValidator"
 
 const UserRoles = [
     "CUSTOMER",
@@ -22,10 +22,13 @@ type TUserCreate = z.infer<typeof UserCreateValidator>
 
 type TUserResetPasswordByCode = z.infer<typeof UserResetPasswordByCodeValidator>
 
+type TUserResetPassword = z.infer<typeof UserResetPasswordValidator>
+
 export type {
     TUser,
     TUserCreate,
-    TUserResetPasswordByCode
+    TUserResetPasswordByCode,
+    TUserResetPassword
 }
 
 export {

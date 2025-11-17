@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, LogIn, Ticket, Calendar, Settings, LogOut, Users, BarChart3, Menu as MenuIcon, X } from "lucide-react"
+import { Home, LogIn, Ticket, Calendar, Settings, LogOut, Users, BarChart3, Menu as MenuIcon, X, Lock, ChevronDown, Plus, List, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Logo from "@/components/Logo/Logo"
 import { Avatar } from "@/components/Avatar/Avatar"
@@ -19,6 +19,9 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useAuthStore } from "@/stores/Auth/AuthStore"
 import { useAuthLogout } from "@/hooks/Auth/useAuthLogout"
@@ -26,11 +29,18 @@ import { useRouter } from "next/navigation"
 import { Toast } from "@/components/Toast/Toast"
 import type { ComponentType } from "react"
 
-type TMenuLink = {
+type TSubLink = {
     href: string
+    label: string
+    icon?: ComponentType<{ className?: string }>
+}
+
+type TMenuLink = {
+    href?: string
     label: string
     icon: ComponentType<{ className?: string }>
     roles?: ("CUSTOMER" | "ORGANIZER" | "ADMIN")[]
+    sublinks?: TSubLink[]
 }
 
 const menuLinks: TMenuLink[] = [
@@ -40,28 +50,39 @@ const menuLinks: TMenuLink[] = [
         icon: Home,
     },
     {
-        href: "/ingressos",
+        href: "/dashboard",
+        label: "Dashboard",
+        icon: BarChart3,
+        roles: ["ORGANIZER", "ADMIN"]
+    },
+    {
+        href: "/meus-ingressos",
         label: "Meus Ingressos",
         icon: Ticket,
         roles: ["CUSTOMER"]
     },
     {
-        href: "/eventos",
-        label: "Meus Eventos",
+        label: "Eventos",
         icon: Calendar,
-        roles: ["ORGANIZER"]
+        roles: ["ORGANIZER"],
+        sublinks: [
+            {
+                href: "/meus-eventos",
+                label: "Ver todos",
+                icon: List
+            },
+            {
+                href: "/eventos/criar",
+                label: "Adicionar",
+                icon: Plus
+            },
+        ]
     },
     {
-        href: "/eventos/criar",
-        label: "Criar Evento",
-        icon: Calendar,
-        roles: ["ORGANIZER"]
-    },
-    {
-        href: "/dashboard",
-        label: "Dashboard",
-        icon: BarChart3,
-        roles: ["ORGANIZER", "ADMIN"]
+        href: "/redefinir-senha-log",
+        label: "Redefinir Senha",
+        icon: Lock,
+        roles: ["CUSTOMER", "ORGANIZER", "ADMIN"]
     },
     {
         href: "/usuarios",
@@ -70,9 +91,10 @@ const menuLinks: TMenuLink[] = [
         roles: ["ADMIN"]
     },
     {
-        href: "/configuracoes",
-        label: "Configurações",
-        icon: Settings,
+        href: "/meu-perfil",
+        label: "Meu Perfil",
+        icon: User,
+        roles: ["CUSTOMER", "ORGANIZER", "ADMIN"]
     },
 ]
 
@@ -81,7 +103,9 @@ const Menu = () => {
         "/login",
         "/cadastro",
         "/cadastro-confirmar",
-        "/recuperar-senha"
+        "/senha-redefinir",
+        "/senha-redefinir-confirmar",
+        "/redefinir-senha-log"
     ]
     const pathname = usePathname()
 
@@ -93,6 +117,7 @@ const Menu = () => {
 
     const [isOpen, setIsOpen] = useState(false)
     const [isPopoverOpen, setIsPopoverOpen] = useState(false)
+    const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>({})
 
     const toggleMenu = () => {
         setIsOpen(!isOpen)
@@ -123,6 +148,17 @@ const Menu = () => {
         : []
 
     const fullName = user ? `${user.firstName} ${user.lastName}` : ""
+
+    const toggleDropdown = (linkLabel: string) => {
+        setOpenDropdowns(prev => ({
+            ...prev,
+            [linkLabel]: !prev[linkLabel]
+        }))
+    }
+
+    const isDropdownOpen = (linkLabel: string) => {
+        return openDropdowns[linkLabel] || false
+    }
 
     return (
         <nav className="w-full bg-transparent z-50 absolute">
@@ -163,7 +199,6 @@ const Menu = () => {
                                         className="cursor-pointer outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent rounded-full transition-opacity hover:opacity-80"
                                         aria-label="Menu do usuário"
                                         onMouseEnter={() => setIsPopoverOpen(true)}
-                                        onMouseLeave={() => setIsPopoverOpen(false)}
                                     >
                                         <Avatar
                                             src={null}
@@ -176,11 +211,17 @@ const Menu = () => {
                                     className="w-64 p-0"
                                     align="end"
                                     onOpenAutoFocus={(e) => e.preventDefault()}
-                                    onMouseEnter={() => setIsPopoverOpen(true)}
-                                    onMouseLeave={() => setIsPopoverOpen(false)}
                                 >
-                                    <div className="p-4 border-b">
-                                        <p className="text-sm font-semibold text-foreground">
+                                    <div className="p-4 border-b relative">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsPopoverOpen(false)}
+                                            className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
+                                            aria-label="Fechar menu"
+                                        >
+                                            <X className="size-4" />
+                                        </button>
+                                        <p className="text-sm font-semibold text-foreground pr-8">
                                             {fullName}
                                         </p>
                                         <p className="text-xs text-muted-foreground truncate">
@@ -190,12 +231,70 @@ const Menu = () => {
                                     <div className="p-2">
                                         {filteredMenuLinks.map((link) => {
                                             const Icon = link.icon
-                                            const isActive = pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href))
+                                            
+                                            if (link.sublinks && link.sublinks.length > 0) {
+                                                const isOpen = isDropdownOpen(link.label)
+                                                const hasActiveSublink = link.sublinks.some(sublink => 
+                                                    pathname === sublink.href || (sublink.href !== "/" && pathname.startsWith(sublink.href))
+                                                )
+                                                
+                                                return (
+                                                    <div key={link.label} className="mb-1">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => toggleDropdown(link.label)}
+                                                            className={`flex items-center justify-between w-full gap-2 px-2 py-1.5 rounded-sm text-sm cursor-pointer transition-colors ${
+                                                                hasActiveSublink
+                                                                    ? "bg-accent text-accent-foreground"
+                                                                    : "hover:bg-accent hover:text-accent-foreground"
+                                                            }`}
+                                                        >
+                                                            <div className="flex items-center gap-2">
+                                                                <Icon className="size-4" />
+                                                                <span>{link.label}</span>
+                                                            </div>
+                                                            <ChevronDown className={`size-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                                                        </button>
+                                                        {isOpen && (
+                                                            <div className="ml-4 mt-1 space-y-1">
+                                                                {link.sublinks.map((sublink) => {
+                                                                    const SubIcon = sublink.icon
+                                                                    const isActive = pathname === sublink.href || (sublink.href !== "/" && pathname.startsWith(sublink.href))
+                                                                    
+                                                                    return (
+                                                                        <Link
+                                                                            key={sublink.href}
+                                                                            href={sublink.href}
+                                                                            onClick={() => {
+                                                                                setIsPopoverOpen(false)
+                                                                                setOpenDropdowns({})
+                                                                            }}
+                                                                        >
+                                                                            <div
+                                                                                className={`flex items-center gap-2 px-2 py-1.5 rounded-sm text-sm cursor-pointer transition-colors ${
+                                                                                    isActive
+                                                                                        ? "bg-accent text-accent-foreground"
+                                                                                        : "hover:bg-accent hover:text-accent-foreground"
+                                                                                }`}
+                                                                            >
+                                                                                {SubIcon && <SubIcon className="size-4" />}
+                                                                                <span>{sublink.label}</span>
+                                                                            </div>
+                                                                        </Link>
+                                                                    )
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )
+                                            }
+                                            
+                                            const isActive = link.href && (pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href)))
                                             
                                             return (
                                                 <Link
-                                                    key={link.href}
-                                                    href={link.href}
+                                                    key={link.href || link.label}
+                                                    href={link.href || "#"}
                                                     onClick={() => setIsPopoverOpen(false)}
                                                 >
                                                     <div
@@ -263,9 +362,34 @@ const Menu = () => {
                                     <DropdownMenuSeparator />
                                     {filteredMenuLinks.map((link) => {
                                         const Icon = link.icon
+                                        
+                                        if (link.sublinks && link.sublinks.length > 0) {
+                                            return (
+                                                <DropdownMenuSub key={link.label}>
+                                                    <DropdownMenuSubTrigger>
+                                                        <Icon className="size-4" />
+                                                        <span>{link.label}</span>
+                                                    </DropdownMenuSubTrigger>
+                                                    <DropdownMenuSubContent>
+                                                        {link.sublinks.map((sublink) => {
+                                                            const SubIcon = sublink.icon
+                                                            return (
+                                                                <DropdownMenuItem key={sublink.href} asChild>
+                                                                    <Link href={sublink.href}>
+                                                                        {SubIcon && <SubIcon className="size-4" />}
+                                                                        <span>{sublink.label}</span>
+                                                                    </Link>
+                                                                </DropdownMenuItem>
+                                                            )
+                                                        })}
+                                                    </DropdownMenuSubContent>
+                                                </DropdownMenuSub>
+                                            )
+                                        }
+                                        
                                         return (
-                                            <DropdownMenuItem key={link.href} asChild>
-                                                <Link href={link.href}>
+                                            <DropdownMenuItem key={link.href || link.label} asChild>
+                                                <Link href={link.href || "#"}>
                                                     <Icon className="size-4" />
                                                     <span>{link.label}</span>
                                                 </Link>

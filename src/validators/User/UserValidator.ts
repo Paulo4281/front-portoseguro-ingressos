@@ -73,7 +73,39 @@ const UserResetPasswordByCodeValidator = z.object({
     }
 })
 
+const UserResetPasswordValidator = z.object({
+    currentPassword: z.string({ error: DefaultFormErrors.required }),
+    password: z.string({ error: DefaultFormErrors.required }),
+}).superRefine((data, ctx) => {
+    if (data.password.length < 8) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["password"],
+            message: DefaultFormErrors.passwordMinLength
+        })
+        return
+    }
+
+    if (!/[A-Z]/.test(data.password)) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["password"],
+            message: DefaultFormErrors.passwordUppercase
+        })
+        return
+    }
+
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(data.password)) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["password"],
+            message: DefaultFormErrors.passwordSpecialChar
+        })
+    }
+})
+
 export {
     UserCreateValidator,
-    UserResetPasswordByCodeValidator
+    UserResetPasswordByCodeValidator,
+    UserResetPasswordValidator
 }

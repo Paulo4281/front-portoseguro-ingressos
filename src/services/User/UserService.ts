@@ -1,5 +1,5 @@
 import { API } from "@/api/api"
-import type { TUserCreate, TUserResetPasswordByCode } from "@/types/User/TUser"
+import type { TUserCreate, TUserResetPasswordByCode, TUserResetPassword } from "@/types/User/TUser"
 import type { AxiosResponse } from "axios"
 
 class UserServiceClass {
@@ -7,6 +7,15 @@ class UserServiceClass {
         const response = (await API.POST({
             prefix: "/user",
             url: "/",
+            data: data
+        }))?.data
+        return response
+    }
+
+    async resetPassword(data: TUserResetPassword): Promise<AxiosResponse["data"]> {
+        const response = (await API.POST({
+            prefix: "/user",
+            url: "/reset-password",
             data: data
         }))?.data
         return response
