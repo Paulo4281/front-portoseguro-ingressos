@@ -8,7 +8,6 @@ type TEvent = {
     location: string | null
     image: string
     tickets: number
-    price: number
     createdAt: string
     updatedAt: string | null
 }

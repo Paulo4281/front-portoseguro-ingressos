@@ -21,11 +21,11 @@ const buttonVariants = cva(
         tertiary:
           "bg-psi-tertiary text-psi-tertiary-foreground hover:bg-psi-tertiary/90",
         dark:
-          "bg-psi-dark text-psi-dark-foreground hover:bg-psi-dark/90",
+          "bg-psi-dark text-psi-light hover:bg-psi-dark/90",
         light:
           "bg-psi-light text-psi-light-foreground hover:bg-psi-light/90",
         ghost:
-          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
+          "text-black! hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

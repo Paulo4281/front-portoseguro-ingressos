@@ -1,7 +1,6 @@
 import Link from "next/link"
 import { Calendar, Clock, MapPin, Ticket } from "lucide-react"
 import { Card } from "@/components/Card/Card"
-import { Button } from "@/components/ui/button"
 import type { TEvent } from "@/types/Event/TEvent"
 
 type TCardEventProps = {
@@ -64,18 +63,6 @@ const CardEvent = (
                         <MapPin className="h-4 w-4" />
                         <span className="line-clamp-1">{event.location}</span>
                     </div>
-                </div>
-
-                <div className="flex items-center justify-between mt-auto pt-4 border-t border-border">
-                    <span className="text-2xl font-bold text-psi-primary">
-                        {formatPrice(event.price)}
-                    </span>
-                    
-                    <Button asChild variant="primary">
-                        <Link href={`/eventos/${event.id}`}>
-                            Ver Detalhes
-                        </Link>
-                    </Button>
                 </div>
             </div>
         </Card>

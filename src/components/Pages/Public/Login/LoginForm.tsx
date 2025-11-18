@@ -195,7 +195,7 @@ const LoginForm = () => {
                     <div className="mt-6 flex items-center justify-center gap-2">
                         <Button
                             asChild
-                            variant="light"
+                            variant="tertiary"
                             aria-label="Cadastre-se"
                         >
                             <Link href="/cadastro">
