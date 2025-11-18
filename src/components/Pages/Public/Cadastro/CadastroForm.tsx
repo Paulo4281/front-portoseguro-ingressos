@@ -124,7 +124,7 @@ const CadastroForm = () => {
                                 onClick={() => handleRoleSelect("CUSTOMER")}
                             >
                                 <User className="size-8" />
-                                <div className="text-center">
+                                <div className="text-left">
                                     <div className="font-semibold text-lg">Cliente</div>
                                     <div className="text-sm text-muted-foreground">
                                         Compre ingressos para eventos
@@ -139,7 +139,7 @@ const CadastroForm = () => {
                                 onClick={() => handleRoleSelect("ORGANIZER")}
                             >
                                 <Building2 className="size-8" />
-                                <div className="text-center">
+                                <div className="text-left">
                                     <div className="font-semibold text-lg">Organizador de Eventos</div>
                                     <div className="text-sm text-muted-foreground">
                                         Crie e gerencie seus eventos

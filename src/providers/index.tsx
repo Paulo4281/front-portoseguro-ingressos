@@ -1,9 +1,12 @@
 import { QueryProvider } from "./QueryClientProvider/QueryClientProvider"
+import { CartProvider } from "@/contexts/CartContext"
 
 function Providers({ children }: { children: React.ReactNode }) {
     return (
         <QueryProvider>
-            {children}
+            <CartProvider>
+                {children}
+            </CartProvider>
         </QueryProvider>
     )
 }

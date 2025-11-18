@@ -32,6 +32,7 @@ type TEvent = {
     id: string
     name: string
     description: string
+    categories: string[]
     dates: TEventDate[]
     location: string | null
     image: string

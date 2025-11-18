@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { UserCreateValidator, UserResetPasswordValidator, UserResetPasswordByCodeValidator } from "@/validators/User/UserValidator"
+import type { TUserAddress } from "./TUserAddress"
 
 const UserRoles = [
     "CUSTOMER",
@@ -7,15 +8,31 @@ const UserRoles = [
     "ADMIN"
 ] as const
 
+const UserGenres = [
+    "MALE",
+    "FEMALE",
+    "PREFER_NOT_TO_SAY"
+] as const
+
+
 type TUser = {
     id: string
     firstName: string
     lastName: string
     email: string
-    phone: string
+    phone: string | null
+    document: string | null
+    nationality: string | null
+    genre: typeof UserGenres[number] | null
+    birth: string | null
+    image: string | null
+    payCustomerId: string | null
+    completeInfo: boolean
     role: typeof UserRoles[number]
     createdAt: string
     updatedAt: string | null
+
+    address: TUserAddress | null
 }
 
 type TUserCreate = z.infer<typeof UserCreateValidator>

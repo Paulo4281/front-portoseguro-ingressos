@@ -1,7 +1,9 @@
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Ticket, Repeat, Tag } from "lucide-react"
+import Image from "next/image"
+import { Calendar, Clock, MapPin, Repeat, Tag } from "lucide-react"
 import { Card } from "@/components/Card/Card"
-import type { TEvent, TBatch } from "@/types/Event/TEvent"
+import { DateUtilsClass } from "@/utils/Helpers/DateUtils/DateUtils"
+import type { TEvent, TBatch, TRecurrenceDay } from "@/types/Event/TEvent"
 
 type TCardEventProps = {
     event: TEvent
@@ -12,22 +14,6 @@ const CardEvent = (
         event
     }: TCardEventProps
 ) => {
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString)
-        return date.toLocaleDateString("pt-BR", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric"
-        })
-    }
-
-    const formatPrice = (price: number) => {
-        return new Intl.NumberFormat("pt-BR", {
-            style: "currency",
-            currency: "BRL"
-        }).format(price)
-    }
-
     const getDateRange = (dates: TEvent["dates"]) => {
         if (dates.length === 0) return null
 
@@ -35,8 +21,8 @@ const CardEvent = (
             new Date(a.date).getTime() - new Date(b.date).getTime()
         )
 
-        const firstDate = formatDate(sortedDates[0].date)
-        const lastDate = formatDate(sortedDates[sortedDates.length - 1].date)
+        const firstDate = DateUtilsClass.formatDate(sortedDates[0].date, "DD MMM")
+        const lastDate = DateUtilsClass.formatDate(sortedDates[sortedDates.length - 1].date, "DD MMM")
 
         if (dates.length === 1) {
             return firstDate
@@ -45,28 +31,68 @@ const CardEvent = (
         return `${firstDate} - ${lastDate}`
     }
 
-    const formatRecurrence = (recurrence: TEvent["recurrence"]) => {
+    const formatRecurrenceInfo = (recurrence: TEvent["recurrence"]) => {
         if (!recurrence || recurrence.type === "NONE") return null
-
-        const recurrenceLabels = {
-            DAILY: "Diário",
-            WEEKLY: "Semanal",
-            MONTHLY: "Mensal"
-        }
 
         const dayLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
 
-        let label = recurrenceLabels[recurrence.type]
-
-        if (recurrence.type === "WEEKLY" && recurrence.daysOfWeek && recurrence.daysOfWeek.length > 0) {
-            const days = recurrence.daysOfWeek.map(day => dayLabels[day]).join(", ")
-            label = `${label} (${days})`
+        if (recurrence.type === "DAILY") {
+            if (recurrence.hourStart) {
+                return {
+                    type: "DAILY",
+                    text: recurrence.hourEnd 
+                        ? `${recurrence.hourStart} - ${recurrence.hourEnd}`
+                        : recurrence.hourStart
+                }
+            }
+            return { type: "DAILY", text: "Diário" }
         }
 
-        return label
-    }
+        if (recurrence.type === "WEEKLY") {
+            if (recurrence.daysOfWeek && recurrence.daysOfWeek.length > 0) {
+                const timesText = recurrence.daysOfWeek
+                    .map((dayData: TRecurrenceDay) => {
+                        if (dayData.hourStart) {
+                            return dayData.hourEnd 
+                                ? `${dayLabels[dayData.day]}: ${dayData.hourStart} - ${dayData.hourEnd}`
+                                : `${dayLabels[dayData.day]}: ${dayData.hourStart}`
+                        }
+                        return dayLabels[dayData.day]
+                    })
+                    .join(" | ")
 
-    const firstDate = event.dates.length > 0 ? event.dates[0] : null
+                return {
+                    type: "WEEKLY",
+                    text: timesText
+                }
+            }
+            return { type: "WEEKLY", text: "Semanal" }
+        }
+
+        if (recurrence.type === "MONTHLY") {
+            if (recurrence.daysOfWeek && recurrence.daysOfWeek.length > 0) {
+                const daysText = recurrence.daysOfWeek
+                    .map((dayData: TRecurrenceDay) => {
+                        const dayLabel = `Dia ${dayData.day}`
+                        if (dayData.hourStart) {
+                            return dayData.hourEnd
+                                ? `${dayLabel}: ${dayData.hourStart} - ${dayData.hourEnd}`
+                                : `${dayLabel}: ${dayData.hourStart}`
+                        }
+                        return dayLabel
+                    })
+                    .join(" | ")
+
+                return {
+                    type: "MONTHLY",
+                    text: daysText
+                }
+            }
+            return { type: "MONTHLY", text: "Mensal" }
+        }
+
+        return null
+    }
 
     const getActiveBatch = (batches: TEvent["batches"]): TBatch | null => {
         if (!batches || batches.length === 0) return null
@@ -86,77 +112,88 @@ const CardEvent = (
     }
 
     const activeBatch = getActiveBatch(event.batches)
+    const recurrenceInfo = formatRecurrenceInfo(event.recurrence)
+    const isRecurrent = event.recurrence && event.recurrence.type !== "NONE"
+    const firstDate = event.dates.length > 0 ? event.dates[0] : null
 
     return (
-        <Card className="h-full flex flex-col">
-            <div className="relative w-full h-48 overflow-hidden">
-                <img
-                    src={event.image}
-                    alt={event.name}
-                    className="w-full h-full object-cover"
-                />
-            </div>
-            
-            <div className="p-4 flex flex-col flex-1">
-                <h3 className="text-xl font-bold text-card-foreground mb-2 line-clamp-2">
-                    {event.name}
-                </h3>
-
-                <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Calendar className="h-4 w-4" />
-                            <span>{getDateRange(event.dates)}</span>
-                            {event.dates.length > 1 && (
-                                <span className="text-xs text-muted-foreground/70">
-                                    ({event.dates.length} datas)
-                                </span>
-                            )}
-                        </div>
-                        
-                        {firstDate && firstDate.hourStart && (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Clock className="h-4 w-4" />
-                                <span>
-                                    {firstDate.hourStart}
-                                    {firstDate.hourEnd && ` - ${firstDate.hourEnd}`}
-                                </span>
-                            </div>
-                        )}
-                    </div>
-
-                    {event.recurrence && event.recurrence.type !== "NONE" && (
-                        <div className="flex items-center gap-2 text-sm text-primary">
-                            <Repeat className="h-4 w-4" />
-                            <span>{formatRecurrence(event.recurrence)}</span>
-                        </div>
-                    )}
-                    
-                    {event.location && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <MapPin className="h-4 w-4" />
-                            <span className="line-clamp-1">{event.location}</span>
-                        </div>
-                    )}
-
+        <Link href={`/ver-evento?id=${event.id}`} className="block h-full">
+            <Card className="h-full flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-black/10 hover:-translate-y-1 group">
+                <div className="relative w-full h-56 overflow-hidden bg-psi-dark/5">
+                    <img
+                        src={event.image}
+                        alt={event.name}
+                        className="object-cover h-full w-full transition-transform duration-500 group-hover:scale-105"
+                    />
                     {activeBatch && (
-                        <div className="rounded-lg border border-primary/20 bg-primary/5 p-2 mt-2">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-1.5">
-                                    <Tag className="h-3.5 w-3.5 text-primary" />
-                                    <span className="text-xs font-semibold text-card-foreground">
-                                        {activeBatch.name}
-                                    </span>
-                                </div>
-                                <span className="text-sm font-bold text-primary">
-                                    {formatPrice(activeBatch.price)}
+                        <div className="absolute top-3 right-3">
+                            <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full border border-psi-primary/20 shadow-sm">
+                                <Tag className="h-3 w-3 text-psi-primary" />
+                                <span className="text-xs font-semibold text-psi-dark">
+                                    {activeBatch.name}
                                 </span>
                             </div>
                         </div>
                     )}
                 </div>
-            </div>
-        </Card>
+                
+                <div className="p-5 flex flex-col flex-1">
+                    <h3 className="text-lg font-bold text-psi-dark mb-3 line-clamp-2 leading-tight group-hover:text-psi-primary transition-colors">
+                        {event.name}
+                    </h3>
+
+                    <div className="space-y-2.5 flex-1">
+                        {!isRecurrent && (
+                            <>
+                                <div className="flex items-center gap-2 text-sm text-psi-dark/70">
+                                    <Calendar className="h-4 w-4 text-psi-primary shrink-0" />
+                                    <span className="font-medium">{getDateRange(event.dates)}</span>
+                                    {event.dates.length > 1 && (
+                                        <span className="text-xs text-psi-dark/50">
+                                            • {event.dates.length} datas
+                                        </span>
+                                    )}
+                                </div>
+                                
+                                {firstDate && firstDate.hourStart && (
+                                    <div className="flex items-center gap-2 text-sm text-psi-dark/70">
+                                        <Clock className="h-4 w-4 text-psi-primary shrink-0" />
+                                        <span>
+                                            {firstDate.hourStart}
+                                            {firstDate.hourEnd && ` - ${firstDate.hourEnd}`}
+                                        </span>
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        {isRecurrent && recurrenceInfo && (
+                            <div className="flex items-start gap-2 text-sm text-psi-dark/70">
+                                <Clock className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="font-semibold text-psi-primary">
+                                            {recurrenceInfo.type === "DAILY" && "Diário"}
+                                            {recurrenceInfo.type === "WEEKLY" && "Semanal"}
+                                            {recurrenceInfo.type === "MONTHLY" && "Mensal"}
+                                        </span>
+                                        <span className="text-psi-dark/50">•</span>
+                                        <span className="whitespace-pre-line leading-relaxed">{recurrenceInfo.text}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {event.location && (
+                            <div className="flex items-center gap-2 text-sm text-psi-dark/70 pt-1">
+                                <MapPin className="h-4 w-4 text-psi-primary shrink-0" />
+                                <span className="line-clamp-1">{event.location}</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </Card>
+        </Link>
     )
 }
 

@@ -1,8 +1,15 @@
 "use client"
 
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, ExternalLink, TrendingUp, Repeat, Tag } from "lucide-react"
+import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, ExternalLink, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Copy, Share2, Download, BarChart } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useEventFind } from "@/hooks/Event/useEventFind"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Background } from "@/components/Background/Background"
@@ -54,7 +61,7 @@ const MeusEventosPannel = () => {
         let label = recurrenceLabels[recurrence.type]
 
         if (recurrence.type === "WEEKLY" && recurrence.daysOfWeek && recurrence.daysOfWeek.length > 0) {
-            const days = recurrence.daysOfWeek.map(day => dayLabels[day]).join(", ")
+            const days = recurrence.daysOfWeek.map(day => dayLabels[day.day]).join(", ")
             label = `${label} (${days})`
         }
 
@@ -156,7 +163,7 @@ const MeusEventosPannel = () => {
                 <div className="max-w-7xl mx-auto">
                     <div className="mb-8">
                         <h1 className="text-4xl
-                        sm:text-5xl font-bold text-psi-dark mb-2">
+                        sm:text-5xl font-bold text-psi-primary mb-2">
                             Meus Eventos
                         </h1>
                         <p className="text-base
@@ -174,12 +181,53 @@ const MeusEventosPannel = () => {
                                     key={event.id}
                                     className="group rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-black/10"
                                 >
-                                    <div className="relative h-48 w-full overflow-hidden">
+                                    <div className="relative h-60 w-full overflow-hidden">
                                         <img
                                             src={event.image}
                                             alt={event.name}
                                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                         />
+                                        <div className="absolute top-3 right-3">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-8 w-8 rounded-full bg-white/90 backdrop-blur-sm hover:bg-white shadow-md hover:shadow-lg"
+                                                    >
+                                                        <MoreVertical className="h-4 w-4 text-psi-dark" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-56 rounded-xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/10 p-2">
+                                                    <DropdownMenuItem className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer">
+                                                        <FileSpreadsheet className="h-4 w-4 mr-2 text-psi-primary" />
+                                                        Gerar lista de compradores
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer">
+                                                        <BarChart3 className="h-4 w-4 mr-2 text-psi-primary" />
+                                                        Gerar relatório de vendas
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator className="bg-[#E4E6F0]" />
+                                                    <DropdownMenuItem className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer">
+                                                        <BarChart className="h-4 w-4 mr-2 text-psi-primary" />
+                                                        Ver estatísticas detalhadas
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer">
+                                                        <Share2 className="h-4 w-4 mr-2 text-psi-primary" />
+                                                        Compartilhar evento
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer">
+                                                        <Download className="h-4 w-4 mr-2 text-psi-primary" />
+                                                        Exportar dados
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator className="bg-[#E4E6F0]" />
+                                                    <DropdownMenuItem className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer">
+                                                        <Trash2 className="h-4 w-4 mr-2 text-red-500" />
+                                                        <span className="text-red-500">Deletar</span>
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
                                     </div>
 
                                     <div className="p-6 space-y-4">
@@ -307,13 +355,6 @@ const MeusEventosPannel = () => {
                                                         <ExternalLink className="h-4 w-4" />
                                                         Ver
                                                     </Link>
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
                                                 </Button>
                                             </div>
                                         </div>

@@ -32,6 +32,9 @@ const BatchValidator = z.object({
 const EventCreateValidator = z.object({
     name: z.string({ error: DefaultFormErrors.required }).min(3, { error: "Nome deve ter no mínimo 3 caracteres" }).max(160, { error: "Nome deve ter no máximo 160 caracteres" }),
     description: z.string({ error: DefaultFormErrors.required }).min(10, { error: "Descrição deve ter no mínimo 10 caracteres" }),
+    categories: z.array(z.string({ error: DefaultFormErrors.required }), { error: DefaultFormErrors.required })
+        .min(1, { error: "Selecione pelo menos uma categoria" })
+        .max(5, { error: "Selecione no máximo 5 categorias" }),
     image: z.instanceof(File, { error: DefaultFormErrors.required }),
     location: z.string().nullable().optional(),
     useBatches: z.boolean(),

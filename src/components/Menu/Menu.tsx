@@ -22,6 +22,7 @@ import { useAuthStore } from "@/stores/Auth/AuthStore"
 import { useAuthLogout } from "@/hooks/Auth/useAuthLogout"
 import { useRouter } from "next/navigation"
 import { Toast } from "@/components/Toast/Toast"
+import { CartDropdown } from "@/components/Cart/CartDropdown"
 import type { ComponentType } from "react"
 
 type TSubLink = {
@@ -152,7 +153,7 @@ const Menu = () => {
 
     return (
         <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300
-        ${scroll ? "bg-white/95 backdrop-blur-md border-b border-[#E4E6F0] shadow-sm shadow-black/5" : "bg-transparent"}`}>
+        ${scroll ? "bg-white/75 backdrop-blur-md border-b border-[#E4E6F0] shadow-sm shadow-black/5" : "bg-transparent"}`}>
             <div className=" mx-auto px-4
             sm:px-6
             lg:px-8">
@@ -190,6 +191,7 @@ const Menu = () => {
 
                     <div className="hidden items-center gap-3
                     md:flex">
+                        <CartDropdown />
                         {!isAuthenticated ? (
                             <>
                                 <Button
@@ -309,7 +311,8 @@ const Menu = () => {
                         )}
                     </div>
 
-                    <div className="md:hidden">
+                    <div className="md:hidden flex items-center gap-2">
+                        <CartDropdown />
                         {isAuthenticated ? (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>

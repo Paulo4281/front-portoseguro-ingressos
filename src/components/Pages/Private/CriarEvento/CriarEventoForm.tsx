@@ -16,6 +16,7 @@ import { MarkdownEditor } from "@/components/MarkdownEditor/MarkdownEditor"
 import { TimePicker } from "@/components/TimePicker/TimePicker"
 import { DatePicker } from "@/components/DatePicker/DatePicker"
 import { InputCurrency } from "@/components/Input/InputCurrency"
+import { MultiSelect } from "@/components/MultiSelect/MultiSelect"
 import { z } from "zod"
 import { cn } from "@/lib/utils"
 import type { TRecurrenceDay } from "@/types/Event/TEvent"
@@ -33,6 +34,17 @@ const weekDays = [
 ]
 
 const monthDays = Array.from({ length: 31 }, (_, i) => i + 1)
+
+const eventCategories = [
+    { value: "shows-festas", label: "Shows & Festas" },
+    { value: "beach-clubs", label: "Beach Clubs" },
+    { value: "experiencias-diurnas", label: "Experiências Diurnas" },
+    { value: "vip-lounge", label: "VIP & Lounge" },
+    { value: "esportes", label: "Esportes" },
+    { value: "cultura", label: "Cultura & Arte" },
+    { value: "gastronomia", label: "Gastronomia" },
+    { value: "outros", label: "Outros" }
+]
 
 const parseCurrencyToNumber = (value: string): number => {
     if (!value) return 0
@@ -53,6 +65,7 @@ const CriarEventoForm = () => {
         defaultValues: {
             name: "",
             description: "",
+            categories: [],
             image: null as any,
             location: null,
             useBatches: false,
@@ -245,6 +258,28 @@ const CriarEventoForm = () => {
                                         )}
                                     />
                                     <FieldError message={form.formState.errors.description?.message || ""} />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="categories" className="block text-sm font-medium text-psi-dark mb-2">
+                                        Categorias * <span className="text-xs font-normal text-psi-dark/60">(1 a 5 categorias)</span>
+                                    </label>
+                                    <Controller
+                                        name="categories"
+                                        control={form.control}
+                                        render={({ field }) => (
+                                            <MultiSelect
+                                                options={eventCategories}
+                                                value={field.value || []}
+                                                onChange={field.onChange}
+                                                placeholder="Selecione as categorias..."
+                                                minSelections={1}
+                                                maxSelections={5}
+                                                required
+                                            />
+                                        )}
+                                    />
+                                    <FieldError message={form.formState.errors.categories?.message || ""} />
                                 </div>
 
                                 <div>
