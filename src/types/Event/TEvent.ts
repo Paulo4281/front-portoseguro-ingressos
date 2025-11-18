@@ -1,17 +1,43 @@
+type TEventDate = {
+    date: string
+    hourStart: string
+    hourEnd: string | null
+}
+
+type TRecurrence = {
+    type: "NONE" | "DAILY" | "WEEKLY" | "MONTHLY"
+    interval: number
+    daysOfWeek?: number[]
+    endDate?: string | null
+} | null
+
+type TBatch = {
+    id: string
+    name: string
+    price: number
+    quantity: number
+    startDate: string
+    endDate: string | null
+    isActive: boolean
+}
+
 type TEvent = {
     id: string
     name: string
     description: string
-    date: string
-    hourStart: string
-    hourEnd: string | null
+    dates: TEventDate[]
     location: string | null
     image: string
     tickets: number
+    recurrence: TRecurrence
+    batches: TBatch[] | null
     createdAt: string
     updatedAt: string | null
 }
 
 export type {
-    TEvent
+    TEvent,
+    TEventDate,
+    TRecurrence,
+    TBatch
 }
