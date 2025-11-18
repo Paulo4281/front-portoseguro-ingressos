@@ -4,10 +4,17 @@ type TEventDate = {
     hourEnd: string | null
 }
 
+type TRecurrenceDay = {
+    day: number
+    hourStart: string
+    hourEnd?: string | null
+}
+
 type TRecurrence = {
     type: "NONE" | "DAILY" | "WEEKLY" | "MONTHLY"
-    interval: number
-    daysOfWeek?: number[]
+    hourStart?: string
+    hourEnd?: string | null
+    daysOfWeek?: TRecurrenceDay[]
     endDate?: string | null
 } | null
 
@@ -39,5 +46,6 @@ export type {
     TEvent,
     TEventDate,
     TRecurrence,
+    TRecurrenceDay,
     TBatch
 }
