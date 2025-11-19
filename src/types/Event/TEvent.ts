@@ -1,3 +1,5 @@
+import { TEventBatch } from "./TEventBatch"
+
 type TEventDate = {
     date: string
     hourStart: string
@@ -18,16 +20,6 @@ type TRecurrence = {
     endDate?: string | null
 } | null
 
-type TBatch = {
-    id: string
-    name: string
-    price: number
-    quantity: number
-    startDate: string
-    endDate: string | null
-    isActive: boolean
-}
-
 type TEvent = {
     id: string
     name: string
@@ -38,7 +30,7 @@ type TEvent = {
     image: string
     tickets: number
     recurrence: TRecurrence
-    batches: TBatch[] | null
+    batches: TEventBatch[] | null
     createdAt: string
     updatedAt: string | null
 }
@@ -47,6 +39,5 @@ export type {
     TEvent,
     TEventDate,
     TRecurrence,
-    TRecurrenceDay,
-    TBatch
+    TRecurrenceDay
 }

@@ -1,6 +1,6 @@
 import type { TEvent } from "@/types/Event/TEvent"
 
-const mockEvents: TEvent[] = [
+export const mockEvents: TEvent[] = [
     {
         id: "1",
         name: "Luau Toa Toa",
@@ -24,7 +24,9 @@ const mockEvents: TEvent[] = [
                 quantity: 50,
                 startDate: "2025-01-01",
                 endDate: "2025-01-10",
-                isActive: false
+                isActive: false,
+                createdAt: "2025-01-01",
+                updatedAt: null
             },
             {
                 id: "1-2",
@@ -33,7 +35,9 @@ const mockEvents: TEvent[] = [
                 quantity: 30,
                 startDate: "2025-01-10",
                 endDate: "2025-01-14",
-                isActive: false
+                isActive: false,
+                createdAt: "2025-01-01",
+                updatedAt: null
             },
             {
                 id: "1-3",
@@ -42,11 +46,14 @@ const mockEvents: TEvent[] = [
                 quantity: 20,
                 startDate: "2025-01-14",
                 endDate: null,
-                isActive: true
+                isActive: true,
+                createdAt: "2025-01-01",
+                updatedAt: null
             }
         ],
         createdAt: "2025-01-01",
-        updatedAt: null
+        updatedAt: null,
+        categories: []
     },
     {
         id: "2",
@@ -81,7 +88,9 @@ const mockEvents: TEvent[] = [
                 quantity: 100,
                 startDate: "2025-01-15",
                 endDate: "2025-01-31",
-                isActive: true
+                isActive: true,
+                createdAt: "2025-01-02",
+                updatedAt: null
             },
             {
                 id: "2-2",
@@ -90,11 +99,14 @@ const mockEvents: TEvent[] = [
                 quantity: 100,
                 startDate: "2025-02-01",
                 endDate: null,
-                isActive: false
+                isActive: false,
+                createdAt: "2025-01-02",
+                updatedAt: null
             }
         ],
         createdAt: "2025-01-02",
-        updatedAt: null
+        updatedAt: null,
+        categories: []
     },
     {
         id: "3",
@@ -125,7 +137,8 @@ const mockEvents: TEvent[] = [
         },
         batches: null,
         createdAt: "2025-01-05",
-        updatedAt: null
+        updatedAt: null,
+        categories: []
     },
     {
         id: "4",
@@ -202,7 +215,9 @@ Para mais informações, entre em contato através do nosso suporte.`,
                 quantity: 80,
                 startDate: "2025-10-01",
                 endDate: "2025-12-30",
-                isActive: true
+                isActive: true,
+                createdAt: "2025-01-03",
+                updatedAt: null
             },
             {
                 id: "4-2",
@@ -211,7 +226,9 @@ Para mais informações, entre em contato através do nosso suporte.`,
                 quantity: 40,
                 startDate: "2026-01-12",
                 endDate: "2026-02-20",
-                isActive: true
+                isActive: true,
+                createdAt: "2025-01-03",
+                updatedAt: null
             },
             {
                 id: "4-3",
@@ -220,11 +237,14 @@ Para mais informações, entre em contato através do nosso suporte.`,
                 quantity: 20,
                 startDate: "2026-02-26",
                 endDate: "2026-04-04",
-                isActive: true
+                isActive: true,
+                createdAt: "2025-01-03",
+                updatedAt: null
             }
         ],
         createdAt: "2025-01-03",
-        updatedAt: null
+        updatedAt: null,
+        categories: []
     },
     {
         id: "5",
@@ -253,7 +273,8 @@ Para mais informações, entre em contato através do nosso suporte.`,
         recurrence: null,
         batches: null,
         createdAt: "2025-01-01",
-        updatedAt: null
+        updatedAt: null,
+        categories: []
     },
     {
         id: "6",
@@ -277,7 +298,8 @@ Para mais informações, entre em contato através do nosso suporte.`,
         },
         batches: null,
         createdAt: "2025-01-02",
-        updatedAt: null
+        updatedAt: null,
+        categories: []
     },
     {
         id: "7",
@@ -310,7 +332,38 @@ Para mais informações, entre em contato através do nosso suporte.`,
         },
         batches: null,
         createdAt: "2025-01-02",
-        updatedAt: null
+        updatedAt: null,
+        categories: []
+    },
+    {
+        id: "8",
+        name: "Festa na Praia - Sexta-feira",
+        description: "Evento recorrente toda sexta-feira das 19h às 04h",
+        dates: [
+            {
+                date: "2025-01-17",
+                hourStart: "19:00",
+                hourEnd: "04:00"
+            }
+        ],
+        location: "Praia de Taperapuã",
+        image: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800",
+        tickets: 300,
+        recurrence: {
+            type: "WEEKLY",
+            daysOfWeek: [
+                {
+                    day: 5,
+                    hourStart: "19:00",
+                    hourEnd: "04:00"
+                }
+            ],
+            endDate: null
+        },
+        batches: null,
+        createdAt: "2025-01-06",
+        updatedAt: null,
+        categories: ["2ec9cdac-3346-46a0-b28d-22e345654b68", "65cb6c20-f6f6-4894-bef6-9140e30e9a27"]
     }
 ]
 

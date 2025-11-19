@@ -16,7 +16,8 @@ import { useCart } from "@/contexts/CartContext"
 import { Carousel } from "@/components/Carousel/Carousel"
 import { CardEvent } from "@/components/Card/CardEvent/CardEvent"
 import ReactMarkdown from "react-markdown"
-import type { TEvent, TBatch, TRecurrenceDay } from "@/types/Event/TEvent"
+import type { TEvent, TRecurrenceDay } from "@/types/Event/TEvent"
+import type { TEventBatch } from "@/types/Event/TEventBatch"
 
 type TVerEventoInfoProps = {
     eventId: string
@@ -100,7 +101,7 @@ const VerEventoInfo = (
         return null
     }
 
-    const getBatchStatus = (batch: TBatch) => {
+    const getBatchStatus = (batch: TEventBatch) => {
         const now = new Date()
         const startDate = new Date(batch.startDate)
         const endDate = batch.endDate ? new Date(batch.endDate) : null

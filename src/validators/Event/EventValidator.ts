@@ -26,7 +26,9 @@ const BatchValidator = z.object({
     price: z.number({ error: DefaultFormErrors.required }).min(0.01, { error: "Preço deve ser maior que 0" }),
     quantity: z.number({ error: DefaultFormErrors.required }).min(1, { error: "Quantidade deve ser maior que 0" }),
     startDate: z.string({ error: DefaultFormErrors.required }),
-    endDate: z.string().nullable().optional()
+    endDate: z.string().nullable().optional(),
+    autoActivateNext: z.boolean().optional(),
+    accumulateUnsold: z.boolean().optional()
 })
 
 const EventCreateValidator = z.object({
@@ -39,6 +41,7 @@ const EventCreateValidator = z.object({
     location: z.string().nullable().optional(),
     useBatches: z.boolean(),
     tickets: z.number().optional(),
+    ticketPrice: z.number().optional(),
     batches: z.array(BatchValidator).optional(),
     dates: z.array(EventDateValidator).optional(),
     recurrence: RecurrenceValidator
@@ -48,6 +51,103 @@ const EventCreateValidator = z.object({
             code: "custom",
             path: ["tickets"],
             message: "Quantidade de ingressos é obrigatória quando não usar lotes"
+        })
+    }
+    if (!data.useBatches && (!data.ticketPrice || data.ticketPrice <= 0)) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["ticketPrice"],
+            message: "Preço do ingresso é obrigatório quando não usar lotes"
+        })
+    }
+    if (data.useBatches && (!data.batches || data.batches.length === 0)) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["batches"],
+            message: "Adicione pelo menos um lote"
+        })
+    }
+    if (!data.recurrence && (!data.dates || data.dates.length === 0)) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["dates"],
+            message: "Adicione pelo menos uma data ou configure recorrência"
+        })
+    }
+    if (data.recurrence && data.recurrence.type === "WEEKLY" && (!data.recurrence.daysOfWeek || data.recurrence.daysOfWeek.length === 0)) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["recurrence", "daysOfWeek"],
+            message: "Selecione pelo menos um dia da semana"
+        })
+    }
+    if (data.recurrence && data.recurrence.type === "MONTHLY" && (!data.recurrence.daysOfWeek || data.recurrence.daysOfWeek.length === 0)) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["recurrence", "daysOfWeek"],
+            message: "Selecione pelo menos um dia do mês"
+        })
+    }
+    if (data.recurrence && data.recurrence.type === "WEEKLY" && data.recurrence.daysOfWeek) {
+        data.recurrence.daysOfWeek.forEach((day, index) => {
+            if (!day.hourStart) {
+                ctx.addIssue({
+                    code: "custom",
+                    path: ["recurrence", "daysOfWeek", index, "hourStart"],
+                    message: "Horário de início é obrigatório"
+                })
+            }
+        })
+    }
+    if (data.recurrence && data.recurrence.type === "MONTHLY" && data.recurrence.daysOfWeek) {
+        data.recurrence.daysOfWeek.forEach((day, index) => {
+            if (!day.hourStart) {
+                ctx.addIssue({
+                    code: "custom",
+                    path: ["recurrence", "daysOfWeek", index, "hourStart"],
+                    message: "Horário de início é obrigatório"
+                })
+            }
+        })
+    }
+    if (data.recurrence && data.recurrence.type === "DAILY" && !data.recurrence.hourStart) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["recurrence", "hourStart"],
+            message: "Horário de início é obrigatório para eventos diários"
+        })
+    }
+})
+
+const EventUpdateValidatorBase = z.object({
+    name: z.string({ error: DefaultFormErrors.required }).min(3, { error: "Nome deve ter no mínimo 3 caracteres" }).max(160, { error: "Nome deve ter no máximo 160 caracteres" }),
+    description: z.string({ error: DefaultFormErrors.required }).min(10, { error: "Descrição deve ter no mínimo 10 caracteres" }),
+    categories: z.array(z.string({ error: DefaultFormErrors.required }), { error: DefaultFormErrors.required })
+        .min(1, { error: "Selecione pelo menos uma categoria" })
+        .max(5, { error: "Selecione no máximo 5 categorias" }),
+    image: z.instanceof(File, { error: DefaultFormErrors.required }).nullable().optional(),
+    location: z.string().nullable().optional(),
+    useBatches: z.boolean(),
+    tickets: z.number().optional(),
+    ticketPrice: z.number().optional(),
+    batches: z.array(BatchValidator).optional(),
+    dates: z.array(EventDateValidator).optional(),
+    recurrence: RecurrenceValidator
+})
+
+const EventUpdateValidator = EventUpdateValidatorBase.superRefine((data, ctx) => {
+    if (!data.useBatches && !data.tickets) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["tickets"],
+            message: "Quantidade de ingressos é obrigatória quando não usar lotes"
+        })
+    }
+    if (!data.useBatches && (!data.ticketPrice || data.ticketPrice <= 0)) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["ticketPrice"],
+            message: "Preço do ingresso é obrigatório quando não usar lotes"
         })
     }
     if (data.useBatches && (!data.batches || data.batches.length === 0)) {
@@ -110,9 +210,11 @@ const EventCreateValidator = z.object({
 })
 
 export {
-    EventCreateValidator
+    EventCreateValidator,
+    EventUpdateValidator
 }
 export type {
-    EventCreateValidator as TEventCreateValidator
+    EventCreateValidator as TEventCreateValidator,
+    EventUpdateValidator as TEventUpdateValidator
 }
 

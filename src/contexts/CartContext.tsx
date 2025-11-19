@@ -1,7 +1,8 @@
 "use client"
 
 import { createContext, useContext, useState, useCallback, ReactNode } from "react"
-import type { TEvent, TBatch } from "@/types/Event/TEvent"
+import type { TEvent } from "@/types/Event/TEvent"
+import type { TEventBatch } from "@/types/Event/TEventBatch"
 
 type TCartItem = {
     eventId: string

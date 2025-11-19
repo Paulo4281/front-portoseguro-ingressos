@@ -13,7 +13,8 @@ import {
 import { useEventFind } from "@/hooks/Event/useEventFind"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Background } from "@/components/Background/Background"
-import type { TEvent, TBatch } from "@/types/Event/TEvent"
+import type { TEvent } from "@/types/Event/TEvent"
+import type { TEventBatch } from "@/types/Event/TEventBatch"
 
 type TEventWithStats = TEvent & {
     isActive: boolean
@@ -90,7 +91,7 @@ const MeusEventosPannel = () => {
         return `${firstDate} - ${lastDate}`
     }
 
-    const getActiveBatch = (batches: TEvent["batches"]): TBatch | null => {
+    const getActiveBatch = (batches: TEvent["batches"]): TEventBatch | null => {
         if (!batches || batches.length === 0) return null
 
         const now = new Date()
@@ -340,7 +341,7 @@ const MeusEventosPannel = () => {
                                                     size="sm"
                                                     className="flex-1"
                                                 >
-                                                    <Link href={`/eventos/${event.id}/editar`}>
+                                                    <Link href={`/eventos/atualizar?id=${event.id}`}>
                                                         <Edit className="h-4 w-4" />
                                                         Editar
                                                     </Link>

@@ -3,7 +3,8 @@ import Image from "next/image"
 import { Calendar, Clock, MapPin, Repeat, Tag } from "lucide-react"
 import { Card } from "@/components/Card/Card"
 import { DateUtilsClass } from "@/utils/Helpers/DateUtils/DateUtils"
-import type { TEvent, TBatch, TRecurrenceDay } from "@/types/Event/TEvent"
+import type { TEvent, TRecurrenceDay } from "@/types/Event/TEvent"
+import type { TEventBatch } from "@/types/Event/TEventBatch"
 
 type TCardEventProps = {
     event: TEvent
@@ -94,7 +95,7 @@ const CardEvent = (
         return null
     }
 
-    const getActiveBatch = (batches: TEvent["batches"]): TBatch | null => {
+    const getActiveBatch = (batches: TEvent["batches"]): TEventBatch | null => {
         if (!batches || batches.length === 0) return null
 
         const now = new Date()

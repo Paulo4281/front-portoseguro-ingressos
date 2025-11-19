@@ -78,7 +78,7 @@ const CheckoutInfo = () => {
     }, [items, allEvents])
     
     const handleNext = () => {
-        if (currentStep < 4) {
+        if (currentStep < 3) {
             setCurrentStep(currentStep + 1)
         }
     }
@@ -128,9 +128,8 @@ const CheckoutInfo = () => {
                         <div className="flex items-center justify-between">
                             {[
                                 { number: 1, label: "Dados do Comprador", icon: User },
-                                { number: 2, label: "Pagamento", icon: CreditCard },
-                                { number: 3, label: "Resumo", icon: Receipt },
-                                { number: 4, label: "Finalização", icon: CheckCircle2 }
+                                { number: 2, label: "Resumo", icon: Receipt },
+                                { number: 3, label: "Finalização", icon: CheckCircle2 }
                             ].map((step, index) => {
                                 const isActive = currentStep === step.number
                                 const isCompleted = currentStep > step.number
@@ -163,7 +162,7 @@ const CheckoutInfo = () => {
                                                 {step.label}
                                             </span>
                                         </div>
-                                        {index < 3 && (
+                                        {index < 2 && (
                                             <div className={`flex-1 h-0.5 mx-2 transition-all ${
                                                 isCompleted
                                                     ? "bg-psi-primary"
@@ -356,161 +355,6 @@ const CheckoutInfo = () => {
                             {currentStep === 2 && (
                                 <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
                                 sm:p-8 shadow-sm">
-                                    <h2 className="text-xl font-semibold text-psi-dark mb-6">Forma de Pagamento</h2>
-                                    
-                                    <div className="space-y-4 mb-6">
-                                        <button
-                                            type="button"
-                                            onClick={() => setPaymentMethod("pix")}
-                                            className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                                                paymentMethod === "pix"
-                                                    ? "border-psi-primary bg-psi-primary/5"
-                                                    : "border-psi-dark/10 hover:border-psi-primary/30"
-                                            }`}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className={`size-4 rounded-full border-2 ${
-                                                    paymentMethod === "pix"
-                                                        ? "border-psi-primary bg-psi-primary"
-                                                        : "border-psi-dark/30"
-                                                }`}>
-                                                    {paymentMethod === "pix" && (
-                                                        <div className="size-full rounded-full bg-white scale-50" />
-                                                    )}
-                                                </div>
-                                                <span className="font-semibold text-psi-dark">PIX</span>
-                                            </div>
-                                        </button>
-                                        
-                                        <button
-                                            type="button"
-                                            onClick={() => setPaymentMethod("credit")}
-                                            className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                                                paymentMethod === "credit"
-                                                    ? "border-psi-primary bg-psi-primary/5"
-                                                    : "border-psi-dark/10 hover:border-psi-primary/30"
-                                            }`}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className={`size-4 rounded-full border-2 ${
-                                                    paymentMethod === "credit"
-                                                        ? "border-psi-primary bg-psi-primary"
-                                                        : "border-psi-dark/30"
-                                                }`}>
-                                                    {paymentMethod === "credit" && (
-                                                        <div className="size-full rounded-full bg-white scale-50" />
-                                                    )}
-                                                </div>
-                                                <span className="font-semibold text-psi-dark">Cartão de Crédito</span>
-                                            </div>
-                                        </button>
-                                        
-                                        <button
-                                            type="button"
-                                            onClick={() => setPaymentMethod("boleto")}
-                                            className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                                                paymentMethod === "boleto"
-                                                    ? "border-psi-primary bg-psi-primary/5"
-                                                    : "border-psi-dark/10 hover:border-psi-primary/30"
-                                            }`}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className={`size-4 rounded-full border-2 ${
-                                                    paymentMethod === "boleto"
-                                                        ? "border-psi-primary bg-psi-primary"
-                                                        : "border-psi-dark/30"
-                                                }`}>
-                                                    {paymentMethod === "boleto" && (
-                                                        <div className="size-full rounded-full bg-white scale-50" />
-                                                    )}
-                                                </div>
-                                                <span className="font-semibold text-psi-dark">Boleto Bancário</span>
-                                            </div>
-                                        </button>
-                                    </div>
-                                    
-                                    {paymentMethod === "credit" && (
-                                        <div className="space-y-4 pt-6 border-t border-psi-dark/10">
-                                            <div>
-                                                <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    Número do Cartão *
-                                                </label>
-                                                <div className="relative">
-                                                    <InputMask
-                                                        mask="0000 0000 0000 0000"
-                                                        value={cardData.number}
-                                                        onAccept={(value) => setCardData({ ...cardData, number: value as string })}
-                                                        placeholder="0000 0000 0000 0000"
-                                                        icon={CreditCard}
-                                                    />
-                                                    {cardBrand && (
-                                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                                            <div className={`size-10 rounded flex items-center justify-center text-xs font-bold ${
-                                                                cardBrand === "visa" ? "bg-[#1434CB] text-white" :
-                                                                cardBrand === "mastercard" ? "bg-[#EB001B] text-white" :
-                                                                cardBrand === "amex" ? "bg-[#006FCF] text-white" :
-                                                                cardBrand === "elo" ? "bg-[#FFCB05] text-[#231F20]" :
-                                                                cardBrand === "hipercard" ? "bg-[#DF0F50] text-white" :
-                                                                "bg-gray-600 text-white"
-                                                            }`}>
-                                                                {cardBrand === "visa" ? "VISA" :
-                                                                 cardBrand === "mastercard" ? "MC" :
-                                                                 cardBrand === "amex" ? "AMEX" :
-                                                                 cardBrand === "elo" ? "ELO" :
-                                                                 cardBrand === "hipercard" ? "HIPER" :
-                                                                 cardBrand.toUpperCase().substring(0, 4)}
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            
-                                            <div>
-                                                <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    Nome no Cartão *
-                                                </label>
-                                                <Input
-                                                    value={cardData.name}
-                                                    onChange={(e) => setCardData({ ...cardData, name: e.target.value.toUpperCase() })}
-                                                    placeholder="NOME COMO ESTÁ NO CARTÃO"
-                                                    required
-                                                />
-                                            </div>
-                                            
-                                            <div className="grid gap-4
-                                            sm:grid-cols-2">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                        Validade *
-                                                    </label>
-                                                    <InputMask
-                                                        mask="00/00"
-                                                        value={cardData.expiry}
-                                                        onAccept={(value) => setCardData({ ...cardData, expiry: value as string })}
-                                                        placeholder="MM/AA"
-                                                    />
-                                                </div>
-                                                
-                                                <div>
-                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                        CVV *
-                                                    </label>
-                                                    <InputMask
-                                                        mask="000"
-                                                        value={cardData.cvv}
-                                                        onAccept={(value) => setCardData({ ...cardData, cvv: value as string })}
-                                                        placeholder="000"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                            
-                            {currentStep === 3 && (
-                                <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
-                                sm:p-8 shadow-sm">
                                     <h2 className="text-xl font-semibold text-psi-dark mb-6">Resumo da Compra</h2>
                                     
                                     <div className="space-y-4">
@@ -601,7 +445,7 @@ const CheckoutInfo = () => {
                                 </div>
                             )}
                             
-                            {currentStep === 4 && (
+                            {currentStep === 3 && (
                                 <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
                                 sm:p-8 shadow-sm">
                                     <div className="text-center space-y-4 mb-6">
@@ -610,11 +454,163 @@ const CheckoutInfo = () => {
                                         </div>
                                         <h2 className="text-2xl font-semibold text-psi-dark">Finalizar Compra</h2>
                                         <p className="text-psi-dark/60">
-                                            Revise todas as informações antes de confirmar
+                                            Revise todas as informações e escolha a forma de pagamento
                                         </p>
                                     </div>
                                     
-                                    <div className="space-y-4">
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-psi-dark mb-4">Forma de Pagamento</h3>
+                                            
+                                            <div className="space-y-4 mb-6">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPaymentMethod("pix")}
+                                                    className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                                                        paymentMethod === "pix"
+                                                            ? "border-psi-primary bg-psi-primary/5"
+                                                            : "border-psi-dark/10 hover:border-psi-primary/30"
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`size-4 rounded-full border-2 ${
+                                                            paymentMethod === "pix"
+                                                                ? "border-psi-primary bg-psi-primary"
+                                                                : "border-psi-dark/30"
+                                                        }`}>
+                                                            {paymentMethod === "pix" && (
+                                                                <div className="size-full rounded-full bg-white scale-50" />
+                                                            )}
+                                                        </div>
+                                                        <span className="font-semibold text-psi-dark">PIX</span>
+                                                    </div>
+                                                </button>
+                                                
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPaymentMethod("credit")}
+                                                    className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                                                        paymentMethod === "credit"
+                                                            ? "border-psi-primary bg-psi-primary/5"
+                                                            : "border-psi-dark/10 hover:border-psi-primary/30"
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`size-4 rounded-full border-2 ${
+                                                            paymentMethod === "credit"
+                                                                ? "border-psi-primary bg-psi-primary"
+                                                                : "border-psi-dark/30"
+                                                        }`}>
+                                                            {paymentMethod === "credit" && (
+                                                                <div className="size-full rounded-full bg-white scale-50" />
+                                                            )}
+                                                        </div>
+                                                        <span className="font-semibold text-psi-dark">Cartão de Crédito</span>
+                                                    </div>
+                                                </button>
+                                                
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPaymentMethod("boleto")}
+                                                    className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                                                        paymentMethod === "boleto"
+                                                            ? "border-psi-primary bg-psi-primary/5"
+                                                            : "border-psi-dark/10 hover:border-psi-primary/30"
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`size-4 rounded-full border-2 ${
+                                                            paymentMethod === "boleto"
+                                                                ? "border-psi-primary bg-psi-primary"
+                                                                : "border-psi-dark/30"
+                                                        }`}>
+                                                            {paymentMethod === "boleto" && (
+                                                                <div className="size-full rounded-full bg-white scale-50" />
+                                                            )}
+                                                        </div>
+                                                        <span className="font-semibold text-psi-dark">Boleto Bancário</span>
+                                                    </div>
+                                                </button>
+                                            </div>
+                                            
+                                            {paymentMethod === "credit" && (
+                                                <div className="space-y-4 pt-6 border-t border-psi-dark/10">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                            Número do Cartão *
+                                                        </label>
+                                                        <div className="relative">
+                                                            <InputMask
+                                                                mask="0000 0000 0000 0000"
+                                                                value={cardData.number}
+                                                                onAccept={(value) => setCardData({ ...cardData, number: value as string })}
+                                                                placeholder="0000 0000 0000 0000"
+                                                                icon={CreditCard}
+                                                            />
+                                                            {cardBrand && (
+                                                                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                                                    <div className={`size-10 rounded flex items-center justify-center text-xs font-bold ${
+                                                                        cardBrand === "visa" ? "bg-[#1434CB] text-white" :
+                                                                        cardBrand === "mastercard" ? "bg-[#EB001B] text-white" :
+                                                                        cardBrand === "amex" ? "bg-[#006FCF] text-white" :
+                                                                        cardBrand === "elo" ? "bg-[#FFCB05] text-[#231F20]" :
+                                                                        cardBrand === "hipercard" ? "bg-[#DF0F50] text-white" :
+                                                                        "bg-gray-600 text-white"
+                                                                    }`}>
+                                                                        {cardBrand === "visa" ? "VISA" :
+                                                                         cardBrand === "mastercard" ? "MC" :
+                                                                         cardBrand === "amex" ? "AMEX" :
+                                                                         cardBrand === "elo" ? "ELO" :
+                                                                         cardBrand === "hipercard" ? "HIPER" :
+                                                                         cardBrand.toUpperCase().substring(0, 4)}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                            Nome no Cartão *
+                                                        </label>
+                                                        <Input
+                                                            value={cardData.name}
+                                                            onChange={(e) => setCardData({ ...cardData, name: e.target.value.toUpperCase() })}
+                                                            placeholder="NOME COMO ESTÁ NO CARTÃO"
+                                                            required
+                                                        />
+                                                    </div>
+                                                    
+                                                    <div className="grid gap-4
+                                                    sm:grid-cols-2">
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                                Validade *
+                                                            </label>
+                                                            <InputMask
+                                                                mask="00/00"
+                                                                value={cardData.expiry}
+                                                                onAccept={(value) => setCardData({ ...cardData, expiry: value as string })}
+                                                                placeholder="MM/AA"
+                                                            />
+                                                        </div>
+                                                        
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                                CVV *
+                                                            </label>
+                                                            <InputMask
+                                                                mask="000"
+                                                                value={cardData.cvv}
+                                                                onAccept={(value) => setCardData({ ...cardData, cvv: value as string })}
+                                                                placeholder="000"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        
                                         <div className="p-4 rounded-xl bg-psi-dark/5">
                                             <h3 className="font-semibold text-psi-dark mb-2">Resumo</h3>
                                             <div className="space-y-1 text-sm text-psi-dark/70">
@@ -652,7 +648,7 @@ const CheckoutInfo = () => {
                                     </Button>
                                 )}
                                 
-                                {currentStep < 4 && (
+                                {currentStep < 3 && (
                                     <Button
                                         type="button"
                                         variant="primary"

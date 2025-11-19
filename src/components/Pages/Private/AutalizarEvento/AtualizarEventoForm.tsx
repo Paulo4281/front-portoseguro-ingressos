@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useForm, Controller, useFieldArray } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, FileText, Repeat, Tag, Sparkles } from "lucide-react"
-import { EventCreateValidator } from "@/validators/Event/EventValidator"
+import { EventUpdateValidator } from "@/validators/Event/EventValidator"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/Input/Input"
@@ -22,8 +22,10 @@ import { z } from "zod"
 import { cn } from "@/lib/utils"
 import type { TRecurrenceDay } from "@/types/Event/TEvent"
 import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
+import { useEventFindById } from "@/hooks/Event/useEventFindById"
+import { Skeleton } from "@/components/ui/skeleton"
 
-type TEventCreate = z.infer<typeof EventCreateValidator>
+type TEventUpdate = z.infer<typeof EventUpdateValidator>
 
 const weekDays = [
     { value: 0, label: "Dom" },
@@ -47,10 +49,16 @@ const parseCurrencyToNumber = (value: string): number => {
     return parseFloat(cleaned) || 0
 }
 
-const CriarEventoForm = () => {
+type TAtualizarEventoFormProps = {
+    eventId: string
+}
+
+const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     const [recurrenceEnabled, setRecurrenceEnabled] = useState(false)
     const [useBatches, setUseBatches] = useState(false)
+    const [isFormInitialized, setIsFormInitialized] = useState(false)
 
+    const { data: eventData, isLoading: isEventLoading } = useEventFindById(eventId)
     const { data: eventCategoriesData, isLoading: isEventCategoriesLoading } = useEventCategoryFind()
 
     const eventCategories = useMemo(() => {
@@ -60,8 +68,8 @@ const CriarEventoForm = () => {
         return []
     }, [eventCategoriesData])
 
-    const form = useForm<TEventCreate>({
-        resolver: zodResolver(EventCreateValidator),
+    const form = useForm<TEventUpdate>({
+        resolver: zodResolver(EventUpdateValidator),
         defaultValues: {
             name: "",
             description: "",
@@ -102,8 +110,52 @@ const CriarEventoForm = () => {
         return batches.reduce((sum, batch) => sum + (batch.quantity || 0), 0)
     }, [batches, useBatches])
 
-    const handleSubmit = async (data: TEventCreate) => {
-        console.log("Event data:", data)
+    useEffect(() => {
+        if (eventData && !isFormInitialized && eventCategories.length > 0) {
+            const event = eventData
+            
+            const hasBatches = !!(event.batches && event.batches.length > 0)
+            setUseBatches(hasBatches)
+            setRecurrenceEnabled(!!event.recurrence)
+
+            const batchesData = hasBatches ? event.batches?.map(batch => ({
+                name: batch.name,
+                price: batch.price,
+                quantity: batch.quantity,
+                startDate: batch.startDate,
+                endDate: batch.endDate,
+                autoActivateNext: false,
+                accumulateUnsold: false
+            })) : undefined
+
+            const datesData = event.dates && event.dates.length > 0 ? event.dates : [
+                {
+                    date: "",
+                    hourStart: "",
+                    hourEnd: null
+                }
+            ]
+
+            form.reset({
+                name: event.name || "",
+                description: event.description || "",
+                categories: event.categories || [],
+                image: null as any,
+                location: event.location || null,
+                useBatches: hasBatches,
+                tickets: hasBatches ? undefined : event.tickets,
+                ticketPrice: hasBatches ? undefined : undefined,
+                batches: batchesData,
+                dates: datesData,
+                recurrence: event.recurrence
+            })
+
+            setIsFormInitialized(true)
+        }
+    }, [eventData, isFormInitialized, form, eventCategories])
+
+    const handleSubmit = async (data: TEventUpdate) => {
+        console.log("Event update data:", data)
     }
 
     const addDate = () => {
@@ -174,6 +226,46 @@ const CriarEventoForm = () => {
         return dayData || { hourStart: "", hourEnd: null }
     }
 
+    if (isEventLoading) {
+        return (
+            <Background variant="light">
+                <div className="min-h-screen pt-32 pb-16 px-4
+                sm:px-6
+                lg:px-8">
+                    <div className="max-w-4xl mx-auto">
+                        <Skeleton className="h-12 w-64 mb-4" />
+                        <Skeleton className="h-8 w-96 mb-8" />
+                        <div className="space-y-8">
+                            <Skeleton className="h-96 w-full" />
+                            <Skeleton className="h-96 w-full" />
+                        </div>
+                    </div>
+                </div>
+            </Background>
+        )
+    }
+
+    if (!eventData) {
+        return (
+            <Background variant="light">
+                <div className="min-h-screen pt-32 pb-16 px-4
+                sm:px-6
+                lg:px-8">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="text-center">
+                            <p className="text-psi-dark/60">Evento não encontrado</p>
+                            <Link href="/meus-eventos">
+                                <Button variant="outline" className="mt-4">
+                                    Voltar para meus eventos
+                                </Button>
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </Background>
+        )
+    }
+
     return (
         <Background variant="light">
             <div className="min-h-screen pt-32 pb-16 px-4
@@ -190,11 +282,11 @@ const CriarEventoForm = () => {
                         </Link>
                         <h1 className="text-4xl
                         sm:text-5xl font-bold text-psi-primary mb-2">
-                            Criar Novo Evento
+                            Atualizar Evento
                         </h1>
                         <p className="text-base
                         sm:text-lg text-psi-dark/60">
-                            Preencha as informações do seu evento
+                            Edite as informações do seu evento
                         </p>
                     </div>
 
@@ -238,15 +330,6 @@ const CriarEventoForm = () => {
                                         <label htmlFor="description" className="block text-sm font-medium text-psi-dark">
                                             Descrição *
                                         </label>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            className="text-xs"
-                                        >
-                                            <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                                            Escrever com IA
-                                        </Button>
                                     </div>
                                     <Controller
                                         name="description"
@@ -287,17 +370,16 @@ const CriarEventoForm = () => {
 
                                 <div >
                                     <label className="block text-sm font-medium text-psi-dark mb-2">
-                                        Imagem do Evento *
+                                        Imagem do Evento
                                     </label>
                                     <Controller
                                         name="image"
                                         control={form.control}
                                         render={({ field }) => (
                                             <ImageUpload
-                                                value={field.value}
+                                                value={field.value || eventData.image}
                                                 onChange={field.onChange}
                                                 error={form.formState.errors.image?.message}
-                                                
                                             />
                                         )}
                                     />
@@ -956,9 +1038,9 @@ const CriarEventoForm = () => {
                                 disabled={form.formState.isSubmitting}
                             >
                                 {form.formState.isSubmitting ? (
-                                    <LoadingButton message="Criando evento..." />
+                                    <LoadingButton message="Atualizando evento..." />
                                 ) : (
-                                    "Criar Evento"
+                                    "Atualizar Evento"
                                 )}
                             </Button>
                         </div>
@@ -969,4 +1051,6 @@ const CriarEventoForm = () => {
     )
 }
 
-export default CriarEventoForm
+export {
+    AtualizarEventoForm
+}
