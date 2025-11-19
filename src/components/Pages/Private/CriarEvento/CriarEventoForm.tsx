@@ -20,6 +20,7 @@ import { MultiSelect } from "@/components/MultiSelect/MultiSelect"
 import { z } from "zod"
 import { cn } from "@/lib/utils"
 import type { TRecurrenceDay } from "@/types/Event/TEvent"
+import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
 
 type TEventCreate = z.infer<typeof EventCreateValidator>
 
@@ -35,17 +36,6 @@ const weekDays = [
 
 const monthDays = Array.from({ length: 31 }, (_, i) => i + 1)
 
-const eventCategories = [
-    { value: "shows-festas", label: "Shows & Festas" },
-    { value: "beach-clubs", label: "Beach Clubs" },
-    { value: "experiencias-diurnas", label: "Experiências Diurnas" },
-    { value: "vip-lounge", label: "VIP & Lounge" },
-    { value: "esportes", label: "Esportes" },
-    { value: "cultura", label: "Cultura & Arte" },
-    { value: "gastronomia", label: "Gastronomia" },
-    { value: "outros", label: "Outros" }
-]
-
 const parseCurrencyToNumber = (value: string): number => {
     if (!value) return 0
     const cleaned = value
@@ -59,6 +49,15 @@ const parseCurrencyToNumber = (value: string): number => {
 const CriarEventoForm = () => {
     const [recurrenceEnabled, setRecurrenceEnabled] = useState(false)
     const [useBatches, setUseBatches] = useState(false)
+
+    const { data: eventCategoriesData, isLoading: isEventCategoriesLoading } = useEventCategoryFind()
+
+    const eventCategories = useMemo(() => {
+        if (eventCategoriesData?.data && Array.isArray(eventCategoriesData.data)) {
+            return eventCategoriesData.data
+        }
+        return []
+    }, [eventCategoriesData])
 
     const form = useForm<TEventCreate>({
         resolver: zodResolver(EventCreateValidator),
@@ -186,7 +185,7 @@ const CriarEventoForm = () => {
                             <span>Voltar para meus eventos</span>
                         </Link>
                         <h1 className="text-4xl
-                        sm:text-5xl font-bold text-psi-dark mb-2">
+                        sm:text-5xl font-bold text-psi-primary mb-2">
                             Criar Novo Evento
                         </h1>
                         <p className="text-base
@@ -269,7 +268,7 @@ const CriarEventoForm = () => {
                                         control={form.control}
                                         render={({ field }) => (
                                             <MultiSelect
-                                                options={eventCategories}
+                                                options={eventCategories.map((category) => ({ value: category.id, label: category.name }))}
                                                 value={field.value || []}
                                                 onChange={field.onChange}
                                                 placeholder="Selecione as categorias..."
@@ -282,7 +281,7 @@ const CriarEventoForm = () => {
                                     <FieldError message={form.formState.errors.categories?.message || ""} />
                                 </div>
 
-                                <div>
+                                <div >
                                     <label className="block text-sm font-medium text-psi-dark mb-2">
                                         Imagem do Evento *
                                     </label>
@@ -294,6 +293,7 @@ const CriarEventoForm = () => {
                                                 value={field.value}
                                                 onChange={field.onChange}
                                                 error={form.formState.errors.image?.message}
+                                                
                                             />
                                         )}
                                     />
@@ -310,7 +310,7 @@ const CriarEventoForm = () => {
                                             <Input
                                                 {...field}
                                                 id="location"
-                                                placeholder="Ex: Praça da Liberdade"
+                                                placeholder="Ex: Centro de Cultura"
                                                 icon={MapPin}
                                                 className="w-full"
                                                 value={field.value ?? ""}
@@ -531,7 +531,7 @@ const CriarEventoForm = () => {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 p-6
+                        <div className="rounded-2xl border z-0 border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 p-6
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <Repeat className="h-5 w-5 text-psi-primary" />

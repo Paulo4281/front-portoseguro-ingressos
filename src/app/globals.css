@@ -4,6 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
+  --breakpoint-xs: 420px;
   --breakpoint-3xl: 120rem;
 
   --color-psi-primary: #6C4BFF;

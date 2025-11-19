@@ -22,6 +22,7 @@ const TimePicker = (
     }: TTimePickerProps
 ) => {
     const [isOpen, setIsOpen] = useState(false)
+    const [isAnimating, setIsAnimating] = useState(false)
     const [hours, setHours] = useState("00")
     const [minutes, setMinutes] = useState("00")
     const containerRef = useRef<HTMLDivElement>(null)
@@ -40,7 +41,8 @@ const TimePicker = (
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-                setIsOpen(false)
+                setIsAnimating(false)
+                setTimeout(() => setIsOpen(false), 200)
             }
         }
 
@@ -90,7 +92,15 @@ const TimePicker = (
         <div ref={containerRef} className={cn("relative", className)}>
             <button
                 type="button"
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => {
+                    if (!isOpen) {
+                        setIsAnimating(true)
+                        setIsOpen(true)
+                    } else {
+                        setIsAnimating(false)
+                        setTimeout(() => setIsOpen(false), 200)
+                    }
+                }}
                 className={cn(
                     "w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-all outline-none",
                     "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
@@ -108,7 +118,13 @@ const TimePicker = (
             </button>
 
             {isOpen && (
-                <div className="absolute z-50 mt-2 w-full rounded-xl border border-[#E4E6F0] bg-white shadow-lg shadow-black/10 p-4">
+                <div className={cn(
+                    "relative z-50 mt-2 w-full rounded-xl border border-[#E4E6F0] bg-white shadow-lg shadow-black/10 p-4",
+                    "transition-all duration-200 ease-out",
+                    isAnimating 
+                        ? "animate-in fade-in-0 zoom-in-95 slide-in-from-top-2" 
+                        : "animate-out fade-out-0 zoom-out-95 slide-out-to-top-2"
+                )}>
                     <div className="flex items-center justify-center gap-4">
                         <div className="flex flex-col items-center gap-2">
                             <button
@@ -161,7 +177,8 @@ const TimePicker = (
                                 type="button"
                                 onClick={() => {
                                     onChange(null)
-                                    setIsOpen(false)
+                                    setIsAnimating(false)
+                                    setTimeout(() => setIsOpen(false), 200)
                                 }}
                                 className="flex-1 px-3 py-2 text-sm text-psi-dark/70 hover:text-psi-dark hover:bg-[#F3F4FB] rounded-lg transition-colors"
                             >
@@ -172,7 +189,8 @@ const TimePicker = (
                             type="button"
                             onClick={() => {
                                 onChange(`${hours}:${minutes}`)
-                                setIsOpen(false)
+                                setIsAnimating(false)
+                                setTimeout(() => setIsOpen(false), 200)
                             }}
                             className={cn(
                                 "px-3 py-2 text-sm bg-psi-primary text-white rounded-lg hover:bg-psi-primary/90 transition-colors",

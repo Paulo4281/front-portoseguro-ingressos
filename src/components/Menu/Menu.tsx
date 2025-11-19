@@ -170,7 +170,8 @@ const Menu = () => {
                             transition-transform duration-300 group-hover:scale-105"
                             variant="primary"
                         />
-                        <span className="ms-2 text-[1.4rem]
+                        <span className="ms-2 text-[1.15rem]
+                            xs:text-[1.4rem]
                             sm:text-2xl
                             font-extrabold
                             tracking-tight
@@ -291,7 +292,7 @@ const Menu = () => {
                                         <DropdownMenuItem
                                             onClick={handleLogout}
                                             disabled={isLoggingOut}
-                                            className="rounded-xl text-sm text-destructive hover:bg-destructive/10 cursor-pointer"
+                                            className="rounded-xl text-sm hover:bg-destructive/10 cursor-pointer"
                                         >
                                             {isLoggingOut ? (
                                                 <>
@@ -388,7 +389,7 @@ const Menu = () => {
                                         <DropdownMenuItem
                                             onClick={handleLogout}
                                             disabled={isLoggingOut}
-                                            className="rounded-xl text-sm text-destructive hover:bg-destructive/10 cursor-pointer"
+                                            className="rounded-xl text-sm hover:bg-destructive/10 cursor-pointer"
                                         >
                                             {isLoggingOut ? (
                                                 <>

@@ -35,6 +35,7 @@ const DatePicker = (
     const [isOpen, setIsOpen] = useState(false)
     const [currentMonth, setCurrentMonth] = useState(new Date())
     const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+    const [viewMode, setViewMode] = useState<"date" | "month" | "year">("date")
     const containerRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -129,6 +130,35 @@ const DatePicker = (
         setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))
     }
 
+    const goToPreviousYear = () => {
+        setCurrentMonth(new Date(currentMonth.getFullYear() - 1, currentMonth.getMonth(), 1))
+    }
+
+    const goToNextYear = () => {
+        setCurrentMonth(new Date(currentMonth.getFullYear() + 1, currentMonth.getMonth(), 1))
+    }
+
+    const handleMonthSelect = (month: number) => {
+        setCurrentMonth(new Date(currentMonth.getFullYear(), month, 1))
+        setViewMode("date")
+    }
+
+    const handleYearSelect = (year: number) => {
+        setCurrentMonth(new Date(year, currentMonth.getMonth(), 1))
+        setViewMode("month")
+    }
+
+    const getYearRange = () => {
+        const currentYear = currentMonth.getFullYear()
+        const startYear = currentYear - 10
+        const endYear = currentYear + 10
+        const years: number[] = []
+        for (let i = startYear; i <= endYear; i++) {
+            years.push(i)
+        }
+        return years
+    }
+
     const formatDisplay = () => {
         if (!value || !selectedDate) return "Selecione a data"
         
@@ -147,7 +177,10 @@ const DatePicker = (
         <div ref={containerRef} className={cn("relative", className)}>
             <button
                 type="button"
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => {
+                    setIsOpen(!isOpen)
+                    setViewMode("date")
+                }}
                 className={cn(
                     "w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-all outline-none",
                     "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
@@ -165,67 +198,185 @@ const DatePicker = (
             </button>
 
             {isOpen && (
-                <div className="absolute z-50 mt-2 w-[320px] rounded-xl border border-[#E4E6F0] bg-white shadow-lg shadow-black/10 p-4">
-                    <div className="flex items-center justify-between mb-4">
-                        <button
-                            type="button"
-                            onClick={goToPreviousMonth}
-                            className="p-2 rounded-lg hover:bg-[#F3F4FB] transition-colors"
-                        >
-                            <ChevronLeft className="h-4 w-4 text-psi-primary" />
-                        </button>
-                        <div className="font-semibold text-psi-dark">
-                            {currentMonthName} {currentYear}
-                        </div>
-                        <button
-                            type="button"
-                            onClick={goToNextMonth}
-                            className="p-2 rounded-lg hover:bg-[#F3F4FB] transition-colors"
-                        >
-                            <ChevronRight className="h-4 w-4 text-psi-primary" />
-                        </button>
-                    </div>
-
-                    <div className="grid grid-cols-7 gap-1 mb-2">
-                        {weekDayNames.map((day) => (
-                            <div
-                                key={day}
-                                className="text-xs font-medium text-psi-dark/60 text-center py-1"
-                            >
-                                {day}
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="grid grid-cols-7 gap-1">
-                        {days.map((day, index) => {
-                            if (day === null) {
-                                return <div key={`empty-${index}`} className="h-9" />
-                            }
-
-                            const disabled = isDateDisabled(day)
-                            const selected = isDateSelected(day)
-
-                            return (
+                <div className={cn(
+                    "relative z-10 mt-2 w-[320px] rounded-xl border border-[#E4E6F0] bg-white shadow-lg shadow-black/10 p-4",
+                    "animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200"
+                )}>
+                    {viewMode === "date" && (
+                        <>
+                            <div className="flex items-center justify-between mb-4">
                                 <button
-                                    key={day}
                                     type="button"
-                                    onClick={() => handleDateSelect(day)}
-                                    disabled={disabled}
-                                    className={cn(
-                                        "h-9 rounded-lg text-sm font-medium transition-colors",
-                                        disabled
-                                            ? "text-psi-dark/20 cursor-not-allowed"
-                                            : selected
-                                            ? "bg-psi-primary text-white hover:bg-psi-primary/90"
-                                            : "text-psi-dark hover:bg-[#F3F4FB]"
-                                    )}
+                                    onClick={goToPreviousMonth}
+                                    className="p-2 rounded-lg hover:bg-[#F3F4FB] transition-colors"
                                 >
-                                    {day}
+                                    <ChevronLeft className="h-4 w-4 text-psi-primary" />
                                 </button>
-                            )
-                        })}
-                    </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setViewMode("month")}
+                                    className="px-3 py-1 font-semibold text-psi-dark hover:bg-[#F3F4FB] rounded-lg transition-colors"
+                                >
+                                    {currentMonthName}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setViewMode("year")}
+                                    className="px-3 py-1 font-semibold text-psi-dark hover:bg-[#F3F4FB] rounded-lg transition-colors"
+                                >
+                                    {currentYear}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={goToNextMonth}
+                                    className="p-2 rounded-lg hover:bg-[#F3F4FB] transition-colors"
+                                >
+                                    <ChevronRight className="h-4 w-4 text-psi-primary" />
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-7 gap-1 mb-2">
+                                {weekDayNames.map((day) => (
+                                    <div
+                                        key={day}
+                                        className="text-xs font-medium text-psi-dark/60 text-center py-1"
+                                    >
+                                        {day}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="grid grid-cols-7 gap-1">
+                                {days.map((day, index) => {
+                                    if (day === null) {
+                                        return <div key={`empty-${index}`} className="h-9" />
+                                    }
+
+                                    const disabled = isDateDisabled(day)
+                                    const selected = isDateSelected(day)
+
+                                    return (
+                                        <button
+                                            key={day}
+                                            type="button"
+                                            onClick={() => handleDateSelect(day)}
+                                            disabled={disabled}
+                                            className={cn(
+                                                "h-9 rounded-lg text-sm font-medium transition-colors",
+                                                disabled
+                                                    ? "text-psi-dark/20 cursor-not-allowed"
+                                                    : selected
+                                                    ? "bg-psi-primary text-white hover:bg-psi-primary/90"
+                                                    : "text-psi-dark hover:bg-[#F3F4FB]"
+                                            )}
+                                        >
+                                            {day}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        </>
+                    )}
+
+                    {viewMode === "month" && (
+                        <>
+                            <div className="flex items-center justify-between mb-4">
+                                <button
+                                    type="button"
+                                    onClick={goToPreviousYear}
+                                    className="p-2 rounded-lg hover:bg-[#F3F4FB] transition-colors"
+                                >
+                                    <ChevronLeft className="h-4 w-4 text-psi-primary" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setViewMode("year")}
+                                    className="px-3 py-1 font-semibold text-psi-dark hover:bg-[#F3F4FB] rounded-lg transition-colors"
+                                >
+                                    {currentYear}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={goToNextYear}
+                                    className="p-2 rounded-lg hover:bg-[#F3F4FB] transition-colors"
+                                >
+                                    <ChevronRight className="h-4 w-4 text-psi-primary" />
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-2">
+                                {monthNames.map((month, index) => {
+                                    const isCurrentMonth = index === currentMonth.getMonth()
+                                    return (
+                                        <button
+                                            key={index}
+                                            type="button"
+                                            onClick={() => handleMonthSelect(index)}
+                                            className={cn(
+                                                "h-10 rounded-lg text-sm font-medium transition-colors",
+                                                isCurrentMonth
+                                                    ? "bg-psi-primary text-white hover:bg-psi-primary/90"
+                                                    : "text-psi-dark hover:bg-[#F3F4FB]"
+                                            )}
+                                        >
+                                            {month.substring(0, 3)}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        </>
+                    )}
+
+                    {viewMode === "year" && (
+                        <>
+                            <div className="flex items-center justify-between mb-4">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const newYear = currentMonth.getFullYear() - 20
+                                        setCurrentMonth(new Date(newYear, currentMonth.getMonth(), 1))
+                                    }}
+                                    className="p-2 rounded-lg hover:bg-[#F3F4FB] transition-colors"
+                                >
+                                    <ChevronLeft className="h-4 w-4 text-psi-primary" />
+                                </button>
+                                <div className="font-semibold text-psi-dark">
+                                    {currentMonth.getFullYear() - 10} - {currentMonth.getFullYear() + 10}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const newYear = currentMonth.getFullYear() + 20
+                                        setCurrentMonth(new Date(newYear, currentMonth.getMonth(), 1))
+                                    }}
+                                    className="p-2 rounded-lg hover:bg-[#F3F4FB] transition-colors"
+                                >
+                                    <ChevronRight className="h-4 w-4 text-psi-primary" />
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-4 gap-2 max-h-[240px] overflow-y-auto">
+                                {getYearRange().map((year) => {
+                                    const isCurrentYear = year === currentMonth.getFullYear()
+                                    return (
+                                        <button
+                                            key={year}
+                                            type="button"
+                                            onClick={() => handleYearSelect(year)}
+                                            className={cn(
+                                                "h-10 rounded-lg text-sm font-medium transition-colors",
+                                                isCurrentYear
+                                                    ? "bg-psi-primary text-white hover:bg-psi-primary/90"
+                                                    : "text-psi-dark hover:bg-[#F3F4FB]"
+                                            )}
+                                        >
+                                            {year}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        </>
+                    )}
 
                     <div className="mt-4 pt-4 border-t border-[#E4E6F0] flex gap-2">
                         {!required && (
@@ -235,6 +386,7 @@ const DatePicker = (
                                     onChange(null)
                                     setSelectedDate(null)
                                     setIsOpen(false)
+                                    setViewMode("date")
                                 }}
                                 className="flex-1 px-3 py-2 text-sm text-psi-dark/70 hover:text-psi-dark hover:bg-[#F3F4FB] rounded-lg transition-colors"
                             >
@@ -243,7 +395,10 @@ const DatePicker = (
                         )}
                         <button
                             type="button"
-                            onClick={() => setIsOpen(false)}
+                            onClick={() => {
+                                setIsOpen(false)
+                                setViewMode("date")
+                            }}
                             className={cn(
                                 "px-3 py-2 text-sm bg-psi-primary text-white rounded-lg hover:bg-psi-primary/90 transition-colors",
                                 !required ? "flex-1" : "w-full"

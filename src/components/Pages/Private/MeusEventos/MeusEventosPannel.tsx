@@ -221,9 +221,9 @@ const MeusEventosPannel = () => {
                                                         Exportar dados
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator className="bg-[#E4E6F0]" />
-                                                    <DropdownMenuItem className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer">
-                                                        <Trash2 className="h-4 w-4 mr-2 text-red-500" />
-                                                        <span className="text-red-500">Deletar</span>
+                                                    <DropdownMenuItem className="rounded-lg text-sm text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer">
+                                                        <Trash2 className="h-4 w-4 mr-2 text-destructive" />
+                                                        Excluir evento
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
@@ -351,7 +351,7 @@ const MeusEventosPannel = () => {
                                                     size="sm"
                                                     className="flex-1"
                                                 >
-                                                    <Link href={`/eventos/${event.id}`} target="_blank">
+                                                    <Link href={`/ver-evento?id=${event.id}`} target="_blank">
                                                         <ExternalLink className="h-4 w-4" />
                                                         Ver
                                                     </Link>

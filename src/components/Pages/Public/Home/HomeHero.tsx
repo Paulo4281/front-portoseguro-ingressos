@@ -4,7 +4,7 @@ import { useMemo } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CTAButton } from "@/components/CTAButton/CTAButton"
-import { ArrowUpRight, Lock, ShieldCheck, Ticket, Music2, SunMedium, Waves, PartyPopper, TrendingDown, Users, CreditCard, TrendingUp, Megaphone } from "lucide-react"
+import { ArrowUpRight, Lock, ShieldCheck, Ticket, Music2, SunMedium, Waves, PartyPopper, TrendingDown, Users, CreditCard, TrendingUp, Megaphone, Tag } from "lucide-react"
 import { useEventFind } from "@/hooks/Event/useEventFind"
 import { CardEvent } from "@/components/Card/CardEvent/CardEvent"
 import { Carousel } from "@/components/Carousel/Carousel"
@@ -12,25 +12,8 @@ import { Search } from "@/components/Search/Search"
 import { Category } from "@/components/Category/Category"
 import { Background } from "@/components/Background/Background"
 import Image from "next/image"
-
-const heroCategories = [
-    { title: "Shows & Festas", icon: Music2 },
-    { title: "Beach Clubs", icon: Waves },
-    { title: "Experiências diurnas", icon: SunMedium },
-    { title: "VIP & Lounge", icon: PartyPopper },
-    { title: "Shows & Festas", icon: Music2 },
-    { title: "Beach Clubs", icon: Waves },
-    { title: "Experiências diurnas", icon: SunMedium },
-    { title: "VIP & Lounge", icon: PartyPopper },
-    { title: "Shows & Festas", icon: Music2 },
-    { title: "Beach Clubs", icon: Waves },
-    { title: "Experiências diurnas", icon: SunMedium },
-    { title: "VIP & Lounge", icon: PartyPopper },
-    { title: "Shows & Festas", icon: Music2 },
-    { title: "Beach Clubs", icon: Waves },
-    { title: "Experiências diurnas", icon: SunMedium },
-    { title: "VIP & Lounge", icon: PartyPopper },
-]
+import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
+import { EventCategoryIconHandler } from "@/utils/Helpers/EventCategoryIconHandler/EventCategoryIconHandler"
 
 const HomeHero = () => {
     const { data: events, isLoading, isError } = useEventFind()
@@ -42,6 +25,15 @@ const HomeHero = () => {
 
         return events.slice(0, 8)
     }, [events])
+
+    const { data: eventCategoriesData, isLoading: isEventCategoriesLoading } = useEventCategoryFind()
+
+    const heroCategories = useMemo(() => {
+        if (eventCategoriesData?.data && Array.isArray(eventCategoriesData.data)) {
+            return eventCategoriesData.data
+        }
+        return []
+    }, [eventCategoriesData])
 
     const featuredSlides = useMemo(() => {
         return featuredEvents.map((event) => (
@@ -55,12 +47,12 @@ const HomeHero = () => {
 
     const categorySlides = useMemo(() => {
         return heroCategories.map((category) => (
-            <div key={category.title} className="w-[180px]
+            <div key={category.id} className="w-[180px]
             sm:w-[200px]">
-                <Category icon={category.icon} title={category.title} />
+                <Category icon={EventCategoryIconHandler(category.name)} title={category.name} />
             </div>
         ))
-    }, [])
+    }, [heroCategories])
 
     return (
         <Background variant="hero" className="flex min-h-screen flex-col overflow-x-hidden">

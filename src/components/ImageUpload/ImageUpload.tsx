@@ -77,7 +77,10 @@ const ImageUpload = (
                         <img
                             src={preview}
                             alt="Preview"
-                            className="w-full h-48 object-cover rounded-lg"
+                            className="
+                            w-full h-[280px] object-cover rounded-lg
+                            lg:h-[600px]
+                            "
                         />
                         <Button
                             type="button"

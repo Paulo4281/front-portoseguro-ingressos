@@ -95,7 +95,7 @@ const MultiSelect = ({
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 disabled={disabled}
                 className={cn(
-                    "w-full justify-between h-9 px-3 text-left font-normal",
+                    "w-full justify-between h-9 px-3 text-left font-normal hover:scale-100!",
                     !value.length && "text-muted-foreground",
                     isOpen && "ring-2 ring-ring ring-offset-2"
                 )}
