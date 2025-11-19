@@ -1,5 +1,6 @@
 "use client"
 
+import { useMemo } from "react"
 import Link from "next/link"
 import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, ExternalLink, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Copy, Share2, Download, BarChart } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -30,7 +31,12 @@ const mockStats = {
 }
 
 const MeusEventosPannel = () => {
-    const { data: events, isLoading, isError } = useEventFind()
+    const { data: eventsData, isLoading, isError } = useEventFind()
+    
+    const events = useMemo(() => {
+        if (!eventsData?.data || !Array.isArray(eventsData.data)) return []
+        return eventsData.data
+    }, [eventsData])
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString)
@@ -48,7 +54,7 @@ const MeusEventosPannel = () => {
         }).format(value)
     }
 
-    const formatRecurrence = (recurrence: TEvent["recurrence"]) => {
+    const formatRecurrence = (recurrence: TEvent["Recurrence"]) => {
         if (!recurrence || recurrence.type === "NONE") return null
 
         const recurrenceLabels = {
@@ -61,8 +67,8 @@ const MeusEventosPannel = () => {
 
         let label = recurrenceLabels[recurrence.type]
 
-        if (recurrence.type === "WEEKLY" && recurrence.daysOfWeek && recurrence.daysOfWeek.length > 0) {
-            const days = recurrence.daysOfWeek.map(day => dayLabels[day.day]).join(", ")
+        if (recurrence.type === "WEEKLY" && recurrence.RecurrenceDay && recurrence.RecurrenceDay.length > 0) {
+            const days = recurrence.RecurrenceDay.map(day => dayLabels[day.day]).join(", ")
             label = `${label} (${days})`
         }
 
@@ -74,8 +80,8 @@ const MeusEventosPannel = () => {
         return label
     }
 
-    const getDateRange = (dates: TEvent["dates"]) => {
-        if (dates.length === 0) return null
+    const getDateRange = (dates: TEvent["EventDate"]) => {
+        if (!dates || dates.length === 0) return null
 
         const sortedDates = [...dates].sort((a, b) => 
             new Date(a.date).getTime() - new Date(b.date).getTime()
@@ -91,7 +97,7 @@ const MeusEventosPannel = () => {
         return `${firstDate} - ${lastDate}`
     }
 
-    const getActiveBatch = (batches: TEvent["batches"]): TEventBatch | null => {
+    const getActiveBatch = (batches: TEvent["EventBatch"]): TEventBatch | null => {
         if (!batches || batches.length === 0) return null
 
         const now = new Date()
@@ -243,11 +249,11 @@ const MeusEventosPannel = () => {
                                                 <Calendar className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
                                                 <div className="flex-1 min-w-0">
                                                     <div className="font-medium text-psi-dark mb-1">
-                                                        {getDateRange(event.dates)}
+                                                        {getDateRange(event.EventDate)}
                                                     </div>
-                                                    {event.dates.length > 1 && (
+                                                    {event.EventDate && event.EventDate.length > 1 && (
                                                         <div className="space-y-1 mt-2">
-                                                            {event.dates.map((eventDate, index) => (
+                                                            {event.EventDate.map((eventDate, index) => (
                                                                 <div key={index} className="flex items-center gap-2 text-xs text-psi-dark/60">
                                                                     <Clock className="h-3 w-3 text-psi-primary shrink-0" />
                                                                     <span>
@@ -258,22 +264,22 @@ const MeusEventosPannel = () => {
                                                             ))}
                                                         </div>
                                                     )}
-                                                    {event.dates.length === 1 && event.dates[0].hourStart && (
+                                                    {event.EventDate && event.EventDate.length === 1 && event.EventDate[0].hourStart && (
                                                         <div className="flex items-center gap-2 text-xs text-psi-dark/60 mt-1">
                                                             <Clock className="h-3 w-3 text-psi-primary shrink-0" />
                                                             <span>
-                                                                {event.dates[0].hourStart}
-                                                                {event.dates[0].hourEnd && ` - ${event.dates[0].hourEnd}`}
+                                                                {event.EventDate[0].hourStart}
+                                                                {event.EventDate[0].hourEnd && ` - ${event.EventDate[0].hourEnd}`}
                                                             </span>
                                                         </div>
                                                     )}
                                                 </div>
                                             </div>
                                             
-                                            {event.recurrence && event.recurrence.type !== "NONE" && (
+                                            {event.Recurrence && event.Recurrence.type !== "NONE" && (
                                                 <div className="flex items-center gap-2 text-sm text-psi-primary">
                                                     <Repeat className="h-4 w-4 shrink-0" />
-                                                    <span className="font-medium">{formatRecurrence(event.recurrence)}</span>
+                                                    <span className="font-medium">{formatRecurrence(event.Recurrence)}</span>
                                                 </div>
                                             )}
 
@@ -285,7 +291,7 @@ const MeusEventosPannel = () => {
                                             )}
 
                                             {(() => {
-                                                const activeBatch = getActiveBatch(event.batches)
+                                                const activeBatch = getActiveBatch(event.EventBatch)
                                                 if (!activeBatch) return null
                                                 
                                                 return (
@@ -301,7 +307,7 @@ const MeusEventosPannel = () => {
                                                                 Preço: <span className="font-bold text-psi-primary">{formatCurrency(activeBatch.price)}</span>
                                                             </span>
                                                             <span className="text-psi-dark/70">
-                                                                Disponível: <span className="font-semibold text-psi-dark">{activeBatch.quantity}</span>
+                                                                Disponível: <span className="font-semibold text-psi-dark">{activeBatch.tickets}</span>
                                                             </span>
                                                         </div>
                                                     </div>

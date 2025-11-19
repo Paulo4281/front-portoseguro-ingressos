@@ -3,7 +3,7 @@
 import { ShoppingCart, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/contexts/CartContext"
-import { ValueUtilsClass } from "@/utils/Helpers/ValueUtils/ValueUtils"
+import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -74,7 +74,7 @@ const CartDropdown = () => {
                                                     Qtd: {item.quantity}
                                                 </span>
                                                 <span className="text-sm font-semibold text-psi-primary">
-                                                    {ValueUtilsClass.centsToCurrency(item.price * item.quantity)}
+                                                    {ValueUtils.centsToCurrency(item.price * item.quantity)}
                                                 </span>
                                             </div>
                                         </div>
@@ -95,7 +95,7 @@ const CartDropdown = () => {
                                         Total
                                     </span>
                                     <span className="text-xl font-bold text-psi-primary">
-                                        {ValueUtilsClass.centsToCurrency(total)}
+                                        {ValueUtils.centsToCurrency(total)}
                                     </span>
                                 </div>
                                 <Button

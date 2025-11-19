@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/Input/Input"
 import { InputMask } from "@/components/Input/InputMask"
 import { QuantitySelector } from "@/components/QuantitySelector/QuantitySelector"
-import { ValueUtilsClass } from "@/utils/Helpers/ValueUtils/ValueUtils"
-import { DateUtilsClass } from "@/utils/Helpers/DateUtils/DateUtils"
+import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
+import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import { getCardBrand } from "@/utils/Helpers/CardUtils/CardUtils"
 import { 
     User, 
@@ -69,13 +69,13 @@ const CheckoutInfo = () => {
     
     const total = getTotal()
     
-    const { data: allEvents } = useEventFind()
+    const { data: allEventsData } = useEventFind()
     
     const eventsData = useMemo(() => {
-        if (!allEvents) return []
+        if (!allEventsData?.data || !Array.isArray(allEventsData.data)) return []
         const eventIds = [...new Set(items.map(item => item.eventId))]
-        return eventIds.map(id => allEvents.find(e => e.id === id)).filter(Boolean)
-    }, [items, allEvents])
+        return eventIds.map(id => allEventsData?.data?.find(e => e.id === id)).filter(Boolean)
+    }, [items, allEventsData])
     
     const handleNext = () => {
         if (currentStep < 3) {
@@ -380,21 +380,21 @@ const CheckoutInfo = () => {
                                                                 <p className="text-sm text-psi-dark/60">Lote: {item.batchName}</p>
                                                             )}
                                                             
-                                                            {event.dates.length > 0 && (
+                                                            {event.EventDate && event.EventDate.length > 0 && (
                                                                 <div className="flex items-center gap-2 text-sm text-psi-dark/70">
                                                                     <Calendar className="size-4" />
                                                                     <span>
-                                                                        {DateUtilsClass.formatDate(event.dates[0].date, "DD [de] MMMM [de] YYYY")}
+                                                                        {DateUtils.formatDate(event.EventDate[0].date, "DD [de] MMMM [de] YYYY")}
                                                                     </span>
                                                                 </div>
                                                             )}
                                                             
-                                                            {event.dates[0]?.hourStart && (
+                                                            {event.EventDate && event.EventDate[0]?.hourStart && (
                                                                 <div className="flex items-center gap-2 text-sm text-psi-dark/70">
                                                                     <Clock className="size-4" />
                                                                     <span>
-                                                                        {event.dates[0].hourStart}
-                                                                        {event.dates[0].hourEnd && ` - ${event.dates[0].hourEnd}`}
+                                                                        {event.EventDate[0].hourStart}
+                                                                        {event.EventDate[0].hourEnd && ` - ${event.EventDate[0].hourEnd}`}
                                                                     </span>
                                                                 </div>
                                                             )}
@@ -421,7 +421,7 @@ const CheckoutInfo = () => {
                                                             
                                                             <div className="pt-2 border-t border-psi-dark/10">
                                                                 <p className="text-lg font-semibold text-psi-primary">
-                                                                    {ValueUtilsClass.centsToCurrency(item.price * item.quantity)}
+                                                                    {ValueUtils.centsToCurrency(item.price * item.quantity)}
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -614,7 +614,7 @@ const CheckoutInfo = () => {
                                         <div className="p-4 rounded-xl bg-psi-dark/5">
                                             <h3 className="font-semibold text-psi-dark mb-2">Resumo</h3>
                                             <div className="space-y-1 text-sm text-psi-dark/70">
-                                                <p><strong>Total:</strong> {ValueUtilsClass.centsToCurrency(total)}</p>
+                                                <p><strong>Total:</strong> {ValueUtils.centsToCurrency(total)}</p>
                                                 <p><strong>Itens:</strong> {items.reduce((sum, item) => sum + item.quantity, 0)} ingresso(s)</p>
                                                 <p><strong>Pagamento:</strong> {paymentMethod === "pix" ? "PIX" : paymentMethod === "credit" ? "Cartão de Crédito" : "Boleto Bancário"}</p>
                                             </div>
@@ -673,7 +673,7 @@ const CheckoutInfo = () => {
                                                 {item.eventName} x{item.quantity}
                                             </span>
                                             <span className="font-semibold text-psi-dark">
-                                                {ValueUtilsClass.centsToCurrency(item.price * item.quantity)}
+                                                {ValueUtils.centsToCurrency(item.price * item.quantity)}
                                             </span>
                                         </div>
                                     ))}
@@ -683,7 +683,7 @@ const CheckoutInfo = () => {
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="font-semibold text-psi-dark">Total</span>
                                         <span className="text-2xl font-bold text-psi-primary">
-                                            {ValueUtilsClass.centsToCurrency(total)}
+                                            {ValueUtils.centsToCurrency(total)}
                                         </span>
                                     </div>
                                 </div>

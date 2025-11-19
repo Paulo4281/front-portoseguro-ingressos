@@ -1,5 +1,5 @@
 class ValueUtilsClass {
-    static currencyToCents(value: string): number {
+    currencyToCents(value: string): number {
         if (!value) return 0
 
         const formattedValue = Number(value.replace(/\D/g, ''))
@@ -7,7 +7,7 @@ class ValueUtilsClass {
         return Math.round(formattedValue)
     }
 
-    static centsToCurrency(value: number): string {
+    centsToCurrency(value: number): string {
         return new Intl.NumberFormat("pt-BR", {
             style: "currency",
             currency: "BRL"
@@ -16,4 +16,3 @@ class ValueUtilsClass {
 }
 
 export const ValueUtils = new ValueUtilsClass()
-export { ValueUtilsClass }

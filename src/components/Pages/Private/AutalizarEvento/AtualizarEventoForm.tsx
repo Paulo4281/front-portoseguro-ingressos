@@ -20,12 +20,17 @@ import { InputCurrency } from "@/components/Input/InputCurrency"
 import { MultiSelect } from "@/components/MultiSelect/MultiSelect"
 import { z } from "zod"
 import { cn } from "@/lib/utils"
-import type { TRecurrenceDay } from "@/types/Event/TEvent"
 import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
 import { useEventFindById } from "@/hooks/Event/useEventFindById"
 import { Skeleton } from "@/components/ui/skeleton"
 
 type TEventUpdate = z.infer<typeof EventUpdateValidator>
+
+type TRecurrenceDayForm = {
+    day: number
+    hourStart: string
+    hourEnd?: string | null
+}
 
 const weekDays = [
     { value: 0, label: "Dom" },
@@ -111,24 +116,28 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     }, [batches, useBatches])
 
     useEffect(() => {
-        if (eventData && !isFormInitialized && eventCategories.length > 0) {
-            const event = eventData
+        if (eventData?.data && !isFormInitialized && eventCategories.length > 0) {
+            const event = eventData.data
             
-            const hasBatches = !!(event.batches && event.batches.length > 0)
+            const hasBatches = !!(event.EventBatch && event.EventBatch.length > 0)
             setUseBatches(hasBatches)
-            setRecurrenceEnabled(!!event.recurrence)
+            setRecurrenceEnabled(!!event.Recurrence)
 
-            const batchesData = hasBatches ? event.batches?.map(batch => ({
+            const batchesData = hasBatches ? event.EventBatch?.map(batch => ({
                 name: batch.name,
                 price: batch.price,
-                quantity: batch.quantity,
+                quantity: batch.tickets,
                 startDate: batch.startDate,
                 endDate: batch.endDate,
                 autoActivateNext: false,
                 accumulateUnsold: false
             })) : undefined
 
-            const datesData = event.dates && event.dates.length > 0 ? event.dates : [
+            const datesData = event.EventDate && event.EventDate.length > 0 ? event.EventDate.map(eventDate => ({
+                date: eventDate.date,
+                hourStart: eventDate.hourStart,
+                hourEnd: eventDate.hourEnd
+            })) : [
                 {
                     date: "",
                     hourStart: "",
@@ -136,10 +145,24 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                 }
             ]
 
+            const categoryIds = event.EventCategoryEvent?.map(ece => ece.categoryId) || []
+
+            const recurrenceData = event.Recurrence ? {
+                type: event.Recurrence.type,
+                hourStart: event.Recurrence.hourStart || undefined,
+                hourEnd: event.Recurrence.hourEnd || undefined,
+                daysOfWeek: event.Recurrence.RecurrenceDay?.map(rd => ({
+                    day: rd.day,
+                    hourStart: rd.hourStart,
+                    hourEnd: rd.hourEnd || undefined
+                })) || undefined,
+                endDate: event.Recurrence.endDate || undefined
+            } : null
+
             form.reset({
                 name: event.name || "",
                 description: event.description || "",
-                categories: event.categories || [],
+                categories: categoryIds,
                 image: null as any,
                 location: event.location || null,
                 useBatches: hasBatches,
@@ -147,7 +170,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                 ticketPrice: hasBatches ? undefined : undefined,
                 batches: batchesData,
                 dates: datesData,
-                recurrence: event.recurrence
+                recurrence: recurrenceData
             })
 
             setIsFormInitialized(true)
@@ -179,7 +202,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     }
 
     const toggleDayOfWeek = (day: number) => {
-        const current = recurrenceDaysOfWeek as TRecurrenceDay[] || []
+        const current = recurrenceDaysOfWeek as TRecurrenceDayForm[] || []
         const existingIndex = current.findIndex(d => d.day === day)
         
         if (existingIndex >= 0) {
@@ -196,7 +219,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     }
 
     const toggleMonthDay = (day: number) => {
-        const current = recurrenceDaysOfWeek as TRecurrenceDay[] || []
+        const current = recurrenceDaysOfWeek as TRecurrenceDayForm[] || []
         const existingIndex = current.findIndex(d => d.day === day)
         
         if (existingIndex >= 0) {
@@ -213,7 +236,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     }
 
     const updateDayTime = (day: number, hourStart: string, hourEnd: string | null) => {
-        const current = recurrenceDaysOfWeek as TRecurrenceDay[] || []
+        const current = recurrenceDaysOfWeek as TRecurrenceDayForm[] || []
         const newDays = current.map(d => 
             d.day === day ? { ...d, hourStart, hourEnd } : d
         )
@@ -221,7 +244,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     }
 
     const getDayTime = (day: number) => {
-        const current = recurrenceDaysOfWeek as TRecurrenceDay[] || []
+        const current = recurrenceDaysOfWeek as TRecurrenceDayForm[] || []
         const dayData = current.find(d => d.day === day)
         return dayData || { hourStart: "", hourEnd: null }
     }
@@ -245,7 +268,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
         )
     }
 
-    if (!eventData) {
+    if (!eventData?.data) {
         return (
             <Background variant="light">
                 <div className="min-h-screen pt-32 pb-16 px-4
@@ -377,7 +400,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                         control={form.control}
                                         render={({ field }) => (
                                             <ImageUpload
-                                                value={field.value || eventData.image}
+                                                value={field.value || eventData?.data?.image}
                                                 onChange={field.onChange}
                                                 error={form.formState.errors.image?.message}
                                             />
@@ -773,7 +796,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                     </label>
                                                     <div className="flex flex-wrap gap-2">
                                                         {weekDays.map((day) => {
-                                                            const isSelected = recurrenceDaysOfWeek.some((d: TRecurrenceDay) => d.day === day.value)
+                                                            const isSelected = recurrenceDaysOfWeek.some((d: TRecurrenceDayForm) => d.day === day.value)
                                                             return (
                                                                 <Button
                                                                     key={day.value}
@@ -795,7 +818,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                         <label className="block text-sm font-medium text-psi-dark/70 mb-2">
                                                             Horários por Dia *
                                                         </label>
-                                                        {recurrenceDaysOfWeek.map((dayData: TRecurrenceDay) => {
+                                                        {recurrenceDaysOfWeek.map((dayData: TRecurrenceDayForm) => {
                                                             const dayLabel = weekDays.find(d => d.value === dayData.day)?.label || ""
                                                             const dayTime = getDayTime(dayData.day)
                                                             return (
@@ -839,7 +862,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                     </label>
                                                     <div className="grid grid-cols-7 gap-2 max-h-48 overflow-y-auto">
                                                         {monthDays.map((day) => {
-                                                            const isSelected = recurrenceDaysOfWeek.some((d: TRecurrenceDay) => d.day === day)
+                                                            const isSelected = recurrenceDaysOfWeek.some((d: TRecurrenceDayForm) => d.day === day)
                                                             return (
                                                                 <Button
                                                                     key={day}
@@ -862,9 +885,9 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                         <label className="block text-sm font-medium text-psi-dark/70 mb-2">
                                                             Horários por Dia *
                                                         </label>
-                                                        {recurrenceDaysOfWeek.map((dayData: TRecurrenceDay) => {
+                                                        {recurrenceDaysOfWeek.map((dayData: TRecurrenceDayForm) => {
                                                             const dayTime = getDayTime(dayData.day)
-                                                            return (
+    return (
                                                                 <div key={dayData.day} className="rounded-lg border border-[#E4E6F0] bg-white p-3 space-y-3">
                                                                     <div className="font-semibold text-sm text-psi-dark">Dia {dayData.day}</div>
                                                                     <div className="grid grid-cols-2 gap-4">

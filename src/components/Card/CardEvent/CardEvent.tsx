@@ -2,7 +2,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Calendar, Clock, MapPin, Repeat, Tag } from "lucide-react"
 import { Card } from "@/components/Card/Card"
-import { DateUtilsClass } from "@/utils/Helpers/DateUtils/DateUtils"
+import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import type { TEvent, TRecurrenceDay } from "@/types/Event/TEvent"
 import type { TEventBatch } from "@/types/Event/TEventBatch"
 
@@ -15,15 +15,15 @@ const CardEvent = (
         event
     }: TCardEventProps
 ) => {
-    const getDateRange = (dates: TEvent["dates"]) => {
-        if (dates.length === 0) return null
+    const getDateRange = (dates: TEvent["EventDate"]) => {
+        if (!dates || !Array.isArray(dates) || dates.length === 0) return null
 
         const sortedDates = [...dates].sort((a, b) => 
             new Date(a.date).getTime() - new Date(b.date).getTime()
         )
 
-        const firstDate = DateUtilsClass.formatDate(sortedDates[0].date, "DD MMM")
-        const lastDate = DateUtilsClass.formatDate(sortedDates[sortedDates.length - 1].date, "DD MMM")
+        const firstDate = DateUtils.formatDate(sortedDates[0].date, "DD MMM")
+        const lastDate = DateUtils.formatDate(sortedDates[sortedDates.length - 1].date, "DD MMM")
 
         if (dates.length === 1) {
             return firstDate
@@ -32,7 +32,7 @@ const CardEvent = (
         return `${firstDate} - ${lastDate}`
     }
 
-    const formatRecurrenceInfo = (recurrence: TEvent["recurrence"]) => {
+    const formatRecurrenceInfo = (recurrence: TEvent["Recurrence"]) => {
         if (!recurrence || recurrence.type === "NONE") return null
 
         const dayLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
@@ -50,8 +50,8 @@ const CardEvent = (
         }
 
         if (recurrence.type === "WEEKLY") {
-            if (recurrence.daysOfWeek && recurrence.daysOfWeek.length > 0) {
-                const timesText = recurrence.daysOfWeek
+            if (recurrence.RecurrenceDay && recurrence.RecurrenceDay?.length > 0) {
+                const timesText = recurrence.RecurrenceDay
                     .map((dayData: TRecurrenceDay) => {
                         if (dayData.hourStart) {
                             return dayData.hourEnd 
@@ -71,8 +71,8 @@ const CardEvent = (
         }
 
         if (recurrence.type === "MONTHLY") {
-            if (recurrence.daysOfWeek && recurrence.daysOfWeek.length > 0) {
-                const daysText = recurrence.daysOfWeek
+            if (recurrence.RecurrenceDay && recurrence.RecurrenceDay?.length > 0) {
+                const daysText = recurrence.RecurrenceDay
                     .map((dayData: TRecurrenceDay) => {
                         const dayLabel = `Dia ${dayData.day}`
                         if (dayData.hourStart) {
@@ -95,8 +95,8 @@ const CardEvent = (
         return null
     }
 
-    const getActiveBatch = (batches: TEvent["batches"]): TEventBatch | null => {
-        if (!batches || batches.length === 0) return null
+    const getActiveBatch = (batches: TEvent["EventBatch"]): TEventBatch | null => {
+        if (!batches || batches?.length === 0) return null
 
         const now = new Date()
         const activeBatch = batches.find(batch => {
@@ -112,10 +112,10 @@ const CardEvent = (
         return activeBatch || null
     }
 
-    const activeBatch = getActiveBatch(event.batches)
-    const recurrenceInfo = formatRecurrenceInfo(event.recurrence)
-    const isRecurrent = event.recurrence && event.recurrence.type !== "NONE"
-    const firstDate = event.dates.length > 0 ? event.dates[0] : null
+    const activeBatch = getActiveBatch(event.EventBatch)
+    const recurrenceInfo = formatRecurrenceInfo(event.Recurrence)
+    const isRecurrent = event.Recurrence && event.Recurrence.type !== "NONE"
+    const firstDate = event.EventDate && Array.isArray(event.EventDate) && event.EventDate.length > 0 ? event.EventDate[0] : null
 
     return (
         <Link href={`/ver-evento?id=${event.id}`} className="block h-full">
@@ -148,10 +148,10 @@ const CardEvent = (
                             <>
                                 <div className="flex items-center gap-2 text-sm text-psi-dark/70">
                                     <Calendar className="h-4 w-4 text-psi-primary shrink-0" />
-                                    <span className="font-medium">{getDateRange(event.dates)}</span>
-                                    {event.dates.length > 1 && (
+                                    <span className="font-medium">{getDateRange(event.EventDate)}</span>
+                                    {event.EventDate && Array.isArray(event.EventDate) && event.EventDate.length > 1 && (
                                         <span className="text-xs text-psi-dark/50">
-                                            • {event.dates.length} datas
+                                            • {event.EventDate.length} datas
                                         </span>
                                     )}
                                 </div>

@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuthStore } from "@/stores/Auth/AuthStore"
 import { useTicketFindByUserId } from "@/hooks/Ticket/useTicketFindByUserId"
-import { ValueUtilsClass } from "@/utils/Helpers/ValueUtils/ValueUtils"
-import { DateUtilsClass } from "@/utils/Helpers/DateUtils/DateUtils"
+import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
+import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import type { TTicket } from "@/types/Ticket/TTicket"
 
 type TStatusConfig = {
@@ -49,12 +49,12 @@ const statusConfig: Record<TTicket["status"], TStatusConfig> = {
 const recurrenceDayLabels = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"]
 
 const getEventSchedule = (ticket: TTicket) => {
-    if (ticket.event.dates.length > 0) {
-        const sortedDates = [...ticket.event.dates].sort((a, b) =>
+    if (ticket.event.EventDate && ticket.event.EventDate.length > 0) {
+        const sortedDates = [...ticket.event.EventDate].sort((a, b) =>
             new Date(a.date).getTime() - new Date(b.date).getTime()
         )
         const nextDate = sortedDates[0]
-        const dateLabel = DateUtilsClass.formatDate(nextDate.date, "DD [de] MMMM [de] YYYY")
+        const dateLabel = DateUtils.formatDate(nextDate.date, "DD [de] MMMM [de] YYYY")
         const timeLabel = nextDate.hourStart
             ? nextDate.hourEnd
                 ? `${nextDate.hourStart} - ${nextDate.hourEnd}`
@@ -67,33 +67,33 @@ const getEventSchedule = (ticket: TTicket) => {
         }
     }
 
-    if (ticket.event.recurrence && ticket.event.recurrence.type !== "NONE") {
+    if (ticket.event.Recurrence && ticket.event.Recurrence.type !== "NONE") {
         const baseLabel = {
             DAILY: "Evento diário",
             WEEKLY: "Evento semanal",
             MONTHLY: "Evento mensal"
-        }[ticket.event.recurrence.type]
+        }[ticket.event.Recurrence.type]
 
         let detailLabel = baseLabel
 
-        if (ticket.event.recurrence.type === "WEEKLY" && ticket.event.recurrence.daysOfWeek?.length) {
-            const days = ticket.event.recurrence.daysOfWeek
+        if (ticket.event.Recurrence.type === "WEEKLY" && ticket.event.Recurrence.RecurrenceDay?.length) {
+            const days = ticket.event.Recurrence.RecurrenceDay
                 .map((day) => recurrenceDayLabels[day.day] || `Dia ${day.day}`)
                 .join(", ")
             detailLabel = `${baseLabel} (${days})`
         }
 
-        if (ticket.event.recurrence.type === "MONTHLY" && ticket.event.recurrence.daysOfWeek?.length) {
-            const days = ticket.event.recurrence.daysOfWeek
+        if (ticket.event.Recurrence.type === "MONTHLY" && ticket.event.Recurrence.RecurrenceDay?.length) {
+            const days = ticket.event.Recurrence.RecurrenceDay
                 .map((day) => `Dia ${day.day}`)
                 .join(", ")
             detailLabel = `${baseLabel} (${days})`
         }
 
-        const timeLabel = ticket.event.recurrence.hourStart
-            ? ticket.event.recurrence.hourEnd
-                ? `${ticket.event.recurrence.hourStart} - ${ticket.event.recurrence.hourEnd}`
-                : ticket.event.recurrence.hourStart
+        const timeLabel = ticket.event.Recurrence.hourStart
+            ? ticket.event.Recurrence.hourEnd
+                ? `${ticket.event.Recurrence.hourStart} - ${ticket.event.Recurrence.hourEnd}`
+                : ticket.event.Recurrence.hourStart
             : null
 
         return {
@@ -109,7 +109,7 @@ const getEventSchedule = (ticket: TTicket) => {
 }
 
 const formatPurchaseDate = (date: string) => {
-    return DateUtilsClass.formatDate(date, "DD/MM/YYYY")
+    return DateUtils.formatDate(date, "DD/MM/YYYY")
 }
 
 const MeusIngressosPannel = () => {
@@ -161,7 +161,7 @@ const MeusIngressosPannel = () => {
             `Data: ${schedule.dateLabel}${schedule.timeLabel ? ` - ${schedule.timeLabel}` : ""}`,
             `Local: ${ticket.event.location || "Local a definir"}`,
             `Status: ${statusConfig[ticket.status].label}`,
-            `Valor: ${ValueUtilsClass.centsToCurrency(ticket.price)}`
+            `Valor: ${ValueUtils.centsToCurrency(ticket.price)}`
         ].join("\n")
 
         const blob = new Blob([content], { type: "text/plain;charset=utf-8" })
@@ -428,14 +428,14 @@ const MeusIngressosPannel = () => {
                                                             </p>
                                                             {ticket.eventBatch && (
                                                                 <p className="text-xs text-psi-dark/60">
-                                                                    Até {ticket.eventBatch.endDate ? DateUtilsClass.formatDate(ticket.eventBatch.endDate, "DD/MM/YYYY") : "data indefinida"}
+                                                                    Até {ticket.eventBatch.endDate ? DateUtils.formatDate(ticket.eventBatch.endDate, "DD/MM/YYYY") : "data indefinida"}
                                                                 </p>
                                                             )}
                                                         </div>
                                                         <div className="rounded-2xl border border-psi-dark/10 bg-white p-4 shadow-sm space-y-1">
                                                             <p className="text-xs uppercase text-psi-dark/50 tracking-wide">Valor pago</p>
                                                             <p className="text-2xl font-semibold text-psi-primary">
-                                                                {ValueUtilsClass.centsToCurrency(ticket.price)}
+                                                                {ValueUtils.centsToCurrency(ticket.price)}
                                                             </p>
                                                             <p className="text-xs text-psi-dark/60">Taxas já inclusas</p>
                                                         </div>

@@ -7,8 +7,8 @@ import { Calendar, Clock, MapPin, Repeat, Tag, ShieldCheck, Lock, CreditCard, Ar
 import { Skeleton } from "@/components/ui/skeleton"
 import { useEventFindById } from "@/hooks/Event/useEventFindById"
 import { useEventFind } from "@/hooks/Event/useEventFind"
-import { DateUtilsClass } from "@/utils/Helpers/DateUtils/DateUtils"
-import { ValueUtilsClass } from "@/utils/Helpers/ValueUtils/ValueUtils"
+import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
+import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { Background } from "@/components/Background/Background"
 import { Button } from "@/components/ui/button"
 import { QuantitySelector } from "@/components/QuantitySelector/QuantitySelector"
@@ -28,17 +28,26 @@ const VerEventoInfo = (
         eventId
     }: TVerEventoInfoProps
 ) => {
-    const { data: event, isLoading, isError } = useEventFindById(eventId)
-    const { data: allEvents } = useEventFind()
+    const { data: eventData, isLoading, isError } = useEventFindById(eventId)
+    const { data: allEventsData } = useEventFind()
+    
+    const event = useMemo(() => {
+        return eventData?.data
+    }, [eventData])
+    
+    const allEvents = useMemo(() => {
+        if (!allEventsData?.data || !Array.isArray(allEventsData.data)) return []
+        return allEventsData.data
+    }, [allEventsData])
     const { addItem, items } = useCart()
     const [selectedBatchId, setSelectedBatchId] = useState<string | undefined>(undefined)
     const [quantity, setQuantity] = useState(1)
 
     const formatDate = (dateString: string) => {
-        return DateUtilsClass.formatDate(dateString, "DD [de] MMMM [de] YYYY")
+        return DateUtils.formatDate(dateString, "DD [de] MMMM [de] YYYY")
     }
 
-    const formatRecurrenceInfo = (recurrence: TEvent["recurrence"]) => {
+    const formatRecurrenceInfo = (recurrence: TEvent["Recurrence"]) => {
         if (!recurrence || recurrence.type === "NONE") return null
 
         const dayLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
@@ -56,8 +65,8 @@ const VerEventoInfo = (
         }
 
         if (recurrence.type === "WEEKLY") {
-            if (recurrence.daysOfWeek && recurrence.daysOfWeek.length > 0) {
-                const timesText = recurrence.daysOfWeek
+            if (recurrence.RecurrenceDay && recurrence.RecurrenceDay?.length > 0) {
+                const timesText = recurrence.RecurrenceDay
                     .map((dayData: TRecurrenceDay) => {
                         if (dayData.hourStart) {
                             return dayData.hourEnd 
@@ -77,8 +86,8 @@ const VerEventoInfo = (
         }
 
         if (recurrence.type === "MONTHLY") {
-            if (recurrence.daysOfWeek && recurrence.daysOfWeek.length > 0) {
-                const daysText = recurrence.daysOfWeek
+            if (recurrence.RecurrenceDay && recurrence.RecurrenceDay?.length > 0) {
+                const daysText = recurrence.RecurrenceDay
                     .map((dayData: TRecurrenceDay) => {
                         const dayLabel = `Dia ${dayData.day}`
                         if (dayData.hourStart) {
@@ -122,21 +131,21 @@ const VerEventoInfo = (
     }
 
     const sortedBatches = useMemo(() => {
-        if (!event?.batches) return []
+        if (!event?.EventBatch) return []
 
-        return [...event.batches].sort((a, b) => {
+        return [...event.EventBatch].sort((a, b) => {
             const dateA = new Date(a.startDate).getTime()
             const dateB = new Date(b.startDate).getTime()
             return dateA - dateB
         })
-    }, [event?.batches])
+    }, [event?.EventBatch])
 
     const activeBatches = useMemo(() => {
         return sortedBatches.filter(batch => getBatchStatus(batch) === "active")
     }, [sortedBatches])
 
     useEffect(() => {
-        if (activeBatches.length > 0 && !selectedBatchId) {
+        if (activeBatches?.length > 0 && !selectedBatchId) {
             setSelectedBatchId(activeBatches[0].id)
         }
     }, [activeBatches, selectedBatchId])
@@ -165,19 +174,19 @@ const VerEventoInfo = (
     }, [similarEvents])
 
     const selectedBatch = useMemo(() => {
-        if (!event?.batches) return null
+        if (!event?.EventBatch) return null
         if (selectedBatchId) {
-            return event.batches.find(b => b.id === selectedBatchId)
+            return event.EventBatch.find(b => b.id === selectedBatchId)
         }
         return activeBatches[0] || null
-    }, [event?.batches, selectedBatchId, activeBatches])
+    }, [event?.EventBatch, selectedBatchId, activeBatches])
 
     const currentPrice = useMemo(() => {
         if (selectedBatch) {
             return Math.round(selectedBatch.price)
         }
-        if (event && !event.batches) {
-            return Math.round(event.tickets * 50)
+        if (event && (!event.EventBatch || event.EventBatch.length === 0)) {
+            return Math.round(event.price ?? 0)
         }
         return 0
     }, [selectedBatch, event])
@@ -231,8 +240,8 @@ const VerEventoInfo = (
         )
     }
 
-    const recurrenceInfo = formatRecurrenceInfo(event.recurrence)
-    const isRecurrent = event.recurrence && event.recurrence.type !== "NONE"
+    const recurrenceInfo = formatRecurrenceInfo(event.Recurrence)
+    const isRecurrent = event.Recurrence && event.Recurrence.type !== "NONE"
 
     return (
         <Background variant="light" className="min-h-screen">
@@ -263,24 +272,24 @@ const VerEventoInfo = (
                                 </h1>
 
                                 <div className="flex flex-wrap items-center gap-4 text-sm text-psi-dark/70">
-                                    {!isRecurrent && event.dates.length > 0 && (
+                                    {!isRecurrent && event.EventDate?.length > 0 && (
                                         <>
                                             <div className="flex items-center gap-2">
                                                 <Calendar className="h-4 w-4 text-psi-primary shrink-0" />
                                                 <span className="font-medium">
-                                                    {event.dates.length === 1
-                                                        ? formatDate(event.dates[0].date)
-                                                        : `${formatDate(event.dates[0].date)} - ${formatDate(event.dates[event.dates.length - 1].date)}`
+                                                    {event.EventDate?.length === 1
+                                                        ? formatDate(event.EventDate[0].date)
+                                                        : `${formatDate(event.EventDate[0].date)} - ${formatDate(event.EventDate[event.EventDate?.length - 1].date)}`
                                                     }
                                                 </span>
                                             </div>
                                             
-                                            {event.dates[0].hourStart && (
+                                            {event.EventDate[0].hourStart && (
                                                 <div className="flex items-center gap-2">
                                                     <Clock className="h-4 w-4 text-psi-primary shrink-0" />
                                                     <span>
-                                                        {event.dates[0].hourStart}
-                                                        {event.dates[0].hourEnd && ` - ${event.dates[0].hourEnd}`}
+                                                        {event.EventDate[0].hourStart}
+                                                        {event.EventDate[0].hourEnd && ` - ${event.EventDate[0].hourEnd}`}
                                                     </span>
                                                 </div>
                                             )}
@@ -321,9 +330,9 @@ const VerEventoInfo = (
                     </div>
 
                     <div className="space-y-6">
-                        {event.batches && event.batches.length > 0 ? (
+                        {event.EventBatch && event.EventBatch?.length > 0 ? (
                             <div className="space-y-6">
-                                {activeBatches.length > 0 && (
+                                {activeBatches?.length > 0 && (
                                     <div className="space-y-4">
                                         <h2 className="text-xl font-semibold text-psi-dark">Lotes Disponíveis</h2>
                                         <div className="space-y-3">
@@ -347,7 +356,7 @@ const VerEventoInfo = (
                                                                 </span>
                                                             </div>
                                                             <p className="text-2xl font-bold text-psi-primary mt-2">
-                                                                {ValueUtilsClass.centsToCurrency(Math.round(batch.price))}
+                                                                {ValueUtils.centsToCurrency(Math.round(batch.price))}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -362,7 +371,7 @@ const VerEventoInfo = (
                                     </div>
                                 )}
 
-                                {endedBatches.length > 0 && (
+                                {endedBatches?.length > 0 && (
                                     <div className="space-y-4">
                                         <h2 className="text-xl font-semibold text-psi-dark/60">Lotes Encerrados</h2>
                                         <div className="space-y-3">
@@ -381,7 +390,7 @@ const VerEventoInfo = (
                                                                 </span>
                                                             </div>
                                                             <p className="text-2xl font-bold text-psi-dark/40 mt-2">
-                                                                {ValueUtilsClass.centsToCurrency(Math.round(batch.price))}
+                                                                {ValueUtils.centsToCurrency(Math.round(batch.price))}
                                                             </p>
                                                         </div>
                                                     </div>
@@ -400,14 +409,14 @@ const VerEventoInfo = (
                             <div className="rounded-xl border border-psi-primary/20 bg-linear-to-br from-psi-primary/5 via-white to-psi-primary/10 p-6">
                                 <div className="text-center space-y-4">
                                     <p className="text-2xl font-bold text-psi-primary">
-                                        {ValueUtilsClass.centsToCurrency(Math.round(event.tickets * 50))}
+                                        {event.price ? ValueUtils.centsToCurrency(Math.round(event.price)) : "Preço não definido"}
                                     </p>
                                     <p className="text-sm text-psi-dark/60">Ingresso único</p>
                                 </div>
                             </div>
                         )}
 
-                        {(activeBatches.length > 0 || !event.batches) && (
+                        {(activeBatches?.length > 0 || !event.EventBatch || event.EventBatch.length === 0) && (
                             <div className="space-y-4 rounded-xl border border-psi-primary/20 bg-white p-6">
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
@@ -437,7 +446,7 @@ const VerEventoInfo = (
                                     <div className="flex items-center justify-between mb-4">
                                         <span className="text-sm text-psi-dark/70">Total</span>
                                         <span className="text-2xl font-bold text-psi-primary">
-                                            {ValueUtilsClass.centsToCurrency(currentPrice * currentQuantity)}
+                                            {ValueUtils.centsToCurrency(currentPrice * currentQuantity)}
                                         </span>
                                     </div>
                                     <Button
@@ -727,7 +736,7 @@ const VerEventoInfo = (
                 </div>
 
             </div>
-                {similarEvents.length > 0 && (
+                {similarEvents?.length > 0 && (
                     <div className="mt-16 space-y-6">
                         <div className="space-y-2 container">
                             <h2 className="text-2xl font-semibold text-psi-dark

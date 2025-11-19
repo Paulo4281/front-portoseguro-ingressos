@@ -20,10 +20,15 @@ import { InputCurrency } from "@/components/Input/InputCurrency"
 import { MultiSelect } from "@/components/MultiSelect/MultiSelect"
 import { z } from "zod"
 import { cn } from "@/lib/utils"
-import type { TRecurrenceDay } from "@/types/Event/TEvent"
 import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
 
 type TEventCreate = z.infer<typeof EventCreateValidator>
+
+type TRecurrenceDayForm = {
+    day: number
+    hourStart: string
+    hourEnd?: string | null
+}
 
 const weekDays = [
     { value: 0, label: "Dom" },
@@ -127,7 +132,7 @@ const CriarEventoForm = () => {
     }
 
     const toggleDayOfWeek = (day: number) => {
-        const current = recurrenceDaysOfWeek as TRecurrenceDay[] || []
+        const current = recurrenceDaysOfWeek as TRecurrenceDayForm[] || []
         const existingIndex = current.findIndex(d => d.day === day)
         
         if (existingIndex >= 0) {
@@ -144,7 +149,7 @@ const CriarEventoForm = () => {
     }
 
     const toggleMonthDay = (day: number) => {
-        const current = recurrenceDaysOfWeek as TRecurrenceDay[] || []
+        const current = recurrenceDaysOfWeek as TRecurrenceDayForm[] || []
         const existingIndex = current.findIndex(d => d.day === day)
         
         if (existingIndex >= 0) {
@@ -161,7 +166,7 @@ const CriarEventoForm = () => {
     }
 
     const updateDayTime = (day: number, hourStart: string, hourEnd: string | null) => {
-        const current = recurrenceDaysOfWeek as TRecurrenceDay[] || []
+        const current = recurrenceDaysOfWeek as TRecurrenceDayForm[] || []
         const newDays = current.map(d => 
             d.day === day ? { ...d, hourStart, hourEnd } : d
         )
@@ -169,7 +174,7 @@ const CriarEventoForm = () => {
     }
 
     const getDayTime = (day: number) => {
-        const current = recurrenceDaysOfWeek as TRecurrenceDay[] || []
+        const current = recurrenceDaysOfWeek as TRecurrenceDayForm[] || []
         const dayData = current.find(d => d.day === day)
         return dayData || { hourStart: "", hourEnd: null }
     }
@@ -691,7 +696,7 @@ const CriarEventoForm = () => {
                                                     </label>
                                                     <div className="flex flex-wrap gap-2">
                                                         {weekDays.map((day) => {
-                                                            const isSelected = recurrenceDaysOfWeek.some((d: TRecurrenceDay) => d.day === day.value)
+                                                            const isSelected = recurrenceDaysOfWeek.some((d: TRecurrenceDayForm) => d.day === day.value)
                                                             return (
                                                                 <Button
                                                                     key={day.value}
@@ -713,7 +718,7 @@ const CriarEventoForm = () => {
                                                         <label className="block text-sm font-medium text-psi-dark/70 mb-2">
                                                             Horários por Dia *
                                                         </label>
-                                                        {recurrenceDaysOfWeek.map((dayData: TRecurrenceDay) => {
+                                                        {recurrenceDaysOfWeek.map((dayData: TRecurrenceDayForm) => {
                                                             const dayLabel = weekDays.find(d => d.value === dayData.day)?.label || ""
                                                             const dayTime = getDayTime(dayData.day)
                                                             return (
@@ -757,7 +762,7 @@ const CriarEventoForm = () => {
                                                     </label>
                                                     <div className="grid grid-cols-7 gap-2 max-h-48 overflow-y-auto">
                                                         {monthDays.map((day) => {
-                                                            const isSelected = recurrenceDaysOfWeek.some((d: TRecurrenceDay) => d.day === day)
+                                                            const isSelected = recurrenceDaysOfWeek.some((d: TRecurrenceDayForm) => d.day === day)
                                                             return (
                                                                 <Button
                                                                     key={day}
@@ -780,7 +785,7 @@ const CriarEventoForm = () => {
                                                         <label className="block text-sm font-medium text-psi-dark/70 mb-2">
                                                             Horários por Dia *
                                                         </label>
-                                                        {recurrenceDaysOfWeek.map((dayData: TRecurrenceDay) => {
+                                                        {recurrenceDaysOfWeek.map((dayData: TRecurrenceDayForm) => {
                                                             const dayTime = getDayTime(dayData.day)
                                                             return (
                                                                 <div key={dayData.day} className="rounded-lg border border-[#E4E6F0] bg-white p-3 space-y-3">

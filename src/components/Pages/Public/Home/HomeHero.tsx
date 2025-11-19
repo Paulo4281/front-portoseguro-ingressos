@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CTAButton } from "@/components/CTAButton/CTAButton"
@@ -14,17 +14,17 @@ import { Background } from "@/components/Background/Background"
 import Image from "next/image"
 import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
 import { EventCategoryIconHandler } from "@/utils/Helpers/EventCategoryIconHandler/EventCategoryIconHandler"
+import { TEvent } from "@/types/Event/TEvent"
 
 const HomeHero = () => {
-    const { data: events, isLoading, isError } = useEventFind()
+    const { data: eventsData, isLoading, isError } = useEventFind()
+    const [featuredEvents, setFeaturedEvents] = useState<TEvent[]>([])
 
-    const featuredEvents = useMemo(() => {
-        if (!events || events.length === 0) {
-            return []
+    useEffect(() => {
+        if (eventsData?.success) {
+            setFeaturedEvents(eventsData.data ?? [])
         }
-
-        return events.slice(0, 8)
-    }, [events])
+    }, [eventsData])
 
     const { data: eventCategoriesData, isLoading: isEventCategoriesLoading } = useEventCategoryFind()
 
