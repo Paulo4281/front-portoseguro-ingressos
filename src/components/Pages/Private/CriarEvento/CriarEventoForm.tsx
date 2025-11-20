@@ -86,7 +86,8 @@ const CriarEventoForm = () => {
                     hourEnd: null
                 }
             ],
-            recurrence: null
+            recurrence: null,
+            isClientTaxed: false
         }
     })
 
@@ -371,6 +372,29 @@ const CriarEventoForm = () => {
                                         Usar lotes de ingressos
                                     </label>
                                 </div>
+
+                                <Controller
+                                    name="isClientTaxed"
+                                    control={form.control}
+                                    render={({ field }) => (
+                                        <div className="flex items-center gap-3 rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4">
+                                            <Checkbox
+                                                id="is-client-taxed"
+                                                checked={field.value || false}
+                                                onCheckedChange={(checked) => field.onChange(checked === true)}
+                                            />
+                                            <div>
+                                                <label htmlFor="is-client-taxed" className="text-sm font-medium text-psi-dark cursor-pointer">
+                                                    Repassar taxas ao cliente
+                                                </label>
+                                                <p className="text-xs text-psi-dark/60 mt-1">
+                                                    Quando ativado, a taxa de serviço é adicionada ao valor pago pelo comprador.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                />
+                                <FieldError message={form.formState.errors.isClientTaxed?.message || ""} />
 
                                 {!useBatches ? (
                                     <div className="grid grid-cols-1

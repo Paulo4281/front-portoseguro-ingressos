@@ -15,6 +15,7 @@ type TEvent = {
     tickets: number | null
     userId: string
     organizerId: string
+    isClientTaxed: boolean
     isActive: boolean
     isDeleted: boolean
     isCancelled: boolean

@@ -100,7 +100,8 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                     hourEnd: null
                 }
             ],
-            recurrence: null
+            recurrence: null,
+            isClientTaxed: false
         }
     })
 
@@ -132,19 +133,27 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
             setUseBatches(hasBatches)
             setRecurrenceEnabled(!!event.Recurrence)
 
-            const batchesData = hasBatches ? event.EventBatch?.map(batch => ({
+            const sortedEventBatch = hasBatches
+                ? [...(event.EventBatch || [])].sort((a, b) => {
+                    const dateA = new Date(a.startDate).getTime()
+                    const dateB = new Date(b.startDate).getTime()
+                    return dateA - dateB
+                })
+                : []
+
+            const batchesData = hasBatches ? sortedEventBatch.map(batch => ({
                 name: batch.name,
                 price: batch.price,
                 quantity: batch.tickets,
                 startDate: formatDateOnly(batch.startDate),
                 endDate: formatDateOnly(batch.endDate),
-                autoActivateNext: false,
-                accumulateUnsold: false
+                autoActivateNext: batch.autoActivateNext ?? false,
+                accumulateUnsold: batch.accumulateUnsold ?? false
             })) : undefined
 
             const datesData = event.EventDate && event.EventDate.length > 0 ? event.EventDate.map(eventDate => ({
                 date: formatDateOnly(eventDate.date),
-                hourStart: eventDate.hourStart,
+                hourStart: eventDate.hourStart || "",
                 hourEnd: eventDate.hourEnd
             })) : [
                 {
@@ -175,11 +184,12 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                 image: null as any,
                 location: event.location || null,
                 useBatches: hasBatches,
-                tickets: hasBatches ? undefined : event.tickets,
+                tickets: hasBatches ? undefined : (event.tickets ?? undefined),
                 ticketPrice: hasBatches ? undefined : event.price ?? undefined,
                 batches: batchesData,
                 dates: datesData,
-                recurrence: recurrenceData
+                recurrence: recurrenceData,
+                isClientTaxed: !!event.isClientTaxed
             })
 
             setIsFormInitialized(true)
@@ -476,6 +486,29 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                     </label>
                                 </div>
 
+                                <Controller
+                                    name="isClientTaxed"
+                                    control={form.control}
+                                    render={({ field }) => (
+                                        <div className="flex items-center gap-3 rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4">
+                                            <Checkbox
+                                                id="is-client-taxed"
+                                                checked={field.value || false}
+                                                onCheckedChange={(checked) => field.onChange(checked === true)}
+                                            />
+                                            <div>
+                                                <label htmlFor="is-client-taxed" className="text-sm font-medium text-psi-dark cursor-pointer">
+                                                    Repassar taxas ao cliente
+                                                </label>
+                                                <p className="text-xs text-psi-dark/60 mt-1">
+                                                    Quando ativado, a taxa de serviço é adicionada ao valor pago pelo comprador.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                />
+                                <FieldError message={form.formState.errors.isClientTaxed?.message || ""} />
+
                                 {!useBatches ? (
                                     <div className="grid grid-cols-1
                                     sm:grid-cols-2 gap-4">
@@ -511,8 +544,15 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                 control={form.control}
                                                 render={({ field }) => (
                                                     <InputCurrency
-                                                        { ...field }
-                                                        value={ValueUtils.centsToCurrency(Number(field.value)) || 0}
+                                                        value={field.value || 0}
+                                                        onChangeValue={(value) => {
+                                                            if (!value || value === "") {
+                                                                field.onChange(0)
+                                                            } else {
+                                                                const numValue = parseCurrencyToNumber(value)
+                                                                field.onChange(numValue)
+                                                            }
+                                                        }}
                                                         required
                                                         className="w-full"
                                                     />
@@ -545,14 +585,30 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
 
                                         {batchFields.map((field, index) => {
                                             const hasNextBatch = index < batchFields.length - 1
+                                            const batch = eventData?.data?.EventBatch?.find((b, i, arr) => {
+                                                const sortedEventBatch = [...arr].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+                                                return sortedEventBatch[index]?.id === b.id
+                                            })
+                                            const isActiveBatch = batch?.isActive
                                             return (
                                                 <div
                                                     key={field.id}
-                                                    className="rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4 space-y-4"
+                                                    className={cn(
+                                                        "rounded-xl border p-4 space-y-4",
+                                                        isActiveBatch
+                                                            ? "border-psi-primary bg-psi-primary/5 shadow-inner shadow-psi-primary/20"
+                                                            : "border-[#E4E6F0] bg-[#F3F4FB]"
+                                                    )}
                                                 >
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-sm font-semibold text-psi-dark">
                                                             Lote {index + 1}
+                                                            {isActiveBatch && (
+                                                                <span className="ml-2 inline-flex items-center gap-1 text-xs font-semibold text-psi-primary">
+                                                                    <Sparkles className="h-3 w-3" />
+                                                                    Lote atual
+                                                                </span>
+                                                            )}
                                                         </span>
                                                         {batchFields.length > 1 && (
                                                             <Button
@@ -596,15 +652,8 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                             control={form.control}
                                                             render={({ field }) => (
                                                                 <InputCurrency
-                                                                    value={field.value || 0}
-                                                                    onChangeValue={(value) => {
-                                                                        if (!value || value === "") {
-                                                                            field.onChange(0)
-                                                                        } else {
-                                                                            const numValue = parseCurrencyToNumber(value)
-                                                                            field.onChange(numValue)
-                                                                        }
-                                                                    }}
+                                                                    {...field}
+                                                                    value={ValueUtils.centsToCurrency(Number(field.value)) || 0}
                                                                     required
                                                                     className="w-full"
                                                                 />

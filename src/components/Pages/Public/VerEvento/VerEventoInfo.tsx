@@ -10,6 +10,7 @@ import { useEventFind } from "@/hooks/Event/useEventFind"
 import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
 import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
+import { TicketFeeUtils } from "@/utils/Helpers/FeeUtils/TicketFeeUtils"
 import { Background } from "@/components/Background/Background"
 import { Button } from "@/components/ui/button"
 import { QuantitySelector } from "@/components/QuantitySelector/QuantitySelector"
@@ -118,20 +119,15 @@ const VerEventoInfo = (
     }
 
     const getBatchStatus = (batch: TEventBatch) => {
+        if (batch.isActive) {
+            return "active"
+        }
+
         const now = new Date()
-        const startDate = new Date(batch.startDate)
         const endDate = batch.endDate ? new Date(batch.endDate) : null
 
-        if (now < startDate) {
-            return "upcoming"
-        }
-
-        if (endDate && now > endDate) {
+        if (!batch.isActive && endDate && now > endDate) {
             return "ended"
-        }
-
-        if (batch.isActive && now >= startDate && (!endDate || now <= endDate)) {
-            return "active"
         }
 
         return "inactive"
@@ -156,10 +152,6 @@ const VerEventoInfo = (
             setSelectedBatchId(activeBatches[0].id)
         }
     }, [activeBatches, selectedBatchId])
-
-    const upcomingBatches = useMemo(() => {
-        return sortedBatches.filter(batch => getBatchStatus(batch) === "upcoming")
-    }, [sortedBatches])
 
     const endedBatches = useMemo(() => {
         return sortedBatches.filter(batch => getBatchStatus(batch) === "ended")
@@ -220,6 +212,13 @@ const VerEventoInfo = (
         }
         return 0
     }, [selectedBatch, event])
+
+    const singleTicketFee = useMemo(() => {
+        if (!event?.price) {
+            return TicketFeeUtils.calculateFeeInCents(0, event?.isClientTaxed)
+        }
+        return TicketFeeUtils.calculateFeeInCents(Math.round(event.price), event.isClientTaxed)
+    }, [event])
 
     const handleAddToCart = () => {
         if (!event) return
@@ -407,13 +406,15 @@ const VerEventoInfo = (
                                     <div className="space-y-4">
                                         <h2 className="text-xl font-semibold text-psi-dark">Lotes Disponíveis</h2>
                                         <div className="space-y-3">
-                                            {activeBatches.map((batch) => (
+                                            {activeBatches.map((batch) => {
+                                                const feeCents = TicketFeeUtils.calculateFeeInCents(Math.round(batch.price), event.isClientTaxed)
+                                                return (
                                                 <div
                                                     key={batch.id}
                                                     onClick={() => setSelectedBatchId(batch.id)}
                                                     className={`rounded-xl border-2 p-4 shadow-sm cursor-pointer transition-all ${
                                                         selectedBatchId === batch.id
-                                                            ? "border-psi-primary bg-linear-to-br from-psi-primary/70 via-white to-psi-primary/10"
+                                                            ? "border-psi-primary/50 bg-linear-to-tl from-psi-primary/20 via-white to-psi-light"
                                                             : "border-psi-primary/30 bg-linear-to-br from-psi-primary/10 via-white to-psi-primary/5 hover:border-psi-primary/50"
                                                     }`}
                                                 >
@@ -422,22 +423,21 @@ const VerEventoInfo = (
                                                             <div className="flex items-center gap-2 mb-1">
                                                                 <Tag className="h-4 w-4 text-psi-primary" />
                                                                 <span className="font-semibold text-psi-dark">{batch.name}</span>
-                                                                <span className="px-2 py-0.5 bg-psi-primary/20 text-psi-primary text-xs font-medium rounded-full">
+                                                                <span className="px-2 py-0.5 bg-psi-primary/80 text-psi-light text-xs font-medium rounded-full">
                                                                     Disponível
                                                                 </span>
                                                             </div>
-                                                            <p className="text-2xl font-bold text-psi-primary mt-2">
+                                                            <p className="text-3xl font-bold text-psi-primary mt-2">
                                                                 {ValueUtils.centsToCurrency(Math.round(batch.price))}
+                                                            </p>
+                                                            <p className="text-xs text-psi-dark/60 mt-1">
+                                                                + Taxa de serviço: {ValueUtils.centsToCurrency(feeCents)}
                                                             </p>
                                                         </div>
                                                     </div>
-                                                    <div className="text-xs text-psi-dark/60 space-y-1">
-                                                        <p>
-                                                            Válido até: {batch.endDate ? formatDate(batch.endDate) : "Data indefinida"}
-                                                        </p>
-                                                    </div>
                                                 </div>
-                                            ))}
+                                                )
+                                            })}
                                         </div>
                                     </div>
                                 )}
@@ -446,7 +446,9 @@ const VerEventoInfo = (
                                     <div className="space-y-4">
                                         <h2 className="text-xl font-semibold text-psi-dark/60">Lotes Encerrados</h2>
                                         <div className="space-y-3">
-                                            {endedBatches.map((batch) => (
+                                            {endedBatches.map((batch) => {
+                                                const feeCents = TicketFeeUtils.calculateFeeInCents(Math.round(batch.price), event.isClientTaxed)
+                                                return (
                                                 <div
                                                     key={batch.id}
                                                     className="rounded-xl border border-psi-dark/5 bg-psi-dark/5 p-4 opacity-50"
@@ -463,6 +465,9 @@ const VerEventoInfo = (
                                                             <p className="text-2xl font-bold text-psi-dark/40 mt-2">
                                                                 {ValueUtils.centsToCurrency(Math.round(batch.price))}
                                                             </p>
+                                                            <p className="text-xs text-psi-dark/50">
+                                                                Taxa de serviço: {ValueUtils.centsToCurrency(feeCents)}
+                                                            </p>
                                                         </div>
                                                     </div>
                                                     <div className="text-xs text-psi-dark/40 space-y-1">
@@ -471,7 +476,8 @@ const VerEventoInfo = (
                                                         </p>
                                                     </div>
                                                 </div>
-                                            ))}
+                                                )
+                                            })}
                                         </div>
                                     </div>
                                 )}
@@ -483,6 +489,11 @@ const VerEventoInfo = (
                                         {event.price ? ValueUtils.centsToCurrency(Math.round(event.price)) : "Preço não definido"}
                                     </p>
                                     <p className="text-sm text-psi-dark/60">Ingresso único</p>
+                                    {event.price && (
+                                        <p className="text-xs text-psi-dark/60">
+                                            + Taxa de serviço: {ValueUtils.centsToCurrency(singleTicketFee)}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         )}
