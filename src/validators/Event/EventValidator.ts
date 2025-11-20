@@ -39,7 +39,6 @@ const EventCreateValidator = z.object({
         .max(5, { error: "Selecione no máximo 5 categorias" }),
     image: z.instanceof(File, { error: DefaultFormErrors.required }),
     location: z.string().nullable().optional(),
-    useBatches: z.boolean(),
     tickets: z.number().optional(),
     ticketPrice: z.number().optional(),
     batches: z.array(BatchValidator).optional(),
@@ -47,25 +46,34 @@ const EventCreateValidator = z.object({
     recurrence: RecurrenceValidator,
     isClientTaxed: z.boolean().optional()
 }).superRefine((data, ctx) => {
-    if (!data.useBatches && !data.tickets) {
+    const hasBatches = data.batches && data.batches.length > 0
+    
+    if (!hasBatches && !data.tickets) {
         ctx.addIssue({
             code: "custom",
             path: ["tickets"],
             message: "Quantidade de ingressos é obrigatória quando não usar lotes"
         })
     }
-    if (!data.useBatches && (!data.ticketPrice || data.ticketPrice <= 0)) {
+    if (!hasBatches && (!data.ticketPrice || data.ticketPrice <= 0)) {
         ctx.addIssue({
             code: "custom",
             path: ["ticketPrice"],
             message: "Preço do ingresso é obrigatório quando não usar lotes"
         })
     }
-    if (data.useBatches && (!data.batches || data.batches.length === 0)) {
+    if (hasBatches && (!data.batches || data.batches.length === 0)) {
         ctx.addIssue({
             code: "custom",
             path: ["batches"],
             message: "Adicione pelo menos um lote"
+        })
+    }
+    if (data.recurrence && data.dates && data.dates.length > 0) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["dates"],
+            message: "Não é possível ter recorrência e datas específicas ao mesmo tempo"
         })
     }
     if (!data.recurrence && (!data.dates || data.dates.length === 0)) {
@@ -117,6 +125,57 @@ const EventCreateValidator = z.object({
             path: ["recurrence", "hourStart"],
             message: "Horário de início é obrigatório para eventos diários"
         })
+    }
+
+    if (hasBatches && data.batches && data.batches.length > 0) {
+        let eventStartDate: string | null = null
+        let eventEndDate: string | null = null
+
+        if (data.recurrence) {
+            if (data.recurrence.endDate) {
+                eventEndDate = data.recurrence.endDate
+            }
+        } else if (data.dates && data.dates.length > 0) {
+            const sortedDates = [...data.dates]
+                .map(d => d.date)
+                .filter(Boolean)
+                .sort()
+            
+            if (sortedDates.length > 0) {
+                eventStartDate = sortedDates[0]
+                eventEndDate = sortedDates[sortedDates.length - 1]
+            }
+        }
+
+        if (eventStartDate) {
+            data.batches.forEach((batch, index) => {
+                if (batch.startDate) {
+                    const batchStartDate = new Date(batch.startDate)
+                    const eventStart = new Date(eventStartDate)
+                    
+                    if (batchStartDate > eventStart) {
+                        ctx.addIssue({
+                            code: "custom",
+                            path: ["batches", index, "startDate"],
+                            message: "A data de início do lote não pode ser posterior à primeira data do evento"
+                        })
+                    }
+                }
+
+                if (batch.endDate && eventEndDate) {
+                    const batchEndDate = new Date(batch.endDate)
+                    const eventEnd = new Date(eventEndDate)
+                    
+                    if (batchEndDate > eventEnd) {
+                        ctx.addIssue({
+                            code: "custom",
+                            path: ["batches", index, "endDate"],
+                            message: "A data de fim do lote não pode ser posterior à última data do evento"
+                        })
+                    }
+                }
+            })
+        }
     }
 })
 
@@ -128,7 +187,6 @@ const EventUpdateValidatorBase = z.object({
         .max(5, { error: "Selecione no máximo 5 categorias" }),
     image: z.instanceof(File, { error: DefaultFormErrors.required }).nullable().optional(),
     location: z.string().nullable().optional(),
-    useBatches: z.boolean(),
     tickets: z.number().optional(),
     ticketPrice: z.number().optional(),
     batches: z.array(BatchValidator).optional(),
@@ -138,25 +196,34 @@ const EventUpdateValidatorBase = z.object({
 })
 
 const EventUpdateValidator = EventUpdateValidatorBase.superRefine((data, ctx) => {
-    if (!data.useBatches && !data.tickets) {
+    const hasBatches = data.batches && data.batches.length > 0
+    
+    if (!hasBatches && !data.tickets) {
         ctx.addIssue({
             code: "custom",
             path: ["tickets"],
             message: "Quantidade de ingressos é obrigatória quando não usar lotes"
         })
     }
-    if (!data.useBatches && (!data.ticketPrice || data.ticketPrice <= 0)) {
+    if (!hasBatches && (!data.ticketPrice || data.ticketPrice <= 0)) {
         ctx.addIssue({
             code: "custom",
             path: ["ticketPrice"],
             message: "Preço do ingresso é obrigatório quando não usar lotes"
         })
     }
-    if (data.useBatches && (!data.batches || data.batches.length === 0)) {
+    if (hasBatches && (!data.batches || data.batches.length === 0)) {
         ctx.addIssue({
             code: "custom",
             path: ["batches"],
             message: "Adicione pelo menos um lote"
+        })
+    }
+    if (data.recurrence && data.dates && data.dates.length > 0) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["dates"],
+            message: "Não é possível ter recorrência e datas específicas ao mesmo tempo"
         })
     }
     if (!data.recurrence && (!data.dates || data.dates.length === 0)) {
@@ -208,6 +275,57 @@ const EventUpdateValidator = EventUpdateValidatorBase.superRefine((data, ctx) =>
             path: ["recurrence", "hourStart"],
             message: "Horário de início é obrigatório para eventos diários"
         })
+    }
+
+    if (hasBatches && data.batches && data.batches.length > 0) {
+        let eventStartDate: string | null = null
+        let eventEndDate: string | null = null
+
+        if (data.recurrence) {
+            if (data.recurrence.endDate) {
+                eventEndDate = data.recurrence.endDate
+            }
+        } else if (data.dates && data.dates.length > 0) {
+            const sortedDates = [...data.dates]
+                .map(d => d.date)
+                .filter(Boolean)
+                .sort()
+            
+            if (sortedDates.length > 0) {
+                eventStartDate = sortedDates[0]
+                eventEndDate = sortedDates[sortedDates.length - 1]
+            }
+        }
+
+        if (eventStartDate) {
+            data.batches.forEach((batch, index) => {
+                if (batch.startDate) {
+                    const batchStartDate = new Date(batch.startDate)
+                    const eventStart = new Date(eventStartDate)
+                    
+                    if (batchStartDate > eventStart) {
+                        ctx.addIssue({
+                            code: "custom",
+                            path: ["batches", index, "startDate"],
+                            message: "A data de início do lote não pode ser posterior à primeira data do evento"
+                        })
+                    }
+                }
+
+                if (batch.endDate && eventEndDate) {
+                    const batchEndDate = new Date(batch.endDate)
+                    const eventEnd = new Date(eventEndDate)
+                    
+                    if (batchEndDate > eventEnd) {
+                        ctx.addIssue({
+                            code: "custom",
+                            path: ["batches", index, "endDate"],
+                            message: "A data de fim do lote não pode ser posterior à última data do evento"
+                        })
+                    }
+                }
+            })
+        }
     }
 })
 

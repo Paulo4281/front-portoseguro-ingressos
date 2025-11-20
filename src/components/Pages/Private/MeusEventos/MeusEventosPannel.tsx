@@ -2,7 +2,7 @@
 
 import { useMemo } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, ExternalLink, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Copy, Share2, Download, BarChart } from "lucide-react"
+import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Share2, Download, BarChart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
     DropdownMenu,
@@ -15,6 +15,7 @@ import { useEventFind } from "@/hooks/Event/useEventFind"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Background } from "@/components/Background/Background"
 import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
+import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 import type { TEvent } from "@/types/Event/TEvent"
 import type { TEventBatch } from "@/types/Event/TEventBatch"
 
@@ -185,11 +186,13 @@ const MeusEventosPannel = () => {
                                     className="group rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-black/10"
                                 >
                                     <div className="relative h-60 w-full overflow-hidden">
-                                        <img
-                                            src={event.image}
-                                            alt={event.name}
-                                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                        />
+                                        <Link href={`/ver-evento?id=${event.id}`} target="_blank">
+                                            <img
+                                                src={ImageUtils.getEventImageUrl(event.image)}
+                                                alt={event.name}
+                                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 cursor-pointer"
+                                            />
+                                        </Link>
                                         <div className="absolute top-3 right-3">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -202,6 +205,13 @@ const MeusEventosPannel = () => {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="w-56 rounded-xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/10 p-2">
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={`/eventos/atualizar?id=${event.id}`} className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer">
+                                                            <Edit className="h-4 w-4 mr-2 text-psi-primary" />
+                                                            Editar evento
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator className="bg-[#E4E6F0]" />
                                                     <DropdownMenuItem className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer">
                                                         <FileSpreadsheet className="h-4 w-4 mr-2 text-psi-primary" />
                                                         Gerar lista de compradores
@@ -333,32 +343,6 @@ const MeusEventosPannel = () => {
                                             </div>
                                         </div>
 
-                                        <div className="pt-4 border-t border-[#E4E6F0]">
-                                            <div className="flex items-center gap-2">
-                                                <Button
-                                                    asChild
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="flex-1"
-                                                >
-                                                    <Link href={`/eventos/atualizar?id=${event.id}`}>
-                                                        <Edit className="h-4 w-4" />
-                                                        Editar
-                                                    </Link>
-                                                </Button>
-                                                <Button
-                                                    asChild
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="flex-1"
-                                                >
-                                                    <Link href={`/ver-evento?id=${event.id}`} target="_blank">
-                                                        <ExternalLink className="h-4 w-4" />
-                                                        Ver
-                                                    </Link>
-                                                </Button>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
                             )

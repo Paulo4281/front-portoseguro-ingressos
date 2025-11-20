@@ -233,97 +233,101 @@ const Menu = () => {
                                     )
                                 }
                             </>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button
-                                        className="flex items-center gap-2 cursor-pointer outline-none focus:ring-2 focus:ring-psi-primary/30 focus:ring-offset-2 rounded-full transition-opacity hover:opacity-90"
-                                        aria-label="Menu do usuário"
-                                    >
-                                        <Avatar
-                                            src={null}
-                                            name={fullName}
-                                            size="md"
-                                        />
-                                        <ChevronDown className="h-4 w-4 text-psi-dark/60" />
-                                    </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-64 rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/10 p-2 z-[55] !overflow-visible">
-                                    <DropdownMenuLabel className="px-3 py-2">
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-semibold text-psi-dark">{fullName}</span>
-                                            <span className="text-xs text-psi-dark/60 font-normal truncate">
-                                                {user?.email}
-                                            </span>
-                                        </div>
-                                    </DropdownMenuLabel>
-                                    <DropdownMenuSeparator className="bg-[#E4E6F0]" />
-                                    <div className="p-1 overflow-visible">
-                                        {filteredMenuLinks.map((link) => {
-                                            const Icon = link.icon
-                                            
-                                            if (link.sublinks && link.sublinks.length > 0) {
+                            {
+                                isAuthenticated && (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button
+                                            className="flex items-center gap-2 cursor-pointer outline-none focus:ring-2 focus:ring-psi-primary/30 focus:ring-offset-2 rounded-full transition-opacity hover:opacity-90"
+                                            aria-label="Menu do usuário"
+                                        >
+                                            <Avatar
+                                                src={null}
+                                                name={fullName}
+                                                size="md"
+                                            />
+                                            <ChevronDown className="h-4 w-4 text-psi-dark/60" />
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-64 rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/10 p-2 z-[55] !overflow-visible">
+                                        <DropdownMenuLabel className="px-3 py-2">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-semibold text-psi-dark">{fullName}</span>
+                                                <span className="text-xs text-psi-dark/60 font-normal truncate">
+                                                    {user?.email}
+                                                </span>
+                                            </div>
+                                        </DropdownMenuLabel>
+                                        <DropdownMenuSeparator className="bg-[#E4E6F0]" />
+                                        <div className="p-1 overflow-visible">
+                                            {filteredMenuLinks.map((link) => {
+                                                const Icon = link.icon
+                                                
+                                                if (link.sublinks && link.sublinks.length > 0) {
+                                                    return (
+                                                        <DropdownMenuSub key={link.label}>
+                                                            <DropdownMenuSubTrigger className="rounded-xl text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB]">
+                                                                <Icon className="h-4 w-4" />
+                                                                <span>{link.label}</span>
+                                                            </DropdownMenuSubTrigger>
+                                                            <DropdownMenuSubContent 
+                                                                className="rounded-xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg z-[100] !overflow-visible" 
+                                                                sideOffset={8}
+                                                                alignOffset={0}
+                                                            >
+                                                                {link.sublinks.map((sublink) => {
+                                                                    const SubIcon = sublink.icon
+                                                                    const isActive = pathname === sublink.href || (sublink.href !== "/" && pathname.startsWith(sublink.href))
+                                                                    return (
+                                                                        <DropdownMenuItem key={sublink.href} asChild className={isActive ? "bg-[#F3F4FB] text-psi-primary" : ""}>
+                                                                            <Link href={sublink.href}>
+                                                                                {SubIcon && <SubIcon className="h-4 w-4" />}
+                                                                                <span>{sublink.label}</span>
+                                                                            </Link>
+                                                                        </DropdownMenuItem>
+                                                                    )
+                                                                })}
+                                                            </DropdownMenuSubContent>
+                                                        </DropdownMenuSub>
+                                                    )
+                                                }
+                                                
+                                                const isActive = link.href && (pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href)))
+                                                
                                                 return (
-                                                    <DropdownMenuSub key={link.label}>
-                                                        <DropdownMenuSubTrigger className="rounded-xl text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB]">
+                                                    <DropdownMenuItem key={link.href || link.label} asChild className={`rounded-xl text-sm ${isActive ? "bg-[#F3F4FB] text-psi-primary" : "text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB]"}`}>
+                                                        <Link href={link.href || "#"}>
                                                             <Icon className="h-4 w-4" />
                                                             <span>{link.label}</span>
-                                                        </DropdownMenuSubTrigger>
-                                                        <DropdownMenuSubContent 
-                                                            className="rounded-xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg z-[100] !overflow-visible" 
-                                                            sideOffset={8}
-                                                            alignOffset={0}
-                                                        >
-                                                            {link.sublinks.map((sublink) => {
-                                                                const SubIcon = sublink.icon
-                                                                const isActive = pathname === sublink.href || (sublink.href !== "/" && pathname.startsWith(sublink.href))
-                                                                return (
-                                                                    <DropdownMenuItem key={sublink.href} asChild className={isActive ? "bg-[#F3F4FB] text-psi-primary" : ""}>
-                                                                        <Link href={sublink.href}>
-                                                                            {SubIcon && <SubIcon className="h-4 w-4" />}
-                                                                            <span>{sublink.label}</span>
-                                                                        </Link>
-                                                                    </DropdownMenuItem>
-                                                                )
-                                                            })}
-                                                        </DropdownMenuSubContent>
-                                                    </DropdownMenuSub>
+                                                        </Link>
+                                                    </DropdownMenuItem>
                                                 )
-                                            }
-                                            
-                                            const isActive = link.href && (pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href)))
-                                            
-                                            return (
-                                                <DropdownMenuItem key={link.href || link.label} asChild className={`rounded-xl text-sm ${isActive ? "bg-[#F3F4FB] text-psi-primary" : "text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB]"}`}>
-                                                    <Link href={link.href || "#"}>
-                                                        <Icon className="h-4 w-4" />
-                                                        <span>{link.label}</span>
-                                                    </Link>
-                                                </DropdownMenuItem>
-                                            )
-                                        })}
-                                    </div>
-                                    <DropdownMenuSeparator className="bg-[#E4E6F0]" />
-                                    <div className="p-1">
-                                        <DropdownMenuItem
-                                            onClick={handleLogout}
-                                            disabled={isLoggingOut}
-                                            className="rounded-xl text-sm hover:bg-destructive/10 cursor-pointer"
-                                        >
-                                            {isLoggingOut ? (
-                                                <>
-                                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                                    <span>Saindo...</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <LogOut className="h-4 w-4" />
-                                                    <span>Sair</span>
-                                                </>
-                                            )}
-                                        </DropdownMenuItem>
-                                    </div>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                                            })}
+                                        </div>
+                                        <DropdownMenuSeparator className="bg-[#E4E6F0]" />
+                                        <div className="p-1">
+                                            <DropdownMenuItem
+                                                onClick={handleLogout}
+                                                disabled={isLoggingOut}
+                                                className="rounded-xl text-sm hover:bg-destructive/10 cursor-pointer"
+                                            >
+                                                {isLoggingOut ? (
+                                                    <>
+                                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                                        <span>Saindo...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <LogOut className="h-4 w-4" />
+                                                        <span>Sair</span>
+                                                    </>
+                                                )}
+                                            </DropdownMenuItem>
+                                        </div>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                )
+                            }
                     </div>
 
                     <div className="md:hidden flex items-center gap-2">

@@ -11,6 +11,7 @@ import { useTicketFindByUserId } from "@/hooks/Ticket/useTicketFindByUserId"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
+import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 import type { TTicket } from "@/types/Ticket/TTicket"
 
 type TStatusConfig = {
@@ -356,7 +357,7 @@ const MeusIngressosPannel = () => {
                                                 lg:w-80
                                                 lg:shrink-0">
                                                     <img
-                                                        src={ticket.event.image}
+                                                        src={ImageUtils.getEventImageUrl(ticket.event.image)}
                                                         alt={ticket.event.name}
                                                         className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
                                                     />

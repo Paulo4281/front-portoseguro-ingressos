@@ -3,6 +3,7 @@ import Image from "next/image"
 import { Calendar, Clock, MapPin, Repeat, Tag } from "lucide-react"
 import { Card } from "@/components/Card/Card"
 import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
+import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 import type { TEvent, TRecurrenceDay } from "@/types/Event/TEvent"
 import type { TEventBatch } from "@/types/Event/TEventBatch"
 
@@ -122,7 +123,7 @@ const CardEvent = (
             <Card className="h-full flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-black/10 hover:-translate-y-1 group">
                 <div className="relative w-full h-56 overflow-hidden bg-psi-dark/5">
                     <img
-                        src={event.image}
+                        src={ImageUtils.getEventImageUrl(event.image)}
                         alt={event.name}
                         className="object-cover h-full w-full transition-transform duration-500 group-hover:scale-105"
                     />

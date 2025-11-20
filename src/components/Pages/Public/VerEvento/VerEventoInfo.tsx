@@ -11,6 +11,7 @@ import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind
 import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { TicketFeeUtils } from "@/utils/Helpers/FeeUtils/TicketFeeUtils"
+import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 import { Background } from "@/components/Background/Background"
 import { Button } from "@/components/ui/button"
 import { QuantitySelector } from "@/components/QuantitySelector/QuantitySelector"
@@ -295,7 +296,7 @@ const VerEventoInfo = (
                         sm:h-[500px]
                         lg:h-[600px] rounded-2xl overflow-hidden bg-psi-dark/5">
                             <img
-                                src={event.image}
+                                src={ImageUtils.getEventImageUrl(event.image)}
                                 alt={event.name}
                                 className="object-cover h-full w-full"
                             />

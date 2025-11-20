@@ -24,6 +24,7 @@ import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind
 import { useEventFindById } from "@/hooks/Event/useEventFindById"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
+import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 
 type TEventUpdate = z.infer<typeof EventUpdateValidator>
 
@@ -68,7 +69,6 @@ type TAtualizarEventoFormProps = {
 
 const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     const [recurrenceEnabled, setRecurrenceEnabled] = useState(false)
-    const [useBatches, setUseBatches] = useState(false)
     const [isFormInitialized, setIsFormInitialized] = useState(false)
 
     const { data: eventData, isLoading: isEventLoading } = useEventFindById(eventId)
@@ -89,7 +89,6 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
             categories: [],
             image: null as any,
             location: null,
-            useBatches: false,
             tickets: undefined,
             ticketPrice: undefined,
             batches: undefined,
@@ -121,16 +120,15 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     const descriptionLength = form.watch("description")?.length || 0
 
     const totalTickets = useMemo(() => {
-        if (!useBatches || !batches.length) return 0
+        if (!batches.length) return 0
         return batches.reduce((sum, batch) => sum + (batch.quantity || 0), 0)
-    }, [batches, useBatches])
+    }, [batches])
 
     useEffect(() => {
         if (eventData?.data && !isFormInitialized && eventCategories.length > 0) {
             const event = eventData.data
             
             const hasBatches = !!(event.EventBatch && event.EventBatch.length > 0)
-            setUseBatches(hasBatches)
             setRecurrenceEnabled(!!event.Recurrence)
 
             const sortedEventBatch = hasBatches
@@ -143,7 +141,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
 
             const batchesData = hasBatches ? sortedEventBatch.map(batch => ({
                 name: batch.name,
-                price: batch.price,
+                price: batch.price / 100,
                 quantity: batch.tickets,
                 startDate: formatDateOnly(batch.startDate),
                 endDate: formatDateOnly(batch.endDate),
@@ -183,9 +181,8 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                 categories: categoryIds,
                 image: null as any,
                 location: event.location || null,
-                useBatches: hasBatches,
                 tickets: hasBatches ? undefined : (event.tickets ?? undefined),
-                ticketPrice: hasBatches ? undefined : event.price ?? undefined,
+                ticketPrice: hasBatches ? undefined : (event.price ? event.price / 100 : undefined),
                 batches: batchesData,
                 dates: datesData,
                 recurrence: recurrenceData,
@@ -197,7 +194,20 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     }, [eventData, isFormInitialized, form, eventCategories])
 
     const handleSubmit = async (data: TEventUpdate) => {
-        console.log("Event update data:", data)
+        const hasBatches = data.batches && data.batches.length > 0
+        
+        const submitData = {
+            ...data,
+            ticketPrice: hasBatches ? undefined : (data.ticketPrice ? Math.round(data.ticketPrice * 100) : undefined),
+            batches: hasBatches ? data.batches?.map(batch => ({
+                ...batch,
+                price: Math.round(batch.price * 100)
+            })) : undefined,
+            dates: data.recurrence ? null : data.dates,
+            recurrence: data.recurrence || null
+        }
+        
+        console.log("Event update data:", submitData)
     }
 
     const addDate = () => {
@@ -423,7 +433,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                         control={form.control}
                                         render={({ field }) => (
                                             <ImageUpload
-                                                value={field.value || eventData?.data?.image}
+                                                value={field.value || ImageUtils.getEventImageUrl(eventData?.data?.image!)}
                                                 onChange={field.onChange}
                                                 error={form.formState.errors.image?.message}
                                             />
@@ -465,11 +475,9 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                 <div className="flex items-center gap-3">
                                     <Checkbox
                                         id="use-batches"
-                                        checked={useBatches}
+                                        checked={(form.watch("batches")?.length || 0) > 0}
                                         onCheckedChange={(checked) => {
                                             const isChecked = checked === true
-                                            setUseBatches(isChecked)
-                                            form.setValue("useBatches", isChecked)
                                             if (!isChecked) {
                                                 form.setValue("batches", undefined)
                                             } else {
@@ -509,7 +517,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                 />
                                 <FieldError message={form.formState.errors.isClientTaxed?.message || ""} />
 
-                                {!useBatches ? (
+                                {(form.watch("batches")?.length || 0) === 0 ? (
                                     <div className="grid grid-cols-1
                                     sm:grid-cols-2 gap-4">
                                         <div>
@@ -689,15 +697,45 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                         <Controller
                                                             name={`batches.${index}.startDate`}
                                                             control={form.control}
-                                                            render={({ field }) => (
-                                                                <DatePicker
-                                                                    value={field.value || ""}
-                                                                    onChange={(value) => field.onChange(value || "")}
-                                                                    required
-                                                                    minDate={new Date().toISOString().split("T")[0]}
-                                                                />
-                                                            )}
+                                                            render={({ field }) => {
+                                                                const eventDates = form.watch("dates") || []
+                                                                const recurrence = form.watch("recurrence")
+                                                                
+                                                                let maxDate: string | undefined = undefined
+                                                                
+                                                                if (recurrence) {
+                                                                    if (recurrence.endDate) {
+                                                                        maxDate = recurrence.endDate
+                                                                    }
+                                                                } else if (eventDates.length > 0) {
+                                                                    const sortedDates = [...eventDates]
+                                                                        .map(d => d.date)
+                                                                        .filter(Boolean)
+                                                                        .sort()
+                                                                    if (sortedDates.length > 0) {
+                                                                        maxDate = sortedDates[0]
+                                                                    }
+                                                                }
+                                                                
+                                                                return (
+                                                                    <>
+                                                                        <DatePicker
+                                                                            value={field.value || ""}
+                                                                            onChange={(value) => field.onChange(value || "")}
+                                                                            required
+                                                                            minDate={new Date().toISOString().split("T")[0]}
+                                                                            maxDate={maxDate}
+                                                                        />
+                                                                        {maxDate && field.value && new Date(field.value) > new Date(maxDate) && (
+                                                                            <p className="text-xs text-destructive mt-1">
+                                                                                A data de início do lote não pode ser posterior à primeira data do evento
+                                                                            </p>
+                                                                        )}
+                                                                    </>
+                                                                )
+                                                            }}
                                                         />
+                                                        <FieldError message={form.formState.errors.batches?.[index]?.startDate?.message || ""} />
                                                     </div>
 
                                                     <div>
@@ -707,14 +745,47 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                         <Controller
                                                             name={`batches.${index}.endDate`}
                                                             control={form.control}
-                                                            render={({ field }) => (
-                                                                <DatePicker
-                                                                    value={field.value || ""}
-                                                                    onChange={(value) => field.onChange(value)}
-                                                                    minDate={form.watch(`batches.${index}.startDate`) || new Date().toISOString().split("T")[0]}
-                                                                />
-                                                            )}
+                                                            render={({ field }) => {
+                                                                const eventDates = form.watch("dates") || []
+                                                                const recurrence = form.watch("recurrence")
+                                                                
+                                                                let maxDate: string | undefined = undefined
+                                                                
+                                                                if (recurrence) {
+                                                                    if (recurrence.endDate) {
+                                                                        maxDate = recurrence.endDate
+                                                                    }
+                                                                } else if (eventDates.length > 0) {
+                                                                    const sortedDates = [...eventDates]
+                                                                        .map(d => d.date)
+                                                                        .filter(Boolean)
+                                                                        .sort()
+                                                                    if (sortedDates.length > 0) {
+                                                                        maxDate = sortedDates[sortedDates.length - 1]
+                                                                    }
+                                                                }
+                                                                
+                                                                const batchStartDate = form.watch(`batches.${index}.startDate`)
+                                                                const minDate = batchStartDate || new Date().toISOString().split("T")[0]
+                                                                
+                                                                return (
+                                                                    <>
+                                                                        <DatePicker
+                                                                            value={field.value || ""}
+                                                                            onChange={(value) => field.onChange(value)}
+                                                                            minDate={minDate}
+                                                                            maxDate={maxDate}
+                                                                        />
+                                                                        {maxDate && field.value && new Date(field.value) > new Date(maxDate) && (
+                                                                            <p className="text-xs text-destructive mt-1">
+                                                                                A data de fim do lote não pode ser posterior à última data do evento
+                                                                            </p>
+                                                                        )}
+                                                                    </>
+                                                                )
+                                                            }}
                                                         />
+                                                        <FieldError message={form.formState.errors.batches?.[index]?.endDate?.message || ""} />
                                                     </div>
                                                 </div>
 
@@ -773,6 +844,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                             if (!isChecked) {
                                                 form.setValue("recurrence", null)
                                             } else {
+                                                form.setValue("dates", undefined)
                                                 form.setValue("recurrence", {
                                                     type: "WEEKLY",
                                                     daysOfWeek: [],

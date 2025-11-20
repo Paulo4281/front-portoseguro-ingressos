@@ -12,6 +12,7 @@ import { QuantitySelector } from "@/components/QuantitySelector/QuantitySelector
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { formatEventDate, formatEventTime } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import { getCardBrand } from "@/utils/Helpers/CardUtils/CardUtils"
+import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 import { 
     User, 
     Mail, 
@@ -367,7 +368,7 @@ const CheckoutInfo = () => {
                                                     <div className="flex gap-4">
                                                         <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-psi-dark/5 shrink-0">
                                                             <img
-                                                                src={event.image}
+                                                                src={ImageUtils.getEventImageUrl(event.image)}
                                                                 alt={event.name}
                                                                 className="object-cover w-full h-full"
                                                             />

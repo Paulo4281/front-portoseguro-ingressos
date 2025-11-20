@@ -4,6 +4,10 @@ import type { TRecurrence } from "./TRecurrence"
 import type { TRecurrenceDay } from "./TRecurrenceDay"
 import type { TEventCategoryEvent } from "./TEventCategoryEvent"
 import type { TOrganizer } from "@/types/Organizer/TOrganizer"
+import { EventCreateValidator } from "@/validators/Event/EventValidator"
+import type { z } from "zod"
+
+type TEventCreate = z.infer<typeof EventCreateValidator>
 
 type TEvent = {
     id: string
@@ -36,5 +40,6 @@ export type {
     TRecurrence,
     TRecurrenceDay,
     TEventCategoryEvent,
-    TOrganizer
+    TOrganizer,
+    TEventCreate
 }

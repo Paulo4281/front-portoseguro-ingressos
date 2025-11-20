@@ -40,6 +40,24 @@ class ApiClass {
         }
     }
 
+    async POST_FILE(params: TAPIParams & { formData: FormData }): Promise<AxiosResponse<any, any, {}> | undefined> {
+        try {
+            const response = await axios.post(
+                `${process.env.NEXT_PUBLIC_API_URL}${params.prefix}${params.url}`,
+                params.formData,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data"
+                    },
+                    withCredentials: true
+                }
+            )
+            return response
+        } catch(error) {
+            this.HandleError(error as AxiosError)
+        }
+    }
+
     async GET(params: TAPIParams): Promise<AxiosResponse<any, any, {}> | undefined> {
         try {
             const response = await axios.get(
