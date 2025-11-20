@@ -10,6 +10,7 @@ import { useAuthStore } from "@/stores/Auth/AuthStore"
 import { useTicketFindByUserId } from "@/hooks/Ticket/useTicketFindByUserId"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
+import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import type { TTicket } from "@/types/Ticket/TTicket"
 
 type TStatusConfig = {
@@ -51,19 +52,13 @@ const recurrenceDayLabels = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta",
 const getEventSchedule = (ticket: TTicket) => {
     if (ticket.event.EventDate && ticket.event.EventDate.length > 0) {
         const sortedDates = [...ticket.event.EventDate].sort((a, b) =>
-            new Date(a.date).getTime() - new Date(b.date).getTime()
+            getDateOrderValue(a?.date) - getDateOrderValue(b?.date)
         )
         const nextDate = sortedDates[0]
-        const dateLabel = DateUtils.formatDate(nextDate.date, "DD [de] MMMM [de] YYYY")
-        const timeLabel = nextDate.hourStart
-            ? nextDate.hourEnd
-                ? `${nextDate.hourStart} - ${nextDate.hourEnd}`
-                : nextDate.hourStart
-            : null
 
         return {
-            dateLabel,
-            timeLabel
+            dateLabel: formatEventDate(nextDate?.date, "DD [de] MMMM [de] YYYY"),
+            timeLabel: formatEventTime(nextDate?.hourStart, nextDate?.hourEnd)
         }
     }
 
@@ -90,11 +85,7 @@ const getEventSchedule = (ticket: TTicket) => {
             detailLabel = `${baseLabel} (${days})`
         }
 
-        const timeLabel = ticket.event.Recurrence.hourStart
-            ? ticket.event.Recurrence.hourEnd
-                ? `${ticket.event.Recurrence.hourStart} - ${ticket.event.Recurrence.hourEnd}`
-                : ticket.event.Recurrence.hourStart
-            : null
+        const timeLabel = formatEventTime(ticket.event.Recurrence.hourStart, ticket.event.Recurrence.hourEnd)
 
         return {
             dateLabel: detailLabel,
@@ -103,8 +94,8 @@ const getEventSchedule = (ticket: TTicket) => {
     }
 
     return {
-        dateLabel: "Data a definir",
-        timeLabel: null
+        dateLabel: formatEventDate(undefined),
+        timeLabel: formatEventTime()
     }
 }
 

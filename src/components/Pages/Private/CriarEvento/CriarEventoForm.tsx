@@ -30,6 +30,8 @@ type TRecurrenceDayForm = {
     hourEnd?: string | null
 }
 
+const DESCRIPTION_MAX_LENGTH = 10000
+
 const weekDays = [
     { value: 0, label: "Dom" },
     { value: 1, label: "Seg" },
@@ -101,6 +103,7 @@ const CriarEventoForm = () => {
     const recurrenceType = form.watch("recurrence.type")
     const recurrenceDaysOfWeek = form.watch("recurrence.daysOfWeek") || []
     const batches = form.watch("batches") || []
+    const descriptionLength = form.watch("description")?.length || 0
 
     const totalTickets = useMemo(() => {
         if (!useBatches || !batches.length) return 0
@@ -239,19 +242,24 @@ const CriarEventoForm = () => {
                                 </div>
 
                                 <div>
-                                    <div className="flex items-center justify-between mb-2">
+                                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                                         <label htmlFor="description" className="block text-sm font-medium text-psi-dark">
                                             Descrição *
                                         </label>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            className="text-xs"
-                                        >
-                                            <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-                                            Escrever com IA
-                                        </Button>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs text-psi-dark/60">
+                                                {descriptionLength}/{DESCRIPTION_MAX_LENGTH}
+                                            </span>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="text-xs"
+                                            >
+                                                <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                                                Escrever com IA
+                                            </Button>
+                                        </div>
                                     </div>
                                     <Controller
                                         name="description"
@@ -262,6 +270,7 @@ const CriarEventoForm = () => {
                                                 onChange={field.onChange}
                                                 placeholder="Descreva seu evento... (Markdown suportado)"
                                                 required
+                                                maxLength={DESCRIPTION_MAX_LENGTH}
                                             />
                                         )}
                                     />

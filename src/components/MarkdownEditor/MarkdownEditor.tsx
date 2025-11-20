@@ -13,6 +13,7 @@ type TMarkdownEditorProps = {
     placeholder?: string
     rows?: number
     required?: boolean
+    maxLength?: number
 }
 
 const MarkdownEditor = (
@@ -22,7 +23,8 @@ const MarkdownEditor = (
         className,
         placeholder = "Descreva seu evento...",
         rows = 6,
-        required = false
+        required = false,
+        maxLength
     }: TMarkdownEditorProps
 ) => {
     const [isPreview, setIsPreview] = useState(false)
@@ -61,6 +63,7 @@ const MarkdownEditor = (
                     placeholder={placeholder}
                     rows={rows}
                     required={required}
+                    maxLength={maxLength}
                     className="w-full font-mono text-sm"
                 />
             )}

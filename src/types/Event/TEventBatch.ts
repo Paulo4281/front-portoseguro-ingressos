@@ -2,12 +2,12 @@ type TEventBatch = {
     id: string
     name: string
     price: number
-    tickets: number
-    isActive: boolean
-    autoActivateNext: boolean
-    accumulateUnsold: boolean
     startDate: string
     endDate: string | null
+    tickets: number
+    autoActivateNext: boolean
+    accumulateUnsold: boolean
+    isActive: boolean
     eventId: string
     createdAt: string
     updatedAt: string | null

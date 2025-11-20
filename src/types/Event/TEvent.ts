@@ -1,50 +1,9 @@
-import { TEventBatch } from "./TEventBatch"
-
-type TEventDate = {
-    id: string
-    date: string
-    hourStart: string
-    hourEnd: string | null
-    eventId: string
-    createdAt: string
-    updatedAt: string | null
-}
-
-type TRecurrenceDay = {
-    id: string
-    day: number
-    hourStart: string
-    hourEnd: string | null
-    recurrenceId: string
-    createdAt: string
-    updatedAt: string | null
-}
-
-type TRecurrence = {
-    id: string
-    type: "NONE" | "DAILY" | "WEEKLY" | "MONTHLY"
-    hourStart: string | null
-    hourEnd: string | null
-    endDate: string | null
-    eventId: string
-    createdAt: string
-    updatedAt: string | null
-    RecurrenceDay: TRecurrenceDay[]
-} | null
-
-type TEventCategoryEvent = {
-    eventId: string
-    categoryId: string
-    createdAt: string
-}
-
-type TOrganizer = {
-    id: string
-    name: string
-    createdAt: string
-    updatedAt: string | null
-    userId: string
-}
+import type { TEventBatch } from "./TEventBatch"
+import type { TEventDate } from "./TEventDate"
+import type { TRecurrence } from "./TRecurrence"
+import type { TRecurrenceDay } from "./TRecurrenceDay"
+import type { TEventCategoryEvent } from "./TEventCategoryEvent"
+import type { TOrganizer } from "@/types/Organizer/TOrganizer"
 
 type TEvent = {
     id: string
@@ -53,15 +12,20 @@ type TEvent = {
     location: string | null
     image: string
     price: number | null
-    tickets: number
+    tickets: number | null
     userId: string
     organizerId: string
+    isActive: boolean
+    isDeleted: boolean
+    isCancelled: boolean
+    isPostponed: boolean
     createdAt: string
     updatedAt: string | null
+    
     EventDate: TEventDate[]
     EventBatch: TEventBatch[]
     EventCategoryEvent: TEventCategoryEvent[]
-    Recurrence: TRecurrence
+    Recurrence: TRecurrence | null
     Organizer: TOrganizer
 }
 

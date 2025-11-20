@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CTAButton } from "@/components/CTAButton/CTAButton"
-import { ArrowUpRight, Lock, ShieldCheck, Ticket, Music2, SunMedium, Waves, PartyPopper, TrendingDown, Users, CreditCard, TrendingUp, Megaphone, Tag } from "lucide-react"
+import { ArrowUpRight, Lock, ShieldCheck, Ticket, Music2, SunMedium, Waves, PartyPopper, TrendingDown, Users, CreditCard, TrendingUp, Megaphone, Tag, Fingerprint, Cpu, Sparkles, Globe2, CheckCircle2, HeartHandshake, DollarSign, Star, BookOpen, ArrowRight } from "lucide-react"
 import { useEventFind } from "@/hooks/Event/useEventFind"
 import { CardEvent } from "@/components/Card/CardEvent/CardEvent"
 import { Carousel } from "@/components/Carousel/Carousel"
@@ -53,6 +53,47 @@ const HomeHero = () => {
             </div>
         ))
     }, [heroCategories])
+
+    const buyerAssuranceHighlights = [
+        {
+            title: "Proteção total",
+            description: "Pagamentos criptografados, monitoramento antifraude 24/7 e suporte humano para qualquer imprevisto.",
+            icon: ShieldCheck
+        },
+        {
+            title: "Processo transparente",
+            description: "Você acompanha cada etapa da compra em tempo real e recebe notificações claras sobre status e QR Codes.",
+            icon: Fingerprint
+        },
+        {
+            title: "Plataforma moderna",
+            description: "Infraestrutura em nuvem com redundância global e performance pensada para picos de alta demanda.",
+            icon: Cpu
+        }
+    ]
+
+    const organizerAdvantages = [
+        {
+            title: "Autenticidade regional",
+            description: "Operamos exclusivamente em Porto Seguro, entendendo a realidade dos produtores locais e do público.",
+            icon: Globe2
+        },
+        {
+            title: "Taxas que cabem no bolso",
+            description: "1% acima de R$ 39,90 ou R$ 1 fixo. Sem letrinhas miúdas, sem retenções injustas.",
+            icon: TrendingDown
+        },
+        {
+            title: "Tecnologia aplicada",
+            description: "Dashboard inteligente, relatórios em tempo real e integrações via API para repasses automáticos.",
+            icon: Sparkles
+        },
+        {
+            title: "Equipe próxima",
+            description: "Acompanhamos o evento do planejamento ao pós-venda com suporte dedicado e consultoria estratégica.",
+            icon: HeartHandshake
+        }
+    ]
 
     return (
         <Background variant="hero" className="flex min-h-screen flex-col overflow-x-hidden">
@@ -286,11 +327,130 @@ const HomeHero = () => {
                             </div>
                             <div className="flex sm:flex-row gap-4 sm:gap-6 items-center">
                                 <CTAButton
-                                    href="/organizadores/cadastro"
+                                    href="/cadastro?org=true"
                                     text="Anuncie seu evento"
                                     variant="secondary"
                                     icon={Megaphone}
                                 />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section className="w-full bg-white py-12
+            sm:py-16
+            lg:py-20">
+                <div className="container space-y-10">
+                    <div className="space-y-3 text-center max-w-3xl mx-auto">
+                        <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-psi-primary/10 text-psi-primary text-xs font-semibold uppercase tracking-wide">
+                            Confiança em cada etapa
+                        </span>
+                        <h2 className="text-3xl font-bold text-psi-dark
+                        sm:text-4xl">
+                            Experiências de compra seguras e transparentes
+                        </h2>
+                        <p className="text-psi-dark/70 text-sm
+                        sm:text-base">
+                            Cada ingresso é validado, rastreado e entregue com clareza para que turistas e moradores<br /> comprem sem receios.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1
+                    md:grid-cols-2
+                    lg:grid-cols-3 gap-6">
+                        {buyerAssuranceHighlights.map((highlight) => {
+                            const Icon = highlight.icon
+                            return (
+                                <div key={highlight.title} className="rounded-3xl border border-[#E4E6F0] bg-linear-to-br from-white via-white to-psi-primary/5 p-6 shadow-lg shadow-black/5 flex flex-col gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-2xl bg-psi-primary/10 flex items-center justify-center text-psi-primary">
+                                            <Icon className="h-5 w-5" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-psi-dark">{highlight.title}</h3>
+                                    </div>
+                                    <p className="text-sm text-psi-dark/70 flex-1">
+                                        {highlight.description}
+                                    </p>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            </section>
+
+            <section className="w-full bg-psi-dark text-white py-12
+            sm:py-16
+            lg:py-20">
+                <div className="container space-y-10">
+                    <div className="grid gap-8
+                    lg:grid-cols-[1.2fr_0.8fr] items-start">
+                        <div className="space-y-4">
+                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold uppercase tracking-wide">
+                                Plataforma para organizadores
+                            </span>
+                            <h2 className="text-3xl font-bold
+                            sm:text-4xl">
+                                Conte sua história em uma plataforma independente, autêntica e tecnológica.
+                            </h2>
+                            <p className="text-white/80 text-sm
+                            sm:text-base">
+                                Somos locais, falamos a língua da orla e entregamos tecnologia de ponta para quem cria experiências inesquecíveis.
+                            </p>
+
+                            <div className="grid grid-cols-1
+                            sm:grid-cols-2 gap-4 pt-4">
+                                {organizerAdvantages.map((advantage) => {
+                                    const Icon = advantage.icon
+                                    return (
+                                        <div key={advantage.title} className="rounded-2xl border border-white/10 bg-white/5 p-4 flex flex-col gap-2">
+                                            <div className="flex items-center gap-2 text-psi-tertiary">
+                                                <Icon className="h-4 w-4" />
+                                                <span className="text-xs uppercase tracking-widest text-white/70">{advantage.title}</span>
+                                            </div>
+                                            <p className="text-sm text-white/85">{advantage.description}</p>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="rounded-[28px] border border-white/15 bg-linear-to-br from-white/10 via-white/5 to-white/5 p-6 space-y-6">
+                            <div className="space-y-3">
+                                <h3 className="text-2xl font-semibold">Assuma o controle da sua bilheteria</h3>
+                                <p className="text-white/80 text-sm">
+                                    Tenha visibilidade de vendas, libere lotes com automações inteligentes e receba relatórios que ajudam nas decisões.
+                                </p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="rounded-2xl bg-white/10 p-4">
+                                    <div className="flex-col lg:flex items-start gap-2">
+                                        <DollarSign className="mb-2 lg:mb-0 size-4 text-white/60" />
+                                        <p className="text-xs text-white/60 uppercase tracking-widest">Tempo médio de repasse</p>
+                                    </div>
+                                    <p className="text-3xl font-bold text-psi-tertiary mt-2">48h</p>
+                                </div>
+                                <div className="rounded-2xl bg-white/10 p-4">
+                                    <div className="flex-col lg:flex items-start gap-2">
+                                        <Star className="mb-2 lg:mb-0 size-4 text-white/60" />
+                                        <p className="text-xs text-white/60 uppercase tracking-widest">Satisfação dos produtores</p>
+                                    </div>
+                                    <p className="text-3xl font-bold text-emerald-300 mt-2">5/5</p>
+                                </div>
+                            </div>
+                            <div className="flex flex-col gap-3">
+                                <CTAButton
+                                    href="/cadastro?org=true"
+                                    text="Anuncie seu evento"
+                                    variant="secondary"
+                                    icon={Megaphone}
+                                />
+                                <Button asChild size="lg" variant="ghost" className="text-white! hover:bg-transparent!">
+                                    <div>
+                                        Conhecer recursos completos
+                                        <ArrowRight className="size-4" />
+                                    </div>
+                                </Button>
                             </div>
                         </div>
                     </div>

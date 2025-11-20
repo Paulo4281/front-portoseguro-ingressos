@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils"
 import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
 import { useEventFindById } from "@/hooks/Event/useEventFindById"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 
 type TEventUpdate = z.infer<typeof EventUpdateValidator>
 
@@ -31,6 +32,8 @@ type TRecurrenceDayForm = {
     hourStart: string
     hourEnd?: string | null
 }
+
+const DESCRIPTION_MAX_LENGTH = 10000
 
 const weekDays = [
     { value: 0, label: "Dom" },
@@ -52,6 +55,11 @@ const parseCurrencyToNumber = (value: string): number => {
         .replace(",", ".")
         .trim()
     return parseFloat(cleaned) || 0
+}
+
+const formatDateOnly = (date?: string | null) => {
+    if (!date) return ""
+    return date.split("T")[0] || ""
 }
 
 type TAtualizarEventoFormProps = {
@@ -109,6 +117,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     const recurrenceType = form.watch("recurrence.type")
     const recurrenceDaysOfWeek = form.watch("recurrence.daysOfWeek") || []
     const batches = form.watch("batches") || []
+    const descriptionLength = form.watch("description")?.length || 0
 
     const totalTickets = useMemo(() => {
         if (!useBatches || !batches.length) return 0
@@ -127,14 +136,14 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                 name: batch.name,
                 price: batch.price,
                 quantity: batch.tickets,
-                startDate: batch.startDate,
-                endDate: batch.endDate,
+                startDate: formatDateOnly(batch.startDate),
+                endDate: formatDateOnly(batch.endDate),
                 autoActivateNext: false,
                 accumulateUnsold: false
             })) : undefined
 
             const datesData = event.EventDate && event.EventDate.length > 0 ? event.EventDate.map(eventDate => ({
-                date: eventDate.date,
+                date: formatDateOnly(eventDate.date),
                 hourStart: eventDate.hourStart,
                 hourEnd: eventDate.hourEnd
             })) : [
@@ -167,7 +176,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                 location: event.location || null,
                 useBatches: hasBatches,
                 tickets: hasBatches ? undefined : event.tickets,
-                ticketPrice: hasBatches ? undefined : undefined,
+                ticketPrice: hasBatches ? undefined : event.price ?? undefined,
                 batches: batchesData,
                 dates: datesData,
                 recurrence: recurrenceData
@@ -353,6 +362,9 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                         <label htmlFor="description" className="block text-sm font-medium text-psi-dark">
                                             Descrição *
                                         </label>
+                                        <span className="text-xs text-psi-dark/60">
+                                            {descriptionLength}/{DESCRIPTION_MAX_LENGTH}
+                                        </span>
                                     </div>
                                     <Controller
                                         name="description"
@@ -363,6 +375,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                 onChange={field.onChange}
                                                 placeholder="Descreva seu evento... (Markdown suportado)"
                                                 required
+                                                maxLength={DESCRIPTION_MAX_LENGTH}
                                             />
                                         )}
                                     />
@@ -498,15 +511,8 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                 control={form.control}
                                                 render={({ field }) => (
                                                     <InputCurrency
-                                                        value={field.value || 0}
-                                                        onChangeValue={(value) => {
-                                                            if (!value || value === "") {
-                                                                field.onChange(0)
-                                                            } else {
-                                                                const numValue = parseCurrencyToNumber(value)
-                                                                field.onChange(numValue)
-                                                            }
-                                                        }}
+                                                        { ...field }
+                                                        value={ValueUtils.centsToCurrency(Number(field.value)) || 0}
                                                         required
                                                         className="w-full"
                                                     />

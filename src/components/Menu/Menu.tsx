@@ -24,6 +24,7 @@ import { useRouter } from "next/navigation"
 import { Toast } from "@/components/Toast/Toast"
 import { CartDropdown } from "@/components/Cart/CartDropdown"
 import type { ComponentType } from "react"
+import { Separator } from "@radix-ui/react-dropdown-menu"
 
 type TSubLink = {
     href: string
@@ -193,7 +194,7 @@ const Menu = () => {
                     <div className="hidden items-center gap-3
                     md:flex">
                         <CartDropdown />
-                        {!isAuthenticated ? (
+                        |
                             <>
                                 <Button
                                     asChild
@@ -202,22 +203,36 @@ const Menu = () => {
                                     className="text-psi-dark/70 hover:text-psi-dark"
                                 >
                                     <Link href="/">
-                                        <Home className="mr-2 h-4 w-4" />
+                                        <Home className="h-4 w-4" />
                                         Home
                                     </Link>
                                 </Button>
                                 <Button
                                     asChild
-                                    variant="primary"
+                                    variant="ghost"
                                     size="sm"
+                                    className="text-psi-dark/70 hover:text-psi-dark"
                                 >
-                                    <Link href="/login">
-                                        <LogIn className="mr-2 h-4 w-4" />
-                                        Entrar
+                                    <Link href="/eventos">
+                                        <Calendar className="h-4 w-4" />
+                                        Eventos
                                     </Link>
                                 </Button>
+                                {
+                                    !isAuthenticated && (
+                                        <Button
+                                            asChild
+                                            variant="primary"
+                                            size="sm"
+                                        >
+                                            <Link href="/login">
+                                                <LogIn className="mr-2 h-4 w-4" />
+                                                Entrar
+                                            </Link>
+                                        </Button>
+                                    )
+                                }
                             </>
-                        ) : (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <button
@@ -309,7 +324,6 @@ const Menu = () => {
                                     </div>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                        )}
                     </div>
 
                     <div className="md:hidden flex items-center gap-2">
@@ -422,7 +436,7 @@ const Menu = () => {
                     </div>
                 </div>
 
-                {!isAuthenticated && isOpen && (
+                {!isAuthenticated && (
                     <div className="md:hidden border-t border-[#E4E6F0] bg-white/95 backdrop-blur-md rounded-2xl mt-2 mb-4 shadow-lg shadow-black/5">
                         <div className="px-2 pt-2 pb-3 space-y-1">
                             <Button
@@ -447,9 +461,9 @@ const Menu = () => {
                                     Entrar
                                 </Link>
                             </Button>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
             </div>
         </nav>
     )

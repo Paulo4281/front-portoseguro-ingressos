@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
@@ -13,7 +13,7 @@ import { Input } from "@/components/Input/Input"
 import { InputMask } from "@/components/Input/InputMask"
 import { PasswordStrength } from "@/components/PasswordStrength/PasswordStrength"
 import { useUserCreate } from "@/hooks/User/useUserCreate"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { LoadingButton } from "@/components/Loading/LoadingButton"
 
 const CadastroForm = () => {
@@ -29,6 +29,7 @@ const CadastroForm = () => {
     })
 
     const routerService = useRouter()
+    const searchParams = useSearchParams()
 
     const { mutateAsync: createUser, isPending: isCreatingUser } = useUserCreate()
 
@@ -43,6 +44,13 @@ const CadastroForm = () => {
         setSelectedRole(null)
         form.reset()
     }
+
+    useEffect(() => {
+        const orgParam = searchParams.get("org")
+        if (!selectedRole && orgParam === "true") {
+            handleRoleSelect("ORGANIZER")
+        }
+    }, [searchParams, selectedRole])
 
     const handleSubmit = async (data: TUserCreate) => {
         const response = await createUser(data)

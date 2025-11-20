@@ -14,6 +14,7 @@ import {
 import { useEventFind } from "@/hooks/Event/useEventFind"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Background } from "@/components/Background/Background"
+import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import type { TEvent } from "@/types/Event/TEvent"
 import type { TEventBatch } from "@/types/Event/TEventBatch"
 
@@ -38,13 +39,8 @@ const MeusEventosPannel = () => {
         return eventsData.data
     }, [eventsData])
 
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString)
-        return date.toLocaleDateString("pt-BR", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric"
-        })
+    const formatDate = (dateString?: string | null) => {
+        return formatEventDate(dateString, "DD MMM YYYY")
     }
 
     const formatCurrency = (value: number) => {
@@ -81,14 +77,14 @@ const MeusEventosPannel = () => {
     }
 
     const getDateRange = (dates: TEvent["EventDate"]) => {
-        if (!dates || dates.length === 0) return null
+        if (!dates || dates.length === 0) return formatDate()
 
         const sortedDates = [...dates].sort((a, b) => 
-            new Date(a.date).getTime() - new Date(b.date).getTime()
+            getDateOrderValue(a?.date) - getDateOrderValue(b?.date)
         )
 
-        const firstDate = formatDate(sortedDates[0].date)
-        const lastDate = formatDate(sortedDates[sortedDates.length - 1].date)
+        const firstDate = formatEventDate(sortedDates[0]?.date, "DD [de] MMMM [de] YYYY")
+        const lastDate = formatEventDate(sortedDates[sortedDates.length - 1]?.date, "DD [de] MMMM [de] YYYY")
 
         if (dates.length === 1) {
             return firstDate
@@ -257,19 +253,17 @@ const MeusEventosPannel = () => {
                                                                 <div key={index} className="flex items-center gap-2 text-xs text-psi-dark/60">
                                                                     <Clock className="h-3 w-3 text-psi-primary shrink-0" />
                                                                     <span>
-                                                                        {formatDate(eventDate.date)}: {eventDate.hourStart}
-                                                                        {eventDate.hourEnd && ` - ${eventDate.hourEnd}`}
+                                                                        {formatDate(eventDate.date)}: {formatEventTime(eventDate.hourStart, eventDate.hourEnd)}
                                                                     </span>
                                                                 </div>
                                                             ))}
                                                         </div>
                                                     )}
-                                                    {event.EventDate && event.EventDate.length === 1 && event.EventDate[0].hourStart && (
+                                                    {event.EventDate && event.EventDate.length === 1 && (
                                                         <div className="flex items-center gap-2 text-xs text-psi-dark/60 mt-1">
                                                             <Clock className="h-3 w-3 text-psi-primary shrink-0" />
                                                             <span>
-                                                                {event.EventDate[0].hourStart}
-                                                                {event.EventDate[0].hourEnd && ` - ${event.EventDate[0].hourEnd}`}
+                                                                {formatEventTime(event.EventDate[0].hourStart, event.EventDate[0].hourEnd)}
                                                             </span>
                                                         </div>
                                                     )}

@@ -7,7 +7,8 @@ import { Calendar, Clock, MapPin, Repeat, Tag, ShieldCheck, Lock, CreditCard, Ar
 import { Skeleton } from "@/components/ui/skeleton"
 import { useEventFindById } from "@/hooks/Event/useEventFindById"
 import { useEventFind } from "@/hooks/Event/useEventFind"
-import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
+import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
+import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { Background } from "@/components/Background/Background"
 import { Button } from "@/components/ui/button"
@@ -18,6 +19,7 @@ import { CardEvent } from "@/components/Card/CardEvent/CardEvent"
 import ReactMarkdown from "react-markdown"
 import type { TEvent, TRecurrenceDay } from "@/types/Event/TEvent"
 import type { TEventBatch } from "@/types/Event/TEventBatch"
+import { EventCategoryIconHandler } from "@/utils/Helpers/EventCategoryIconHandler/EventCategoryIconHandler"
 
 type TVerEventoInfoProps = {
     eventId: string
@@ -30,6 +32,7 @@ const VerEventoInfo = (
 ) => {
     const { data: eventData, isLoading, isError } = useEventFindById(eventId)
     const { data: allEventsData } = useEventFind()
+    const { data: eventCategoriesData } = useEventCategoryFind()
     
     const event = useMemo(() => {
         return eventData?.data
@@ -43,8 +46,12 @@ const VerEventoInfo = (
     const [selectedBatchId, setSelectedBatchId] = useState<string | undefined>(undefined)
     const [quantity, setQuantity] = useState(1)
 
-    const formatDate = (dateString: string) => {
-        return DateUtils.formatDate(dateString, "DD [de] MMMM [de] YYYY")
+    const formatDate = (dateString?: string | null) => {
+        return formatEventDate(dateString, "DD [de] MMMM [de] YYYY")
+    }
+
+    const formatTimeRange = (hourStart?: string | null, hourEnd?: string | null) => {
+        return formatEventTime(hourStart, hourEnd)
     }
 
     const formatRecurrenceInfo = (recurrence: TEvent["Recurrence"]) => {
@@ -158,6 +165,29 @@ const VerEventoInfo = (
         return sortedBatches.filter(batch => getBatchStatus(batch) === "ended")
     }, [sortedBatches])
 
+    const eventCategoryBadges = useMemo(() => {
+        if (!event?.EventCategoryEvent?.length) return []
+        const categories = eventCategoriesData?.data
+        if (!categories?.length) {
+            return event.EventCategoryEvent.map(categoryEvent => ({
+                id: categoryEvent.categoryId,
+                label: categoryEvent.categoryId
+            }))
+        }
+        const cache = categories.reduce<Record<string, string>>((acc, category) => {
+            acc[category.id] = category.name
+            return acc
+        }, {})
+        return event.EventCategoryEvent.map(categoryEvent => {
+            const label = cache[categoryEvent.categoryId]
+            if (!label) return null
+            return {
+                id: categoryEvent.categoryId,
+                label
+            }
+        }).filter(Boolean) as { id: string; label: string }[]
+    }, [event, eventCategoriesData])
+
     const similarEvents = useMemo(() => {
         if (!allEvents || !event) return []
         return allEvents.filter(e => e.id !== event.id).slice(0, 8)
@@ -243,6 +273,15 @@ const VerEventoInfo = (
     const recurrenceInfo = formatRecurrenceInfo(event.Recurrence)
     const isRecurrent = event.Recurrence && event.Recurrence.type !== "NONE"
 
+    const descriptionContent = event.description ? (
+        <div className="prose prose-sm max-w-none
+        sm:prose-base">
+            <div className="text-psi-dark [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:mb-4 [&>h1]:mt-6 [&>h2]:text-xl [&>h2]:font-bold [&>h2]:mb-3 [&>h2]:mt-5 [&>h3]:text-lg [&>h3]:font-semibold [&>h3]:mb-2 [&>h3]:mt-4 [&>p]:mb-4 [&>p]:leading-relaxed [&>ul]:list-disc [&>ul]:ml-6 [&>ul]:mb-4 [&>ol]:list-decimal [&>ol]:ml-6 [&>ol]:mb-4 [&>li]:mb-2 [&>strong]:font-bold [&>em]:italic [&>code]:bg-psi-primary/10 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded [&>code]:text-sm [&>pre]:bg-psi-dark/5 [&>pre]:p-4 [&>pre]:rounded-lg [&>pre]:overflow-x-auto [&>pre]:mb-4 [&>blockquote]:border-l-4 [&>blockquote]:border-psi-primary/30 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:mb-4 [&>a]:text-psi-primary [&>a]:underline [&>a:hover]:text-psi-primary/80">
+                <ReactMarkdown>{event.description}</ReactMarkdown>
+            </div>
+        </div>
+    ) : null
+
     return (
         <Background variant="light" className="min-h-screen">
             <div className="max-w-[88vw] mx-auto py-8 mt-[80px]
@@ -271,30 +310,65 @@ const VerEventoInfo = (
                                     {event.name}
                                 </h1>
 
-                                <div className="flex flex-wrap items-center gap-4 text-sm text-psi-dark/70">
-                                    {!isRecurrent && event.EventDate?.length > 0 && (
-                                        <>
-                                            <div className="flex items-center gap-2">
-                                                <Calendar className="h-4 w-4 text-psi-primary shrink-0" />
-                                                <span className="font-medium">
-                                                    {event.EventDate?.length === 1
-                                                        ? formatDate(event.EventDate[0].date)
-                                                        : `${formatDate(event.EventDate[0].date)} - ${formatDate(event.EventDate[event.EventDate?.length - 1].date)}`
-                                                    }
-                                                </span>
-                                            </div>
-                                            
-                                            {event.EventDate[0].hourStart && (
-                                                <div className="flex items-center gap-2">
-                                                    <Clock className="h-4 w-4 text-psi-primary shrink-0" />
-                                                    <span>
-                                                        {event.EventDate[0].hourStart}
-                                                        {event.EventDate[0].hourEnd && ` - ${event.EventDate[0].hourEnd}`}
+                                {eventCategoryBadges.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mb-6">
+                                        {eventCategoryBadges.map((category) => {
+                                            const Icon = EventCategoryIconHandler(category.label)
+                                            return (
+                                                <div key={category.id} className="flex items-center gap-1">
+                                                    <span
+                                                        className="px-3 py-1 flex items-center gap-2 rounded-full bg-psi-primary/10 text-psi-primary text-xs font-semibold uppercase tracking-wide"
+                                                    >
+                                                        <Icon
+                                                            className="h-4 w-4 text-psi-primary"
+                                                            aria-label={`Categoria ${category.label}`}
+                                                        />
+                                                        {category.label}
                                                     </span>
                                                 </div>
-                                            )}
-                                        </>
-                                    )}
+                                            )
+                                        })}
+                                    </div>
+                                )}
+
+                                <div className="flex flex-col gap-4 text-sm text-psi-dark/70">
+                                    {!isRecurrent && event.EventDate?.length > 0 && (() => {
+                                        const sortedDates = [...event.EventDate].sort((a, b) => getDateOrderValue(a?.date) - getDateOrderValue(b?.date))
+                                        const firstDate = sortedDates[0]
+                                        const lastDate = sortedDates[sortedDates.length - 1]
+                                        const hasMultipleDates = sortedDates.length > 1
+
+                                        return (
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-2">
+                                                    <Calendar className="h-4 w-4 text-psi-primary shrink-0" />
+                                                    <span className="font-medium">
+                                                        {hasMultipleDates
+                                                            ? `${formatDate(firstDate?.date)} - ${formatDate(lastDate?.date)}`
+                                                            : formatDate(firstDate?.date)
+                                                        }
+                                                    </span>
+                                                </div>
+
+                                                {hasMultipleDates ? (
+                                                    <div className="space-y-2 text-xs text-psi-dark/70">
+                                                        {sortedDates.map((eventDate) => (
+                                                            <div key={eventDate.id || eventDate.date} className="flex flex-wrap items-center gap-2">
+                                                                <span className="font-semibold text-psi-dark">{formatEventDate(eventDate.date, "DD[/]MMM")}</span>
+                                                                <span className="text-psi-dark/40">•</span>
+                                                                <span>{formatTimeRange(eventDate.hourStart, eventDate.hourEnd)}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-2">
+                                                        <Clock className="h-4 w-4 text-psi-primary shrink-0" />
+                                                        <span>{formatTimeRange(firstDate?.hourStart, firstDate?.hourEnd)}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                    })()}
 
                                     {isRecurrent && recurrenceInfo && (
                                         <div className="flex items-center gap-2">
@@ -318,12 +392,9 @@ const VerEventoInfo = (
                                 </div>
                             </div>
 
-                            {event.description && (
-                                <div className="prose prose-sm max-w-none
-                                sm:prose-base">
-                                    <div className="text-psi-dark [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:mb-4 [&>h1]:mt-6 [&>h2]:text-xl [&>h2]:font-bold [&>h2]:mb-3 [&>h2]:mt-5 [&>h3]:text-lg [&>h3]:font-semibold [&>h3]:mb-2 [&>h3]:mt-4 [&>p]:mb-4 [&>p]:leading-relaxed [&>ul]:list-disc [&>ul]:ml-6 [&>ul]:mb-4 [&>ol]:list-decimal [&>ol]:ml-6 [&>ol]:mb-4 [&>li]:mb-2 [&>strong]:font-bold [&>em]:italic [&>code]:bg-psi-primary/10 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded [&>code]:text-sm [&>pre]:bg-psi-dark/5 [&>pre]:p-4 [&>pre]:rounded-lg [&>pre]:overflow-x-auto [&>pre]:mb-4 [&>blockquote]:border-l-4 [&>blockquote]:border-psi-primary/30 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:mb-4 [&>a]:text-psi-primary [&>a]:underline [&>a:hover]:text-psi-primary/80">
-                                        <ReactMarkdown>{event.description}</ReactMarkdown>
-                                    </div>
+                            {descriptionContent && (
+                                <div className="hidden lg:block">
+                                    {descriptionContent}
                                 </div>
                             )}
                         </div>
@@ -458,6 +529,12 @@ const VerEventoInfo = (
                                         {cartItem ? "Atualizar Carrinho" : "Adicionar ao Carrinho"}
                                     </Button>
                                 </div>
+                            </div>
+                        )}
+
+                        {descriptionContent && (
+                            <div className="lg:hidden">
+                                {descriptionContent}
                             </div>
                         )}
 

@@ -10,7 +10,7 @@ import { Input } from "@/components/Input/Input"
 import { InputMask } from "@/components/Input/InputMask"
 import { QuantitySelector } from "@/components/QuantitySelector/QuantitySelector"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
-import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
+import { formatEventDate, formatEventTime } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import { getCardBrand } from "@/utils/Helpers/CardUtils/CardUtils"
 import { 
     User, 
@@ -384,17 +384,16 @@ const CheckoutInfo = () => {
                                                                 <div className="flex items-center gap-2 text-sm text-psi-dark/70">
                                                                     <Calendar className="size-4" />
                                                                     <span>
-                                                                        {DateUtils.formatDate(event.EventDate[0].date, "DD [de] MMMM [de] YYYY")}
+                                                                        {formatEventDate(event.EventDate[0].date, "DD [de] MMMM [de] YYYY")}
                                                                     </span>
                                                                 </div>
                                                             )}
                                                             
-                                                            {event.EventDate && event.EventDate[0]?.hourStart && (
+                                                            {event.EventDate && event.EventDate.length > 0 && (
                                                                 <div className="flex items-center gap-2 text-sm text-psi-dark/70">
                                                                     <Clock className="size-4" />
                                                                     <span>
-                                                                        {event.EventDate[0].hourStart}
-                                                                        {event.EventDate[0].hourEnd && ` - ${event.EventDate[0].hourEnd}`}
+                                                                        {formatEventTime(event.EventDate[0].hourStart, event.EventDate[0].hourEnd)}
                                                                     </span>
                                                                 </div>
                                                             )}

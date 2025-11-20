@@ -2,7 +2,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Calendar, Clock, MapPin, Repeat, Tag } from "lucide-react"
 import { Card } from "@/components/Card/Card"
-import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
+import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import type { TEvent, TRecurrenceDay } from "@/types/Event/TEvent"
 import type { TEventBatch } from "@/types/Event/TEventBatch"
 
@@ -19,11 +19,11 @@ const CardEvent = (
         if (!dates || !Array.isArray(dates) || dates.length === 0) return null
 
         const sortedDates = [...dates].sort((a, b) => 
-            new Date(a.date).getTime() - new Date(b.date).getTime()
+            getDateOrderValue(a?.date) - getDateOrderValue(b?.date)
         )
 
-        const firstDate = DateUtils.formatDate(sortedDates[0].date, "DD MMM")
-        const lastDate = DateUtils.formatDate(sortedDates[sortedDates.length - 1].date, "DD MMM")
+        const firstDate = formatEventDate(sortedDates[0]?.date, "DD [de] MMMM [de] YYYY")
+        const lastDate = formatEventDate(sortedDates[sortedDates.length - 1]?.date, "DD MMM")
 
         if (dates.length === 1) {
             return firstDate
@@ -146,7 +146,7 @@ const CardEvent = (
                     <div className="space-y-2.5 flex-1">
                         {!isRecurrent && (
                             <>
-                                <div className="flex items-center gap-2 text-sm text-psi-dark/70">
+                                <div className="flex flex-wrap items-center gap-2 text-sm text-psi-dark/70">
                                     <Calendar className="h-4 w-4 text-psi-primary shrink-0" />
                                     <span className="font-medium">{getDateRange(event.EventDate)}</span>
                                     {event.EventDate && Array.isArray(event.EventDate) && event.EventDate.length > 1 && (
@@ -156,12 +156,11 @@ const CardEvent = (
                                     )}
                                 </div>
                                 
-                                {firstDate && firstDate.hourStart && (
+                                {firstDate && (
                                     <div className="flex items-center gap-2 text-sm text-psi-dark/70">
                                         <Clock className="h-4 w-4 text-psi-primary shrink-0" />
                                         <span>
-                                            {firstDate.hourStart}
-                                            {firstDate.hourEnd && ` - ${firstDate.hourEnd}`}
+                                            {formatEventTime(firstDate.hourStart, firstDate.hourEnd)}
                                         </span>
                                     </div>
                                 )}
