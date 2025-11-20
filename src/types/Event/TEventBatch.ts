@@ -1,7 +1,7 @@
 type TEventBatch = {
     id: string
     name: string
-    price: number
+    price: number | null
     startDate: string
     endDate: string | null
     tickets: number

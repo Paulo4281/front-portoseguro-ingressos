@@ -56,6 +56,11 @@ const HomeHero = () => {
 
     const buyerAssuranceHighlights = [
         {
+            title: "Organizadores verificados",
+            description: "Todos os produtores passam por verificação manual e compliance rigoroso. Você compra apenas de organizadores autorizados e confiáveis.",
+            icon: CheckCircle2
+        },
+        {
             title: "Proteção total",
             description: "Pagamentos criptografados, monitoramento antifraude 24/7 e suporte humano para qualquer imprevisto.",
             icon: ShieldCheck
@@ -73,6 +78,11 @@ const HomeHero = () => {
     ]
 
     const organizerAdvantages = [
+        {
+            title: "Plataforma verificada",
+            description: "Processo de compliance rigoroso e verificação manual. Apenas organizadores autorizados podem publicar eventos, garantindo credibilidade e confiança.",
+            icon: ShieldCheck
+        },
         {
             title: "Autenticidade regional",
             description: "Operamos exclusivamente em Porto Seguro, entendendo a realidade dos produtores locais e do público.",
@@ -352,24 +362,25 @@ const HomeHero = () => {
                         </h2>
                         <p className="text-psi-dark/70 text-sm
                         sm:text-base">
-                            Cada ingresso é validado, rastreado e entregue com clareza para que turistas e moradores<br /> comprem sem receios.
+                            Cada ingresso é validado, rastreado e entregue com clareza para que turistas e moradores<br /> comprem sem receios. Todos os organizadores são verificados manualmente antes de publicar eventos.
                         </p>
                     </div>
 
                     <div className="grid grid-cols-1
                     md:grid-cols-2
-                    lg:grid-cols-3 gap-6">
+                    lg:grid-cols-4 gap-6">
                         {buyerAssuranceHighlights.map((highlight) => {
                             const Icon = highlight.icon
+                            const isFirst = highlight.title === "Organizadores verificados"
                             return (
-                                <div key={highlight.title} className="rounded-3xl border border-[#E4E6F0] bg-linear-to-br from-white via-white to-psi-primary/5 p-6 shadow-lg shadow-black/5 flex flex-col gap-4">
+                                <div key={highlight.title} className={`rounded-3xl border p-6 shadow-lg shadow-black/5 flex flex-col gap-4 ${isFirst ? "border-psi-light/80 bg-linear-to-br from-psi-primary/40 via-psi-secondary to-psi-primary/70" : "border-[#E4E6F0] bg-linear-to-br from-white via-white to-psi-primary/5"}`}>
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-2xl bg-psi-primary/10 flex items-center justify-center text-psi-primary">
+                                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${isFirst ? "bg-psi-light/90 text-psi-primary" : "bg-psi-primary/10 text-psi-primary"}`}>
                                             <Icon className="h-5 w-5" />
                                         </div>
-                                        <h3 className="text-lg font-semibold text-psi-dark">{highlight.title}</h3>
+                                        <h3 className={`text-lg font-semibold text-psi-dark ${isFirst ? "text-psi-light" : ""}`}>{highlight.title}</h3>
                                     </div>
-                                    <p className="text-sm text-psi-dark/70 flex-1">
+                                    <p className={`text-sm text-psi-dark/70 flex-1 ${isFirst ? "text-psi-light text-shadow-2xs" : ""}`}>
                                         {highlight.description}
                                     </p>
                                 </div>
@@ -395,20 +406,20 @@ const HomeHero = () => {
                             </h2>
                             <p className="text-white/80 text-sm
                             sm:text-base">
-                                Somos locais, falamos a língua da orla e entregamos tecnologia de ponta para quem cria experiências inesquecíveis.
+                                Somos locais, falamos a língua da orla e entregamos tecnologia de ponta para quem cria experiências inesquecíveis. Todos os organizadores passam por verificação manual e compliance antes de publicar eventos.
                             </p>
 
                             <div className="grid grid-cols-1
                             sm:grid-cols-2 gap-4 pt-4">
-                                {organizerAdvantages.map((advantage) => {
+                                {organizerAdvantages.map((advantage, index) => {
                                     const Icon = advantage.icon
                                     return (
-                                        <div key={advantage.title} className="rounded-2xl border border-white/10 bg-white/5 p-4 flex flex-col gap-2">
-                                            <div className="flex items-center gap-2 text-psi-tertiary">
+                                        <div key={advantage.title} className={`rounded-2xl border border-white/10 bg-white/5 p-4 flex flex-col gap-2 ${index === 0 ? "bg-linear-to-br border-0! from-psi-primary/40 via-psi-secondary to-psi-primary/70" : ""}`}>
+                                            <div className={`flex items-center gap-2 text-psi-tertiary ${index === 0 ? "text-psi-light" : ""}`}>
                                                 <Icon className="h-4 w-4" />
                                                 <span className="text-xs uppercase tracking-widest text-white/70">{advantage.title}</span>
                                             </div>
-                                            <p className="text-sm text-white/85">{advantage.description}</p>
+                                            <p className={`text-sm text-white/85 ${index === 0 ? "text-psi-light text-shadow-2xs" : ""}`}>{advantage.description}</p>
                                         </div>
                                     )
                                 })}
@@ -446,10 +457,10 @@ const HomeHero = () => {
                                     icon={Megaphone}
                                 />
                                 <Button asChild size="lg" variant="ghost" className="text-white! hover:bg-transparent!">
-                                    <div>
+                                    <Link href="/recursos">
                                         Conhecer recursos completos
                                         <ArrowRight className="size-4" />
-                                    </div>
+                                    </Link>
                                 </Button>
                             </div>
                         </div>

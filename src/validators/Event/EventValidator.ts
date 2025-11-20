@@ -21,14 +21,26 @@ const RecurrenceValidator = z.object({
     endDate: z.string().nullable().optional()
 }).nullable().optional()
 
+const TicketTypeValidator = z.object({
+    name: z.string({ error: DefaultFormErrors.required }).min(1, { error: "Nome do tipo é obrigatório" }),
+    description: z.string().nullable().optional()
+})
+
+const EventBatchTicketTypeValidator = z.object({
+    ticketTypeId: z.string({ error: DefaultFormErrors.required }),
+    price: z.number({ error: DefaultFormErrors.required }).min(0.01, { error: "Preço deve ser maior que 0" }),
+    amount: z.number({ error: DefaultFormErrors.required }).min(1, { error: "Quantidade deve ser maior que 0" })
+})
+
 const BatchValidator = z.object({
     name: z.string({ error: DefaultFormErrors.required }),
-    price: z.number({ error: DefaultFormErrors.required }).min(0.01, { error: "Preço deve ser maior que 0" }),
-    quantity: z.number({ error: DefaultFormErrors.required }).min(1, { error: "Quantidade deve ser maior que 0" }),
+    price: z.number().min(0.01, { error: "Preço deve ser maior que 0" }).nullable().optional(),
+    quantity: z.number().min(1, { error: "Quantidade deve ser maior que 0" }).nullable().optional(),
     startDate: z.string({ error: DefaultFormErrors.required }),
     endDate: z.string().nullable().optional(),
     autoActivateNext: z.boolean().optional(),
-    accumulateUnsold: z.boolean().optional()
+    accumulateUnsold: z.boolean().optional(),
+    ticketTypes: z.array(EventBatchTicketTypeValidator).optional()
 })
 
 const EventCreateValidator = z.object({
@@ -41,6 +53,7 @@ const EventCreateValidator = z.object({
     location: z.string().nullable().optional(),
     tickets: z.number().optional(),
     ticketPrice: z.number().optional(),
+    ticketTypes: z.array(TicketTypeValidator).optional(),
     batches: z.array(BatchValidator).optional(),
     dates: z.array(EventDateValidator).optional(),
     recurrence: RecurrenceValidator,
@@ -189,6 +202,7 @@ const EventUpdateValidatorBase = z.object({
     location: z.string().nullable().optional(),
     tickets: z.number().optional(),
     ticketPrice: z.number().optional(),
+    ticketTypes: z.array(TicketTypeValidator).optional(),
     batches: z.array(BatchValidator).optional(),
     dates: z.array(EventDateValidator).optional(),
     recurrence: RecurrenceValidator,
@@ -278,6 +292,36 @@ const EventUpdateValidator = EventUpdateValidatorBase.superRefine((data, ctx) =>
     }
 
     if (hasBatches && data.batches && data.batches.length > 0) {
+        data.batches.forEach((batch, batchIndex) => {
+            const hasTicketTypes = batch.ticketTypes && batch.ticketTypes.length > 0
+            const hasPrice = batch.price !== null && batch.price !== undefined && batch.price > 0
+            const hasQuantity = batch.quantity !== null && batch.quantity !== undefined && batch.quantity > 0
+
+            if (!hasTicketTypes && !hasPrice) {
+                ctx.addIssue({
+                    code: "custom",
+                    path: ["batches", batchIndex, "price"],
+                    message: "Defina um preço para o lote ou associe tipos de ingressos"
+                })
+            }
+
+            if (!hasTicketTypes && !hasQuantity) {
+                ctx.addIssue({
+                    code: "custom",
+                    path: ["batches", batchIndex, "quantity"],
+                    message: "Defina uma quantidade para o lote ou associe tipos de ingressos"
+                })
+            }
+
+            if (hasTicketTypes && batch.ticketTypes && batch.ticketTypes.length === 0) {
+                ctx.addIssue({
+                    code: "custom",
+                    path: ["batches", batchIndex, "ticketTypes"],
+                    message: "Adicione pelo menos um tipo de ingresso ao lote"
+                })
+            }
+        })
+
         let eventStartDate: string | null = null
         let eventEndDate: string | null = null
 
