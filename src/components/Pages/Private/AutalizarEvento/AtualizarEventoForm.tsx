@@ -128,11 +128,11 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
         if (eventData?.data && !isFormInitialized && eventCategories.length > 0) {
             const event = eventData.data
             
-            const hasBatches = !!(event.EventBatch && event.EventBatch.length > 0)
+            const hasBatches = !!(event.EventBatches && event.EventBatches.length > 0)
             setRecurrenceEnabled(!!event.Recurrence)
 
             const sortedEventBatch = hasBatches
-                ? [...(event.EventBatch || [])].sort((a, b) => {
+                ? [...(event.EventBatches || [])].sort((a, b) => {
                     const dateA = new Date(a.startDate).getTime()
                     const dateB = new Date(b.startDate).getTime()
                     return dateA - dateB
@@ -141,7 +141,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
 
             const batchesData = hasBatches ? sortedEventBatch.map(batch => ({
                 name: batch.name,
-                price: batch.price / 100,
+                price: batch.price ? batch.price / 100 : undefined,
                 quantity: batch.tickets,
                 startDate: formatDateOnly(batch.startDate),
                 endDate: formatDateOnly(batch.endDate),
@@ -149,7 +149,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                 accumulateUnsold: batch.accumulateUnsold ?? false
             })) : undefined
 
-            const datesData = event.EventDate && event.EventDate.length > 0 ? event.EventDate.map(eventDate => ({
+            const datesData = event.EventDates && event.EventDates.length > 0 ? event.EventDates.map(eventDate => ({
                 date: formatDateOnly(eventDate.date),
                 hourStart: eventDate.hourStart || "",
                 hourEnd: eventDate.hourEnd
@@ -161,13 +161,13 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                 }
             ]
 
-            const categoryIds = event.EventCategoryEvent?.map(ece => ece.categoryId) || []
+            const categoryIds = event.EventCategoryEvents?.map(ece => ece.categoryId) || []
 
             const recurrenceData = event.Recurrence ? {
                 type: event.Recurrence.type,
                 hourStart: event.Recurrence.hourStart || undefined,
                 hourEnd: event.Recurrence.hourEnd || undefined,
-                daysOfWeek: event.Recurrence.RecurrenceDay?.map(rd => ({
+                daysOfWeek: event.Recurrence.RecurrenceDays?.map(rd => ({
                     day: rd.day,
                     hourStart: rd.hourStart,
                     hourEnd: rd.hourEnd || undefined
@@ -201,7 +201,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
             ticketPrice: hasBatches ? undefined : (data.ticketPrice ? Math.round(data.ticketPrice * 100) : undefined),
             batches: hasBatches ? data.batches?.map(batch => ({
                 ...batch,
-                price: Math.round(batch.price * 100)
+                price: batch.price ? Math.round(batch.price * 100) : undefined
             })) : undefined,
             dates: data.recurrence ? null : data.dates,
             recurrence: data.recurrence || null
@@ -593,7 +593,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
 
                                         {batchFields.map((field, index) => {
                                             const hasNextBatch = index < batchFields.length - 1
-                                            const batch = eventData?.data?.EventBatch?.find((b, i, arr) => {
+                                            const batch = eventData?.data?.EventBatches?.find((b, i, arr) => {
                                                 const sortedEventBatch = [...arr].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
                                                 return sortedEventBatch[index]?.id === b.id
                                             })

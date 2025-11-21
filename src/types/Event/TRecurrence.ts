@@ -9,7 +9,7 @@ type TRecurrence = {
     eventId: string
     createdAt: string
     updatedAt: string | null
-    RecurrenceDay: TRecurrenceDay[]
+    RecurrenceDays: TRecurrenceDay[]
 }
 
 export type {

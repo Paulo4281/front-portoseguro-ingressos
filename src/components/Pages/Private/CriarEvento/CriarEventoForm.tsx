@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { useForm, Controller, useFieldArray } from "react-hook-form"
+import { useForm, Controller, useFieldArray, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -89,7 +89,18 @@ const CriarEventoForm = () => {
             tickets: undefined,
             ticketPrice: undefined,
             ticketTypes: undefined,
-            batches: undefined,
+            batches: [
+                {
+                    name: "",
+                    price: undefined,
+                    quantity: undefined,
+                    startDate: "",
+                    endDate: null,
+                    autoActivateNext: false,
+                    accumulateUnsold: false,
+                    ticketTypes: []
+                }
+            ],
             dates: [
                 {
                     date: "",
@@ -124,23 +135,44 @@ const CriarEventoForm = () => {
 
     const ticketTypes = form.watch("ticketTypes") || []
 
+    const watchedBatches = useWatch({
+        control: form.control,
+        name: "batches"
+    }) || []
+
     const totalTickets = useMemo(() => {
-        if (!batches.length) return 0
-        return batches.reduce((sum, batch) => {
+        if (!watchedBatches || !watchedBatches.length) return 0
+        return watchedBatches.reduce((sum, batch) => {
             if (batch.ticketTypes && batch.ticketTypes.length > 0) {
                 return sum + batch.ticketTypes.reduce((typeSum, type) => typeSum + (type.amount || 0), 0)
             }
             return sum + (batch.quantity || 0)
         }, 0)
-    }, [batches])
+    }, [watchedBatches])
 
     const handleSubmit = async (data: TEventCreate) => {
         try {
             const hasBatches = data.batches && data.batches.length > 0
+            const hasTicketTypes = data.ticketTypes && data.ticketTypes.length > 0
+            
+            const batchesWithTicketTypes = hasBatches && data.batches 
+                ? data.batches.some(batch => batch.ticketTypes && batch.ticketTypes.length > 0)
+                : false
+            
+            if (batchesWithTicketTypes && !hasTicketTypes) {
+                console.error("Erro: Há batches com ticketTypes mas não há ticketTypes no nível do evento")
+                return
+            }
             
             const submitData: TEventCreate = {
-                ...data,
-                ticketPrice: hasBatches ? undefined : (data.ticketPrice ? Math.round(data.ticketPrice * 100) : undefined),
+                name: data.name,
+                description: data.description,
+                categories: data.categories.map((category) => category),
+                image: data.image,
+                location: data.location,
+                tickets: undefined,
+                ticketPrice: undefined,
+                ticketTypes: hasTicketTypes ? data.ticketTypes : undefined,
                 batches: hasBatches && data.batches ? data.batches.map(batch => ({
                     ...batch,
                     price: batch.price ? Math.round(batch.price * 100) : null,
@@ -151,20 +183,21 @@ const CriarEventoForm = () => {
                 })) : undefined,
                 dates: data.recurrence ? undefined : data.dates,
                 recurrence: data.recurrence || null,
-                isClientTaxed: data.isClientTaxed || false,
-                categories: data.categories.map((category) => category),
-                description: data.description,
-                image: data.image,
-                location: data.location,
-                name: data.name,
-                tickets: data.tickets,
-                ticketTypes: data.ticketTypes && data.ticketTypes.length > 0 ? data.ticketTypes : undefined
+                isClientTaxed: data.isClientTaxed || false
             }
 
-            console.log(submitData)
+            if (batchesWithTicketTypes && !submitData.ticketTypes) {
+                console.error("Erro: ticketTypes não está sendo enviado mesmo com batches que usam ticketTypes")
+                console.log("data.ticketTypes:", data.ticketTypes)
+                console.log("submitData:", submitData)
+                return
+            }
+
+            console.log("Dados enviados:", JSON.stringify(submitData, null, 2))
+            console.log("ticketTypes no nível do evento:", submitData.ticketTypes)
 
             await createEvent(submitData)
-            router.push("/meus-eventos")
+            // router.push("/meus-eventos")
         } catch (error) {
             console.error("Erro ao criar evento:", error)
         }
@@ -501,35 +534,6 @@ const CriarEventoForm = () => {
                             </div>
 
                             <div className="space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <Checkbox
-                                        id="use-batches"
-                                        checked={(form.watch("batches")?.length || 0) > 0}
-                                        onCheckedChange={(checked) => {
-                                            const isChecked = checked === true
-                                            if (!isChecked) {
-                                                const currentBatches = form.getValues("batches")
-                                                if (currentBatches && currentBatches.length > 0) {
-                                                    for (let i = currentBatches.length - 1; i >= 0; i--) {
-                                                        removeBatch(i)
-                                                    }
-                                                }
-                                                form.setValue("batches", undefined)
-                                            } else {
-                                                form.setValue("tickets", undefined)
-                                                form.setValue("ticketPrice", undefined)
-                                                const currentBatches = form.getValues("batches")
-                                                if (!currentBatches || currentBatches.length === 0) {
-                                                    addBatch()
-                                                }
-                                            }
-                                        }}
-                                    />
-                                    <label htmlFor="use-batches" className="text-sm font-medium text-psi-dark cursor-pointer">
-                                        Usar lotes de ingressos
-                                    </label>
-                                </div>
-
                                 <Controller
                                     name="isClientTaxed"
                                     control={form.control}
@@ -553,60 +557,7 @@ const CriarEventoForm = () => {
                                 />
                                 <FieldError message={form.formState.errors.isClientTaxed?.message || ""} />
 
-                                {(form.watch("batches")?.length || 0) === 0 ? (
-                                    <div className="grid grid-cols-1
-                                    sm:grid-cols-2 gap-4">
-                                        <div>
-                                            <label htmlFor="tickets" className="block text-sm font-medium text-psi-dark mb-2">
-                                                Quantidade de Ingressos *
-                                            </label>
-                                            <Controller
-                                                name="tickets"
-                                                control={form.control}
-                                                render={({ field }) => (
-                                                    <Input
-                                                        {...field}
-                                                        id="tickets"
-                                                        type="number"
-                                                        placeholder="100"
-                                                        icon={Ticket}
-                                                        required
-                                                        className="w-full"
-                                                        value={field.value || ""}
-                                                        onChange={(e) => field.onChange(parseInt(e.target.value) || undefined)}
-                                                    />
-                                                )}
-                                            />
-                                            <FieldError message={form.formState.errors.tickets?.message || ""} />
-                                        </div>
-                                        <div>
-                                            <label htmlFor="ticketPrice" className="block text-sm font-medium text-psi-dark mb-2">
-                                                Preço do Ingresso *
-                                            </label>
-                                            <Controller
-                                                name="ticketPrice"
-                                                control={form.control}
-                                                render={({ field }) => (
-                                                    <InputCurrency
-                                                        value={field.value || 0}
-                                                        onChangeValue={(value) => {
-                                                            if (!value || value === "") {
-                                                                field.onChange(0)
-                                                            } else {
-                                                                const numValue = parseCurrencyToNumber(value)
-                                                                field.onChange(numValue)
-                                                            }
-                                                        }}
-                                                        required
-                                                        className="w-full"
-                                                    />
-                                                )}
-                                            />
-                                            <FieldError message={form.formState.errors.ticketPrice?.message || ""} />
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
+                                <div className="space-y-4">
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <h3 className="text-lg font-semibold text-psi-dark">Lotes</h3>
@@ -648,6 +599,11 @@ const CriarEventoForm = () => {
                                                             >
                                                                 <Trash2 className="h-4 w-4" />
                                                             </Button>
+                                                        )}
+                                                        {batchFields.length === 1 && (
+                                                            <span className="text-xs text-psi-dark/60">
+                                                                Mínimo de 1 lote
+                                                            </span>
                                                         )}
                                                     </div>
 
@@ -845,103 +801,106 @@ const CriarEventoForm = () => {
                                                         </div>
                                                     )}
 
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                            Data Início *
-                                                        </label>
-                                                        <Controller
-                                                            name={`batches.${index}.startDate`}
-                                                            control={form.control}
-                                                            render={({ field }) => {
-                                                                const eventDates = form.watch("dates") || []
-                                                                const recurrence = form.watch("recurrence")
-                                                                
-                                                                let maxDate: string | undefined = undefined
-                                                                
-                                                                if (recurrence) {
-                                                                    if (recurrence.endDate) {
-                                                                        maxDate = recurrence.endDate
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                                                Data Início *
+                                                            </label>
+                                                            <Controller
+                                                                name={`batches.${index}.startDate`}
+                                                                control={form.control}
+                                                                render={({ field }) => {
+                                                                    const eventDates = form.watch("dates") || []
+                                                                    const recurrence = form.watch("recurrence")
+                                                                    
+                                                                    let maxDate: string | undefined = undefined
+                                                                    
+                                                                    if (recurrence) {
+                                                                        if (recurrence.endDate) {
+                                                                            maxDate = recurrence.endDate
+                                                                        }
+                                                                    } else if (eventDates.length > 0) {
+                                                                        const sortedDates = [...eventDates]
+                                                                            .map(d => d.date)
+                                                                            .filter(Boolean)
+                                                                            .sort()
+                                                                        if (sortedDates.length > 0) {
+                                                                            maxDate = sortedDates[0]
+                                                                        }
                                                                     }
-                                                                } else if (eventDates.length > 0) {
-                                                                    const sortedDates = [...eventDates]
-                                                                        .map(d => d.date)
-                                                                        .filter(Boolean)
-                                                                        .sort()
-                                                                    if (sortedDates.length > 0) {
-                                                                        maxDate = sortedDates[0]
+                                                                    
+                                                                    return (
+                                                                        <>
+                                                                            <DatePicker
+                                                                                value={field.value || ""}
+                                                                                onChange={(value) => field.onChange(value || "")}
+                                                                                required
+                                                                                minDate={new Date().toISOString().split("T")[0]}
+                                                                                maxDate={maxDate}
+                                                                            />
+                                                                            {maxDate && field.value && new Date(field.value) > new Date(maxDate) && (
+                                                                                <p className="text-xs text-destructive mt-1">
+                                                                                    A data de início do lote não pode ser posterior à primeira data do evento
+                                                                                </p>
+                                                                            )}
+                                                                        </>
+                                                                    )
+                                                                }}
+                                                            />
+                                                            <FieldError message={form.formState.errors.batches?.[index]?.startDate?.message || ""} />
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                                                Data Fim
+                                                            </label>
+                                                            <Controller
+                                                                name={`batches.${index}.endDate`}
+                                                                control={form.control}
+                                                                render={({ field }) => {
+                                                                    const eventDates = form.watch("dates") || []
+                                                                    const recurrence = form.watch("recurrence")
+                                                                    
+                                                                    let maxDate: string | undefined = undefined
+                                                                    
+                                                                    if (recurrence) {
+                                                                        if (recurrence.endDate) {
+                                                                            maxDate = recurrence.endDate
+                                                                        }
+                                                                    } else if (eventDates.length > 0) {
+                                                                        const sortedDates = [...eventDates]
+                                                                            .map(d => d.date)
+                                                                            .filter(Boolean)
+                                                                            .sort()
+                                                                        if (sortedDates.length > 0) {
+                                                                            maxDate = sortedDates[sortedDates.length - 1]
+                                                                        }
                                                                     }
-                                                                }
-                                                                
-                                                                return (
-                                                                    <>
-                                                                        <DatePicker
-                                                                            value={field.value || ""}
-                                                                            onChange={(value) => field.onChange(value || "")}
-                                                                            required
-                                                                            minDate={new Date().toISOString().split("T")[0]}
-                                                                            maxDate={maxDate}
-                                                                        />
-                                                                        {maxDate && field.value && new Date(field.value) > new Date(maxDate) && (
-                                                                            <p className="text-xs text-destructive mt-1">
-                                                                                A data de início do lote não pode ser posterior à primeira data do evento
-                                                                            </p>
-                                                                        )}
-                                                                    </>
-                                                                )
-                                                            }}
-                                                        />
-                                                        <FieldError message={form.formState.errors.batches?.[index]?.startDate?.message || ""} />
+                                                                    
+                                                                    const batchStartDate = form.watch(`batches.${index}.startDate`)
+                                                                    const minDate = batchStartDate || new Date().toISOString().split("T")[0]
+                                                                    
+                                                                    return (
+                                                                        <>
+                                                                            <DatePicker
+                                                                                value={field.value || ""}
+                                                                                onChange={(value) => field.onChange(value)}
+                                                                                minDate={minDate}
+                                                                                maxDate={maxDate}
+                                                                            />
+                                                                            {maxDate && field.value && new Date(field.value) > new Date(maxDate) && (
+                                                                                <p className="text-xs text-destructive mt-1">
+                                                                                    A data de fim do lote não pode ser posterior à última data do evento
+                                                                                </p>
+                                                                            )}
+                                                                        </>
+                                                                    )
+                                                                }}
+                                                            />
+                                                            <FieldError message={form.formState.errors.batches?.[index]?.endDate?.message || ""} />
+                                                        </div>
                                                     </div>
 
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                            Data Fim
-                                                        </label>
-                                                        <Controller
-                                                            name={`batches.${index}.endDate`}
-                                                            control={form.control}
-                                                            render={({ field }) => {
-                                                                const eventDates = form.watch("dates") || []
-                                                                const recurrence = form.watch("recurrence")
-                                                                
-                                                                let maxDate: string | undefined = undefined
-                                                                
-                                                                if (recurrence) {
-                                                                    if (recurrence.endDate) {
-                                                                        maxDate = recurrence.endDate
-                                                                    }
-                                                                } else if (eventDates.length > 0) {
-                                                                    const sortedDates = [...eventDates]
-                                                                        .map(d => d.date)
-                                                                        .filter(Boolean)
-                                                                        .sort()
-                                                                    if (sortedDates.length > 0) {
-                                                                        maxDate = sortedDates[sortedDates.length - 1]
-                                                                    }
-                                                                }
-                                                                
-                                                                const batchStartDate = form.watch(`batches.${index}.startDate`)
-                                                                const minDate = batchStartDate || new Date().toISOString().split("T")[0]
-                                                                
-                                                                return (
-                                                                    <>
-                                                                        <DatePicker
-                                                                            value={field.value || ""}
-                                                                            onChange={(value) => field.onChange(value)}
-                                                                            minDate={minDate}
-                                                                            maxDate={maxDate}
-                                                                        />
-                                                                        {maxDate && field.value && new Date(field.value) > new Date(maxDate) && (
-                                                                            <p className="text-xs text-destructive mt-1">
-                                                                                A data de fim do lote não pode ser posterior à última data do evento
-                                                                            </p>
-                                                                        )}
-                                                                    </>
-                                                                )
-                                                            }}
-                                                        />
-                                                        <FieldError message={form.formState.errors.batches?.[index]?.endDate?.message || ""} />
-                                                    </div>
 
                                                     {hasNextBatch && (
                                                         <div className="rounded-lg border border-[#E4E6F0] bg-white p-4 space-y-3 mt-4">
@@ -975,8 +934,7 @@ const CriarEventoForm = () => {
                                             )
                                         })}
                                         <FieldError message={form.formState.errors.batches?.message || ""} />
-                                    </div>
-                                )}
+                                </div>
                             </div>
                         </div>
 

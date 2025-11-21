@@ -64,8 +64,8 @@ const MeusEventosPannel = () => {
 
         let label = recurrenceLabels[recurrence.type]
 
-        if (recurrence.type === "WEEKLY" && recurrence.RecurrenceDay && recurrence.RecurrenceDay.length > 0) {
-            const days = recurrence.RecurrenceDay.map(day => dayLabels[day.day]).join(", ")
+        if (recurrence.type === "WEEKLY" && recurrence.RecurrenceDays && recurrence.RecurrenceDays.length > 0) {
+            const days = recurrence.RecurrenceDays.map(day => dayLabels[day.day]).join(", ")
             label = `${label} (${days})`
         }
 
@@ -77,7 +77,7 @@ const MeusEventosPannel = () => {
         return label
     }
 
-    const getDateRange = (dates: TEvent["EventDate"]) => {
+    const getDateRange = (dates: TEvent["EventDates"]) => {
         if (!dates || dates.length === 0) return formatDate()
 
         const sortedDates = [...dates].sort((a, b) => 
@@ -94,7 +94,7 @@ const MeusEventosPannel = () => {
         return `${firstDate} - ${lastDate}`
     }
 
-    const getActiveBatch = (batches: TEvent["EventBatch"]): TEventBatch | null => {
+    const getActiveBatch = (batches: TEvent["EventBatches"]): TEventBatch | null => {
         if (!batches || batches.length === 0) return null
 
         const now = new Date()
@@ -255,11 +255,11 @@ const MeusEventosPannel = () => {
                                                 <Calendar className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
                                                 <div className="flex-1 min-w-0">
                                                     <div className="font-medium text-psi-dark mb-1">
-                                                        {getDateRange(event.EventDate)}
+                                                        {getDateRange(event.EventDates)}
                                                     </div>
-                                                    {event.EventDate && event.EventDate.length > 1 && (
+                                                    {event.EventDates && event.EventDates.length > 1 && (
                                                         <div className="space-y-1 mt-2">
-                                                            {event.EventDate.map((eventDate, index) => (
+                                                            {event.EventDates.map((eventDate, index) => (
                                                                 <div key={index} className="flex items-center gap-2 text-xs text-psi-dark/60">
                                                                     <Clock className="h-3 w-3 text-psi-primary shrink-0" />
                                                                     <span>
@@ -269,11 +269,11 @@ const MeusEventosPannel = () => {
                                                             ))}
                                                         </div>
                                                     )}
-                                                    {event.EventDate && event.EventDate.length === 1 && (
+                                                    {event.EventDates && event.EventDates.length === 1 && (
                                                         <div className="flex items-center gap-2 text-xs text-psi-dark/60 mt-1">
                                                             <Clock className="h-3 w-3 text-psi-primary shrink-0" />
                                                             <span>
-                                                                {formatEventTime(event.EventDate[0].hourStart, event.EventDate[0].hourEnd)}
+                                                                {formatEventTime(event.EventDates[0].hourStart, event.EventDates[0].hourEnd)}
                                                             </span>
                                                         </div>
                                                     )}
@@ -295,7 +295,7 @@ const MeusEventosPannel = () => {
                                             )}
 
                                             {(() => {
-                                                const activeBatch = getActiveBatch(event.EventBatch)
+                                                const activeBatch = getActiveBatch(event.EventBatches)
                                                 if (!activeBatch) return null
                                                 
                                                 return (
@@ -308,7 +308,7 @@ const MeusEventosPannel = () => {
                                                         </div>
                                                         <div className="flex items-center justify-between text-xs">
                                                             <span className="text-psi-dark/70">
-                                                                Preço: <span className="font-bold text-psi-primary">{formatCurrency(activeBatch.price)}</span>
+                                                                Preço: <span className="font-bold text-psi-primary">{activeBatch.price ? formatCurrency(activeBatch.price) : "Grátis"}</span>
                                                             </span>
                                                             <span className="text-psi-dark/70">
                                                                 Disponível: <span className="font-semibold text-psi-dark">{activeBatch.tickets}</span>

@@ -1,3 +1,5 @@
+import type { TEventBatchTicketType } from "@/types/EventBatchTicketType/TEventBatchTicketType"
+
 type TEventBatch = {
     id: string
     name: string
@@ -11,6 +13,7 @@ type TEventBatch = {
     eventId: string
     createdAt: string
     updatedAt: string | null
+    EventBatchTicketTypes?: TEventBatchTicketType[]
 }
 
 export type {

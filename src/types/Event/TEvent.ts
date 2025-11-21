@@ -3,6 +3,7 @@ import type { TEventDate } from "./TEventDate"
 import type { TRecurrence } from "./TRecurrence"
 import type { TRecurrenceDay } from "./TRecurrenceDay"
 import type { TEventCategoryEvent } from "./TEventCategoryEvent"
+import type { TTicketType } from "@/types/TicketType/TTicketType"
 import type { TOrganizer } from "@/types/Organizer/TOrganizer"
 import { EventCreateValidator } from "@/validators/Event/EventValidator"
 import type { z } from "zod"
@@ -27,9 +28,10 @@ type TEvent = {
     createdAt: string
     updatedAt: string | null
     
-    EventDate: TEventDate[]
-    EventBatch: TEventBatch[]
-    EventCategoryEvent: TEventCategoryEvent[]
+    EventDates: TEventDate[]
+    EventBatches: TEventBatch[]
+    EventCategoryEvents: TEventCategoryEvent[]
+    TicketTypes: TTicketType[]
     Recurrence: TRecurrence | null
     Organizer: TOrganizer
 }

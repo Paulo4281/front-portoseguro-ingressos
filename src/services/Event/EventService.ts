@@ -50,6 +50,10 @@ class EventService {
             })
         }
         
+        if (data.ticketTypes && data.ticketTypes.length > 0) {
+            formData.append("ticketTypes", JSON.stringify(data.ticketTypes))
+        }
+        
         if (data.batches && data.batches.length > 0) {
             formData.append("batches", JSON.stringify(data.batches))
         } else {

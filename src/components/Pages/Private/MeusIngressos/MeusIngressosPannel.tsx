@@ -51,8 +51,8 @@ const statusConfig: Record<TTicket["status"], TStatusConfig> = {
 const recurrenceDayLabels = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"]
 
 const getEventSchedule = (ticket: TTicket) => {
-    if (ticket.event.EventDate && ticket.event.EventDate.length > 0) {
-        const sortedDates = [...ticket.event.EventDate].sort((a, b) =>
+    if (ticket.event.EventDates && ticket.event.EventDates.length > 0) {
+        const sortedDates = [...ticket.event.EventDates].sort((a, b) =>
             getDateOrderValue(a?.date) - getDateOrderValue(b?.date)
         )
         const nextDate = sortedDates[0]
@@ -72,15 +72,15 @@ const getEventSchedule = (ticket: TTicket) => {
 
         let detailLabel = baseLabel
 
-        if (ticket.event.Recurrence.type === "WEEKLY" && ticket.event.Recurrence.RecurrenceDay?.length) {
-            const days = ticket.event.Recurrence.RecurrenceDay
+        if (ticket.event.Recurrence.type === "WEEKLY" && ticket.event.Recurrence.RecurrenceDays?.length) {
+            const days = ticket.event.Recurrence.RecurrenceDays
                 .map((day) => recurrenceDayLabels[day.day] || `Dia ${day.day}`)
                 .join(", ")
             detailLabel = `${baseLabel} (${days})`
         }
 
-        if (ticket.event.Recurrence.type === "MONTHLY" && ticket.event.Recurrence.RecurrenceDay?.length) {
-            const days = ticket.event.Recurrence.RecurrenceDay
+        if (ticket.event.Recurrence.type === "MONTHLY" && ticket.event.Recurrence.RecurrenceDays?.length) {
+            const days = ticket.event.Recurrence.RecurrenceDays
                 .map((day) => `Dia ${day.day}`)
                 .join(", ")
             detailLabel = `${baseLabel} (${days})`

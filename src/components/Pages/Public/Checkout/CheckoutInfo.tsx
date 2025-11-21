@@ -10,6 +10,7 @@ import { Input } from "@/components/Input/Input"
 import { InputMask } from "@/components/Input/InputMask"
 import { QuantitySelector } from "@/components/QuantitySelector/QuantitySelector"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
+import { TicketFeeUtils } from "@/utils/Helpers/FeeUtils/TicketFeeUtils"
 import { formatEventDate, formatEventTime } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import { getCardBrand } from "@/utils/Helpers/CardUtils/CardUtils"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
@@ -381,20 +382,20 @@ const CheckoutInfo = () => {
                                                                 <p className="text-sm text-psi-dark/60">Lote: {item.batchName}</p>
                                                             )}
                                                             
-                                                            {event.EventDate && event.EventDate.length > 0 && (
+                                                            {event.EventDates && event.EventDates.length > 0 && (
                                                                 <div className="flex items-center gap-2 text-sm text-psi-dark/70">
                                                                     <Calendar className="size-4" />
                                                                     <span>
-                                                                        {formatEventDate(event.EventDate[0].date, "DD [de] MMMM [de] YYYY")}
+                                                                        {formatEventDate(event.EventDates[0].date, "DD [de] MMMM [de] YYYY")}
                                                                     </span>
                                                                 </div>
                                                             )}
                                                             
-                                                            {event.EventDate && event.EventDate.length > 0 && (
+                                                            {event.EventDates && event.EventDates.length > 0 && (
                                                                 <div className="flex items-center gap-2 text-sm text-psi-dark/70">
                                                                     <Clock className="size-4" />
                                                                     <span>
-                                                                        {formatEventTime(event.EventDate[0].hourStart, event.EventDate[0].hourEnd)}
+                                                                        {formatEventTime(event.EventDates[0].hourStart, event.EventDates[0].hourEnd)}
                                                                     </span>
                                                                 </div>
                                                             )}
@@ -421,7 +422,18 @@ const CheckoutInfo = () => {
                                                             
                                                             <div className="pt-2 border-t border-psi-dark/10">
                                                                 <p className="text-lg font-semibold text-psi-primary">
-                                                                    {ValueUtils.centsToCurrency(item.price * item.quantity)}
+                                                                    {(() => {
+                                                                        if (item.ticketTypes && item.ticketTypes.length > 0) {
+                                                                            const total = item.ticketTypes.reduce((sum, tt) => {
+                                                                                const feeCents = TicketFeeUtils.calculateFeeInCents(tt.price, item.isClientTaxed)
+                                                                                return sum + (tt.price * tt.quantity) + (feeCents * tt.quantity)
+                                                                            }, 0)
+                                                                            return ValueUtils.centsToCurrency(total)
+                                                                        }
+                                                                        const feeCents = TicketFeeUtils.calculateFeeInCents(item.price, item.isClientTaxed)
+                                                                        const totalWithFees = (item.price * item.quantity) + (feeCents * item.quantity)
+                                                                        return ValueUtils.centsToCurrency(totalWithFees)
+                                                                    })()}
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -673,7 +685,18 @@ const CheckoutInfo = () => {
                                                 {item.eventName} x{item.quantity}
                                             </span>
                                             <span className="font-semibold text-psi-dark">
-                                                {ValueUtils.centsToCurrency(item.price * item.quantity)}
+                                                {(() => {
+                                                    if (item.ticketTypes && item.ticketTypes.length > 0) {
+                                                        const total = item.ticketTypes.reduce((sum, tt) => {
+                                                            const feeCents = TicketFeeUtils.calculateFeeInCents(tt.price, item.isClientTaxed)
+                                                            return sum + (tt.price * tt.quantity) + (feeCents * tt.quantity)
+                                                        }, 0)
+                                                        return ValueUtils.centsToCurrency(total)
+                                                    }
+                                                    const feeCents = TicketFeeUtils.calculateFeeInCents(item.price, item.isClientTaxed)
+                                                    const totalWithFees = (item.price * item.quantity) + (feeCents * item.quantity)
+                                                    return ValueUtils.centsToCurrency(totalWithFees)
+                                                })()}
                                             </span>
                                         </div>
                                     ))}

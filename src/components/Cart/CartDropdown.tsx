@@ -4,6 +4,7 @@ import { ShoppingCart, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/contexts/CartContext"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
+import { TicketFeeUtils } from "@/utils/Helpers/FeeUtils/TicketFeeUtils"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -74,7 +75,18 @@ const CartDropdown = () => {
                                                     Qtd: {item.quantity}
                                                 </span>
                                                 <span className="text-sm font-semibold text-psi-primary">
-                                                    {ValueUtils.centsToCurrency(item.price * item.quantity)}
+                                                    {(() => {
+                                                        if (item.ticketTypes && item.ticketTypes.length > 0) {
+                                                            const total = item.ticketTypes.reduce((sum, tt) => {
+                                                                const feeCents = TicketFeeUtils.calculateFeeInCents(tt.price, item.isClientTaxed)
+                                                                return sum + (tt.price * tt.quantity) + (feeCents * tt.quantity)
+                                                            }, 0)
+                                                            return ValueUtils.centsToCurrency(total)
+                                                        }
+                                                        const feeCents = TicketFeeUtils.calculateFeeInCents(item.price, item.isClientTaxed)
+                                                        const totalWithFees = (item.price * item.quantity) + (feeCents * item.quantity)
+                                                        return ValueUtils.centsToCurrency(totalWithFees)
+                                                    })()}
                                                 </span>
                                             </div>
                                         </div>
