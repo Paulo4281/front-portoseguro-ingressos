@@ -105,7 +105,10 @@ const CriarEventoForm = () => {
                 {
                     date: "",
                     hourStart: "",
-                    hourEnd: null
+                    hourEnd: null,
+                    hasSpecificPrice: false,
+                    price: null,
+                    ticketTypePrices: null
                 }
             ],
             recurrence: null,
@@ -178,10 +181,17 @@ const CriarEventoForm = () => {
                     price: batch.price ? Math.round(batch.price * 100) : null,
                     ticketTypes: batch.ticketTypes ? batch.ticketTypes.map(type => ({
                         ...type,
-                        price: Math.round(type.price * 100)
+                        price: type.price ? Math.round(type.price * 100) : null
                     })) : undefined
                 })) : undefined,
-                dates: data.recurrence ? undefined : data.dates,
+                dates: data.recurrence ? undefined : (data.dates ? data.dates.map(date => ({
+                    ...date,
+                    price: date.hasSpecificPrice && date.price ? Math.round(date.price * 100) : null,
+                    ticketTypePrices: date.hasSpecificPrice && date.ticketTypePrices ? date.ticketTypePrices.map(ttp => ({
+                        ...ttp,
+                        price: Math.round(ttp.price * 100)
+                    })) : null
+                })) : undefined),
                 recurrence: data.recurrence || null,
                 isClientTaxed: data.isClientTaxed || false
             }
@@ -193,8 +203,10 @@ const CriarEventoForm = () => {
                 return
             }
 
-            console.log("Dados enviados:", JSON.stringify(submitData, null, 2))
-            console.log("ticketTypes no nível do evento:", submitData.ticketTypes)
+            console.log(submitData)
+
+            // console.log("Dados enviados:", JSON.stringify(submitData, null, 2))
+            // console.log("ticketTypes no nível do evento:", submitData.ticketTypes)
 
             await createEvent(submitData)
             // router.push("/meus-eventos")
@@ -207,7 +219,10 @@ const CriarEventoForm = () => {
         appendDate({
             date: "",
             hourStart: "",
-            hourEnd: null
+            hourEnd: null,
+            hasSpecificPrice: false,
+            price: null,
+            ticketTypePrices: null
         })
     }
 
@@ -223,6 +238,7 @@ const CriarEventoForm = () => {
             ticketTypes: []
         })
     }
+
 
     const addTicketType = () => {
         appendTicketType({
@@ -723,6 +739,7 @@ const CriarEventoForm = () => {
                                                             {form.watch(`batches.${index}.ticketTypes`)?.map((batchTicketType, typeIndex) => {
                                                                 const typeIdx = parseInt(batchTicketType.ticketTypeId)
                                                                 const selectedType = ticketTypes[typeIdx]
+                                                                
                                                                 return (
                                                                     <div key={typeIndex} className="rounded-lg border border-[#E4E6F0] bg-white p-3 space-y-3">
                                                                         <div className="flex items-center justify-between">
@@ -1282,6 +1299,101 @@ const CriarEventoForm = () => {
                                                     />
                                                 </div>
                                             </div>
+
+                                            <div className="flex items-center gap-3 rounded-lg border border-[#E4E6F0] bg-[#F3F4FB] p-3">
+                                                <Checkbox
+                                                    id={`has-specific-price-${index}`}
+                                                    checked={form.watch(`dates.${index}.hasSpecificPrice`) || false}
+                                                    onCheckedChange={(checked) => {
+                                                        const isChecked = checked === true
+                                                        form.setValue(`dates.${index}.hasSpecificPrice`, isChecked)
+                                                        if (!isChecked) {
+                                                            form.setValue(`dates.${index}.price`, null)
+                                                            form.setValue(`dates.${index}.ticketTypePrices`, null)
+                                                        } else {
+                                                            if (ticketTypes.length > 0) {
+                                                                const initialPrices = ticketTypes.map((_, typeIdx) => ({
+                                                                    ticketTypeId: typeIdx.toString(),
+                                                                    price: 0
+                                                                }))
+                                                                form.setValue(`dates.${index}.ticketTypePrices`, initialPrices)
+                                                            } else {
+                                                                form.setValue(`dates.${index}.ticketTypePrices`, null)
+                                                            }
+                                                        }
+                                                    }}
+                                                />
+                                                <label htmlFor={`has-specific-price-${index}`} className="text-sm font-medium text-psi-dark cursor-pointer">
+                                                    Definir preço específico para este dia
+                                                </label>
+                                            </div>
+
+                                            {form.watch(`dates.${index}.hasSpecificPrice`) && (
+                                                <div className="space-y-3 rounded-lg border border-[#E4E6F0] bg-white p-3">
+                                                    {ticketTypes.length === 0 ? (
+                                                        <div>
+                                                            <label className="block text-xs text-psi-dark/60 mb-1">Preço para este dia *</label>
+                                                            <Controller
+                                                                name={`dates.${index}.price`}
+                                                                control={form.control}
+                                                                render={({ field }) => (
+                                                                    <InputCurrency
+                                                                        value={field.value || 0}
+                                                                        onChangeValue={(value) => {
+                                                                            if (!value || value === "") {
+                                                                                field.onChange(0)
+                                                                            } else {
+                                                                                const numValue = parseCurrencyToNumber(value)
+                                                                                field.onChange(numValue)
+                                                                            }
+                                                                        }}
+                                                                        required
+                                                                        className="w-full"
+                                                                    />
+                                                                )}
+                                                            />
+                                                            <FieldError message={form.formState.errors.dates?.[index]?.price?.message || ""} />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="space-y-3">
+                                                            <p className="text-xs text-psi-dark/60 mb-2">Defina o preço para cada tipo de ingresso neste dia:</p>
+                                                            {ticketTypes.map((ticketType, typeIdx) => {
+                                                                const currentPrices = form.watch(`dates.${index}.ticketTypePrices`) || []
+                                                                const priceIndex = currentPrices.findIndex(ttp => ttp.ticketTypeId === typeIdx.toString())
+                                                                
+                                                                return (
+                                                                    <div key={typeIdx} className="flex items-center gap-3">
+                                                                        <div className="flex-1">
+                                                                            <label className="block text-xs text-psi-dark/60 mb-1">{ticketType.name}</label>
+                                                                            {priceIndex >= 0 && (
+                                                                                <Controller
+                                                                                    name={`dates.${index}.ticketTypePrices.${priceIndex}.price`}
+                                                                                    control={form.control}
+                                                                                    render={({ field }) => (
+                                                                                        <InputCurrency
+                                                                                            value={field.value || 0}
+                                                                                            onChangeValue={(value) => {
+                                                                                                if (!value || value === "") {
+                                                                                                    field.onChange(0)
+                                                                                                } else {
+                                                                                                    const numValue = parseCurrencyToNumber(value)
+                                                                                                    field.onChange(numValue)
+                                                                                                }
+                                                                                            }}
+                                                                                            required
+                                                                                            className="w-full"
+                                                                                        />
+                                                                                    )}
+                                                                                />
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                     <FieldError message={form.formState.errors.dates?.message || ""} />

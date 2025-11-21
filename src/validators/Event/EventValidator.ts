@@ -1,10 +1,18 @@
 import { z } from "zod"
 import { DefaultFormErrors } from "@/utils/Errors/DefaultFormErrors"
 
+const EventDateTicketTypePriceValidator = z.object({
+    ticketTypeId: z.string({ error: DefaultFormErrors.required }),
+    price: z.number({ error: DefaultFormErrors.required }).min(0.01, { error: "Preço deve ser maior que 0" })
+})
+
 const EventDateValidator = z.object({
     date: z.string({ error: DefaultFormErrors.required }),
     hourStart: z.string({ error: DefaultFormErrors.required }),
-    hourEnd: z.string().nullable().optional()
+    hourEnd: z.string().nullable().optional(),
+    hasSpecificPrice: z.boolean().optional(),
+    price: z.number().min(0.01, { error: "Preço deve ser maior que 0" }).nullable().optional(),
+    ticketTypePrices: z.array(EventDateTicketTypePriceValidator).nullable().optional()
 })
 
 const RecurrenceDayValidator = z.object({
@@ -26,9 +34,14 @@ const TicketTypeValidator = z.object({
     description: z.string().nullable().optional()
 })
 
+const EventBatchTicketTypeDayValidator = z.object({
+    eventDateId: z.string({ error: DefaultFormErrors.required }),
+    price: z.number({ error: DefaultFormErrors.required }).min(0.01, { error: "Preço deve ser maior que 0" })
+})
+
 const EventBatchTicketTypeValidator = z.object({
     ticketTypeId: z.string({ error: DefaultFormErrors.required }),
-    price: z.number({ error: DefaultFormErrors.required }).min(0.01, { error: "Preço deve ser maior que 0" }),
+    price: z.number().min(0.01, { error: "Preço deve ser maior que 0" }).nullable().optional(),
     amount: z.number({ error: DefaultFormErrors.required }).min(1, { error: "Quantidade deve ser maior que 0" })
 })
 

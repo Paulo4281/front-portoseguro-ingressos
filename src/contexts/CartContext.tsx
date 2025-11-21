@@ -8,8 +8,9 @@ import { TicketFeeUtils } from "@/utils/Helpers/FeeUtils/TicketFeeUtils"
 type TCartItemTicketType = {
     ticketTypeId: string
     ticketTypeName: string
-    price: number
+    price: number | null
     quantity: number
+    days?: string[]
 }
 
 type TCartItem = {
@@ -28,6 +29,7 @@ type TCartContextType = {
     addItem: (item: Omit<TCartItem, "quantity">, quantity: number) => void
     removeItem: (eventId: string, batchId?: string) => void
     updateQuantity: (eventId: string, batchId: string | undefined, quantity: number) => void
+    updateTicketTypeQuantity: (eventId: string, batchId: string | undefined, ticketTypeId: string, quantity: number) => void
     clearCart: () => void
     getTotal: () => number
     getItemCount: () => number
@@ -48,8 +50,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
                         const sortedI = [...i.ticketTypes].sort((a, b) => a.ticketTypeId.localeCompare(b.ticketTypeId))
                         const sortedItem = [...item.ticketTypes].sort((a, b) => a.ticketTypeId.localeCompare(b.ticketTypeId))
                         return sortedI.every((tt, idx) => 
-                            tt.ticketTypeId === sortedItem[idx].ticketTypeId && 
-                            tt.quantity === sortedItem[idx].quantity
+                            tt.ticketTypeId === sortedItem[idx].ticketTypeId &&
+                            JSON.stringify(tt.days?.sort()) === JSON.stringify(sortedItem[idx].days?.sort())
                         )
                     }
                     return !i.ticketTypes && !item.ticketTypes
@@ -81,13 +83,110 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         }
 
         setItems((prev) =>
-            prev.map((item) =>
-                item.eventId === eventId && item.batchId === batchId
-                    ? { ...item, quantity }
-                    : item
-            )
+            prev.map((item) => {
+                if (item.eventId === eventId && item.batchId === batchId) {
+                    if (item.ticketTypes && item.ticketTypes.length > 0) {
+                        const hasDays = item.ticketTypes.some(tt => tt.days && tt.days.length > 0)
+                        
+                        if (hasDays) {
+                            const currentTotalQuantity = item.ticketTypes.reduce((sum, tt) => sum + tt.quantity, 0)
+                            const ratio = quantity / currentTotalQuantity
+                            
+                            const updatedTicketTypes = item.ticketTypes.map(tt => ({
+                                ...tt,
+                                quantity: Math.round(tt.quantity * ratio)
+                            }))
+                            
+                            const newTotalQuantity = updatedTicketTypes.reduce((sum, tt) => sum + tt.quantity, 0)
+                            if (newTotalQuantity !== quantity) {
+                                const diff = quantity - newTotalQuantity
+                                if (updatedTicketTypes.length > 0) {
+                                    updatedTicketTypes[0].quantity += diff
+                                }
+                            }
+                            
+                            return {
+                                ...item,
+                                quantity,
+                                ticketTypes: updatedTicketTypes
+                            }
+                        } else {
+                            const currentTotalQuantity = item.ticketTypes.reduce((sum, tt) => sum + tt.quantity, 0)
+                            const ratio = quantity / currentTotalQuantity
+                            
+                            const updatedTicketTypes = item.ticketTypes.map(tt => ({
+                                ...tt,
+                                quantity: Math.round(tt.quantity * ratio)
+                            }))
+                            
+                            const newTotalQuantity = updatedTicketTypes.reduce((sum, tt) => sum + tt.quantity, 0)
+                            if (newTotalQuantity !== quantity) {
+                                const diff = quantity - newTotalQuantity
+                                if (updatedTicketTypes.length > 0) {
+                                    updatedTicketTypes[0].quantity += diff
+                                }
+                            }
+                            
+                            const newPrice = updatedTicketTypes.reduce((sum, tt) => {
+                                if (tt.price !== null && tt.price !== undefined) {
+                                    return sum + (tt.price * tt.quantity)
+                                }
+                                return sum
+                            }, 0)
+                            
+                            return {
+                                ...item,
+                                quantity,
+                                price: newPrice,
+                                ticketTypes: updatedTicketTypes
+                            }
+                        }
+                    }
+                    return { ...item, quantity }
+                }
+                return item
+            })
         )
     }, [removeItem])
+
+    const updateTicketTypeQuantity = useCallback((eventId: string, batchId: string | undefined, ticketTypeId: string, quantity: number) => {
+        setItems((prev) =>
+            prev.map((item) => {
+                if (item.eventId === eventId && item.batchId === batchId && item.ticketTypes) {
+                    const updatedTicketTypes = item.ticketTypes.map(tt =>
+                        tt.ticketTypeId === ticketTypeId ? { ...tt, quantity } : tt
+                    )
+                    
+                    const newTotalQuantity = updatedTicketTypes.reduce((sum, tt) => sum + tt.quantity, 0)
+                    
+                    const hasDays = updatedTicketTypes.some(tt => tt.days && tt.days.length > 0)
+                    
+                    if (hasDays) {
+                        return {
+                            ...item,
+                            quantity: newTotalQuantity,
+                            ticketTypes: updatedTicketTypes
+                        }
+                    } else {
+                        const newPrice = updatedTicketTypes.reduce((sum, tt) => {
+                            if (tt.price !== null && tt.price !== undefined) {
+                                return sum + (tt.price * tt.quantity)
+                            }
+                            return sum
+                        }, 0)
+                        
+                        return {
+                            ...item,
+                            quantity: newTotalQuantity,
+                            price: newPrice,
+                            ticketTypes: updatedTicketTypes
+                        }
+                    }
+                }
+                return item
+            })
+        )
+    }, [])
 
     const clearCart = useCallback(() => {
         setItems([])
@@ -96,9 +195,19 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     const getTotal = useCallback(() => {
         return items.reduce((total, item) => {
             if (item.ticketTypes && item.ticketTypes.length > 0) {
+                const hasDays = item.ticketTypes.some(tt => tt.days && tt.days.length > 0)
+                
+                if (hasDays) {
+                    const feeCents = TicketFeeUtils.calculateFeeInCents(item.price, item.isClientTaxed)
+                    return total + item.price + (feeCents * item.quantity)
+                }
+                
                 const ticketTypesTotal = item.ticketTypes.reduce((sum, tt) => {
-                    const feeCents = TicketFeeUtils.calculateFeeInCents(tt.price, item.isClientTaxed)
-                    return sum + (tt.price * tt.quantity) + (feeCents * tt.quantity)
+                    if (tt.price !== null && tt.price !== undefined) {
+                        const feeCents = TicketFeeUtils.calculateFeeInCents(tt.price, item.isClientTaxed)
+                        return sum + (tt.price * tt.quantity) + (feeCents * tt.quantity)
+                    }
+                    return sum
                 }, 0)
                 return total + ticketTypesTotal
             }
@@ -118,6 +227,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
                 addItem,
                 removeItem,
                 updateQuantity,
+                updateTicketTypeQuantity,
                 clearCart,
                 getTotal,
                 getItemCount

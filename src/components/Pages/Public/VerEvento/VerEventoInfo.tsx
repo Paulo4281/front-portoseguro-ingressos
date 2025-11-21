@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useEffect } from "react"
+import { useMemo, useState, useEffect, useCallback } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Calendar, Clock, MapPin, Repeat, Tag, ShieldCheck, Lock, CreditCard, ArrowRight, TrendingDown, Users, QrCode, Headphones, Zap, CheckCircle2, Share2, MessageCircle, Star, TrendingUp, Gift } from "lucide-react"
@@ -14,6 +14,7 @@ import { TicketFeeUtils } from "@/utils/Helpers/FeeUtils/TicketFeeUtils"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 import { Background } from "@/components/Background/Background"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { QuantitySelector } from "@/components/QuantitySelector/QuantitySelector"
 import { useCart } from "@/contexts/CartContext"
 import { Carousel } from "@/components/Carousel/Carousel"
@@ -48,6 +49,7 @@ const VerEventoInfo = (
     const [selectedBatchId, setSelectedBatchId] = useState<string | undefined>(undefined)
     const [quantity, setQuantity] = useState(1)
     const [ticketTypeQuantities, setTicketTypeQuantities] = useState<Record<string, number>>({})
+    const [selectedDays, setSelectedDays] = useState<Record<string, string[]>>({})
 
     const formatDate = (dateString?: string | null) => {
         return formatEventDate(dateString, "DD [de] MMMM [de] YYYY")
@@ -209,21 +211,102 @@ const VerEventoInfo = (
         return selectedBatch?.EventBatchTicketTypes && selectedBatch.EventBatchTicketTypes.length > 0
     }, [selectedBatch])
 
+    const getPriceForTicketType = useCallback((ebt: any, eventDateId: string) => {
+        const eventDate = event?.EventDates?.find(ed => ed.id === eventDateId)
+        
+        if (eventDate?.hasSpecificPrice) {
+            if (eventDate.EventDateTicketTypePrices && eventDate.EventDateTicketTypePrices.length > 0) {
+                const ticketTypeIdToMatch = ebt.TicketType?.id || ebt.ticketTypeId
+                const dayPrice = eventDate.EventDateTicketTypePrices.find((ttp: any) => {
+                    return ttp.ticketTypeId === ticketTypeIdToMatch
+                })
+                if (dayPrice) {
+                    return dayPrice.price
+                }
+            } else if (eventDate.price) {
+                return eventDate.price
+            }
+        }
+        
+        return ebt.price || 0
+    }, [event?.EventDates, event?.TicketTypes])
+
+    const getBatchPrice = useCallback((batch: TEventBatch) => {
+        if (!event?.EventDates || event.EventDates.length === 0) {
+            return batch.price ?? 0
+        }
+
+        const eventDateWithSpecificPrice = event.EventDates.find(ed => ed.hasSpecificPrice)
+        if (eventDateWithSpecificPrice && eventDateWithSpecificPrice.price !== null && eventDateWithSpecificPrice.price !== undefined) {
+            return eventDateWithSpecificPrice.price
+        }
+
+        return batch.price ?? 0
+    }, [event?.EventDates])
+
+    const getTicketTypePriceFromEventDates = useCallback((ebt: any) => {
+        if (!event?.EventDates || event.EventDates.length === 0) {
+            return null
+        }
+
+        const eventDateWithSpecificPrice = event.EventDates.find(ed => ed.hasSpecificPrice)
+        if (eventDateWithSpecificPrice) {
+            if (eventDateWithSpecificPrice.EventDateTicketTypePrices && eventDateWithSpecificPrice.EventDateTicketTypePrices.length > 0) {
+                const ticketTypeIdToMatch = ebt.TicketType?.id || ebt.ticketTypeId
+                const dayPrice = eventDateWithSpecificPrice.EventDateTicketTypePrices.find((ttp: any) => {
+                    return ttp.ticketTypeId === ticketTypeIdToMatch
+                })
+                if (dayPrice) {
+                    return dayPrice.price
+                }
+            } else if (eventDateWithSpecificPrice.price !== null && eventDateWithSpecificPrice.price !== undefined) {
+                return eventDateWithSpecificPrice.price
+            }
+        }
+
+        return null
+    }, [event?.EventDates])
+
     const currentPrice = useMemo(() => {
         if (selectedBatch) {
             if (batchHasTicketTypes && selectedBatch.EventBatchTicketTypes) {
-                return selectedBatch.EventBatchTicketTypes.reduce((total, ebt) => {
+                const total = selectedBatch.EventBatchTicketTypes.reduce((sum, ebt) => {
                     const qty = ticketTypeQuantities[ebt.ticketTypeId] || 0
-                    return total + (ebt.price * qty)
+                    if (qty === 0) return sum
+                    
+                    const selectedDaysForType = selectedDays[ebt.ticketTypeId] || []
+                    
+                    if (selectedDaysForType.length > 0) {
+                        const daysTotal = selectedDaysForType.reduce((daySum, eventDateId) => {
+                            const price = getPriceForTicketType(ebt, eventDateId)
+                            return daySum + price
+                        }, 0)
+                        return sum + (daysTotal * qty)
+                    }
+                    
+                    const priceFromEventDate = getTicketTypePriceFromEventDates(ebt)
+                    if (priceFromEventDate !== null) {
+                        return sum + (priceFromEventDate * qty)
+                    }
+                    
+                    if (ebt.price !== null && ebt.price !== undefined) {
+                        return sum + (ebt.price * qty)
+                    }
+                    return sum
                 }, 0)
+                return total
             }
-            return Math.round(selectedBatch.price ?? 0)
+            return Math.round(getBatchPrice(selectedBatch))
         }
         if (event && (!event.EventBatches || event.EventBatches.length === 0)) {
+            const eventDateWithSpecificPrice = event.EventDates?.find(ed => ed.hasSpecificPrice)
+            if (eventDateWithSpecificPrice && eventDateWithSpecificPrice.price !== null && eventDateWithSpecificPrice.price !== undefined) {
+                return Math.round(eventDateWithSpecificPrice.price)
+            }
             return Math.round(event.price ?? 0)
         }
         return 0
-    }, [selectedBatch, event, batchHasTicketTypes, ticketTypeQuantities])
+    }, [selectedBatch, event, batchHasTicketTypes, ticketTypeQuantities, selectedDays, getPriceForTicketType, getBatchPrice, getTicketTypePriceFromEventDates])
 
     const totalQuantity = useMemo(() => {
         if (batchHasTicketTypes && selectedBatch?.EventBatchTicketTypes) {
@@ -246,16 +329,23 @@ const VerEventoInfo = (
 
         const batchId = selectedBatch?.id
         const batchName = selectedBatch?.name
+        const hasMultipleDates = event.EventDates && event.EventDates.length > 1
 
         if (batchHasTicketTypes && selectedBatch?.EventBatchTicketTypes) {
             const ticketTypes = selectedBatch.EventBatchTicketTypes
                 .filter(ebt => (ticketTypeQuantities[ebt.ticketTypeId] || 0) > 0)
-                .map(ebt => ({
-                    ticketTypeId: ebt.ticketTypeId,
-                    ticketTypeName: ebt.TicketType?.name || "Tipo desconhecido",
-                    price: ebt.price,
-                    quantity: ticketTypeQuantities[ebt.ticketTypeId] || 0
-                }))
+                .map(ebt => {
+                    const selectedDaysForType = selectedDays[ebt.ticketTypeId] || []
+                    const hasSelectedDays = selectedDaysForType.length > 0
+                    
+                    return {
+                        ticketTypeId: ebt.ticketTypeId,
+                        ticketTypeName: ebt.TicketType?.name || "Tipo desconhecido",
+                        price: hasSelectedDays ? null : (ebt.price || 0),
+                        quantity: ticketTypeQuantities[ebt.ticketTypeId] || 0,
+                        days: hasSelectedDays ? selectedDaysForType : undefined
+                    }
+                })
 
             if (ticketTypes.length === 0) {
                 return
@@ -285,14 +375,44 @@ const VerEventoInfo = (
     useEffect(() => {
         if (selectedBatch?.EventBatchTicketTypes && selectedBatch.EventBatchTicketTypes.length > 0) {
             const initialQuantities: Record<string, number> = {}
+            const initialDays: Record<string, string[]> = {}
+            
+            const hasOnlyOneDate = event?.EventDates && event.EventDates.length === 1
+            const singleDate = hasOnlyOneDate ? event.EventDates[0] : null
+            const singleDateId = singleDate?.id || null
+            
             selectedBatch.EventBatchTicketTypes.forEach(ebt => {
                 initialQuantities[ebt.ticketTypeId] = 0
+                if (singleDate && singleDate.hasSpecificPrice) {
+                    initialDays[ebt.ticketTypeId] = singleDateId ? [singleDateId] : []
+                } else {
+                    const eventDateWithSpecificPrice = event?.EventDates?.find(ed => ed.hasSpecificPrice)
+                    if (eventDateWithSpecificPrice) {
+                        if (eventDateWithSpecificPrice.EventDateTicketTypePrices && eventDateWithSpecificPrice.EventDateTicketTypePrices.length > 0) {
+                            const ticketTypeIdToMatch = ebt.TicketType?.id || ebt.ticketTypeId
+                            const hasPriceForThisType = eventDateWithSpecificPrice.EventDateTicketTypePrices.some((ttp: any) => ttp.ticketTypeId === ticketTypeIdToMatch)
+                            if (hasPriceForThisType) {
+                                initialDays[ebt.ticketTypeId] = eventDateWithSpecificPrice.id ? [eventDateWithSpecificPrice.id] : []
+                            } else {
+                                initialDays[ebt.ticketTypeId] = []
+                            }
+                        } else if (eventDateWithSpecificPrice.price !== null && eventDateWithSpecificPrice.price !== undefined) {
+                            initialDays[ebt.ticketTypeId] = eventDateWithSpecificPrice.id ? [eventDateWithSpecificPrice.id] : []
+                        } else {
+                            initialDays[ebt.ticketTypeId] = []
+                        }
+                    } else {
+                        initialDays[ebt.ticketTypeId] = []
+                    }
+                }
             })
             setTicketTypeQuantities(initialQuantities)
+            setSelectedDays(initialDays)
         } else {
             setTicketTypeQuantities({})
+            setSelectedDays({})
         }
-    }, [selectedBatch])
+    }, [selectedBatch, event?.EventDates])
 
     const cartItem = useMemo(() => {
         return items.find(item => 
@@ -501,16 +621,30 @@ const VerEventoInfo = (
                                                                 <div className="mt-2 space-y-2">
                                                                     {batch.EventBatchTicketTypes?.map((ebt) => {
                                                                         const ticketTypeName = ebt.TicketType?.name || "Tipo desconhecido"
-                                                                        const typeFeeCents = TicketFeeUtils.calculateFeeInCents(ebt.price, event.isClientTaxed)
+                                                                        const hasPricePerDay = ebt.days && Array.isArray(ebt.days) && ebt.days.length > 0
+                                                                        
+                                                                        const getPriceForDisplay = () => {
+                                                                            const priceFromEventDate = getTicketTypePriceFromEventDates(ebt)
+                                                                            if (priceFromEventDate !== null) {
+                                                                                return priceFromEventDate
+                                                                            }
+                                                                            return ebt.price
+                                                                        }
+                                                                        
+                                                                        const displayPrice = getPriceForDisplay()
+                                                                        const typeFeeCents = displayPrice ? TicketFeeUtils.calculateFeeInCents(displayPrice, event.isClientTaxed) : 0
+                                                                        
                                                                         return (
                                                                             <div key={ebt.ticketTypeId} className="text-sm">
                                                                                 <p className="font-medium text-psi-dark">{ticketTypeName}</p>
                                                                                 <p className="text-psi-primary font-semibold">
-                                                                                    {ValueUtils.centsToCurrency(ebt.price)}
+                                                                                    {hasPricePerDay ? "Preço por dia" : (displayPrice ? ValueUtils.centsToCurrency(displayPrice) : "Preço não definido")}
                                                                                 </p>
-                                                                                <p className="text-xs text-psi-dark/60">
-                                                                                    + Taxa: {ValueUtils.centsToCurrency(typeFeeCents)}
-                                                                                </p>
+                                                                                {!hasPricePerDay && displayPrice && (
+                                                                                    <p className="text-xs text-psi-dark/60">
+                                                                                        + Taxa: {ValueUtils.centsToCurrency(typeFeeCents)}
+                                                                                    </p>
+                                                                                )}
                                                                             </div>
                                                                         )
                                                                     })}
@@ -518,10 +652,10 @@ const VerEventoInfo = (
                                                             ) : (
                                                                 <>
                                                                     <p className="text-3xl font-bold text-psi-primary mt-2">
-                                                                        {ValueUtils.centsToCurrency(Math.round(batch.price ?? 0))}
+                                                                        {ValueUtils.centsToCurrency(Math.round(getBatchPrice(batch)))}
                                                                     </p>
                                                                     <p className="text-xs text-psi-dark/60 mt-1">
-                                                                        + Taxa de serviço: {ValueUtils.centsToCurrency(feeCents)}
+                                                                        + Taxa de serviço: {ValueUtils.centsToCurrency(TicketFeeUtils.calculateFeeInCents(Math.round(getBatchPrice(batch)), event.isClientTaxed))}
                                                                     </p>
                                                                 </>
                                                             )}
@@ -539,7 +673,8 @@ const VerEventoInfo = (
                                         <h2 className="text-xl font-semibold text-psi-dark/60">Lotes Encerrados</h2>
                                         <div className="space-y-3">
                                             {endedBatches.map((batch) => {
-                                                const feeCents = TicketFeeUtils.calculateFeeInCents(Math.round(batch.price ?? 0), event.isClientTaxed)
+                                                const batchPrice = getBatchPrice(batch)
+                                                const feeCents = TicketFeeUtils.calculateFeeInCents(Math.round(batchPrice), event.isClientTaxed)
                                                 return (
                                                 <div
                                                     key={batch.id}
@@ -555,7 +690,7 @@ const VerEventoInfo = (
                                                                 </span>
                                                             </div>
                                                             <p className="text-2xl font-bold text-psi-dark/40 mt-2">
-                                                                {ValueUtils.centsToCurrency(Math.round(batch.price ?? 0))}
+                                                                {ValueUtils.centsToCurrency(Math.round(batchPrice))}
                                                             </p>
                                                             <p className="text-xs text-psi-dark/50">
                                                                 Taxa de serviço: {ValueUtils.centsToCurrency(feeCents)}
@@ -577,15 +712,26 @@ const VerEventoInfo = (
                         ) : (
                             <div className="rounded-xl border border-psi-primary/20 bg-linear-to-br from-psi-primary/5 via-white to-psi-primary/10 p-6">
                                 <div className="text-left space-y-2">
-                                    <p className="text-3xl font-bold text-psi-primary">
-                                        {event.price ? ValueUtils.centsToCurrency(Math.round(event.price)) : "Preço não definido"}
-                                    </p>
-                                    <p className="text-sm text-psi-dark/60">Ingresso único</p>
-                                    {event.price && (
-                                        <p className="text-xs text-psi-dark/60">
-                                            + Taxa de serviço: {ValueUtils.centsToCurrency(singleTicketFee)}
-                                        </p>
-                                    )}
+                                    {(() => {
+                                        const eventDateWithSpecificPrice = event.EventDates?.find(ed => ed.hasSpecificPrice)
+                                        const displayPrice = eventDateWithSpecificPrice && eventDateWithSpecificPrice.price !== null && eventDateWithSpecificPrice.price !== undefined
+                                            ? eventDateWithSpecificPrice.price
+                                            : event.price
+                                        const feeCents = displayPrice ? TicketFeeUtils.calculateFeeInCents(Math.round(displayPrice), event.isClientTaxed) : 0
+                                        return (
+                                            <>
+                                                <p className="text-3xl font-bold text-psi-primary">
+                                                    {displayPrice ? ValueUtils.centsToCurrency(Math.round(displayPrice)) : "Preço não definido"}
+                                                </p>
+                                                <p className="text-sm text-psi-dark/60">Ingresso único</p>
+                                                {displayPrice && (
+                                                    <p className="text-xs text-psi-dark/60">
+                                                        + Taxa de serviço: {ValueUtils.centsToCurrency(feeCents)}
+                                                    </p>
+                                                )}
+                                            </>
+                                        )
+                                    })()}
                                 </div>
                             </div>
                         )}
@@ -603,8 +749,75 @@ const VerEventoInfo = (
                                                 const ticketTypeName = ebt.TicketType?.name || "Tipo desconhecido"
                                                 const ticketTypeDescription = ebt.TicketType?.description
                                                 const qty = ticketTypeQuantities[ebt.ticketTypeId] || 0
-                                                const feeCents = TicketFeeUtils.calculateFeeInCents(ebt.price, event.isClientTaxed)
-                                                const totalForType = (ebt.price * qty) + (feeCents * qty)
+                                                const selectedDaysForType = selectedDays[ebt.ticketTypeId] || []
+                                                
+                                                const getPriceForTicketTypeLocal = (eventDateId: string) => {
+                                                    const eventDate = event.EventDates?.find(ed => ed.id === eventDateId)
+                                                    
+                                                    if (eventDate?.hasSpecificPrice) {
+                                                        if (eventDate.EventDateTicketTypePrices && eventDate.EventDateTicketTypePrices.length > 0) {
+                                                            const ticketTypeIdToMatch = ebt.TicketType?.id || ebt.ticketTypeId
+                                                            const dayPrice = eventDate.EventDateTicketTypePrices.find((ttp: any) => {
+                                                                return ttp.ticketTypeId === ticketTypeIdToMatch
+                                                            })
+                                                            if (dayPrice) {
+                                                                return dayPrice.price
+                                                            }
+                                                        } else if (eventDate.price) {
+                                                            return eventDate.price
+                                                        }
+                                                    }
+                                                    
+                                                    return ebt.price || 0
+                                                }
+                                                
+                                                const getTotalForType = () => {
+                                                    if (selectedDaysForType.length > 0) {
+                                                        const daysTotal = selectedDaysForType.reduce((sum, eventDateId) => {
+                                                            const price = getPriceForTicketTypeLocal(eventDateId)
+                                                            const feeCents = TicketFeeUtils.calculateFeeInCents(price, event.isClientTaxed)
+                                                            return sum + price + feeCents
+                                                        }, 0)
+                                                        return daysTotal * qty
+                                                    }
+                                                    
+                                                    const priceFromEventDate = getTicketTypePriceFromEventDates(ebt)
+                                                    if (priceFromEventDate !== null) {
+                                                        const feeCents = TicketFeeUtils.calculateFeeInCents(priceFromEventDate, event.isClientTaxed)
+                                                        return (priceFromEventDate * qty) + (feeCents * qty)
+                                                    }
+                                                    
+                                                    if (ebt.price) {
+                                                        const feeCents = TicketFeeUtils.calculateFeeInCents(ebt.price, event.isClientTaxed)
+                                                        return (ebt.price * qty) + (feeCents * qty)
+                                                    }
+                                                    return 0
+                                                }
+                                                
+                                                const getDisplayPrice = () => {
+                                                    if (selectedDaysForType.length > 0) {
+                                                        const firstDayPrice = getPriceForTicketTypeLocal(selectedDaysForType[0])
+                                                        if (selectedDaysForType.length === 1) {
+                                                            return firstDayPrice
+                                                        }
+                                                        const allPrices = selectedDaysForType.map(id => getPriceForTicketTypeLocal(id))
+                                                        const minPrice = Math.min(...allPrices)
+                                                        const maxPrice = Math.max(...allPrices)
+                                                        if (minPrice === maxPrice) {
+                                                            return minPrice
+                                                        }
+                                                        return { min: minPrice, max: maxPrice }
+                                                    }
+                                                    
+                                                    const priceFromEventDate = getTicketTypePriceFromEventDates(ebt)
+                                                    if (priceFromEventDate !== null) {
+                                                        return priceFromEventDate
+                                                    }
+                                                    
+                                                    return ebt.price || 0
+                                                }
+                                                
+                                                const displayPrice = getDisplayPrice()
                                                 
                                                 return (
                                                     <div key={ebt.ticketTypeId} className="rounded-lg border border-psi-primary/20 bg-psi-primary/5 p-4 space-y-3">
@@ -615,18 +828,78 @@ const VerEventoInfo = (
                                                                     <p className="text-xs text-psi-dark/60 mt-1">{ticketTypeDescription}</p>
                                                                 )}
                                                                 <div className="mt-2 space-y-1">
-                                                                    <p className="text-sm font-medium text-psi-primary">
-                                                                        {ValueUtils.centsToCurrency(ebt.price)} por ingresso
-                                                                    </p>
-                                                                    <p className="text-xs text-psi-dark/60">
-                                                                        + Taxa: {ValueUtils.centsToCurrency(feeCents)} por ingresso
-                                                                    </p>
-                                                                    {qty > 0 && (
-                                                                        <p className="text-sm font-semibold text-psi-dark mt-2">
-                                                                            Subtotal: {ValueUtils.centsToCurrency(totalForType)}
+                                                                    {typeof displayPrice === "object" ? (
+                                                                        <p className="text-sm font-medium text-psi-primary">
+                                                                            {ValueUtils.centsToCurrency(displayPrice.min)} - {ValueUtils.centsToCurrency(displayPrice.max)} por ingresso
+                                                                        </p>
+                                                                    ) : (
+                                                                        <p className="text-sm font-medium text-psi-primary">
+                                                                            {ValueUtils.centsToCurrency(displayPrice)} por ingresso
+                                                                        </p>
+                                                                    )}
+                                                                    {typeof displayPrice === "number" && (
+                                                                        <p className="text-xs text-psi-dark/60">
+                                                                            + Taxa: {ValueUtils.centsToCurrency(TicketFeeUtils.calculateFeeInCents(displayPrice, event.isClientTaxed))} por ingresso
                                                                         </p>
                                                                     )}
                                                                 </div>
+                                                                {event.EventDates && event.EventDates.length > 1 && (
+                                                                    <div className="mt-3 space-y-2">
+                                                                        <p className="text-xs font-medium text-psi-dark/70">Selecione os dias:</p>
+                                                                        {event.EventDates.map((eventDate) => {
+                                                                            const isSelected = selectedDaysForType.includes(eventDate.id)
+                                                                            const priceForThisDay = getPriceForTicketTypeLocal(eventDate.id)
+                                                                            const feeCents = TicketFeeUtils.calculateFeeInCents(priceForThisDay, event.isClientTaxed)
+                                                                            
+                                                                            return (
+                                                                                <div key={eventDate.id} className="flex items-center gap-3 rounded-lg border border-psi-primary/20 bg-white p-2">
+                                                                                    <Checkbox
+                                                                                        checked={isSelected}
+                                                                                        onCheckedChange={(checked) => {
+                                                                                            setSelectedDays(prev => {
+                                                                                                const current = prev[ebt.ticketTypeId] || []
+                                                                                                if (checked === true) {
+                                                                                                    return {
+                                                                                                        ...prev,
+                                                                                                        [ebt.ticketTypeId]: [...current, eventDate.id]
+                                                                                                    }
+                                                                                                } else {
+                                                                                                    return {
+                                                                                                        ...prev,
+                                                                                                        [ebt.ticketTypeId]: current.filter(id => id !== eventDate.id)
+                                                                                                    }
+                                                                                                }
+                                                                                            })
+                                                                                        }}
+                                                                                    />
+                                                                                    <div className="flex-1">
+                                                                                        <div className="text-sm font-medium text-psi-dark">
+                                                                                            {formatDate(eventDate.date)}
+                                                                                        </div>
+                                                                                        {eventDate.hourStart && (
+                                                                                            <div className="text-xs text-psi-dark/60">
+                                                                                                {formatTimeRange(eventDate.hourStart, eventDate.hourEnd)}
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    <div className="text-right">
+                                                                                        <div className="text-sm font-semibold text-psi-primary">
+                                                                                            {ValueUtils.centsToCurrency(priceForThisDay)}
+                                                                                        </div>
+                                                                                        <div className="text-xs text-psi-dark/60">
+                                                                                            + {ValueUtils.centsToCurrency(feeCents)} taxa
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            )
+                                                                        })}
+                                                                    </div>
+                                                                )}
+                                                                {qty > 0 && (
+                                                                    <p className="text-sm font-semibold text-psi-dark mt-2">
+                                                                        Subtotal: {ValueUtils.centsToCurrency(getTotalForType())}
+                                                                    </p>
+                                                                )}
                                                             </div>
                                                         </div>
                                                         <QuantitySelector
@@ -680,8 +953,28 @@ const VerEventoInfo = (
                                                 (() => {
                                                     const ticketsTotal = selectedBatch.EventBatchTicketTypes.reduce((sum, ebt) => {
                                                         const qty = ticketTypeQuantities[ebt.ticketTypeId] || 0
-                                                        const feeCents = TicketFeeUtils.calculateFeeInCents(ebt.price, event.isClientTaxed)
-                                                        return sum + (ebt.price * qty) + (feeCents * qty)
+                                                        const selectedDaysForType = selectedDays[ebt.ticketTypeId] || []
+                                                        
+                                                        if (selectedDaysForType.length > 0) {
+                                                            const daysTotal = selectedDaysForType.reduce((daySum, eventDateId) => {
+                                                                const price = getPriceForTicketType(ebt, eventDateId)
+                                                                const feeCents = TicketFeeUtils.calculateFeeInCents(price, event.isClientTaxed)
+                                                                return daySum + price + feeCents
+                                                            }, 0)
+                                                            return sum + (daysTotal * qty)
+                                                        }
+                                                        
+                                                        const priceFromEventDate = getTicketTypePriceFromEventDates(ebt)
+                                                        if (priceFromEventDate !== null) {
+                                                            const feeCents = TicketFeeUtils.calculateFeeInCents(priceFromEventDate, event.isClientTaxed)
+                                                            return sum + (priceFromEventDate * qty) + (feeCents * qty)
+                                                        }
+                                                        
+                                                        if (ebt.price) {
+                                                            const feeCents = TicketFeeUtils.calculateFeeInCents(ebt.price, event.isClientTaxed)
+                                                            return sum + (ebt.price * qty) + (feeCents * qty)
+                                                        }
+                                                        return sum
                                                     }, 0)
                                                     return ValueUtils.centsToCurrency(ticketsTotal)
                                                 })()

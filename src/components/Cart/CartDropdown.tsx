@@ -77,9 +77,20 @@ const CartDropdown = () => {
                                                 <span className="text-sm font-semibold text-psi-primary">
                                                     {(() => {
                                                         if (item.ticketTypes && item.ticketTypes.length > 0) {
+                                                            const hasDays = item.ticketTypes.some(tt => tt.days && tt.days.length > 0)
+                                                            
+                                                            if (hasDays) {
+                                                                const feeCents = TicketFeeUtils.calculateFeeInCents(item.price, item.isClientTaxed)
+                                                                const totalWithFees = item.price + (feeCents * item.quantity)
+                                                                return ValueUtils.centsToCurrency(totalWithFees)
+                                                            }
+                                                            
                                                             const total = item.ticketTypes.reduce((sum, tt) => {
-                                                                const feeCents = TicketFeeUtils.calculateFeeInCents(tt.price, item.isClientTaxed)
-                                                                return sum + (tt.price * tt.quantity) + (feeCents * tt.quantity)
+                                                                if (tt.price !== null && tt.price !== undefined) {
+                                                                    const feeCents = TicketFeeUtils.calculateFeeInCents(tt.price, item.isClientTaxed)
+                                                                    return sum + (tt.price * tt.quantity) + (feeCents * tt.quantity)
+                                                                }
+                                                                return sum
                                                             }, 0)
                                                             return ValueUtils.centsToCurrency(total)
                                                         }
