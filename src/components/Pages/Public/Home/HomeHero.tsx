@@ -280,7 +280,7 @@ const HomeHero = () => {
                         lg:p-8 shadow-lg shadow-black/5 overflow-hidden flex flex-col justify-between">
                             <div className="space-y-3">
                                 <span className="inline-flex items-center gap-2 bg-psi-secondary/10 text-psi-secondary font-medium px-3 py-1.5 rounded-full text-xs uppercase tracking-wider">
-                                    Experimente sem compromisso
+                                    Seus eventos, nossa prioridade!
                                 </span>
                                 <h2 className="text-3xl
                                 sm:text-4xl

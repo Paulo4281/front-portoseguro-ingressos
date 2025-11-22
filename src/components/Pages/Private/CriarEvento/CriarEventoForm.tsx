@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils"
 import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
 import { useEventCreate } from "@/hooks/Event/useEventCreate"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
+import { DialogTaxes } from "@/components/Dialog/DialogTaxes/DialogTaxes"
 
 type TEventCreate = z.infer<typeof EventCreateValidator>
 
@@ -560,10 +561,22 @@ const CriarEventoForm = () => {
                                                 checked={field.value || false}
                                                 onCheckedChange={(checked) => field.onChange(checked === true)}
                                             />
-                                            <div>
-                                                <label htmlFor="is-client-taxed" className="text-sm font-medium text-psi-dark cursor-pointer">
-                                                    Repassar taxas ao cliente
-                                                </label>
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <label htmlFor="is-client-taxed" className="text-sm font-medium text-psi-dark cursor-pointer">
+                                                        Repassar taxas ao cliente
+                                                    </label>
+                                                    <DialogTaxes
+                                                        trigger={
+                                                            <button
+                                                                type="button"
+                                                                className="text-xs text-psi-primary hover:text-psi-primary/80 underline"
+                                                            >
+                                                                Entenda nossas taxas
+                                                            </button>
+                                                        }
+                                                    />
+                                                </div>
                                                 <p className="text-xs text-psi-dark/60 mt-1">
                                                     Quando ativado, a taxa de serviço é adicionada ao valor pago pelo comprador.
                                                 </p>

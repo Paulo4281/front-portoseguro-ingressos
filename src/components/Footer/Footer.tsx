@@ -29,7 +29,9 @@ const Footer = () => {
                 <div className="grid gap-10
                 lg:grid-cols-[1.2fr_0.8fr]">
                     <div className="space-y-6">
-                        <Logo className="h-9 w-auto" variant="primary" />
+                        <div className="flex items-center gap-2">
+                            <Logo className="h-9 w-auto" variant="black" /> <span className="text-xl font-extrabold text-psi-dark">Porto Seguro</span> <span className="text-xl font-bold text-psi-dark/90">Ingressos</span>
+                        </div>
                         <p className="text-sm text-psi-dark/70 max-w-md">
                             Plataforma oficial para viver os eventos de Porto Seguro com curadoria local, taxas justas e atendimento humano.
                         </p>

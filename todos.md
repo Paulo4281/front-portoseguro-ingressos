@@ -16,7 +16,7 @@
 
 * [X] Criar evento com 2+ dias, **sem preço por dia** (usar preço do lote)
 * [X] Criar evento com 2+ dias com **preço geral por dia**
-* [ ] Criar evento com 2+ dias com **preço por tipo por dia**
+* [X] Criar evento com 2+ dias com **preço por tipo por dia**
 * [ ] Misturar dias com e sem preço específico:
   * [ ] Dia 1 usa preço do lote
   * [ ] Dia 2 usa preço geral do dia

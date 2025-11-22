@@ -71,8 +71,6 @@ const CheckoutInfo = () => {
         return getCardBrand(cardData.number)
     }, [cardData.number])
     
-    const total = getTotal()
-
     const { data: allEventsData } = useEventFind()
     
     const eventsData = useMemo(() => {
@@ -80,6 +78,13 @@ const CheckoutInfo = () => {
         const eventIds = [...new Set(items.map(item => item.eventId))]
         return eventIds.map(id => allEventsData?.data?.find(e => e.id === id)).filter(Boolean)
     }, [items, allEventsData])
+    
+    const total = useMemo(() => {
+        return items.reduce((sum, item) => {
+            const event = eventsData.find(e => e?.id === item.eventId)
+            return sum + CheckoutUtils.calculateItemTotal(item, event || null)
+        }, 0)
+    }, [items, eventsData])
     
     const handleNext = () => {
         if (currentStep < 3) {
@@ -782,8 +787,42 @@ const CheckoutInfo = () => {
                                 <h3 className="font-semibold text-psi-dark mb-4">Resumo do Pedido</h3>
                                 
                                 <div className="space-y-3 mb-4">
-                                    {items.map((item) => {
+                                    {items.flatMap((item) => {
                                         const event = eventsData.find(e => e?.id === item.eventId)
+                                        
+                                        if (item.ticketTypes && item.ticketTypes.length > 0) {
+                                            return item.ticketTypes.map((tt, ttIndex) => {
+                                                const eventDate = tt.days && tt.days.length > 0 && event?.EventDates
+                                                    ? event.EventDates.find(ed => ed.id === tt.days[0])
+                                                    : null
+                                                
+                                                const dayLabel = eventDate 
+                                                    ? formatEventDate(eventDate.date, "DD [de] MMMM")
+                                                    : null
+                                                
+                                                const ticketTypeLabel = dayLabel 
+                                                    ? `${tt.ticketTypeName} - ${dayLabel}`
+                                                    : tt.ticketTypeName
+                                                
+                                                const itemForThisTicketType: any = {
+                                                    ...item,
+                                                    ticketTypes: [tt],
+                                                    quantity: tt.quantity
+                                                }
+                                                
+                                                return (
+                                                    <div key={`${item.eventId}-${item.batchId}-${ttIndex}`} className="flex items-center justify-between text-sm">
+                                                        <span className="text-psi-dark/70">
+                                                            {ticketTypeLabel} x{tt.quantity}
+                                                        </span>
+                                                        <span className="font-semibold text-psi-dark">
+                                                            {ValueUtils.centsToCurrency(CheckoutUtils.calculateItemTotal(itemForThisTicketType, event || null))}
+                                                        </span>
+                                                    </div>
+                                                )
+                                            })
+                                        }
+                                        
                                         return (
                                             <div key={`${item.eventId}-${item.batchId}`} className="flex items-center justify-between text-sm">
                                                 <span className="text-psi-dark/70">

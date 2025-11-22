@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useEffect, useCallback } from "react"
+import { useMemo, useState, useEffect, useCallback, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Calendar, Clock, MapPin, Repeat, Tag, ShieldCheck, Lock, CreditCard, ArrowRight, TrendingDown, Users, QrCode, Headphones, Zap, CheckCircle2, Share2, MessageCircle, Star, TrendingUp, Gift } from "lucide-react"
@@ -24,6 +24,7 @@ import ReactMarkdown from "react-markdown"
 import type { TEvent, TRecurrenceDay } from "@/types/Event/TEvent"
 import type { TEventBatch } from "@/types/Event/TEventBatch"
 import { EventCategoryIconHandler } from "@/utils/Helpers/EventCategoryIconHandler/EventCategoryIconHandler"
+import { DialogTaxes } from "@/components/Dialog/DialogTaxes/DialogTaxes"
 
 type TVerEventoInfoProps = {
     eventId: string
@@ -48,12 +49,14 @@ const VerEventoInfo = (
     }, [allEventsData])
     const { addItem, items } = useCart()
     const [selectedBatchId, setSelectedBatchId] = useState<string | undefined>(undefined)
-    const [quantity, setQuantity] = useState(1)
+    const [quantity, setQuantity] = useState(0)
     const [ticketTypeQuantities, setTicketTypeQuantities] = useState<Record<string, number>>({})
     const [selectedDays, setSelectedDays] = useState<Record<string, string[]>>({})
     const [selectedDaysWithoutTicketTypes, setSelectedDaysWithoutTicketTypes] = useState<string[]>([])
     const [dayQuantities, setDayQuantities] = useState<Record<string, number>>({})
     const [selectedDaysAndTypes, setSelectedDaysAndTypes] = useState<Record<string, Record<string, number>>>({})
+    const [totalAnimationKey, setTotalAnimationKey] = useState(0)
+    const previousTotalRef = useRef<number>(0)
 
     const formatDate = (dateString?: string | null) => {
         return formatEventDate(dateString, "DD [de] MMMM [de] YYYY")
@@ -274,6 +277,52 @@ const VerEventoInfo = (
         return quantity
     }, [batchHasTicketTypes, selectedBatch, ticketTypeQuantities, quantity, hasMultipleDaysWithSpecificPrices, hasMultipleDaysWithTicketTypePrices, selectedDaysAndTypes, selectedDaysWithoutTicketTypes, dayQuantities])
 
+    const totalValue = useMemo(() => {
+        if (!event) return 0
+        
+        if (hasMultipleDaysWithTicketTypePrices && event?.EventDates) {
+            return CheckoutUtils.calculateTotalForSelectedDaysAndTypes(
+                selectedDaysAndTypes,
+                event,
+                event.isClientTaxed
+            )
+        }
+        if (batchHasTicketTypes && selectedBatch?.EventBatchTicketTypes) {
+            return CheckoutUtils.calculateTotalForBatchTicketTypes(
+                selectedBatch.EventBatchTicketTypes,
+                ticketTypeQuantities,
+                selectedDays,
+                event,
+                event.isClientTaxed
+            )
+        }
+        if (hasMultipleDaysWithSpecificPrices && selectedDaysWithoutTicketTypes.length > 0) {
+            return CheckoutUtils.calculateTotalForMultipleDaysWithoutTicketTypes(
+                selectedDaysWithoutTicketTypes,
+                dayQuantities,
+                event,
+                event.isClientTaxed
+            )
+        }
+        const cartItem = items.find(item => 
+            item.eventId === eventId && 
+            item.batchId === selectedBatchId
+        )
+        const currentQuantity = cartItem?.quantity || quantity
+        return CheckoutUtils.calculateTotalForSimpleEvent(
+            currentPrice,
+            currentQuantity,
+            event.isClientTaxed
+        )
+    }, [hasMultipleDaysWithTicketTypePrices, event, selectedDaysAndTypes, batchHasTicketTypes, selectedBatch, ticketTypeQuantities, selectedDays, hasMultipleDaysWithSpecificPrices, selectedDaysWithoutTicketTypes, dayQuantities, currentPrice, items, eventId, selectedBatchId, quantity])
+
+    useEffect(() => {
+        if (previousTotalRef.current !== totalValue && previousTotalRef.current > 0) {
+            setTotalAnimationKey(prev => prev + 1)
+        }
+        previousTotalRef.current = totalValue
+    }, [totalValue])
+
     const singleTicketFee = useMemo(() => {
         if (!event?.price) {
             return TicketFeeUtils.calculateFeeInCents(0, event?.isClientTaxed)
@@ -326,20 +375,35 @@ const VerEventoInfo = (
                 isClientTaxed: event.isClientTaxed
             }, totalQuantity)
         } else if (batchHasTicketTypes && selectedBatch?.EventBatchTicketTypes) {
-            const ticketTypes = selectedBatch.EventBatchTicketTypes
-                .filter(ebt => (ticketTypeQuantities[ebt.ticketTypeId] || 0) > 0)
-                .map(ebt => {
-                    const selectedDaysForType = selectedDays[ebt.ticketTypeId] || []
-                    const hasSelectedDays = selectedDaysForType.length > 0
-                    
-                    return {
+            const ticketTypes: any[] = []
+            
+            selectedBatch.EventBatchTicketTypes.forEach(ebt => {
+                const qty = ticketTypeQuantities[ebt.ticketTypeId] || 0
+                if (qty === 0) return
+                
+                const selectedDaysForType = selectedDays[ebt.ticketTypeId] || []
+                const hasSelectedDays = selectedDaysForType.length > 0
+                
+                if (hasSelectedDays) {
+                    selectedDaysForType.forEach(dayId => {
+                        ticketTypes.push({
+                            ticketTypeId: ebt.ticketTypeId,
+                            ticketTypeName: ebt.TicketType?.name || "Tipo desconhecido",
+                            price: null,
+                            quantity: qty,
+                            days: [dayId]
+                        })
+                    })
+                } else {
+                    ticketTypes.push({
                         ticketTypeId: ebt.ticketTypeId,
                         ticketTypeName: ebt.TicketType?.name || "Tipo desconhecido",
-                        price: hasSelectedDays ? null : (ebt.price || 0),
-                        quantity: ticketTypeQuantities[ebt.ticketTypeId] || 0,
-                        days: hasSelectedDays ? selectedDaysForType : undefined
-                    }
-                })
+                        price: ebt.price || 0,
+                        quantity: qty,
+                        days: undefined
+                    })
+                }
+            })
 
             if (ticketTypes.length === 0) {
                 return
@@ -397,34 +461,9 @@ const VerEventoInfo = (
             const initialQuantities: Record<string, number> = {}
             const initialDays: Record<string, string[]> = {}
             
-            const hasOnlyOneDate = event?.EventDates && event.EventDates.length === 1
-            const singleDate = hasOnlyOneDate ? event.EventDates[0] : null
-            const singleDateId = singleDate?.id || null
-            
             selectedBatch.EventBatchTicketTypes.forEach(ebt => {
                 initialQuantities[ebt.ticketTypeId] = 0
-                if (singleDate && singleDate.hasSpecificPrice) {
-                    initialDays[ebt.ticketTypeId] = singleDateId ? [singleDateId] : []
-                } else {
-                    const eventDateWithSpecificPrice = event?.EventDates?.find(ed => ed.hasSpecificPrice)
-                    if (eventDateWithSpecificPrice) {
-                        if (eventDateWithSpecificPrice.EventDateTicketTypePrices && eventDateWithSpecificPrice.EventDateTicketTypePrices.length > 0) {
-                            const ticketTypeIdToMatch = ebt.TicketType?.id || ebt.ticketTypeId
-                            const hasPriceForThisType = eventDateWithSpecificPrice.EventDateTicketTypePrices.some((ttp: any) => ttp.ticketTypeId === ticketTypeIdToMatch)
-                            if (hasPriceForThisType) {
-                                initialDays[ebt.ticketTypeId] = eventDateWithSpecificPrice.id ? [eventDateWithSpecificPrice.id] : []
-                            } else {
-                                initialDays[ebt.ticketTypeId] = []
-                            }
-                        } else if (eventDateWithSpecificPrice.price !== null && eventDateWithSpecificPrice.price !== undefined) {
-                            initialDays[ebt.ticketTypeId] = eventDateWithSpecificPrice.id ? [eventDateWithSpecificPrice.id] : []
-                        } else {
-                            initialDays[ebt.ticketTypeId] = []
-                        }
-                    } else {
-                        initialDays[ebt.ticketTypeId] = []
-                    }
-                }
+                initialDays[ebt.ticketTypeId] = []
             })
             setTicketTypeQuantities(initialQuantities)
             setSelectedDays(initialDays)
@@ -455,15 +494,8 @@ const VerEventoInfo = (
 
     useEffect(() => {
         if (!batchHasTicketTypes && hasMultipleDaysWithSpecificPrices && event?.EventDates) {
-            const daysWithSpecificPrices = event.EventDates.filter(ed => ed.hasSpecificPrice)
-            if (daysWithSpecificPrices.length === 1) {
-                const singleDay = daysWithSpecificPrices[0]
-                setSelectedDaysWithoutTicketTypes([singleDay.id])
-                setDayQuantities({ [singleDay.id]: 1 })
-            } else {
-                setSelectedDaysWithoutTicketTypes([])
-                setDayQuantities({})
-            }
+            setSelectedDaysWithoutTicketTypes([])
+            setDayQuantities({})
         } else if (!batchHasTicketTypes && !hasMultipleDaysWithSpecificPrices) {
             setSelectedDaysWithoutTicketTypes([])
             setDayQuantities({})
@@ -508,7 +540,27 @@ const VerEventoInfo = (
     ) : null
 
     return (
-        <Background variant="light" className="min-h-screen">
+        <>
+            <style dangerouslySetInnerHTML={{__html: `
+                @keyframes totalUpdate {
+                    0% {
+                        transform: scale(1);
+                        opacity: 1;
+                    }
+                    50% {
+                        transform: scale(1.05);
+                        opacity: 0.9;
+                    }
+                    100% {
+                        transform: scale(1);
+                        opacity: 1;
+                    }
+                }
+                .total-animate {
+                    animation: totalUpdate 0.4s ease-in-out;
+                }
+            `}} />
+            <Background variant="light" className="min-h-screen">
             <div className="max-w-[88vw] mx-auto py-8 mt-[80px]
             sm:py-12
             lg:max-w-[80vw] lg:container
@@ -870,6 +922,7 @@ const VerEventoInfo = (
                                                     )
                                                 }
                                                 
+                                                const hasMixedDays = event?.EventDates && event.EventDates.some(ed => ed.hasSpecificPrice) && event.EventDates.some(ed => !ed.hasSpecificPrice)
                                                 const displayPrice = CheckoutUtils.getDisplayPrice(
                                                     ebt,
                                                     selectedDaysForType,
@@ -884,22 +937,33 @@ const VerEventoInfo = (
                                                                 {ticketTypeDescription && (
                                                                     <p className="text-xs text-psi-dark/60 mt-1">{ticketTypeDescription}</p>
                                                                 )}
-                                                                <div className="mt-2 space-y-1">
-                                                                    {typeof displayPrice === "object" ? (
+                                                                {hasMixedDays && selectedDaysForType.length === 0 ? (
+                                                                    <div className="mt-2 space-y-1">
                                                                         <p className="text-sm font-medium text-psi-primary">
-                                                                            {ValueUtils.centsToCurrency(displayPrice.min)} - {ValueUtils.centsToCurrency(displayPrice.max)} por ingresso
+                                                                            Preço varia por dia
                                                                         </p>
-                                                                    ) : (
-                                                                        <p className="text-sm font-medium text-psi-primary">
-                                                                            {ValueUtils.centsToCurrency(displayPrice)} por ingresso
-                                                                        </p>
-                                                                    )}
-                                                                    {typeof displayPrice === "number" && (
                                                                         <p className="text-xs text-psi-dark/60">
-                                                                            + Taxa: {ValueUtils.centsToCurrency(TicketFeeUtils.calculateFeeInCents(displayPrice, event.isClientTaxed))} por ingresso
+                                                                            Selecione os dias para ver os preços
                                                                         </p>
-                                                                    )}
-                                                                </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="mt-2 space-y-1">
+                                                                        {typeof displayPrice === "object" ? (
+                                                                            <p className="text-sm font-medium text-psi-primary">
+                                                                                {ValueUtils.centsToCurrency(displayPrice.min)} - {ValueUtils.centsToCurrency(displayPrice.max)} por ingresso
+                                                                            </p>
+                                                                        ) : (
+                                                                            <p className="text-sm font-medium text-psi-primary">
+                                                                                {ValueUtils.centsToCurrency(displayPrice)} por ingresso
+                                                                            </p>
+                                                                        )}
+                                                                        {typeof displayPrice === "number" && (
+                                                                            <p className="text-xs text-psi-dark/60">
+                                                                                + Taxa: {ValueUtils.centsToCurrency(TicketFeeUtils.calculateFeeInCents(displayPrice, event.isClientTaxed))} por ingresso
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                )}
                                                                 {event.EventDates && event.EventDates.length > 1 && (
                                                                     <div className="mt-3 space-y-2">
                                                                         <p className="text-xs font-medium text-psi-dark/70">Selecione os dias:</p>
@@ -908,25 +972,40 @@ const VerEventoInfo = (
                                                                             const priceForThisDay = getPriceForTicketTypeLocal(eventDate.id)
                                                                             const feeCents = TicketFeeUtils.calculateFeeInCents(priceForThisDay, event.isClientTaxed)
                                                                             
+                                                                            const isDaySelectedByOtherType = selectedBatch?.EventBatchTicketTypes?.some(otherEbt => 
+                                                                                otherEbt.ticketTypeId !== ebt.ticketTypeId && 
+                                                                                (selectedDays[otherEbt.ticketTypeId] || []).includes(eventDate.id)
+                                                                            ) || false
+                                                                            
                                                                             return (
                                                                                 <div key={eventDate.id} className="flex items-center gap-3 rounded-lg border border-psi-primary/20 bg-white p-2">
                                                                                     <Checkbox
                                                                                         checked={isSelected}
+                                                                                        disabled={isDaySelectedByOtherType && !isSelected}
                                                                                         onCheckedChange={(checked) => {
-                                                                                            setSelectedDays(prev => {
-                                                                                                const current = prev[ebt.ticketTypeId] || []
-                                                                                                if (checked === true) {
+                                                                                            if (checked === true) {
+                                                                                                setSelectedDays(prev => {
+                                                                                                    const updated = { ...prev }
+                                                                                                    selectedBatch?.EventBatchTicketTypes?.forEach(otherEbt => {
+                                                                                                        if (otherEbt.ticketTypeId !== ebt.ticketTypeId) {
+                                                                                                            const otherDays = updated[otherEbt.ticketTypeId] || []
+                                                                                                            updated[otherEbt.ticketTypeId] = otherDays.filter(id => id !== eventDate.id)
+                                                                                                        }
+                                                                                                    })
+                                                                                                    const current = updated[ebt.ticketTypeId] || []
                                                                                                     return {
-                                                                                                        ...prev,
+                                                                                                        ...updated,
                                                                                                         [ebt.ticketTypeId]: [...current, eventDate.id]
                                                                                                     }
-                                                                                                } else {
+                                                                                                })
+                                                                                            } else {
+                                                                                                setSelectedDays(prev => {
                                                                                                     return {
                                                                                                         ...prev,
-                                                                                                        [ebt.ticketTypeId]: current.filter(id => id !== eventDate.id)
+                                                                                                        [ebt.ticketTypeId]: (prev[ebt.ticketTypeId] || []).filter(id => id !== eventDate.id)
                                                                                                     }
-                                                                                                }
-                                                                                            })
+                                                                                                })
+                                                                                            }
                                                                                         }}
                                                                                     />
                                                                                     <div className="flex-1">
@@ -969,6 +1048,7 @@ const VerEventoInfo = (
                                                             }}
                                                             max={10}
                                                             min={0}
+                                                            disabled={event.EventDates && event.EventDates.length > 1 && selectedDaysForType.length === 0}
                                                         />
                                                     </div>
                                                 )
@@ -1084,7 +1164,7 @@ const VerEventoInfo = (
                                                                             onCheckedChange={(checked) => {
                                                                                 if (checked === true) {
                                                                                     setSelectedDaysWithoutTicketTypes(prev => [...prev, eventDate.id])
-                                                                                    setDayQuantities(prev => ({ ...prev, [eventDate.id]: 1 }))
+                                                                                    setDayQuantities(prev => ({ ...prev, [eventDate.id]: 0 }))
                                                                                 } else {
                                                                                     setSelectedDaysWithoutTicketTypes(prev => prev.filter(id => id !== eventDate.id))
                                                                                     setDayQuantities(prev => {
@@ -1133,7 +1213,7 @@ const VerEventoInfo = (
                                                                         }))
                                                                     }}
                                                                     max={10}
-                                                                    min={1}
+                                                                    min={0}
                                                                 />
                                                             )}
                                                         </div>
@@ -1162,7 +1242,7 @@ const VerEventoInfo = (
                                                         }
                                                     }}
                                                     max={10}
-                                                    min={1}
+                                                    min={0}
                                                 />
                                             </div>
                                         )}
@@ -1172,43 +1252,11 @@ const VerEventoInfo = (
                                 <div className="pt-4 border-t border-psi-dark/10">
                                     <div className="flex items-center justify-between mb-4">
                                         <span className="text-sm text-psi-dark/70">Total</span>
-                                        <span className="text-2xl font-bold text-psi-primary">
-                                            {hasMultipleDaysWithTicketTypePrices && event?.EventDates ? (
-                                                ValueUtils.centsToCurrency(
-                                                    CheckoutUtils.calculateTotalForSelectedDaysAndTypes(
-                                                        selectedDaysAndTypes,
-                                                        event,
-                                                        event.isClientTaxed
-                                                    )
-                                                )
-                                            ) : batchHasTicketTypes && selectedBatch?.EventBatchTicketTypes ? (
-                                                ValueUtils.centsToCurrency(
-                                                    CheckoutUtils.calculateTotalForBatchTicketTypes(
-                                                        selectedBatch.EventBatchTicketTypes,
-                                                        ticketTypeQuantities,
-                                                        selectedDays,
-                                                        event,
-                                                        event.isClientTaxed
-                                                    )
-                                                )
-                                            ) : hasMultipleDaysWithSpecificPrices && selectedDaysWithoutTicketTypes.length > 0 ? (
-                                                ValueUtils.centsToCurrency(
-                                                    CheckoutUtils.calculateTotalForMultipleDaysWithoutTicketTypes(
-                                                        selectedDaysWithoutTicketTypes,
-                                                        dayQuantities,
-                                                        event,
-                                                        event.isClientTaxed
-                                                    )
-                                                )
-                                            ) : (
-                                                ValueUtils.centsToCurrency(
-                                                    CheckoutUtils.calculateTotalForSimpleEvent(
-                                                        currentPrice,
-                                                        currentQuantity,
-                                                        event.isClientTaxed
-                                                    )
-                                                )
-                                            )}
+                                        <span 
+                                            key={totalAnimationKey}
+                                            className={`text-2xl font-bold text-psi-primary ${totalAnimationKey > 0 ? 'total-animate' : ''}`}
+                                        >
+                                            {ValueUtils.centsToCurrency(totalValue)}
                                         </span>
                                     </div>
                                     <Button
@@ -1265,8 +1313,21 @@ const VerEventoInfo = (
 
                                     <div className="flex items-start gap-3">
                                         <TrendingDown className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
-                                        <div>
-                                            <p className="text-sm font-medium text-psi-dark">Taxas Reduzidas</p>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-sm font-medium text-psi-dark">Taxas Reduzidas</p>
+                                                <DialogTaxes
+                                                    isClientView={true}
+                                                    trigger={
+                                                        <button
+                                                            type="button"
+                                                            className="text-xs text-psi-primary hover:text-psi-primary/80 underline"
+                                                        >
+                                                            Entenda nossas taxas
+                                                        </button>
+                                                    }
+                                                />
+                                            </div>
                                             <p className="text-xs text-psi-dark/60">Apenas 1% acima de R$ 39,90 ou R$ 1 fixo</p>
                                         </div>
                                     </div>
@@ -1559,6 +1620,7 @@ const VerEventoInfo = (
                     </div>
                 )}
         </Background>
+        </>
     )
 }
 
