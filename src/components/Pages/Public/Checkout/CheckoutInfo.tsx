@@ -12,6 +12,7 @@ import { InputMask } from "@/components/Input/InputMask"
 import { QuantitySelector } from "@/components/QuantitySelector/QuantitySelector"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { TicketFeeUtils } from "@/utils/Helpers/FeeUtils/TicketFeeUtils"
+import { CheckoutUtils } from "@/utils/Helpers/CheckoutUtils/CheckoutUtils"
 import { formatEventDate, formatEventTime } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import { getCardBrand } from "@/utils/Helpers/CardUtils/CardUtils"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
@@ -71,7 +72,7 @@ const CheckoutInfo = () => {
     }, [cardData.number])
     
     const total = getTotal()
-    
+
     const { data: allEventsData } = useEventFind()
     
     const eventsData = useMemo(() => {
@@ -385,18 +386,18 @@ const CheckoutInfo = () => {
                                                             
                                                             {event.EventDates && event.EventDates.length > 0 && (
                                                                 <div className="flex items-center gap-2 text-sm text-psi-dark/70">
-                                                                    <Calendar className="size-4" />
+                                                                    <Calendar className="size-4" aria-label="Datas e horários do evento" />
                                                                     <span>
-                                                                        {formatEventDate(event.EventDates[0].date, "DD [de] MMMM [de] YYYY")}
-                                                                    </span>
-                                                                </div>
-                                                            )}
-                                                            
-                                                            {event.EventDates && event.EventDates.length > 0 && (
-                                                                <div className="flex items-center gap-2 text-sm text-psi-dark/70">
-                                                                    <Clock className="size-4" />
-                                                                    <span>
-                                                                        {formatEventTime(event.EventDates[0].hourStart, event.EventDates[0].hourEnd)}
+                                                                        {event.EventDates.map((ed, index) => (
+                                                                            <span key={ed.id}>
+                                                                                {index > 0 && <br />}
+                                                                                {formatEventDate(ed.date, "DD [de] MMMM [de] YYYY")}{" "}
+                                                                                <span className="inline-flex items-center gap-1">
+                                                                                    | <Clock className="size-3 inline" aria-label="Hora do evento" />
+                                                                                    {formatEventTime(ed.hourStart, ed.hourEnd)}
+                                                                                </span>
+                                                                            </span>
+                                                                        ))}
                                                                     </span>
                                                                 </div>
                                                             )}
@@ -404,13 +405,20 @@ const CheckoutInfo = () => {
                                                             {item.ticketTypes && item.ticketTypes.length > 0 ? (
                                                                 <div className="space-y-3 pt-2">
                                                                     <p className="text-sm font-medium text-psi-dark/70">Tipos de ingressos:</p>
-                                                                    {item.ticketTypes.map((tt) => (
-                                                                        <div key={tt.ticketTypeId} className="flex items-center justify-between p-2 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
+                                                                    {item.ticketTypes.map((tt, ttIndex) => {
+                                                                        const isMultipleDaysWithTicketTypes = tt.days && tt.days.length > 0 && tt.ticketTypeId && tt.ticketTypeId !== ""
+                                                                        const uniqueKey = tt.days && tt.days.length > 0 ? tt.days[0] : `${tt.ticketTypeId}-${ttIndex}`
+                                                                        return (
+                                                                        <div key={uniqueKey} className="flex items-center justify-between p-2 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
                                                                             <div className="flex-1">
                                                                                 <p className="text-sm font-medium text-psi-dark">{tt.ticketTypeName}</p>
                                                                                 {tt.days && tt.days.length > 0 && (
                                                                                     <p className="text-xs text-psi-dark/60 mt-1">
-                                                                                        {tt.days.length === 1 ? "1 dia selecionado" : `${tt.days.length} dias selecionados`}
+                                                                                        {isMultipleDaysWithTicketTypes && tt.days && tt.days.length > 0
+                                                                                            ? event && 'EventDates' in event && (event as any).EventDates?.find((ed: any) => ed.id === tt.days?.[0]) 
+                                                                                                ? formatEventDate((event as any).EventDates.find((ed: any) => ed.id === tt.days?.[0])?.date, "DD [de] MMMM [de] YYYY")
+                                                                                                : "Dia selecionado"
+                                                                                            : tt.days && tt.days.length === 1 ? "1 dia selecionado" : tt.days ? `${tt.days.length} dias selecionados` : ""}
                                                                                     </p>
                                                                                 )}
                                                                             </div>
@@ -418,68 +426,67 @@ const CheckoutInfo = () => {
                                                                                 <QuantitySelector
                                                                                     value={tt.quantity}
                                                                                     onChange={(qty) => {
+                                                                                        const isDayBasedWithoutTicketTypes = CheckoutUtils.isDayBasedWithoutTicketTypes([tt])
+                                                                                        const isMultipleDaysWithTicketTypes = CheckoutUtils.isMultipleDaysWithTicketTypes([tt])
+                                                                                        const identifier = CheckoutUtils.getTicketTypeIdentifier(tt)
+                                                                                        
                                                                                         if (qty === 0 && item.ticketTypes && item.ticketTypes.length > 1) {
-                                                                                            const updatedTicketTypes = item.ticketTypes.filter(t => t.ticketTypeId !== tt.ticketTypeId)
+                                                                                            const updatedTicketTypes = CheckoutUtils.filterTicketTypesByIdentifier(
+                                                                                                item.ticketTypes,
+                                                                                                identifier,
+                                                                                                isDayBasedWithoutTicketTypes,
+                                                                                                isMultipleDaysWithTicketTypes
+                                                                                            )
                                                                                             if (updatedTicketTypes.length === 0) {
                                                                                                 removeItem(item.eventId, item.batchId)
                                                                                                 return
                                                                                             }
                                                                                             const newTotalQuantity = updatedTicketTypes.reduce((sum, t) => sum + t.quantity, 0)
-                                                                                            if (tt.days && tt.days.length > 0 && event) {
-                                                                                                const batch = event.EventBatches?.find(b => b.id === item.batchId)
-                                                                                                if (batch?.EventBatchTicketTypes) {
-                                                                                                    const ebt = batch.EventBatchTicketTypes.find(ebt => ebt.ticketTypeId === tt.ticketTypeId)
-                                                                                                    if (ebt) {
-                                                                                                        const getPriceForTicketType = (eventDateId: string) => {
-                                                                                                            const eventDate = event.EventDates?.find(ed => ed.id === eventDateId)
-                                                                                                            if (eventDate?.hasSpecificPrice) {
-                                                                                                                if (eventDate.EventDateTicketTypePrices && eventDate.EventDateTicketTypePrices.length > 0) {
-                                                                                                                    const ticketTypeIdToMatch = ebt.TicketType?.id || ebt.ticketTypeId
-                                                                                                                    const dayPrice = eventDate.EventDateTicketTypePrices.find((ttp: any) => {
-                                                                                                                        return ttp.ticketTypeId === ticketTypeIdToMatch
-                                                                                                                    })
-                                                                                                                    if (dayPrice) return dayPrice.price
-                                                                                                                } else if (eventDate.price) {
-                                                                                                                    return eventDate.price
-                                                                                                                }
-                                                                                                            }
-                                                                                                            return ebt.price || 0
-                                                                                                        }
-                                                                                                        
-                                                                                                        const newTotalPrice = updatedTicketTypes.reduce((sum, t) => {
-                                                                                                            if (t.days && t.days.length > 0) {
-                                                                                                                const otherEbt = batch.EventBatchTicketTypes?.find(ebt => ebt.ticketTypeId === t.ticketTypeId)
-                                                                                                                if (otherEbt) {
-                                                                                                                    const daysTotal = t.days.reduce((daySum, eventDateId) => {
-                                                                                                                        return daySum + getPriceForTicketType(eventDateId)
-                                                                                                                    }, 0)
-                                                                                                                    return sum + (daysTotal * t.quantity)
-                                                                                                                }
-                                                                                                            } else if (t.price !== null && t.price !== undefined) {
-                                                                                                                return sum + (t.price * t.quantity)
-                                                                                                            }
-                                                                                                            return sum
-                                                                                                        }, 0)
-                                                                                                        
-                                                                                                        addItem({
-                                                                                                            eventId: item.eventId,
-                                                                                                            eventName: item.eventName,
-                                                                                                            batchId: item.batchId,
-                                                                                                            batchName: item.batchName,
-                                                                                                            price: newTotalPrice || 0,
-                                                                                                            ticketTypes: updatedTicketTypes,
-                                                                                                            isClientTaxed: item.isClientTaxed
-                                                                                                        }, newTotalQuantity)
-                                                                                                    }
-                                                                                                }
-                                                                                            } else {
-                                                                                                const newTotalPrice = updatedTicketTypes.reduce((sum, t) => {
-                                                                                                    if (t.price !== null && t.price !== undefined) {
-                                                                                                        return sum + (t.price * t.quantity)
-                                                                                                    }
-                                                                                                    return sum
-                                                                                                }, 0)
-                                                                                                
+                                                                                            
+                                                                                            const batch = event.EventBatches?.find(b => b.id === item.batchId)
+                                                                                            const hasEventBatchTicketTypes = batch?.EventBatchTicketTypes && batch.EventBatchTicketTypes.length > 0
+                                                                                            
+                                                                                            const newTotalPrice = CheckoutUtils.calculateBasePriceForTicketTypes(
+                                                                                                updatedTicketTypes,
+                                                                                                event,
+                                                                                                batch || null,
+                                                                                                hasEventBatchTicketTypes
+                                                                                            )
+                                                                                            
+                                                                                            addItem({
+                                                                                                eventId: item.eventId,
+                                                                                                eventName: item.eventName,
+                                                                                                batchId: item.batchId,
+                                                                                                batchName: item.batchName,
+                                                                                                price: newTotalPrice || 0,
+                                                                                                ticketTypes: updatedTicketTypes,
+                                                                                                isClientTaxed: item.isClientTaxed
+                                                                                            }, newTotalQuantity)
+                                                                                            return
+                                                                                        }
+                                                                                        
+                                                                                        if (tt.days && tt.days.length > 0 && event) {
+                                                                                            const batch = event.EventBatches?.find(b => b.id === item.batchId)
+                                                                                            const hasEventBatchTicketTypes = batch?.EventBatchTicketTypes && batch.EventBatchTicketTypes.length > 0
+                                                                                            
+                                                                                            const updatedTicketTypes = CheckoutUtils.updateTicketTypeQuantityByIdentifier(
+                                                                                                item.ticketTypes || [],
+                                                                                                identifier,
+                                                                                                qty,
+                                                                                                isDayBasedWithoutTicketTypes,
+                                                                                                isMultipleDaysWithTicketTypes
+                                                                                            )
+                                                                                            
+                                                                                            const newTotalPrice = CheckoutUtils.calculateBasePriceForTicketTypes(
+                                                                                                updatedTicketTypes || [],
+                                                                                                event,
+                                                                                                batch || null,
+                                                                                                hasEventBatchTicketTypes
+                                                                                            )
+                                                                                            
+                                                                                            const newTotalQuantity = updatedTicketTypes?.reduce((sum, t) => sum + t.quantity, 0) || 0
+                                                                                            
+                                                                                            if (updatedTicketTypes && updatedTicketTypes.length > 0 && newTotalQuantity > 0) {
                                                                                                 addItem({
                                                                                                     eventId: item.eventId,
                                                                                                     eventName: item.eventName,
@@ -493,64 +500,6 @@ const CheckoutInfo = () => {
                                                                                             return
                                                                                         }
                                                                                         
-                                                                                        if (tt.days && tt.days.length > 0 && event) {
-                                                                                            const batch = event.EventBatches?.find(b => b.id === item.batchId)
-                                                                                            if (batch?.EventBatchTicketTypes) {
-                                                                                                const ebt = batch.EventBatchTicketTypes.find(ebt => ebt.ticketTypeId === tt.ticketTypeId)
-                                                                                                if (ebt) {
-                                                                                                    const getPriceForTicketType = (eventDateId: string) => {
-                                                                                                        const eventDate = event.EventDates?.find(ed => ed.id === eventDateId)
-                                                                                                        if (eventDate?.hasSpecificPrice) {
-                                                                                                            if (eventDate.EventDateTicketTypePrices && eventDate.EventDateTicketTypePrices.length > 0) {
-                                                                                                                const ticketTypeIdToMatch = ebt.TicketType?.id || ebt.ticketTypeId
-                                                                                                                const dayPrice = eventDate.EventDateTicketTypePrices.find((ttp: any) => {
-                                                                                                                    return ttp.ticketTypeId === ticketTypeIdToMatch
-                                                                                                                })
-                                                                                                                if (dayPrice) return dayPrice.price
-                                                                                                            } else if (eventDate.price) {
-                                                                                                                return eventDate.price
-                                                                                                            }
-                                                                                                        }
-                                                                                                        return ebt.price || 0
-                                                                                                    }
-                                                                                                    
-                                                                                                    const updatedTicketTypes = item.ticketTypes?.map(t =>
-                                                                                                        t.ticketTypeId === tt.ticketTypeId ? { ...t, quantity: qty } : t
-                                                                                                    ).filter(t => t.quantity > 0)
-                                                                                                    
-                                                                                                    const newTotalPrice = updatedTicketTypes?.reduce((sum, t) => {
-                                                                                                        if (t.days && t.days.length > 0) {
-                                                                                                            const otherEbt = batch.EventBatchTicketTypes?.find(ebt => ebt.ticketTypeId === t.ticketTypeId)
-                                                                                                            if (otherEbt) {
-                                                                                                                const daysTotal = t.days.reduce((daySum, eventDateId) => {
-                                                                                                                    return daySum + getPriceForTicketType(eventDateId)
-                                                                                                                }, 0)
-                                                                                                                return sum + (daysTotal * t.quantity)
-                                                                                                            }
-                                                                                                        } else if (t.price !== null && t.price !== undefined) {
-                                                                                                            return sum + (t.price * t.quantity)
-                                                                                                        }
-                                                                                                        return sum
-                                                                                                    }, 0)
-                                                                                                    
-                                                                                                    const newTotalQuantity = updatedTicketTypes?.reduce((sum, t) => sum + t.quantity, 0) || 0
-                                                                                                    
-                                                                                                    if (updatedTicketTypes && updatedTicketTypes.length > 0 && newTotalQuantity > 0) {
-                                                                                                        addItem({
-                                                                                                            eventId: item.eventId,
-                                                                                                            eventName: item.eventName,
-                                                                                                            batchId: item.batchId,
-                                                                                                            batchName: item.batchName,
-                                                                                                            price: newTotalPrice || 0,
-                                                                                                            ticketTypes: updatedTicketTypes,
-                                                                                                            isClientTaxed: item.isClientTaxed
-                                                                                                        }, newTotalQuantity)
-                                                                                                    }
-                                                                                                    return
-                                                                                                }
-                                                                                            }
-                                                                                        }
-                                                                                        
                                                                                         updateTicketTypeQuantity(item.eventId, item.batchId, tt.ticketTypeId, qty)
                                                                                     }}
                                                                                     min={1}
@@ -558,7 +507,8 @@ const CheckoutInfo = () => {
                                                                                 />
                                                                             </div>
                                                                         </div>
-                                                                    ))}
+                                                                        )
+                                                                    })}
                                                                 </div>
                                                             ) : (
                                                                 <div className="flex items-center justify-between pt-2">
@@ -586,29 +536,7 @@ const CheckoutInfo = () => {
                                                             
                                                             <div className="pt-2 border-t border-psi-dark/10">
                                                                 <p className="text-lg font-semibold text-psi-primary">
-                                                                    {(() => {
-                                                                        if (item.ticketTypes && item.ticketTypes.length > 0) {
-                                                                            const hasDays = item.ticketTypes.some(tt => tt.days && tt.days.length > 0)
-                                                                            
-                                                                            if (hasDays) {
-                                                                                const feeCents = TicketFeeUtils.calculateFeeInCents(item.price, item.isClientTaxed)
-                                                                                const totalWithFees = item.price + (feeCents * item.quantity)
-                                                                                return ValueUtils.centsToCurrency(totalWithFees)
-                                                                            }
-                                                                            
-                                                                            const total = item.ticketTypes.reduce((sum, tt) => {
-                                                                                if (tt.price !== null && tt.price !== undefined) {
-                                                                                    const feeCents = TicketFeeUtils.calculateFeeInCents(tt.price, item.isClientTaxed)
-                                                                                    return sum + (tt.price * tt.quantity) + (feeCents * tt.quantity)
-                                                                                }
-                                                                                return sum
-                                                                            }, 0)
-                                                                            return ValueUtils.centsToCurrency(total)
-                                                                        }
-                                                                        const feeCents = TicketFeeUtils.calculateFeeInCents(item.price, item.isClientTaxed)
-                                                                        const totalWithFees = (item.price * item.quantity) + (feeCents * item.quantity)
-                                                                        return ValueUtils.centsToCurrency(totalWithFees)
-                                                                    })()}
+                                                                    {ValueUtils.centsToCurrency(CheckoutUtils.calculateItemTotal(item, event))}
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -854,38 +782,19 @@ const CheckoutInfo = () => {
                                 <h3 className="font-semibold text-psi-dark mb-4">Resumo do Pedido</h3>
                                 
                                 <div className="space-y-3 mb-4">
-                                    {items.map((item) => (
-                                        <div key={`${item.eventId}-${item.batchId}`} className="flex items-center justify-between text-sm">
-                                            <span className="text-psi-dark/70">
-                                                {item.eventName} x{item.quantity}
-                                            </span>
-                                            <span className="font-semibold text-psi-dark">
-                                                {(() => {
-                                                    if (item.ticketTypes && item.ticketTypes.length > 0) {
-                                                        const hasDays = item.ticketTypes.some(tt => tt.days && tt.days.length > 0)
-                                                        
-                                                        if (hasDays) {
-                                                            const feeCents = TicketFeeUtils.calculateFeeInCents(item.price, item.isClientTaxed)
-                                                            const totalWithFees = item.price + (feeCents * item.quantity)
-                                                            return ValueUtils.centsToCurrency(totalWithFees)
-                                                        }
-                                                        
-                                                        const total = item.ticketTypes.reduce((sum, tt) => {
-                                                            if (tt.price !== null && tt.price !== undefined) {
-                                                                const feeCents = TicketFeeUtils.calculateFeeInCents(tt.price, item.isClientTaxed)
-                                                                return sum + (tt.price * tt.quantity) + (feeCents * tt.quantity)
-                                                            }
-                                                            return sum
-                                                        }, 0)
-                                                        return ValueUtils.centsToCurrency(total)
-                                                    }
-                                                    const feeCents = TicketFeeUtils.calculateFeeInCents(item.price, item.isClientTaxed)
-                                                    const totalWithFees = (item.price * item.quantity) + (feeCents * item.quantity)
-                                                    return ValueUtils.centsToCurrency(totalWithFees)
-                                                })()}
-                                            </span>
-                                        </div>
-                                    ))}
+                                    {items.map((item) => {
+                                        const event = eventsData.find(e => e?.id === item.eventId)
+                                        return (
+                                            <div key={`${item.eventId}-${item.batchId}`} className="flex items-center justify-between text-sm">
+                                                <span className="text-psi-dark/70">
+                                                    {item.eventName} x{item.quantity}
+                                                </span>
+                                                <span className="font-semibold text-psi-dark">
+                                                    {ValueUtils.centsToCurrency(CheckoutUtils.calculateItemTotal(item, event || null))}
+                                                </span>
+                                            </div>
+                                        )
+                                    })}
                                 </div>
                                 
                                 <div className="pt-4 border-t border-psi-dark/10">

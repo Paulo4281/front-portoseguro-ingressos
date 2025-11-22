@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useCallback, ReactNode } from "rea
 import type { TEvent } from "@/types/Event/TEvent"
 import type { TEventBatch } from "@/types/Event/TEventBatch"
 import { TicketFeeUtils } from "@/utils/Helpers/FeeUtils/TicketFeeUtils"
+import { CheckoutUtils } from "@/utils/Helpers/CheckoutUtils/CheckoutUtils"
 
 type TCartItemTicketType = {
     ticketTypeId: string
@@ -194,25 +195,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     const getTotal = useCallback(() => {
         return items.reduce((total, item) => {
-            if (item.ticketTypes && item.ticketTypes.length > 0) {
-                const hasDays = item.ticketTypes.some(tt => tt.days && tt.days.length > 0)
-                
-                if (hasDays) {
-                    const feeCents = TicketFeeUtils.calculateFeeInCents(item.price, item.isClientTaxed)
-                    return total + item.price + (feeCents * item.quantity)
-                }
-                
-                const ticketTypesTotal = item.ticketTypes.reduce((sum, tt) => {
-                    if (tt.price !== null && tt.price !== undefined) {
-                        const feeCents = TicketFeeUtils.calculateFeeInCents(tt.price, item.isClientTaxed)
-                        return sum + (tt.price * tt.quantity) + (feeCents * tt.quantity)
-                    }
-                    return sum
-                }, 0)
-                return total + ticketTypesTotal
-            }
-            const feeCents = TicketFeeUtils.calculateFeeInCents(item.price, item.isClientTaxed)
-            return total + (item.price * item.quantity) + (feeCents * item.quantity)
+            return total + CheckoutUtils.calculateItemTotal(item, null)
         }, 0)
     }, [items])
 
