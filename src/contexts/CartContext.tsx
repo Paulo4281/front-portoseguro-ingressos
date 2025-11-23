@@ -45,25 +45,64 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         setItems((prev) => {
             const existingIndex = prev.findIndex(
                 (i) => {
-                    if (i.eventId !== item.eventId || i.batchId !== item.batchId) return false
-                    if (i.ticketTypes && item.ticketTypes) {
-                        if (i.ticketTypes.length !== item.ticketTypes.length) return false
-                        const sortedI = [...i.ticketTypes].sort((a, b) => a.ticketTypeId.localeCompare(b.ticketTypeId))
-                        const sortedItem = [...item.ticketTypes].sort((a, b) => a.ticketTypeId.localeCompare(b.ticketTypeId))
-                        return sortedI.every((tt, idx) => 
-                            tt.ticketTypeId === sortedItem[idx].ticketTypeId &&
-                            JSON.stringify(tt.days?.sort()) === JSON.stringify(sortedItem[idx].days?.sort())
-                        )
-                    }
-                    return !i.ticketTypes && !item.ticketTypes
+                    return i.eventId === item.eventId && i.batchId === item.batchId
                 }
             )
 
             if (existingIndex >= 0) {
+                const existingItem = prev[existingIndex]
                 const updated = [...prev]
-                updated[existingIndex].quantity = quantity
-                updated[existingIndex].ticketTypes = item.ticketTypes
-                updated[existingIndex].price = item.price
+                
+                if (item.ticketTypes && item.ticketTypes.length > 0) {
+                    if (existingItem.ticketTypes && existingItem.ticketTypes.length > 0) {
+                        const mergedTicketTypes: TCartItemTicketType[] = [...existingItem.ticketTypes]
+                        
+                        item.ticketTypes.forEach(newTicketType => {
+                            const existingTicketTypeIndex = mergedTicketTypes.findIndex(existingTT => {
+                                if (newTicketType.days && newTicketType.days.length > 0 && existingTT.days && existingTT.days.length > 0) {
+                                    return newTicketType.ticketTypeId === existingTT.ticketTypeId &&
+                                           JSON.stringify(newTicketType.days?.sort()) === JSON.stringify(existingTT.days?.sort())
+                                }
+                                if (!newTicketType.days && !existingTT.days) {
+                                    return newTicketType.ticketTypeId === existingTT.ticketTypeId
+                                }
+                                return false
+                            })
+                            
+                            if (existingTicketTypeIndex >= 0) {
+                                mergedTicketTypes[existingTicketTypeIndex] = {
+                                    ...mergedTicketTypes[existingTicketTypeIndex],
+                                    quantity: newTicketType.quantity
+                                }
+                            } else {
+                                mergedTicketTypes.push(newTicketType)
+                            }
+                        })
+                        
+                        const newTotalQuantity = mergedTicketTypes.reduce((sum, tt) => sum + tt.quantity, 0)
+                        
+                        updated[existingIndex] = {
+                            ...existingItem,
+                            quantity: newTotalQuantity,
+                            ticketTypes: mergedTicketTypes,
+                            price: item.price
+                        }
+                    } else {
+                        updated[existingIndex] = {
+                            ...existingItem,
+                            quantity,
+                            ticketTypes: item.ticketTypes,
+                            price: item.price
+                        }
+                    }
+                } else {
+                    updated[existingIndex] = {
+                        ...existingItem,
+                        quantity,
+                        price: item.price
+                    }
+                }
+                
                 return updated
             }
 

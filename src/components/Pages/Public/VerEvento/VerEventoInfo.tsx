@@ -338,6 +338,8 @@ const VerEventoInfo = (
 
         if (hasMultipleDaysWithTicketTypePrices && event?.EventDates && event?.TicketTypes) {
             const ticketTypes: any[] = []
+
+            console.log("B")
             
             Object.entries(selectedDaysAndTypes).forEach(([eventDateId, types]) => {
                 const eventDate = event.EventDates?.find(ed => ed.id === eventDateId)
@@ -376,7 +378,7 @@ const VerEventoInfo = (
             }, totalQuantity)
         } else if (batchHasTicketTypes && selectedBatch?.EventBatchTicketTypes) {
             const ticketTypes: any[] = []
-            
+
             selectedBatch.EventBatchTicketTypes.forEach(ebt => {
                 const qty = ticketTypeQuantities[ebt.ticketTypeId] || 0
                 if (qty === 0) return
@@ -395,10 +397,19 @@ const VerEventoInfo = (
                         })
                     })
                 } else {
+                    let ticketTypePrice: number = 0
+
+                    if (event?.EventDates && event?.EventDates?.length > 0 && event?.EventDates?.find(ed => ed.hasSpecificPrice)) {
+                        const eventDate = event?.EventDates?.find(ed => ed.hasSpecificPrice)
+                        if (eventDate) {
+                            ticketTypePrice = eventDate.EventDateTicketTypePrices?.find((ttp: any) => ttp.ticketTypeId === ebt.ticketTypeId)?.price || 0
+                        }
+                    }
+
                     ticketTypes.push({
                         ticketTypeId: ebt.ticketTypeId,
                         ticketTypeName: ebt.TicketType?.name || "Tipo desconhecido",
-                        price: ebt.price || 0,
+                        price: ticketTypePrice || ebt.price || 0,
                         quantity: qty,
                         days: undefined
                     })

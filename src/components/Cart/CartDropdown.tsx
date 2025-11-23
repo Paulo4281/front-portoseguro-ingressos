@@ -77,6 +77,7 @@ const CartDropdown = () => {
                                                 <span className="text-sm font-semibold text-psi-primary">
                                                     {(() => {
                                                         if (item.ticketTypes && item.ticketTypes.length > 0) {
+                                                            console.log(item)
                                                             const hasDays = item.ticketTypes.some(tt => tt.days && tt.days.length > 0)
                                                             
                                                             if (hasDays) {
