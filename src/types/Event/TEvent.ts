@@ -38,6 +38,61 @@ type TEvent = {
     Organizer: TOrganizer
 }
 
+type TEventSalesReport = {
+    eventId: string
+    eventName: string
+    totalTicketsSold: number
+    totalRevenue: number
+    totalViews: number
+    conversionRate: number
+    salesByBatch: Array<{
+        batchId: string
+        batchName: string
+        ticketsSold: number
+        revenue: number
+        percentage: number
+    }>
+    salesByTicketType: Array<{
+        ticketTypeId: string
+        ticketTypeName: string
+        ticketsSold: number
+        revenue: number
+        percentage: number
+    }>
+    salesByDate: Array<{
+        date: string
+        ticketsSold: number
+        revenue: number
+    }>
+    buyersByAgeRange: Array<{
+        ageRange: string
+        count: number
+        percentage: number
+    }>
+    buyersByOrigin: Array<{
+        origin: string
+        count: number
+        percentage: number
+    }>
+    salesOverTime: Array<{
+        date: string
+        ticketsSold: number
+        revenue: number
+    }>
+    topBuyers: Array<{
+        buyerName: string
+        ticketsBought: number
+        totalSpent: number
+    }>
+    averageTicketPrice: number
+    peakSalesDay: string
+    peakSalesHour: string
+}
+
+type TEventDetailedStats = {
+
+}
+
 export type {
     TEvent,
     TEventDate,
@@ -45,5 +100,7 @@ export type {
     TRecurrenceDay,
     TEventCategoryEvent,
     TOrganizer,
-    TEventCreate
+    TEventCreate,
+    TEventSalesReport,
+    TEventDetailedStats
 }

@@ -3,8 +3,7 @@
 import { useState, useMemo, useCallback } from "react"
 import { useCart } from "@/contexts/CartContext"
 import { useAuthStore } from "@/stores/Auth/AuthStore"
-import { useEventFind } from "@/hooks/Event/useEventFind"
-import { useEventFindById } from "@/hooks/Event/useEventFindById"
+import { useEventFindByIds } from "@/hooks/Event/useEventFindByIds"
 import { Background } from "@/components/Background/Background"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/Input/Input"
@@ -95,13 +94,11 @@ const CheckoutInfo = () => {
         return getCardBrand(cardData.number)
     }, [cardData.number])
     
-    const { data: allEventsData } = useEventFind()
+    const uniqueEventIds = useMemo(() => {
+        return [...new Set(items.map(item => item.eventId))]
+    }, [items])
     
-    const eventsData = useMemo(() => {
-        if (!allEventsData?.data || !Array.isArray(allEventsData.data)) return []
-        const eventIds = [...new Set(items.map(item => item.eventId))]
-        return eventIds.map(id => allEventsData?.data?.find(e => e.id === id)).filter(Boolean)
-    }, [items, allEventsData])
+    const { data: eventsData } = useEventFindByIds(uniqueEventIds)
     
     const eventsWithForms = useMemo(() => {
         return eventsData.filter(event => {
@@ -841,7 +838,7 @@ const CheckoutInfo = () => {
                                                                 {isForEachTicket && (
                                                                     <div className="space-y-1">
                                                                         <p className="text-sm font-medium text-psi-primary">Ingresso {ticketNumber} de {ticketQuantity}</p>
-                                                                        <p className="text-sm font-semibold text-psi-dark">{ticketTypeName}</p>
+                                                                        <p className="text-sm font-semibold text-psi-dark">{ticketTypeName !== "Ingresso" ? ticketTypeName : ""}</p>
                                                                         {ticketTypeDescription && (
                                                                             <p className="text-xs text-psi-dark/60 mt-1">{ticketTypeDescription}</p>
                                                                         )}

@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CTAButton } from "@/components/CTAButton/CTAButton"
 import { ArrowUpRight, Lock, ShieldCheck, Ticket, Music2, SunMedium, Waves, PartyPopper, TrendingDown, Users, CreditCard, TrendingUp, Megaphone, Tag, Fingerprint, Cpu, Sparkles, Globe2, CheckCircle2, HeartHandshake, DollarSign, Star, BookOpen, ArrowRight } from "lucide-react"
-import { useEventFindPublic } from "@/hooks/Event/useEventFindPublic"
+import { useEventFindFeatured } from "@/hooks/Event/useEventFindFeatured"
 import { CardEvent } from "@/components/Card/CardEvent/CardEvent"
 import { Carousel } from "@/components/Carousel/Carousel"
 import { Search } from "@/components/Search/Search"
@@ -15,9 +15,10 @@ import Image from "next/image"
 import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
 import { EventCategoryIconHandler } from "@/utils/Helpers/EventCategoryIconHandler/EventCategoryIconHandler"
 import { TEvent } from "@/types/Event/TEvent"
+import { Toast } from "@/components/Toast/Toast"
 
 const HomeHero = () => {
-    const { data: eventsData, isLoading, isError } = useEventFindPublic()
+    const { data: eventsData, isLoading, isError } = useEventFindFeatured()
     const [featuredEvents, setFeaturedEvents] = useState<TEvent[]>([])
 
     useEffect(() => {
@@ -264,7 +265,7 @@ const HomeHero = () => {
                                             variant="tertiary"
                                             className="group"
                                         >
-                                            <Link href="/eventos" aria-label="Explorar eventos disponíveis">
+                                            <Link href="/ver-eventos" aria-label="Explorar eventos disponíveis">
                                                 <ArrowUpRight className="size-4 group-hover:scale-170 transition-transform duration-300" />
                                                 Explorar eventos
                                             </Link>
@@ -434,10 +435,10 @@ const HomeHero = () => {
 
                         <div className="rounded-[28px] border border-white/15 bg-linear-to-br from-white/10 via-white/5 to-white/5 p-6 space-y-6">
                         <div className="absolute left-[60vw] bottom-[1365px] w-[130px] h-auto z-10 pointer-events-none
-                                xs:left-[57vw] xs:bottom-[1345px] xs:w-[160px]
-                                sm:w-[220px] sm:left-[100px] sm:bottom-[-60px]
-                                lg:w-[260px] lg:left-[980px] lg:bottom-[-30px]
-                                3xl:w-[330px] 3xl:left-[1260px] 3xl:bottom-[-55px]
+                                xs:left-[57vw] xs:bottom-[2735px] xs:w-[160px]
+                                sm:w-[170px] sm:left-[400px] sm:bottom-[1600px]
+                                lg:w-[320px] lg:left-[980px] lg:bottom-[770px]
+                                3xl:w-[300px] 3xl:left-[1260px] 3xl:bottom-[770px]
                                 ">
                                     <Image
                                         src="/images/porto-seguro-ingressos-forte.png"
@@ -483,6 +484,139 @@ const HomeHero = () => {
                                         <ArrowRight className="size-4" />
                                     </Link>
                                 </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section className="relative w-full overflow-hidden">
+                <div className="relative min-h-[600px]
+                sm:min-h-[700px]
+                lg:min-h-[800px] flex items-center">
+                    <div className="absolute inset-0 z-0">
+                        <Image
+                            src="/images/porto-seguro-ingressos-palmeira-praia.jpeg"
+                            alt="Porto Seguro e região - Arraial D'Ajuda, Trancoso, Cabrália, Caraíva"
+                            fill
+                            className="object-cover"
+                            priority
+                        />
+                        <div
+                            aria-hidden="true"
+                            className="absolute inset-0 bg-black/70"
+                        />
+                        <div className="absolute inset-0 bg-linear-to-br from-psi-primary/90 via-psi-secondary/80 to-psi-primary/90
+                        sm:from-psi-primary/85 sm:via-psi-secondary/75 sm:to-psi-primary/85
+                        lg:from-psi-primary/80 lg:via-psi-secondary/70 lg:to-psi-primary/80" />
+                        <div className="absolute inset-0 bg-linear-to-t from-psi-dark/60 via-transparent to-transparent" />
+                    </div>
+
+                    <div className="relative z-10 container py-16
+                    sm:py-20
+                    lg:py-24">
+                        <div className="grid gap-12
+                        lg:grid-cols-2 lg:gap-16 items-center">
+                            <div className="space-y-6 text-white">
+                                <div className="space-y-3">
+                                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-sm text-white text-xs font-semibold uppercase tracking-wider border border-white/30">
+                                        Capital do Descobrimento
+                                    </span>
+                                    <h2 className="text-4xl font-bold leading-tight
+                                    sm:text-5xl
+                                    lg:text-6xl">
+                                        O coração pulsante da <span className="text-psi-tertiary">cultura baiana</span>
+                                    </h2>
+                                    <p className="text-lg text-white/90
+                                    sm:text-xl max-w-2xl">
+                                        De Porto Seguro a Caraíva, passando por Arraial D'Ajuda, Trancoso e Cabrália. Uma região rica em história, natureza e experiências inesquecíveis.
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4 pt-4
+                                sm:grid-cols-4">
+                                    {["Porto Seguro", "Arraial D'Ajuda", "Trancoso", "Caraíva"].map((city) => (
+                                        <div key={city} className="rounded-xl bg-white/90 backdrop-blur-sm border border-white/20 p-3 text-center">
+                                            <p className="text-sm font-semibold text-psi-dark">{city}</p>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="flex flex-col gap-4 justify-center pt-4
+                                sm:flex-row">
+                                    <CTAButton
+                                        size="lg"
+                                        text="Anuncie seu evento"
+                                        variant="tertiary"
+                                        icon={Megaphone}
+                                        href="/cadastro?org=true"
+                                        className="hover:bg-psi-primary! hover:text-white!"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div className="rounded-2xl bg-white/95 backdrop-blur-md border border-white/50 p-6
+                                sm:p-8 shadow-xl">
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 rounded-xl bg-psi-primary/10 flex items-center justify-center">
+                                                <Users className="w-6 h-6 text-psi-primary" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-psi-dark">Para Organizadores</h3>
+                                                <p className="text-sm text-psi-dark/60">Conecte-se com o público local</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-psi-dark/70 leading-relaxed">
+                                            Porto Seguro e região recebem milhões de turistas anualmente. Use nossa plataforma para alcançar esse público qualificado e aumentar suas vendas com taxas justas e suporte local.
+                                        </p>
+                                        <ul className="space-y-2">
+                                            {[
+                                                "Público qualificado de turistas e moradores",
+                                                "Taxas reduzidas para maximizar seus lucros",
+                                                "Suporte dedicado para produtores locais",
+                                                "Repasse rápido e transparente"
+                                            ].map((item, index) => (
+                                                <li key={index} className="flex items-start gap-2 text-sm text-psi-dark/70">
+                                                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                                                    <span>{item}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div className="rounded-2xl bg-white/95 backdrop-blur-md border border-white/50 p-6
+                                sm:p-8 shadow-xl">
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 rounded-xl bg-psi-secondary/10 flex items-center justify-center">
+                                                <Ticket className="w-6 h-6 text-psi-secondary" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-psi-dark">Para Compradores</h3>
+                                                <p className="text-sm text-psi-dark/60">Descubra os melhores eventos</p>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-psi-dark/70 leading-relaxed">
+                                            Explore eventos autênticos da região: shows, festivais, experiências culturais e muito mais. Compre com segurança e aproveite ao máximo sua estadia em Porto Seguro.
+                                        </p>
+                                        <ul className="space-y-2">
+                                            {[
+                                                "Eventos verificados e seguros",
+                                                "Ingressos digitais com QR Code",
+                                                "Taxas transparentes e justas",
+                                                "Suporte em português"
+                                            ].map((item, index) => (
+                                                <li key={index} className="flex items-start gap-2 text-sm text-psi-dark/70">
+                                                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                                                    <span>{item}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

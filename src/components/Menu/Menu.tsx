@@ -213,7 +213,7 @@ const Menu = () => {
                                     size="sm"
                                     className="text-psi-dark/70 hover:text-psi-dark"
                                 >
-                                    <Link href="/eventos">
+                                    <Link href="/ver-eventos">
                                         <Calendar className="h-4 w-4" />
                                         Eventos
                                     </Link>

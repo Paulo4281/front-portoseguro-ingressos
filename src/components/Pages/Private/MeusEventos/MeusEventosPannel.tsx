@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Share2, Download, BarChart, Ban, Search } from "lucide-react"
+import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Share2, Download, Ban, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/Input/Input"
 import {
@@ -21,7 +21,9 @@ import type { TEvent } from "@/types/Event/TEvent"
 import type { TEventBatch } from "@/types/Event/TEventBatch"
 import { DialogUpdateEventWarning } from "@/components/Dialog/DialogUpdateEventWarning/DialogUpdateEventWarning"
 import { DialogCancelEventWarning } from "@/components/Dialog/DialogCancelEventWarning/DialogCancelEventWarning"
+import { DialogExportBuyersList } from "@/components/Dialog/DialogExportBuyersList/DialogExportBuyersList"
 import { Pagination } from "@/components/Pagination/Pagination"
+import { EventSalesReport } from "@/components/Report/EventSalesReport"
 
 type TEventWithStats = TEvent & {
     isActive: boolean
@@ -42,7 +44,10 @@ const MeusEventosPannel = () => {
     const [searchQuery, setSearchQuery] = useState("")
     const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+    const [salesReportOpen, setSalesReportOpen] = useState(false)
+    const [exportBuyersListOpen, setExportBuyersListOpen] = useState(false)
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
+    const [selectedEventName, setSelectedEventName] = useState<string | null>(null)
     
     const handleSearch = () => {
         setSearchQuery(searchName)
@@ -271,26 +276,31 @@ const MeusEventosPannel = () => {
                                                         Editar evento
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator className="bg-[#E4E6F0]" />
-                                                    <DropdownMenuItem className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer">
+                                                    <DropdownMenuItem 
+                                                        className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer"
+                                                        onClick={() => {
+                                                            setSelectedEventId(event.id)
+                                                            setExportBuyersListOpen(true)
+                                                        }}
+                                                    >
                                                         <FileSpreadsheet className="h-4 w-4 mr-2 text-psi-primary" />
                                                         Gerar lista de compradores
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer">
+                                                    <DropdownMenuItem 
+                                                        className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer"
+                                                        onClick={() => {
+                                                            setSelectedEventId(event.id)
+                                                            setSelectedEventName(event.name)
+                                                            setSalesReportOpen(true)
+                                                        }}
+                                                    >
                                                         <BarChart3 className="h-4 w-4 mr-2 text-psi-primary" />
-                                                        Gerar relatório de vendas
+                                                        Relatório de Vendas e Estatísticas
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator className="bg-[#E4E6F0]" />
                                                     <DropdownMenuItem className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer">
-                                                        <BarChart className="h-4 w-4 mr-2 text-psi-primary" />
-                                                        Ver estatísticas detalhadas
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer">
                                                         <Share2 className="h-4 w-4 mr-2 text-psi-primary" />
                                                         Compartilhar evento
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer">
-                                                        <Download className="h-4 w-4 mr-2 text-psi-primary" />
-                                                        Exportar dados
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator className="bg-[#E4E6F0]" />
                                                     <DropdownMenuItem 
@@ -440,6 +450,23 @@ const MeusEventosPannel = () => {
                     if (selectedEventId) {
                         console.log("Cancelar evento:", selectedEventId)
                     }
+                }}
+            />
+
+            {selectedEventId && (
+                <EventSalesReport
+                    eventId={selectedEventId}
+                    eventName={selectedEventName || undefined}
+                    open={salesReportOpen}
+                    onOpenChange={setSalesReportOpen}
+                />
+            )}
+
+            <DialogExportBuyersList
+                open={exportBuyersListOpen}
+                onOpenChange={setExportBuyersListOpen}
+                onFormatSelect={(format) => {
+                    console.log("Formato selecionado:", format, "Evento:", selectedEventId)
                 }}
             />
         </Background>

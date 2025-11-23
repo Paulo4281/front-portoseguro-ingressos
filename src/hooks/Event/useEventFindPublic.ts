@@ -3,14 +3,24 @@ import { useQueryHook } from "../useQuery"
 import { eventService } from "@/services/Event/EventService"
 import type { TApiResponse } from "@/types/TApiResponse"
 
-export const useEventFindPublic = () => {
+type TUseEventFindPublicParams = {
+    offset?: number
+    name?: string
+    categoryId?: string
+}
+
+export const useEventFindPublic = (params?: TUseEventFindPublicParams) => {
     const {
         data,
         isLoading,
         isError,
     } = useQueryHook<TApiResponse<TEvent[]>>({
-        queryKey: ["events", "public"],
-        queryFn: () => eventService.find()
+        queryKey: ["events", "public", params?.offset?.toString() || "", params?.name || "", params?.categoryId || ""],
+        queryFn: () => eventService.find({
+            offset: params?.offset,
+            name: params?.name,
+            categoryId: params?.categoryId
+        })
     })
 
     return {

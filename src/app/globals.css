@@ -172,3 +172,66 @@
     display: none;
   }
 }
+
+.custom-toast-container {
+  @apply z-[9999];
+}
+
+.custom-toast-container .Toastify__toast {
+  @apply min-h-[72px] rounded-b-[10px] rounded-br-[10px] rounded-l-[10px] rounded-tr-[10px] shadow-lg shadow-black/10 border border-psi-dark/5 bg-white backdrop-blur-sm;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  font-family: inherit;
+}
+
+.custom-toast-container .Toastify__toast-body {
+  @apply p-0 m-0;
+}
+
+.custom-toast-container .custom-toast-success {
+  @apply border-emerald-200/50 bg-gradient-to-br from-emerald-50/80 via-white to-emerald-50/40;
+}
+
+.custom-toast-container .custom-toast-error {
+  @apply border-red-200/50 bg-gradient-to-br from-red-50/80 via-white to-red-50/40;
+}
+
+.custom-toast-container .custom-toast-info {
+  @apply border-psi-primary/20 bg-gradient-to-br from-psi-primary/5 via-white to-psi-primary/10;
+}
+
+.custom-toast-container .Toastify__progress-bar {
+  @apply h-1 rounded-full;
+}
+
+.custom-toast-container .custom-toast-success .Toastify__progress-bar {
+  @apply bg-emerald-500;
+}
+
+.custom-toast-container .custom-toast-error .Toastify__progress-bar {
+  @apply bg-red-500;
+}
+
+.custom-toast-container .custom-toast-info .Toastify__progress-bar {
+  @apply bg-psi-primary;
+}
+
+.custom-toast-container .Toastify__close-button {
+  @apply opacity-70 hover:opacity-100 transition-opacity duration-200;
+}
+
+.custom-toast-container .Toastify__close-button > svg {
+  @apply w-4 h-4 text-psi-dark/60;
+}
+
+@media (max-width: 640px) {
+  .custom-toast-container .Toastify__toast {
+    @apply min-h-[64px] rounded-xl;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+  }
+  
+  .custom-toast-container .Toastify__toast-body {
+    font-size: 14px;
+  }
+}
