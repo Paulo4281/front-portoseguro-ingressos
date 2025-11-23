@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CTAButton } from "@/components/CTAButton/CTAButton"
 import { ArrowUpRight, Lock, ShieldCheck, Ticket, Music2, SunMedium, Waves, PartyPopper, TrendingDown, Users, CreditCard, TrendingUp, Megaphone, Tag, Fingerprint, Cpu, Sparkles, Globe2, CheckCircle2, HeartHandshake, DollarSign, Star, BookOpen, ArrowRight } from "lucide-react"
-import { useEventFind } from "@/hooks/Event/useEventFind"
+import { useEventFindPublic } from "@/hooks/Event/useEventFindPublic"
 import { CardEvent } from "@/components/Card/CardEvent/CardEvent"
 import { Carousel } from "@/components/Carousel/Carousel"
 import { Search } from "@/components/Search/Search"
@@ -17,12 +17,17 @@ import { EventCategoryIconHandler } from "@/utils/Helpers/EventCategoryIconHandl
 import { TEvent } from "@/types/Event/TEvent"
 
 const HomeHero = () => {
-    const { data: eventsData, isLoading, isError } = useEventFind()
+    const { data: eventsData, isLoading, isError } = useEventFindPublic()
     const [featuredEvents, setFeaturedEvents] = useState<TEvent[]>([])
 
     useEffect(() => {
         if (eventsData?.success) {
-            setFeaturedEvents(eventsData.data ?? [])
+            const events = Array.isArray(eventsData.data) ? eventsData.data : []
+            setFeaturedEvents(events)
+        } else if (eventsData?.data && Array.isArray(eventsData.data)) {
+            setFeaturedEvents(eventsData.data)
+        } else {
+            setFeaturedEvents([])
         }
     }, [eventsData])
 
@@ -36,6 +41,7 @@ const HomeHero = () => {
     }, [eventCategoriesData])
 
     const featuredSlides = useMemo(() => {
+        if (!Array.isArray(featuredEvents)) return []
         return featuredEvents.map((event) => (
             <div key={event.id} className="w-full max-w-[280px]
             sm:max-w-[320px]

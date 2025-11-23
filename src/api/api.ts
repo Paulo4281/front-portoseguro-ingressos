@@ -13,6 +13,7 @@ type TAPIParams = {
     prefix: Prefixes
     url: string
     data?: object
+    params?: Record<string, string | number>
 }
 
 type TAPIError = {
@@ -60,8 +61,17 @@ class ApiClass {
 
     async GET(params: TAPIParams): Promise<AxiosResponse<any, any, {}> | undefined> {
         try {
+            const queryString = params.params 
+                ? "?" + new URLSearchParams(
+                    Object.entries(params.params).reduce((acc, [key, value]) => {
+                        acc[key] = String(value)
+                        return acc
+                    }, {} as Record<string, string>)
+                ).toString()
+                : ""
+            
             const response = await axios.get(
-                `${process.env.NEXT_PUBLIC_API_URL}${params.prefix}${params.url}`,
+                `${process.env.NEXT_PUBLIC_API_URL}${params.prefix}${params.url}${queryString}`,
                 {
                     headers: {
                         "Content-Type": "application/json"

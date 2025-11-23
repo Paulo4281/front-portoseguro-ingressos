@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Share2, Download, BarChart, Ban } from "lucide-react"
+import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Share2, Download, BarChart, Ban, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/Input/Input"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -20,6 +21,7 @@ import type { TEvent } from "@/types/Event/TEvent"
 import type { TEventBatch } from "@/types/Event/TEventBatch"
 import { DialogUpdateEventWarning } from "@/components/Dialog/DialogUpdateEventWarning/DialogUpdateEventWarning"
 import { DialogCancelEventWarning } from "@/components/Dialog/DialogCancelEventWarning/DialogCancelEventWarning"
+import { Pagination } from "@/components/Pagination/Pagination"
 
 type TEventWithStats = TEvent & {
     isActive: boolean
@@ -35,15 +37,41 @@ const mockStats = {
 }
 
 const MeusEventosPannel = () => {
-    const { data: eventsData, isLoading, isError } = useEventFind()
+    const [currentPage, setCurrentPage] = useState(1)
+    const [searchName, setSearchName] = useState("")
+    const [searchQuery, setSearchQuery] = useState("")
     const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
     
+    const handleSearch = () => {
+        setSearchQuery(searchName)
+        setCurrentPage(1)
+    }
+    
+    const offset = (currentPage - 1) * 9
+    
+    const { data: eventsData, isLoading, isError } = useEventFind({
+        offset,
+        name: searchQuery || undefined
+    })
+    
     const events = useMemo(() => {
-        if (!eventsData?.data || !Array.isArray(eventsData.data)) return []
-        return eventsData.data
+        if (!eventsData?.data) return []
+        const nestedData = (eventsData.data as any)?.data
+        if (Array.isArray(nestedData)) {
+            return nestedData
+        }
+        if (Array.isArray(eventsData.data)) {
+            return eventsData.data
+        }
+        return []
     }, [eventsData])
+    
+    const responseData = (eventsData?.data as any) || {}
+    const totalItems = responseData.total || 0
+    const limit = responseData.limit || 10
+    const totalPages = totalItems > 0 ? Math.ceil(totalItems / limit) : 0
 
     const formatDate = (dateString?: string | null) => {
         return formatEventDate(dateString, "DD MMM YYYY")
@@ -176,9 +204,31 @@ const MeusEventosPannel = () => {
                             Meus Eventos
                         </h1>
                         <p className="text-base
-                        sm:text-lg text-psi-dark/60">
+                        sm:text-lg text-psi-dark/60 mb-6">
                             Gerencie seus eventos e acompanhe o desempenho
                         </p>
+                        
+                        <div className="flex gap-3">
+                            <Input
+                                placeholder="Pesquisar por nome do evento..."
+                                value={searchName}
+                                onChange={(e) => setSearchName(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        handleSearch()
+                                    }
+                                }}
+                                icon={Search}
+                                className="w-full bg-psi-light"
+                            />
+                            <Button
+                                variant="primary"
+                                onClick={handleSearch}
+                                className="shrink-0"
+                            >
+                                Pesquisar
+                            </Button>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1
@@ -360,6 +410,16 @@ const MeusEventosPannel = () => {
                             )
                         })}
                     </div>
+                    
+                    {totalPages > 1 && (
+                        <div className="mt-8">
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={setCurrentPage}
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
 

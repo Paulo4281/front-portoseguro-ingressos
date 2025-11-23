@@ -14,10 +14,21 @@ class EventService {
         return response
     }
 
-    async findByUserId(): Promise<AxiosResponse["data"]> {
+    async findByUserId(params?: { offset?: number; name?: string }): Promise<AxiosResponse["data"]> {
+        const queryParams: Record<string, string | number> = {}
+        
+        if (params?.offset !== undefined) {
+            queryParams.offset = params.offset
+        }
+        
+        if (params?.name) {
+            queryParams.name = params.name
+        }
+        
         const response = (await API.GET({
             prefix: "/event",
-            url: "/user"
+            url: "/user",
+            params: Object.keys(queryParams).length > 0 ? queryParams : undefined
         }))?.data
         return response
     }

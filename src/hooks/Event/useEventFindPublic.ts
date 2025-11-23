@@ -3,22 +3,14 @@ import { useQueryHook } from "../useQuery"
 import { eventService } from "@/services/Event/EventService"
 import type { TApiResponse } from "@/types/TApiResponse"
 
-type TUseEventFindParams = {
-    offset?: number
-    name?: string
-}
-
-export const useEventFind = (params?: TUseEventFindParams) => {
+export const useEventFindPublic = () => {
     const {
         data,
         isLoading,
         isError,
     } = useQueryHook<TApiResponse<TEvent[]>>({
-        queryKey: ["events", "user", params?.offset?.toString() || "", params?.name || ""],
-        queryFn: () => eventService.findByUserId({
-            offset: params?.offset,
-            name: params?.name
-        })
+        queryKey: ["events", "public"],
+        queryFn: () => eventService.find()
     })
 
     return {
@@ -27,3 +19,4 @@ export const useEventFind = (params?: TUseEventFindParams) => {
         isError,
     }
 }
+
