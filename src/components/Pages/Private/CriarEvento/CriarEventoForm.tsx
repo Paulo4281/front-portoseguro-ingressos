@@ -5,7 +5,7 @@ import { useForm, Controller, useFieldArray, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, FileText, Repeat, Tag, Sparkles } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, FileText, Repeat, Tag, Sparkles, Rocket } from "lucide-react"
 import { EventCreateValidator } from "@/validators/Event/EventValidator"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -32,6 +32,7 @@ import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind
 import { useEventCreate } from "@/hooks/Event/useEventCreate"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { DialogTaxes } from "@/components/Dialog/DialogTaxes/DialogTaxes"
+import { FormBuilder, type TFormField } from "@/components/FormBuilder/FormBuilder"
 
 type TEventCreate = z.infer<typeof EventCreateValidator>
 
@@ -370,7 +371,7 @@ const CriarEventoForm = () => {
                                                 size="sm"
                                                 className="text-xs"
                                             >
-                                                <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                                                <Sparkles className="h-3.5 w-3.5" />
                                                 Escrever com IA
                                             </Button>
                                         </div>
@@ -1414,6 +1415,27 @@ const CriarEventoForm = () => {
                             </div>
                         )}
 
+                        <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 p-6
+                        sm:p-8 space-y-6">
+                            <div className="flex items-center gap-3 mb-4">
+                                <FileText className="h-5 w-5 text-psi-primary" />
+                                <h2 className="text-2xl font-bold text-psi-dark">Formulário Personalizado (Opcional)</h2>
+                            </div>
+
+                            <div className="space-y-4">
+                                <p className="text-sm text-psi-dark/60">
+                                    Crie perguntas personalizadas que serão feitas aos compradores durante a compra. 
+                                    Por exemplo: tamanho da camisa, preferências alimentares, etc.
+                                </p>
+
+                                <FormBuilder
+                                    onChange={(fields) => {
+                                        console.log("FormBuilder fields:", fields)
+                                    }}
+                                />
+                            </div>
+                        </div>
+
                         <div className="flex items-center justify-end gap-4 pt-4">
                             <Button
                                 type="button"
@@ -1428,11 +1450,19 @@ const CriarEventoForm = () => {
                                 type="submit"
                                 variant="primary"
                                 disabled={form.formState.isSubmitting || isCreating}
+                                className="group relative"
                             >
                                 {form.formState.isSubmitting || isCreating ? (
                                     <LoadingButton message="Criando evento..." />
                                 ) : (
-                                    "Criar Evento"
+                                    <>
+                                    <Rocket
+                                        className="
+                                        h-4 w-4 group-hover:rotate-12 group-hover:scale-120 transition-transform duration-300
+                                        "
+                                    />
+                                    Publicar Evento
+                                    </>
                                 )}
                             </Button>
                         </div>
