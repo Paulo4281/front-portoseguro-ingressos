@@ -1,10 +1,10 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { useForm, Controller, useFieldArray } from "react-hook-form"
+import { useForm, Controller, useFieldArray, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
-import { ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, FileText, Repeat, Tag, Sparkles } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, FileText, Repeat, Tag, Sparkles, Check, CheckCircle } from "lucide-react"
 import { EventUpdateValidator } from "@/validators/Event/EventValidator"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -18,6 +18,13 @@ import { TimePicker } from "@/components/TimePicker/TimePicker"
 import { DatePicker } from "@/components/DatePicker/DatePicker"
 import { InputCurrency } from "@/components/Input/InputCurrency"
 import { MultiSelect } from "@/components/MultiSelect/MultiSelect"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { z } from "zod"
 import { cn } from "@/lib/utils"
 import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
@@ -25,6 +32,9 @@ import { useEventFindById } from "@/hooks/Event/useEventFindById"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
+import { DialogTaxes } from "@/components/Dialog/DialogTaxes/DialogTaxes"
+import { FormBuilder, type TFormField } from "@/components/FormBuilder/FormBuilder"
+import { DialogEditWarning, type TChangeItem } from "@/components/Dialog/DialogEditWarning/DialogEditWarning"
 
 type TEventUpdate = z.infer<typeof EventUpdateValidator>
 
@@ -63,6 +73,105 @@ const formatDateOnly = (date?: string | null) => {
     return date.split("T")[0] || ""
 }
 
+const transformFormFieldsToJSON = (fields: TFormField[]): any => {
+    if (!fields || fields.length === 0) {
+        return undefined
+    }
+
+    const result: any = {
+        text: [],
+        number: [],
+        email: [],
+        phone: [],
+        textArea: [],
+        select: [],
+        multiSelect: []
+    }
+
+    fields.forEach((field, index) => {
+        const fieldData: any = {
+            label: field.label,
+            required: field.required,
+            order: index
+        }
+
+        if (field.placeholder) {
+            fieldData.placeholder = field.placeholder
+        }
+
+        if (field.type === "select" || field.type === "checkbox") {
+            if (field.options && field.options.length > 0) {
+                fieldData.options = field.options.map(opt => opt.label).filter(label => label.trim() !== "")
+            }
+        }
+
+        switch (field.type) {
+            case "text":
+                if (field.mask) {
+                    fieldData.mask = field.mask
+                }
+                result.text.push(fieldData)
+                break
+            case "email":
+                result.email.push(fieldData)
+                break
+            case "textarea":
+                result.textArea.push(fieldData)
+                break
+            case "select":
+                result.select.push(fieldData)
+                break
+            case "checkbox":
+                result.multiSelect.push(fieldData)
+                break
+        }
+    })
+
+    const hasAnyFields = Object.values(result).some((arr: any) => arr.length > 0)
+    return hasAnyFields ? result : undefined
+}
+
+const parseFormJSONToFields = (formJSON: any): TFormField[] => {
+    if (!formJSON || typeof formJSON !== 'object') return []
+    
+    const fieldsWithOrder: Array<{ field: TFormField, order: number }> = []
+    
+    const formTypes = ['text', 'email', 'textArea', 'select', 'multiSelect']
+    
+    formTypes.forEach(type => {
+        if (Array.isArray(formJSON[type])) {
+            formJSON[type].forEach((fieldData: any) => {
+                const field: TFormField = {
+                    id: `${type}-${fieldData.order ?? Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    type: type === 'textArea' ? 'textarea' : type === 'multiSelect' ? 'checkbox' : type as TFormField['type'],
+                    label: fieldData.label || '',
+                    placeholder: fieldData.placeholder,
+                    required: fieldData.required || false,
+                    mask: fieldData.mask
+                }
+                
+                if (type === 'select' || type === 'multiSelect') {
+                    if (fieldData.options && Array.isArray(fieldData.options)) {
+                        field.options = fieldData.options.map((opt: string, idx: number) => ({
+                            id: `${field.id}-opt-${idx}`,
+                            label: opt
+                        }))
+                    }
+                }
+                
+                fieldsWithOrder.push({
+                    field,
+                    order: fieldData.order ?? 999
+                })
+            })
+        }
+    })
+    
+    return fieldsWithOrder
+        .sort((a, b) => a.order - b.order)
+        .map(item => item.field)
+}
+
 type TAtualizarEventoFormProps = {
     eventId: string
 }
@@ -70,6 +179,10 @@ type TAtualizarEventoFormProps = {
 const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     const [recurrenceEnabled, setRecurrenceEnabled] = useState(false)
     const [isFormInitialized, setIsFormInitialized] = useState(false)
+    const [formFields, setFormFields] = useState<TFormField[]>([])
+    const [isFormForEachTicket, setIsFormForEachTicket] = useState(false)
+    const [originalData, setOriginalData] = useState<any>(null)
+    const [isWarningOpen, setIsWarningOpen] = useState(true)
 
     const { data: eventData, isLoading: isEventLoading } = useEventFindById(eventId)
     const { data: eventCategoriesData, isLoading: isEventCategoriesLoading } = useEventCategoryFind()
@@ -91,12 +204,27 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
             location: null,
             tickets: undefined,
             ticketPrice: undefined,
-            batches: undefined,
+            ticketTypes: undefined,
+            batches: [
+                {
+                    name: "",
+                    price: undefined,
+                    quantity: undefined,
+                    startDate: "",
+                    endDate: null,
+                    autoActivateNext: false,
+                    accumulateUnsold: false,
+                    ticketTypes: []
+                }
+            ],
             dates: [
                 {
                     date: "",
                     hourStart: "",
-                    hourEnd: null
+                    hourEnd: null,
+                    hasSpecificPrice: false,
+                    price: null,
+                    ticketTypePrices: null
                 }
             ],
             recurrence: null,
@@ -114,22 +242,212 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
         name: "batches"
     })
 
+    const { fields: ticketTypeFields, append: appendTicketType, remove: removeTicketType } = useFieldArray({
+        control: form.control,
+        name: "ticketTypes"
+    })
+
     const recurrenceType = form.watch("recurrence.type")
     const recurrenceDaysOfWeek = form.watch("recurrence.daysOfWeek") || []
     const batches = form.watch("batches") || []
     const descriptionLength = form.watch("description")?.length || 0
+    const ticketTypes = form.watch("ticketTypes") || []
+    
+    const currentFormData = useWatch({
+        control: form.control
+    })
+
+    const watchedBatches = useWatch({
+        control: form.control,
+        name: "batches"
+    }) || []
 
     const totalTickets = useMemo(() => {
-        if (!batches.length) return 0
-        return batches.reduce((sum, batch) => sum + (batch.quantity || 0), 0)
-    }, [batches])
+        if (!watchedBatches || !watchedBatches.length) return 0
+        return watchedBatches.reduce((sum, batch) => {
+            if (batch.ticketTypes && batch.ticketTypes.length > 0) {
+                return sum + batch.ticketTypes.reduce((typeSum, type) => typeSum + (type.amount || 0), 0)
+            }
+            return sum + (batch.quantity || 0)
+        }, 0)
+    }, [watchedBatches])
+
+    const detectChanges = useMemo((): { changes: TChangeItem[], riskScore: number } => {
+        if (!originalData || !isFormInitialized) return { changes: [], riskScore: 0 }
+
+        const changes: TChangeItem[] = []
+        let totalRisk = 0
+
+        const compareValues = (current: any, original: any, fieldName: string, severity: TChangeItem["severity"], riskPoints: number) => {
+            const currentNormalized = current === null || current === undefined ? null : current
+            const originalNormalized = original === null || original === undefined ? null : original
+            if (currentNormalized !== originalNormalized) {
+                changes.push({ field: fieldName, severity })
+                totalRisk += riskPoints
+            }
+        }
+
+        const compareArrays = (current: any[] | undefined, original: any[] | undefined, fieldName: string, severity: TChangeItem["severity"], riskPoints: number) => {
+            if (!current && !original) return
+            if ((!current && original) || (current && !original)) {
+                changes.push({ field: fieldName, severity })
+                totalRisk += riskPoints
+                return
+            }
+            if (current && original) {
+                if (current.length !== original.length) {
+                    changes.push({ field: fieldName, severity })
+                    totalRisk += riskPoints
+                    return
+                }
+                try {
+                    if (JSON.stringify(current) !== JSON.stringify(original)) {
+                        changes.push({ field: fieldName, severity })
+                        totalRisk += riskPoints
+                    }
+                } catch {
+                    changes.push({ field: fieldName, severity })
+                    totalRisk += riskPoints
+                }
+            }
+        }
+
+        compareValues(currentFormData.name, originalData.name, "Nome do Evento", "medium", 5)
+        compareValues(currentFormData.description, originalData.description, "Descrição", "medium", 5)
+        compareArrays(currentFormData.categories, originalData.categories, "Categorias", "medium", 5)
+        compareValues(currentFormData.location, originalData.location, "Localização", "high", 15)
+        compareValues(currentFormData.isClientTaxed, originalData.isClientTaxed, "Repassar taxas ao cliente", "high", 15)
+
+        if (currentFormData.image && currentFormData.image !== originalData.image) {
+            changes.push({ field: "Imagem do Evento", severity: "low" })
+            totalRisk += 2
+        }
+
+        compareArrays(currentFormData.ticketTypes, originalData.ticketTypes, "Tipos de Ingressos", "critical", 25)
+
+        compareArrays(currentFormData.batches, originalData.batches, "Lotes de Ingressos", "critical", 30)
+        
+        if (currentFormData.batches && originalData.batches) {
+            currentFormData.batches.forEach((batch: any, index: number) => {
+                const originalBatch = originalData.batches[index]
+                if (originalBatch) {
+                    if (batch.name !== originalBatch.name) {
+                        changes.push({ field: `Lote ${index + 1} - Nome`, severity: "high" })
+                        totalRisk += 10
+                    }
+                    if (batch.price !== originalBatch.price) {
+                        changes.push({ field: `Lote ${index + 1} - Preço`, severity: "critical" })
+                        totalRisk += 25
+                    }
+                    if (batch.quantity !== originalBatch.quantity) {
+                        changes.push({ field: `Lote ${index + 1} - Quantidade`, severity: "critical" })
+                        totalRisk += 25
+                    }
+                    if (batch.startDate !== originalBatch.startDate || batch.endDate !== originalBatch.endDate) {
+                        changes.push({ field: `Lote ${index + 1} - Datas`, severity: "critical" })
+                        totalRisk += 25
+                    }
+                    compareArrays(batch.ticketTypes, originalBatch.ticketTypes, `Lote ${index + 1} - Tipos e Preços`, "critical", 25)
+                }
+            })
+        }
+
+        compareArrays(currentFormData.dates, originalData.dates, "Datas e Horários", "critical", 30)
+        
+        if (currentFormData.dates && originalData.dates) {
+            currentFormData.dates.forEach((date: any, index: number) => {
+                const originalDate = originalData.dates[index]
+                if (originalDate) {
+                    if (date.date !== originalDate.date) {
+                        changes.push({ field: `Data ${index + 1} - Data`, severity: "critical" })
+                        totalRisk += 25
+                    }
+                    if (date.hourStart !== originalDate.hourStart || date.hourEnd !== originalDate.hourEnd) {
+                        changes.push({ field: `Data ${index + 1} - Horários`, severity: "critical" })
+                        totalRisk += 20
+                    }
+                    if (date.hasSpecificPrice !== originalDate.hasSpecificPrice) {
+                        changes.push({ field: `Data ${index + 1} - Preço Específico`, severity: "high" })
+                        totalRisk += 15
+                    }
+                    if (date.price !== originalDate.price) {
+                        changes.push({ field: `Data ${index + 1} - Preço`, severity: "critical" })
+                        totalRisk += 25
+                    }
+                    compareArrays(date.ticketTypePrices, originalDate.ticketTypePrices, `Data ${index + 1} - Preços por Tipo`, "critical", 25)
+                }
+            })
+        }
+
+        try {
+            if (JSON.stringify(currentFormData.recurrence || null) !== JSON.stringify(originalData.recurrence || null)) {
+                changes.push({ field: "Recorrência", severity: "critical" })
+                totalRisk += 30
+            }
+        } catch {
+            if (currentFormData.recurrence !== originalData.recurrence) {
+                changes.push({ field: "Recorrência", severity: "critical" })
+                totalRisk += 30
+            }
+        }
+
+        const currentFormJSON = transformFormFieldsToJSON(formFields)
+        const originalFormJSON = transformFormFieldsToJSON(originalData.formFields)
+        if (JSON.stringify(currentFormJSON) !== JSON.stringify(originalFormJSON)) {
+            changes.push({ field: "Formulário Personalizado", severity: "high" })
+            totalRisk += 15
+        }
+
+        if (isFormForEachTicket !== originalData.isFormForEachTicket) {
+            changes.push({ field: "Incluir formulário para cada ingresso", severity: "high" })
+            totalRisk += 15
+        }
+
+        return {
+            changes,
+            riskScore: Math.min(totalRisk, 100)
+        }
+    }, [currentFormData, originalData, isFormInitialized, formFields, isFormForEachTicket])
+
+    const { changes, riskScore } = detectChanges
+
+    useEffect(() => {
+        if (ticketTypes.length > 0) {
+            const currentBatches = form.getValues("batches") || []
+            currentBatches.forEach((batch, batchIndex) => {
+                const currentTicketTypes = batch.ticketTypes || []
+                const updatedTicketTypes = [...currentTicketTypes]
+                
+                ticketTypes.forEach((_, typeIdx) => {
+                    const exists = updatedTicketTypes.some(ct => ct.ticketTypeId === typeIdx.toString())
+                    if (!exists) {
+                        updatedTicketTypes.push({
+                            ticketTypeId: typeIdx.toString(),
+                            price: 0,
+                            amount: 0
+                        })
+                    }
+                })
+                
+                if (updatedTicketTypes.length !== currentTicketTypes.length) {
+                    form.setValue(`batches.${batchIndex}.ticketTypes`, updatedTicketTypes)
+                }
+            })
+        }
+    }, [ticketTypes.length, form])
 
     useEffect(() => {
         if (eventData?.data && !isFormInitialized && eventCategories.length > 0) {
             const event = eventData.data
             
             const hasBatches = !!(event.EventBatches && event.EventBatches.length > 0)
+            const hasTicketTypes = !!(event.TicketTypes && event.TicketTypes.length > 0)
             setRecurrenceEnabled(!!event.Recurrence)
+
+            const ticketTypesData = hasTicketTypes ? event.TicketTypes.map(tt => ({
+                name: tt.name,
+                description: tt.description
+            })) : undefined
 
             const sortedEventBatch = hasBatches
                 ? [...(event.EventBatches || [])].sort((a, b) => {
@@ -139,25 +457,68 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                 })
                 : []
 
-            const batchesData = hasBatches ? sortedEventBatch.map(batch => ({
-                name: batch.name,
-                price: batch.price ? batch.price / 100 : undefined,
-                quantity: batch.tickets,
-                startDate: formatDateOnly(batch.startDate),
-                endDate: formatDateOnly(batch.endDate),
-                autoActivateNext: batch.autoActivateNext ?? false,
-                accumulateUnsold: batch.accumulateUnsold ?? false
-            })) : undefined
+            const batchesData = hasBatches ? sortedEventBatch.map((batch, batchIndex) => {
+                const batchTicketTypes = batch.EventBatchTicketTypes || []
+                const ticketTypesInBatch = hasTicketTypes && batchTicketTypes.length > 0
+                    ? event.TicketTypes!.map((tt, typeIdx) => {
+                        const ebt = batchTicketTypes.find(ebt => ebt.ticketTypeId === tt.id)
+                        return {
+                            ticketTypeId: typeIdx.toString(),
+                            price: ebt ? (ebt.price ? ebt.price / 100 : 0) : 0,
+                            amount: ebt ? ebt.amount : 0
+                        }
+                    })
+                    : []
 
-            const datesData = event.EventDates && event.EventDates.length > 0 ? event.EventDates.map(eventDate => ({
-                date: formatDateOnly(eventDate.date),
-                hourStart: eventDate.hourStart || "",
-                hourEnd: eventDate.hourEnd
-            })) : [
+                return {
+                    name: batch.name,
+                    price: batch.price ? batch.price / 100 : undefined,
+                    quantity: batch.tickets,
+                    startDate: formatDateOnly(batch.startDate),
+                    endDate: formatDateOnly(batch.endDate),
+                    autoActivateNext: batch.autoActivateNext ?? false,
+                    accumulateUnsold: batch.accumulateUnsold ?? false,
+                    ticketTypes: ticketTypesInBatch.length > 0 ? ticketTypesInBatch : undefined
+                }
+            }) : [{
+                name: "",
+                price: event.price ? event.price / 100 : undefined,
+                quantity: event.tickets ?? undefined,
+                startDate: "",
+                endDate: null,
+                autoActivateNext: false,
+                accumulateUnsold: false,
+                ticketTypes: undefined
+            }]
+
+            const datesData = event.EventDates && event.EventDates.length > 0 ? event.EventDates.map(eventDate => {
+                const hasSpecificPrice = eventDate.hasSpecificPrice || false
+                const ticketTypePrices = hasSpecificPrice && hasTicketTypes && eventDate.EventDateTicketTypePrices
+                    ? event.TicketTypes!.map((tt, typeIdx) => {
+                        const edttp = eventDate.EventDateTicketTypePrices!.find(edttp => edttp.ticketTypeId === tt.id)
+                        return {
+                            ticketTypeId: typeIdx.toString(),
+                            price: edttp ? edttp.price / 100 : 0
+                        }
+                    })
+                    : null
+
+                return {
+                    date: formatDateOnly(eventDate.date),
+                    hourStart: eventDate.hourStart || "",
+                    hourEnd: eventDate.hourEnd,
+                    hasSpecificPrice,
+                    price: hasSpecificPrice && eventDate.price ? eventDate.price / 100 : null,
+                    ticketTypePrices
+                }
+            }) : [
                 {
                     date: "",
                     hourStart: "",
-                    hourEnd: null
+                    hourEnd: null,
+                    hasSpecificPrice: false,
+                    price: null,
+                    ticketTypePrices: null
                 }
             ]
 
@@ -175,18 +536,33 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                 endDate: event.Recurrence.endDate || undefined
             } : null
 
-            form.reset({
+            const parsedForm = event.form ? (typeof event.form === 'string' ? JSON.parse(event.form) : event.form) : null
+            if (parsedForm) {
+                setFormFields(parseFormJSONToFields(parsedForm))
+            }
+            setIsFormForEachTicket(!!event.isFormForEachTicket)
+
+            const initialFormData = {
                 name: event.name || "",
                 description: event.description || "",
                 categories: categoryIds,
                 image: null as any,
                 location: event.location || null,
-                tickets: hasBatches ? undefined : (event.tickets ?? undefined),
-                ticketPrice: hasBatches ? undefined : (event.price ? event.price / 100 : undefined),
+                tickets: undefined,
+                ticketPrice: undefined,
+                ticketTypes: ticketTypesData,
                 batches: batchesData,
                 dates: datesData,
                 recurrence: recurrenceData,
                 isClientTaxed: !!event.isClientTaxed
+            }
+
+            form.reset(initialFormData)
+            
+            setOriginalData({
+                ...initialFormData,
+                formFields: parsedForm ? parseFormJSONToFields(parsedForm) : [],
+                isFormForEachTicket: !!event.isFormForEachTicket
             })
 
             setIsFormInitialized(true)
@@ -194,39 +570,109 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     }, [eventData, isFormInitialized, form, eventCategories])
 
     const handleSubmit = async (data: TEventUpdate) => {
-        const hasBatches = data.batches && data.batches.length > 0
-        
-        const submitData = {
-            ...data,
-            ticketPrice: hasBatches ? undefined : (data.ticketPrice ? Math.round(data.ticketPrice * 100) : undefined),
-            batches: hasBatches ? data.batches?.map(batch => ({
-                ...batch,
-                price: batch.price ? Math.round(batch.price * 100) : undefined
-            })) : undefined,
-            dates: data.recurrence ? null : data.dates,
-            recurrence: data.recurrence || null
+        try {
+            const hasBatches = data.batches && data.batches.length > 0
+            const hasTicketTypes = data.ticketTypes && data.ticketTypes.length > 0
+            
+            const batchesWithTicketTypes = hasBatches && data.batches 
+                ? data.batches.some(batch => batch.ticketTypes && batch.ticketTypes.length > 0)
+                : false
+            
+            if (batchesWithTicketTypes && !hasTicketTypes) {
+                console.error("Erro: Há batches com ticketTypes mas não há ticketTypes no nível do evento")
+                return
+            }
+            
+            const submitData: TEventUpdate = {
+                name: data.name,
+                description: data.description,
+                categories: data.categories.map((category) => category),
+                image: data.image,
+                location: data.location,
+                tickets: undefined,
+                ticketPrice: undefined,
+                ticketTypes: hasTicketTypes ? data.ticketTypes : undefined,
+                batches: hasBatches && data.batches ? data.batches.map(batch => ({
+                    ...batch,
+                    price: batch.price ? Math.round(batch.price * 100) : null,
+                    ticketTypes: batch.ticketTypes ? batch.ticketTypes.map(type => ({
+                        ...type,
+                        price: type.price ? Math.round(type.price * 100) : null
+                    })) : undefined
+                })) : undefined,
+                dates: data.recurrence ? undefined : (data.dates ? data.dates.map(date => ({
+                    ...date,
+                    price: date.hasSpecificPrice && date.price ? Math.round(date.price * 100) : null,
+                    ticketTypePrices: date.hasSpecificPrice && date.ticketTypePrices ? date.ticketTypePrices.map(ttp => ({
+                        ...ttp,
+                        price: Math.round(ttp.price * 100)
+                    })) : null
+                })) : undefined),
+                recurrence: data.recurrence || null,
+                isClientTaxed: data.isClientTaxed || false,
+                form: transformFormFieldsToJSON(formFields),
+                isFormForEachTicket: isFormForEachTicket || false
+            }
+
+            console.log("Event update data:", submitData)
+        } catch (error) {
+            console.error("Erro ao atualizar evento:", error)
         }
-        
-        console.log("Event update data:", submitData)
     }
 
     const addDate = () => {
         appendDate({
             date: "",
             hourStart: "",
-            hourEnd: null
+            hourEnd: null,
+            hasSpecificPrice: false,
+            price: null,
+            ticketTypePrices: null
         })
     }
 
     const addBatch = () => {
+        const initialTicketTypes = ticketTypes.length > 0
+            ? ticketTypes.map((_, typeIdx) => ({
+                ticketTypeId: typeIdx.toString(),
+                price: 0,
+                amount: 0
+            }))
+            : []
+        
         appendBatch({
             name: "",
-            price: 0,
-            quantity: 0,
+            price: undefined,
+            quantity: undefined,
             startDate: "",
             endDate: null,
             autoActivateNext: false,
-            accumulateUnsold: false
+            accumulateUnsold: false,
+            ticketTypes: initialTicketTypes
+        })
+    }
+
+    const addTicketType = () => {
+        appendTicketType({
+            name: "",
+            description: null
+        })
+        
+        const newTypeIndex = ticketTypes.length
+        const currentBatches = form.getValues("batches") || []
+        
+        currentBatches.forEach((batch, batchIndex) => {
+            const currentTicketTypes = batch.ticketTypes || []
+            if (!currentTicketTypes.some(ct => ct.ticketTypeId === newTypeIndex.toString())) {
+                form.setValue(`batches.${batchIndex}.ticketTypes`, [
+                    ...currentTicketTypes,
+                    {
+                        ticketTypeId: newTypeIndex.toString(),
+                        price: 0,
+                        amount: 0
+                    }
+                ])
+            }
         })
     }
 
@@ -468,32 +914,99 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <Tag className="h-5 w-5 text-psi-primary" />
+                                <h2 className="text-2xl font-bold text-psi-dark">Tipos de Ingressos (Opcional)</h2>
+                            </div>
+
+                            <div className="space-y-4">
+                                <p className="text-sm text-psi-dark/60">
+                                    Crie tipos de ingressos para seu evento (ex: VIP, Meia, Inteira). Se não criar tipos, você pode definir um preço único por lote.
+                                </p>
+
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-semibold text-psi-dark">Tipos</h3>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={addTicketType}
+                                    >
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Adicionar Tipo
+                                    </Button>
+                                </div>
+
+                                {ticketTypeFields.map((field, index) => (
+                                    <div
+                                        key={field.id}
+                                        className="rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4 space-y-4"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-semibold text-psi-dark">
+                                                Tipo {index + 1}
+                                            </span>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => removeTicketType(index)}
+                                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+
+                                        <div className="grid grid-cols-1
+                                        sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                                    Nome do Tipo *
+                                                </label>
+                                                <Controller
+                                                    name={`ticketTypes.${index}.name`}
+                                                    control={form.control}
+                                                    render={({ field }) => (
+                                                        <Input
+                                                            {...field}
+                                                            placeholder="Ex: VIP, Meia, Inteira"
+                                                            required
+                                                            className="w-full"
+                                                        />
+                                                    )}
+                                                />
+                                                <FieldError message={form.formState.errors.ticketTypes?.[index]?.name?.message || ""} />
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                                    Descrição (Opcional)
+                                                </label>
+                                                <Controller
+                                                    name={`ticketTypes.${index}.description`}
+                                                    control={form.control}
+                                                    render={({ field }) => (
+                                                        <Input
+                                                            {...field}
+                                                            placeholder="Ex: Acesso VIP com área exclusiva"
+                                                            className="w-full"
+                                                            value={field.value || ""}
+                                                        />
+                                                    )}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 p-6
+                        sm:p-8 space-y-6">
+                            <div className="flex items-center gap-3 mb-4">
+                                <Tag className="h-5 w-5 text-psi-primary" />
                                 <h2 className="text-2xl font-bold text-psi-dark">Ingressos</h2>
                             </div>
 
                             <div className="space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <Checkbox
-                                        id="use-batches"
-                                        checked={(form.watch("batches")?.length || 0) > 0}
-                                        onCheckedChange={(checked) => {
-                                            const isChecked = checked === true
-                                            if (!isChecked) {
-                                                form.setValue("batches", undefined)
-                                            } else {
-                                                form.setValue("tickets", undefined)
-                                                form.setValue("ticketPrice", undefined)
-                                                if (!batchFields.length) {
-                                                    addBatch()
-                                                }
-                                            }
-                                        }}
-                                    />
-                                    <label htmlFor="use-batches" className="text-sm font-medium text-psi-dark cursor-pointer">
-                                        Usar lotes de ingressos
-                                    </label>
-                                </div>
-
                                 <Controller
                                     name="isClientTaxed"
                                     control={form.control}
@@ -504,10 +1017,22 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                 checked={field.value || false}
                                                 onCheckedChange={(checked) => field.onChange(checked === true)}
                                             />
-                                            <div>
-                                                <label htmlFor="is-client-taxed" className="text-sm font-medium text-psi-dark cursor-pointer">
-                                                    Repassar taxas ao cliente
-                                                </label>
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <label htmlFor="is-client-taxed" className="text-sm font-medium text-psi-dark cursor-pointer">
+                                                        Repassar taxas ao cliente
+                                                    </label>
+                                                    <DialogTaxes
+                                                        trigger={
+                                                            <button
+                                                                type="button"
+                                                                className="text-xs text-psi-primary hover:text-psi-primary/80 underline"
+                                                            >
+                                                                Entenda nossas taxas
+                                                            </button>
+                                                        }
+                                                    />
+                                                </div>
                                                 <p className="text-xs text-psi-dark/60 mt-1">
                                                     Quando ativado, a taxa de serviço é adicionada ao valor pago pelo comprador.
                                                 </p>
@@ -517,79 +1042,26 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                 />
                                 <FieldError message={form.formState.errors.isClientTaxed?.message || ""} />
 
-                                {(form.watch("batches")?.length || 0) === 0 ? (
-                                    <div className="grid grid-cols-1
-                                    sm:grid-cols-2 gap-4">
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
                                         <div>
-                                            <label htmlFor="tickets" className="block text-sm font-medium text-psi-dark mb-2">
-                                                Quantidade de Ingressos *
-                                            </label>
-                                            <Controller
-                                                name="tickets"
-                                                control={form.control}
-                                                render={({ field }) => (
-                                                    <Input
-                                                        {...field}
-                                                        id="tickets"
-                                                        type="number"
-                                                        placeholder="100"
-                                                        icon={Ticket}
-                                                        required
-                                                        className="w-full"
-                                                        value={field.value || ""}
-                                                        onChange={(e) => field.onChange(parseInt(e.target.value) || undefined)}
-                                                    />
-                                                )}
-                                            />
-                                            <FieldError message={form.formState.errors.tickets?.message || ""} />
+                                            <h3 className="text-lg font-semibold text-psi-dark">Lotes</h3>
+                                            {totalTickets > 0 && (
+                                                <p className="text-sm text-psi-dark/60 mt-1">
+                                                    Total de ingressos: <span className="font-semibold text-psi-primary">{totalTickets}</span>
+                                                </p>
+                                            )}
                                         </div>
-                                        <div>
-                                            <label htmlFor="ticketPrice" className="block text-sm font-medium text-psi-dark mb-2">
-                                                Preço do Ingresso *
-                                            </label>
-                                            <Controller
-                                                name="ticketPrice"
-                                                control={form.control}
-                                                render={({ field }) => (
-                                                    <InputCurrency
-                                                        value={field.value || 0}
-                                                        onChangeValue={(value) => {
-                                                            if (!value || value === "") {
-                                                                field.onChange(0)
-                                                            } else {
-                                                                const numValue = parseCurrencyToNumber(value)
-                                                                field.onChange(numValue)
-                                                            }
-                                                        }}
-                                                        required
-                                                        className="w-full"
-                                                    />
-                                                )}
-                                            />
-                                            <FieldError message={form.formState.errors.ticketPrice?.message || ""} />
-                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={addBatch}
+                                        >
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Adicionar Lote
+                                        </Button>
                                     </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <h3 className="text-lg font-semibold text-psi-dark">Lotes</h3>
-                                                {totalTickets > 0 && (
-                                                    <p className="text-sm text-psi-dark/60 mt-1">
-                                                        Total de ingressos: <span className="font-semibold text-psi-primary">{totalTickets}</span>
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={addBatch}
-                                            >
-                                                <Plus className="h-4 w-4 mr-2" />
-                                                Adicionar Lote
-                                            </Button>
-                                        </div>
 
                                         {batchFields.map((field, index) => {
                                             const hasNextBatch = index < batchFields.length - 1
@@ -613,12 +1085,12 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                             Lote {index + 1}
                                                             {isActiveBatch && (
                                                                 <span className="ml-2 inline-flex items-center gap-1 text-xs font-semibold text-psi-primary">
-                                                                    <Sparkles className="h-3 w-3" />
+                                                                    <CheckCircle className="h-3 w-3" />
                                                                     Lote atual
                                                                 </span>
                                                             )}
                                                         </span>
-                                                        {batchFields.length > 1 && (
+                                                        {batchFields.length > 1 ? (
                                                             <Button
                                                                 type="button"
                                                                 variant="ghost"
@@ -628,11 +1100,13 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                             >
                                                                 <Trash2 className="h-4 w-4" />
                                                             </Button>
+                                                        ) : (
+                                                            <span className="text-xs text-psi-dark/60">
+                                                                Mínimo de 1 lote
+                                                            </span>
                                                         )}
                                                     </div>
 
-                                                    <div className="grid grid-cols-1
-                                                    sm:grid-cols-3 gap-4">
                                                     <div>
                                                         <label className="block text-sm font-medium text-psi-dark/70 mb-2">
                                                             Nome do Lote *
@@ -651,178 +1125,274 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                         />
                                                     </div>
 
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                            Preço *
-                                                        </label>
-                                                        <Controller
-                                                            name={`batches.${index}.price`}
-                                                            control={form.control}
-                                                            render={({ field }) => (
-                                                                <InputCurrency
-                                                                    {...field}
-                                                                    value={ValueUtils.centsToCurrency(Number(field.value)) || 0}
-                                                                    required
-                                                                    className="w-full"
-                                                                />
-                                                            )}
-                                                        />
-                                                    </div>
-
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                            Quantidade *
-                                                        </label>
-                                                        <Controller
-                                                            name={`batches.${index}.quantity`}
-                                                            control={form.control}
-                                                            render={({ field }) => (
-                                                                <Input
-                                                                    {...field}
-                                                                    type="number"
-                                                                    placeholder="100"
-                                                                    required
-                                                                    className="w-full"
-                                                                    value={field.value || ""}
-                                                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                                                                />
-                                                            )}
-                                                        />
-                                                    </div>
-
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                            Data Início *
-                                                        </label>
-                                                        <Controller
-                                                            name={`batches.${index}.startDate`}
-                                                            control={form.control}
-                                                            render={({ field }) => {
-                                                                const eventDates = form.watch("dates") || []
-                                                                const recurrence = form.watch("recurrence")
-                                                                
-                                                                let maxDate: string | undefined = undefined
-                                                                
-                                                                if (recurrence) {
-                                                                    if (recurrence.endDate) {
-                                                                        maxDate = recurrence.endDate
-                                                                    }
-                                                                } else if (eventDates.length > 0) {
-                                                                    const sortedDates = [...eventDates]
-                                                                        .map(d => d.date)
-                                                                        .filter(Boolean)
-                                                                        .sort()
-                                                                    if (sortedDates.length > 0) {
-                                                                        maxDate = sortedDates[0]
-                                                                    }
-                                                                }
-                                                                
-                                                                return (
-                                                                    <>
-                                                                        <DatePicker
-                                                                            value={field.value || ""}
-                                                                            onChange={(value) => field.onChange(value || "")}
+                                                    {ticketTypes.length === 0 ? (
+                                                        <div className="grid grid-cols-1
+                                                        sm:grid-cols-2 gap-4">
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                                                    Preço *
+                                                                </label>
+                                                                <Controller
+                                                                    name={`batches.${index}.price`}
+                                                                    control={form.control}
+                                                                    render={({ field }) => (
+                                                                        <InputCurrency
+                                                                            value={field.value || 0}
+                                                                            onChangeValue={(value) => {
+                                                                                if (!value || value === "") {
+                                                                                    field.onChange(undefined)
+                                                                                } else {
+                                                                                    const numValue = parseCurrencyToNumber(value)
+                                                                                    field.onChange(numValue)
+                                                                                }
+                                                                            }}
                                                                             required
-                                                                            minDate={new Date().toISOString().split("T")[0]}
-                                                                            maxDate={maxDate}
+                                                                            className="w-full"
                                                                         />
-                                                                        {maxDate && field.value && new Date(field.value) > new Date(maxDate) && (
-                                                                            <p className="text-xs text-destructive mt-1">
-                                                                                A data de início do lote não pode ser posterior à primeira data do evento
-                                                                            </p>
-                                                                        )}
-                                                                    </>
-                                                                )
-                                                            }}
-                                                        />
-                                                        <FieldError message={form.formState.errors.batches?.[index]?.startDate?.message || ""} />
-                                                    </div>
+                                                                    )}
+                                                                />
+                                                                <FieldError message={form.formState.errors.batches?.[index]?.price?.message || ""} />
+                                                            </div>
 
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                            Data Fim
-                                                        </label>
-                                                        <Controller
-                                                            name={`batches.${index}.endDate`}
-                                                            control={form.control}
-                                                            render={({ field }) => {
-                                                                const eventDates = form.watch("dates") || []
-                                                                const recurrence = form.watch("recurrence")
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                                                    Quantidade *
+                                                                </label>
+                                                                <Controller
+                                                                    name={`batches.${index}.quantity`}
+                                                                    control={form.control}
+                                                                    render={({ field }) => (
+                                                                        <Input
+                                                                            {...field}
+                                                                            type="number"
+                                                                            placeholder="100"
+                                                                            required
+                                                                            className="w-full"
+                                                                            value={field.value || ""}
+                                                                            onChange={(e) => field.onChange(parseInt(e.target.value) || undefined)}
+                                                                        />
+                                                                    )}
+                                                                />
+                                                                <FieldError message={form.formState.errors.batches?.[index]?.quantity?.message || ""} />
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="space-y-3">
+                                                            <label className="block text-sm font-medium text-psi-dark/70">
+                                                                Tipos de Ingressos e Preços *
+                                                            </label>
+                                                            {ticketTypes.map((ticketType, typeIdx) => {
+                                                                const currentTicketTypes = form.watch(`batches.${index}.ticketTypes`) || []
+                                                                let ticketTypeIndex = currentTicketTypes.findIndex(ct => ct.ticketTypeId === typeIdx.toString())
                                                                 
-                                                                let maxDate: string | undefined = undefined
-                                                                
-                                                                if (recurrence) {
-                                                                    if (recurrence.endDate) {
-                                                                        maxDate = recurrence.endDate
+                                                                if (ticketTypeIndex < 0) {
+                                                                    const newTicketType = {
+                                                                        ticketTypeId: typeIdx.toString(),
+                                                                        price: 0,
+                                                                        amount: 0
                                                                     }
-                                                                } else if (eventDates.length > 0) {
-                                                                    const sortedDates = [...eventDates]
-                                                                        .map(d => d.date)
-                                                                        .filter(Boolean)
-                                                                        .sort()
-                                                                    if (sortedDates.length > 0) {
-                                                                        maxDate = sortedDates[sortedDates.length - 1]
-                                                                    }
+                                                                    const updatedTicketTypes = [...currentTicketTypes, newTicketType]
+                                                                    form.setValue(`batches.${index}.ticketTypes`, updatedTicketTypes)
+                                                                    ticketTypeIndex = updatedTicketTypes.length - 1
                                                                 }
                                                                 
-                                                                const batchStartDate = form.watch(`batches.${index}.startDate`)
-                                                                const minDate = batchStartDate || new Date().toISOString().split("T")[0]
-                                                                
                                                                 return (
-                                                                    <>
-                                                                        <DatePicker
-                                                                            value={field.value || ""}
-                                                                            onChange={(value) => field.onChange(value)}
-                                                                            minDate={minDate}
-                                                                            maxDate={maxDate}
-                                                                        />
-                                                                        {maxDate && field.value && new Date(field.value) > new Date(maxDate) && (
-                                                                            <p className="text-xs text-destructive mt-1">
-                                                                                A data de fim do lote não pode ser posterior à última data do evento
-                                                                            </p>
-                                                                        )}
-                                                                    </>
-                                                                )
-                                                            }}
-                                                        />
-                                                        <FieldError message={form.formState.errors.batches?.[index]?.endDate?.message || ""} />
-                                                    </div>
-                                                </div>
+                                                                    <div key={typeIdx} className="rounded-lg border border-[#E4E6F0] bg-white p-3 space-y-3">
+                                                                        <div className="flex items-center justify-between">
+                                                                            <span className="text-sm font-semibold text-psi-dark">
+                                                                                {ticketType.name}
+                                                                                {ticketType.description && (
+                                                                                    <span className="text-xs text-psi-dark/60 ml-2">| {ticketType.description}</span>
+                                                                                )}
+                                                                            </span>
+                                                                        </div>
 
-                                                {hasNextBatch && (
-                                                    <div className="rounded-lg border border-[#E4E6F0] bg-white p-4 space-y-3 mt-4">
-                                                        <div className="flex items-center gap-3">
-                                                            <Checkbox
-                                                                id={`auto-activate-${index}`}
-                                                                checked={form.watch(`batches.${index}.autoActivateNext`) || false}
-                                                                onCheckedChange={(checked) => {
-                                                                    form.setValue(`batches.${index}.autoActivateNext`, checked === true)
-                                                                }}
-                                                            />
-                                                            <label htmlFor={`auto-activate-${index}`} className="text-sm font-medium text-psi-dark cursor-pointer">
-                                                                Ativar próximo lote automaticamente quando todos os ingressos deste lote forem vendidos
-                                                            </label>
+                                                                        <div className="grid grid-cols-1
+                                                                        sm:grid-cols-2 gap-4">
+                                                                            <div>
+                                                                                <label className="block text-xs text-psi-dark/60 mb-1">Preço *</label>
+                                                                                <Controller
+                                                                                    name={`batches.${index}.ticketTypes.${ticketTypeIndex}.price`}
+                                                                                    control={form.control}
+                                                                                    render={({ field }) => (
+                                                                                        <InputCurrency
+                                                                                            value={field.value || 0}
+                                                                                            onChangeValue={(value) => {
+                                                                                                if (!value || value === "") {
+                                                                                                    field.onChange(0)
+                                                                                                } else {
+                                                                                                    const numValue = parseCurrencyToNumber(value)
+                                                                                                    field.onChange(numValue)
+                                                                                                }
+                                                                                            }}
+                                                                                            required
+                                                                                            className="w-full"
+                                                                                        />
+                                                                                    )}
+                                                                                />
+                                                                                <FieldError message={form.formState.errors.batches?.[index]?.ticketTypes?.[ticketTypeIndex]?.price?.message || ""} />
+                                                                            </div>
+
+                                                                            <div>
+                                                                                <label className="block text-xs text-psi-dark/60 mb-1">Quantidade *</label>
+                                                                                <Controller
+                                                                                    name={`batches.${index}.ticketTypes.${ticketTypeIndex}.amount`}
+                                                                                    control={form.control}
+                                                                                    render={({ field }) => (
+                                                                                        <Input
+                                                                                            {...field}
+                                                                                            type="number"
+                                                                                            placeholder="100"
+                                                                                            required
+                                                                                            className="w-full"
+                                                                                            value={field.value || ""}
+                                                                                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                                                                        />
+                                                                                    )}
+                                                                                />
+                                                                                <FieldError message={form.formState.errors.batches?.[index]?.ticketTypes?.[ticketTypeIndex]?.amount?.message || ""} />
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            })}
                                                         </div>
-                                                        <div className="flex items-center gap-3">
-                                                            <Checkbox
-                                                                id={`accumulate-${index}`}
-                                                                checked={form.watch(`batches.${index}.accumulateUnsold`) || false}
-                                                                onCheckedChange={(checked) => {
-                                                                    form.setValue(`batches.${index}.accumulateUnsold`, checked === true)
+                                                    )}
+
+                                                    <div className="grid grid-cols-2 gap-6">
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                                                Data Início *
+                                                            </label>
+                                                            <Controller
+                                                                name={`batches.${index}.startDate`}
+                                                                control={form.control}
+                                                                render={({ field }) => {
+                                                                    const eventDates = form.watch("dates") || []
+                                                                    const recurrence = form.watch("recurrence")
+                                                                    
+                                                                    let maxDate: string | undefined = undefined
+                                                                    
+                                                                    if (recurrence) {
+                                                                        if (recurrence.endDate) {
+                                                                            maxDate = recurrence.endDate
+                                                                        }
+                                                                    } else if (eventDates.length > 0) {
+                                                                        const sortedDates = [...eventDates]
+                                                                            .map(d => d.date)
+                                                                            .filter(Boolean)
+                                                                            .sort()
+                                                                        if (sortedDates.length > 0) {
+                                                                            maxDate = sortedDates[0]
+                                                                        }
+                                                                    }
+                                                                    
+                                                                    return (
+                                                                        <>
+                                                                            <DatePicker
+                                                                                value={field.value || ""}
+                                                                                onChange={(value) => field.onChange(value || "")}
+                                                                                required
+                                                                                minDate={new Date().toISOString().split("T")[0]}
+                                                                                maxDate={maxDate}
+                                                                            />
+                                                                            {maxDate && field.value && new Date(field.value) > new Date(maxDate) && (
+                                                                                <p className="text-xs text-destructive mt-1">
+                                                                                    A data de início do lote não pode ser posterior à primeira data do evento
+                                                                                </p>
+                                                                            )}
+                                                                        </>
+                                                                    )
                                                                 }}
                                                             />
-                                                            <label htmlFor={`accumulate-${index}`} className="text-sm font-medium text-psi-dark cursor-pointer">
-                                                                Acumular ingressos não vendidos para o próximo lote
+                                                            <FieldError message={form.formState.errors.batches?.[index]?.startDate?.message || ""} />
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                                                Data Fim
                                                             </label>
+                                                            <Controller
+                                                                name={`batches.${index}.endDate`}
+                                                                control={form.control}
+                                                                render={({ field }) => {
+                                                                    const eventDates = form.watch("dates") || []
+                                                                    const recurrence = form.watch("recurrence")
+                                                                    
+                                                                    let maxDate: string | undefined = undefined
+                                                                    
+                                                                    if (recurrence) {
+                                                                        if (recurrence.endDate) {
+                                                                            maxDate = recurrence.endDate
+                                                                        }
+                                                                    } else if (eventDates.length > 0) {
+                                                                        const sortedDates = [...eventDates]
+                                                                            .map(d => d.date)
+                                                                            .filter(Boolean)
+                                                                            .sort()
+                                                                        if (sortedDates.length > 0) {
+                                                                            maxDate = sortedDates[sortedDates.length - 1]
+                                                                        }
+                                                                    }
+                                                                    
+                                                                    const batchStartDate = form.watch(`batches.${index}.startDate`)
+                                                                    const minDate = batchStartDate || new Date().toISOString().split("T")[0]
+                                                                    
+                                                                    return (
+                                                                        <>
+                                                                            <DatePicker
+                                                                                value={field.value || ""}
+                                                                                onChange={(value) => field.onChange(value)}
+                                                                                minDate={minDate}
+                                                                                maxDate={maxDate}
+                                                                            />
+                                                                            {maxDate && field.value && new Date(field.value) > new Date(maxDate) && (
+                                                                                <p className="text-xs text-destructive mt-1">
+                                                                                    A data de fim do lote não pode ser posterior à última data do evento
+                                                                                </p>
+                                                                            )}
+                                                                        </>
+                                                                    )
+                                                                }}
+                                                            />
+                                                            <FieldError message={form.formState.errors.batches?.[index]?.endDate?.message || ""} />
                                                         </div>
                                                     </div>
-                                                )}
-                                            </div>
-                                        )
+
+
+                                                    {hasNextBatch && (
+                                                        <div className="rounded-lg border border-[#E4E6F0] bg-white p-4 space-y-3 mt-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <Checkbox
+                                                                    id={`auto-activate-${index}`}
+                                                                    checked={form.watch(`batches.${index}.autoActivateNext`) || false}
+                                                                    onCheckedChange={(checked) => {
+                                                                        form.setValue(`batches.${index}.autoActivateNext`, checked === true)
+                                                                    }}
+                                                                />
+                                                                <label htmlFor={`auto-activate-${index}`} className="text-sm font-medium text-psi-dark cursor-pointer">
+                                                                    Ativar próximo lote automaticamente quando todos os ingressos deste lote forem vendidos
+                                                                </label>
+                                                            </div>
+                                                            <div className="flex items-center gap-3">
+                                                                <Checkbox
+                                                                    id={`accumulate-${index}`}
+                                                                    checked={form.watch(`batches.${index}.accumulateUnsold`) || false}
+                                                                    onCheckedChange={(checked) => {
+                                                                        form.setValue(`batches.${index}.accumulateUnsold`, checked === true)
+                                                                    }}
+                                                                />
+                                                                <label htmlFor={`accumulate-${index}`} className="text-sm font-medium text-psi-dark cursor-pointer">
+                                                                    Acumular ingressos não vendidos para o próximo lote
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )
                                         })}
-                                        <FieldError message={form.formState.errors.batches?.message || ""} />
-                                    </div>
-                                )}
+                                    <FieldError message={form.formState.errors.batches?.message || ""} />
+                                </div>
                             </div>
                         </div>
 
@@ -868,14 +1438,19 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                 name="recurrence.type"
                                                 control={form.control}
                                                 render={({ field }) => (
-                                                    <select
-                                                        {...field}
-                                                        className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                                    <Select
+                                                        value={field.value}
+                                                        onValueChange={field.onChange}
                                                     >
-                                                        <option value="DAILY">Diário</option>
-                                                        <option value="WEEKLY">Semanal</option>
-                                                        <option value="MONTHLY">Mensal</option>
-                                                    </select>
+                                                        <SelectTrigger className="w-full">
+                                                            <SelectValue placeholder="Selecione o tipo..." />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="DAILY">Diário</SelectItem>
+                                                            <SelectItem value="WEEKLY">Semanal</SelectItem>
+                                                            <SelectItem value="MONTHLY">Mensal</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
                                                 )}
                                             />
                                         </div>
@@ -1165,12 +1740,158 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                     />
                                                 </div>
                                             </div>
+
+                                            <div className="flex items-center gap-3 rounded-lg border border-[#E4E6F0] bg-[#F3F4FB] p-3">
+                                                <Checkbox
+                                                    id={`has-specific-price-${index}`}
+                                                    checked={form.watch(`dates.${index}.hasSpecificPrice`) || false}
+                                                    onCheckedChange={(checked) => {
+                                                        const isChecked = checked === true
+                                                        form.setValue(`dates.${index}.hasSpecificPrice`, isChecked)
+                                                        if (!isChecked) {
+                                                            form.setValue(`dates.${index}.price`, null)
+                                                            form.setValue(`dates.${index}.ticketTypePrices`, null)
+                                                        } else {
+                                                            if (ticketTypes.length > 0) {
+                                                                const initialPrices = ticketTypes.map((_, typeIdx) => ({
+                                                                    ticketTypeId: typeIdx.toString(),
+                                                                    price: 0
+                                                                }))
+                                                                form.setValue(`dates.${index}.ticketTypePrices`, initialPrices)
+                                                            } else {
+                                                                form.setValue(`dates.${index}.ticketTypePrices`, null)
+                                                            }
+                                                        }
+                                                    }}
+                                                />
+                                                <label htmlFor={`has-specific-price-${index}`} className="text-sm font-medium text-psi-dark cursor-pointer">
+                                                    Definir preço específico para este dia
+                                                </label>
+                                            </div>
+
+                                            {form.watch(`dates.${index}.hasSpecificPrice`) && (
+                                                <div className="space-y-3 rounded-lg border border-[#E4E6F0] bg-white p-3">
+                                                    {ticketTypes.length === 0 ? (
+                                                        <div>
+                                                            <label className="block text-xs text-psi-dark/60 mb-1">Preço para este dia *</label>
+                                                            <Controller
+                                                                name={`dates.${index}.price`}
+                                                                control={form.control}
+                                                                render={({ field }) => (
+                                                                    <InputCurrency
+                                                                        value={field.value || 0}
+                                                                        onChangeValue={(value) => {
+                                                                            if (!value || value === "") {
+                                                                                field.onChange(0)
+                                                                            } else {
+                                                                                const numValue = parseCurrencyToNumber(value)
+                                                                                field.onChange(numValue)
+                                                                            }
+                                                                        }}
+                                                                        required
+                                                                        className="w-full"
+                                                                    />
+                                                                )}
+                                                            />
+                                                            <FieldError message={form.formState.errors.dates?.[index]?.price?.message || ""} />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="space-y-3">
+                                                            <p className="text-xs text-psi-dark/60 mb-2">Defina o preço para cada tipo de ingresso neste dia:</p>
+                                                            {ticketTypes.map((ticketType, typeIdx) => {
+                                                                const currentPrices = form.watch(`dates.${index}.ticketTypePrices`) || []
+                                                                let priceIndex = currentPrices.findIndex(ttp => ttp.ticketTypeId === typeIdx.toString())
+                                                                
+                                                                if (priceIndex < 0) {
+                                                                    const newPrice = {
+                                                                        ticketTypeId: typeIdx.toString(),
+                                                                        price: 0
+                                                                    }
+                                                                    const updatedPrices = [...currentPrices, newPrice]
+                                                                    form.setValue(`dates.${index}.ticketTypePrices`, updatedPrices)
+                                                                    priceIndex = updatedPrices.length - 1
+                                                                }
+                                                                
+                                                                return (
+                                                                    <div key={typeIdx} className="flex items-center gap-3">
+                                                                        <div className="flex-1">
+                                                                            <label className="block text-xs text-psi-dark/60 mb-1">{ticketType.name}{ticketType.description && (
+                                                                                <span className="text-xs text-psi-dark/60 ml-2">| {ticketType.description}</span>
+                                                                            )}</label>
+                                                                            {priceIndex >= 0 && (
+                                                                                <Controller
+                                                                                    name={`dates.${index}.ticketTypePrices.${priceIndex}.price`}
+                                                                                    control={form.control}
+                                                                                    render={({ field }) => (
+                                                                                        <InputCurrency
+                                                                                            value={field.value || 0}
+                                                                                            onChangeValue={(value) => {
+                                                                                                if (!value || value === "") {
+                                                                                                    field.onChange(0)
+                                                                                                } else {
+                                                                                                    const numValue = parseCurrencyToNumber(value)
+                                                                                                    field.onChange(numValue)
+                                                                                                }
+                                                                                            }}
+                                                                                            required
+                                                                                            className="w-full"
+                                                                                        />
+                                                                                    )}
+                                                                                />
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                     <FieldError message={form.formState.errors.dates?.message || ""} />
                                 </div>
                             </div>
                         )}
+
+                        <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 p-6
+                        sm:p-8 space-y-6">
+                            <div className="flex items-center gap-3 mb-4">
+                                <FileText className="h-5 w-5 text-psi-primary" />
+                                <h2 className="text-2xl font-bold text-psi-dark">Formulário Personalizado (Opcional)</h2>
+                            </div>
+
+                            <div className="space-y-4">
+                                <p className="text-sm text-psi-dark/60">
+                                    Crie perguntas personalizadas que serão feitas aos compradores durante a compra. 
+                                    Por exemplo: tamanho da camisa, preferências alimentares, etc.
+                                </p>
+
+                                <div className="flex items-center gap-3 rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4">
+                                    <Checkbox
+                                        id="is-form-for-each-ticket"
+                                        checked={isFormForEachTicket}
+                                        onCheckedChange={(checked) => setIsFormForEachTicket(checked === true)}
+                                    />
+                                    <div className="flex-1">
+                                        <label htmlFor="is-form-for-each-ticket" className="text-sm font-medium text-psi-dark cursor-pointer">
+                                            Incluir para cada ingresso
+                                        </label>
+                                        <p className="text-xs text-psi-dark/60 mt-1">
+                                            Quando ativado, o formulário será preenchido separadamente para cada ingresso comprado.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <FormBuilder
+                                    key={JSON.stringify(formFields.map(f => ({ type: f.type, label: f.label })))}
+                                    fields={formFields}
+                                    onChange={(fields) => {
+                                        setFormFields(fields)
+                                    }}
+                                />
+                            </div>
+                        </div>
 
                         <div className="flex items-center justify-end gap-4 pt-4">
                             <Button
@@ -1197,6 +1918,13 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                     </form>
                 </div>
             </div>
+
+            <DialogEditWarning
+                changes={changes}
+                riskScore={riskScore}
+                isOpen={isWarningOpen && changes.length > 0}
+                onClose={() => setIsWarningOpen(false)}
+            />
         </Background>
     )
 }

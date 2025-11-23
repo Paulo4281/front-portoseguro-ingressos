@@ -15,6 +15,7 @@ import { PasswordStrength } from "@/components/PasswordStrength/PasswordStrength
 import { useUserCreate } from "@/hooks/User/useUserCreate"
 import { useRouter, useSearchParams } from "next/navigation"
 import { LoadingButton } from "@/components/Loading/LoadingButton"
+import { AuthLayout } from "@/components/Layout/AuthLayout/AuthLayout"
 
 const CadastroForm = () => {
     const [selectedRole, setSelectedRole] = useState<"CUSTOMER" | "ORGANIZER" | null>(null)
@@ -63,187 +64,91 @@ const CadastroForm = () => {
 
     if (!selectedRole) {
         return (
-            <div className="min-h-screen flex">
-                <div className="hidden
-                lg:block
-                lg:w-1/2 relative overflow-hidden">
-                    <div 
-                        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                        style={{
-                            backgroundImage: 'url(https://images.pexels.com/photos/2263683/pexels-photo-2263683.jpeg)'
-                        }}
-                    />
+            <AuthLayout>
+                <div className="mb-8 text-center">
+                    <h1 className="text-3xl
+                    font-bold
+                    text-psi-dark
+                    dark:text-white
+                    mb-2">
+                        Criar Conta
+                    </h1>
+                    <p className="text-muted-foreground">
+                        Escolha o tipo de cadastro
+                    </p>
                 </div>
 
-                <div className="relative
-                w-full
-                lg:w-1/2
-                flex
-                items-center
-                justify-center
-                p-4
-                sm:p-6
-                md:p-8
-                lg:p-12">
-                    <div className="absolute
-                    inset-0
-                    bg-cover
-                    bg-center
-                    bg-no-repeat
-                    lg:hidden">
-                        <div 
-                            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                            style={{
-                                backgroundImage: 'url(https://images.pexels.com/photos/2263683/pexels-photo-2263683.jpeg)'
-                            }}
-                        />
-                        <div className="absolute inset-0 bg-black/60" />
-                    </div>
-
-                    <div className="relative
-                    w-full
-                    max-w-md
-                    bg-white
-                    dark:bg-psi-dark
-                    rounded-lg
-                    shadow-lg
-                    p-6
-                    sm:p-8
-                    md:p-10
-                    z-10">
-                        <div className="mb-8 text-center">
-                            <h1 className="text-3xl
-                            font-bold
-                            text-psi-dark
-                            dark:text-white
-                            mb-2">
-                                Criar Conta
-                            </h1>
-                            <p className="text-muted-foreground">
-                                Escolha o tipo de cadastro
-                            </p>
+                <div className="space-y-4">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="rounded-lg w-full h-auto p-6 flex flex-col items-center justify-center gap-3"
+                        onClick={() => handleRoleSelect("CUSTOMER")}
+                    >
+                        <User className="size-8" />
+                        <div className="text-left">
+                            <div className="font-semibold text-lg">Cliente</div>
+                            <div className="text-sm text-muted-foreground">
+                                Compre ingressos para eventos
+                            </div>
                         </div>
+                    </Button>
 
-                        <div className="space-y-4">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="rounded-lg w-full h-auto p-6 flex flex-col items-center justify-center gap-3"
-                                onClick={() => handleRoleSelect("CUSTOMER")}
-                            >
-                                <User className="size-8" />
-                                <div className="text-left">
-                                    <div className="font-semibold text-lg">Cliente</div>
-                                    <div className="text-sm text-muted-foreground">
-                                        Compre ingressos para eventos
-                                    </div>
-                                </div>
-                            </Button>
-
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="rounded-lg w-full h-auto p-6 flex flex-col items-center justify-center gap-3"
-                                onClick={() => handleRoleSelect("ORGANIZER")}
-                            >
-                                <Building2 className="size-8" />
-                                <div className="text-left">
-                                    <div className="font-semibold text-lg">Organizador de Eventos</div>
-                                    <div className="text-sm text-muted-foreground">
-                                        Crie e gerencie seus eventos
-                                    </div>
-                                </div>
-                            </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="rounded-lg w-full h-auto p-6 flex flex-col items-center justify-center gap-3"
+                        onClick={() => handleRoleSelect("ORGANIZER")}
+                    >
+                        <Building2 className="size-8" />
+                        <div className="text-left">
+                            <div className="font-semibold text-lg">Organizador de Eventos</div>
+                            <div className="text-sm text-muted-foreground">
+                                Crie e gerencie seus eventos
+                            </div>
                         </div>
-
-                        <div className="mt-6 text-center">
-                            <Button
-                                asChild
-                                variant="ghost"
-                                className="w-full"
-                            >
-                                <Link href="/" className="flex items-center justify-center">
-                                    <ArrowLeft className="size-4 mr-2" />
-                                    Voltar ao início
-                                </Link>
-                            </Button>
-                        </div>
-                    </div>
+                    </Button>
                 </div>
-            </div>
+
+                <div className="mt-6 text-center">
+                    <Button
+                        asChild
+                        variant="ghost"
+                        className="w-full"
+                    >
+                        <Link href="/" className="flex items-center justify-center">
+                            <ArrowLeft className="size-4 mr-2" />
+                            Voltar ao início
+                        </Link>
+                    </Button>
+                </div>
+            </AuthLayout>
         )
     }
 
     return (
-        <div className="min-h-screen flex">
-            <div className="hidden
-            lg:block
-            lg:w-1/2 relative overflow-hidden">
-                <div 
-                    className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                    style={{
-                        backgroundImage: 'url(https://images.pexels.com/photos/2263683/pexels-photo-2263683.jpeg)'
-                    }}
-                />
-            </div>
-
-            <div className="relative
-            w-full
-            lg:w-1/2
-            flex
-            items-center
-            justify-center
-            p-4
-            sm:p-6
-            md:p-8
-            lg:p-12">
-                <div className="absolute
-                inset-0
-                bg-cover
-                bg-center
-                bg-no-repeat
-                lg:hidden">
-                    <div 
-                        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                        style={{
-                            backgroundImage: 'url(https://images.pexels.com/photos/2263683/pexels-photo-2263683.jpeg)'
-                        }}
-                    />
-                    <div className="absolute inset-0 bg-black/60" />
+        <AuthLayout>
+            <div className="mb-8">
+                <div className="flex items-center justify-between mb-2">
+                    <h1 className="text-3xl
+                    font-bold
+                    text-psi-dark
+                    dark:text-white">
+                        Criar Conta
+                    </h1>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleBack}
+                    >
+                        <ArrowLeft className="size-4" />
+                    </Button>
                 </div>
-
-                <div className="relative
-                w-full
-                max-w-md
-                bg-white
-                dark:bg-psi-dark
-                rounded-lg
-                shadow-lg
-                p-6
-                sm:p-8
-                md:p-10
-                z-10">
-                    <div className="mb-8">
-                        <div className="flex items-center justify-between mb-2">
-                            <h1 className="text-3xl
-                            font-bold
-                            text-psi-dark
-                            dark:text-white">
-                                Criar Conta
-                            </h1>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={handleBack}
-                            >
-                                <ArrowLeft className="size-4" />
-                            </Button>
-                        </div>
-                        <p className="text-muted-foreground">
-                            {selectedRole === "CUSTOMER" ? "Cadastro como Cliente" : "Cadastro como Organizador"}
-                        </p>
-                    </div>
+                <p className="text-muted-foreground">
+                    {selectedRole === "CUSTOMER" ? "Cadastro como Cliente" : "Cadastro como Organizador"}
+                </p>
+            </div>
 
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
                         <div className="grid grid-cols-2 gap-4">
@@ -430,9 +335,7 @@ const CadastroForm = () => {
                             </Link>
                         </Button>
                     </div>
-                </div>
-            </div>
-        </div>
+        </AuthLayout>
     )
 }
 

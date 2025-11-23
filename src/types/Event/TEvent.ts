@@ -27,6 +27,8 @@ type TEvent = {
     isPostponed: boolean
     createdAt: string
     updatedAt: string | null
+    form: any | null
+    isFormForEachTicket: boolean
     
     EventDates: TEventDate[]
     EventBatches: TEventBatch[]

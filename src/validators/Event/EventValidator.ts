@@ -70,7 +70,9 @@ const EventCreateValidator = z.object({
     batches: z.array(BatchValidator).optional(),
     dates: z.array(EventDateValidator).optional(),
     recurrence: RecurrenceValidator,
-    isClientTaxed: z.boolean().optional()
+    isClientTaxed: z.boolean().optional(),
+    form: z.any().optional(),
+    isFormForEachTicket: z.boolean().optional()
 }).superRefine((data, ctx) => {
     const hasBatches = data.batches && data.batches.length > 0
     
@@ -219,7 +221,9 @@ const EventUpdateValidatorBase = z.object({
     batches: z.array(BatchValidator).optional(),
     dates: z.array(EventDateValidator).optional(),
     recurrence: RecurrenceValidator,
-    isClientTaxed: z.boolean().optional()
+    isClientTaxed: z.boolean().optional(),
+    form: z.any().optional(),
+    isFormForEachTicket: z.boolean().optional()
 })
 
 const EventUpdateValidator = EventUpdateValidatorBase.superRefine((data, ctx) => {

@@ -427,6 +427,21 @@ const HomeHero = () => {
                         </div>
 
                         <div className="rounded-[28px] border border-white/15 bg-linear-to-br from-white/10 via-white/5 to-white/5 p-6 space-y-6">
+                        <div className="absolute left-[60vw] bottom-[1365px] w-[130px] h-auto z-10 pointer-events-none
+                                xs:left-[57vw] xs:bottom-[1345px] xs:w-[160px]
+                                sm:w-[220px] sm:left-[100px] sm:bottom-[-60px]
+                                lg:w-[260px] lg:left-[980px] lg:bottom-[-30px]
+                                3xl:w-[330px] 3xl:left-[1260px] 3xl:bottom-[-55px]
+                                ">
+                                    <Image
+                                        src="/images/porto-seguro-ingressos-forte.png"
+                                        alt="Pedro Álvares Cabral apontando"
+                                        width={350}
+                                        height={437}
+                                        className="object-contain w-full h-auto -scale-x-100 lg:scale-x-100"
+                                        priority
+                                    />
+                                </div>
                             <div className="space-y-3">
                                 <h3 className="text-2xl font-semibold">Assuma o controle da sua bilheteria</h3>
                                 <p className="text-white/80 text-sm">

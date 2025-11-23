@@ -16,6 +16,7 @@ import { useSearchParamsHook } from "@/hooks/useSearchParams"
 import { useUserConfirmationConfirmByCode } from "@/hooks/UserConfirmation/useUserConfirmationConfirmByCode"
 import { useUserConfirmationResendConfirmation } from "@/hooks/UserConfirmation/useUserConfirmationResendConfirmation"
 import { Toast } from "@/components/Toast/Toast"
+import { AuthLayout } from "@/components/Layout/AuthLayout/AuthLayout"
 
 type TSearchParams = {
     name?: string
@@ -76,241 +77,96 @@ const CadastroConfirmarForm = () => {
 
     if (isConfirmed) {
         return (
-            <div className="min-h-screen flex">
-                <div className="hidden
-                lg:block
-                lg:w-1/2 relative overflow-hidden">
-                    <div 
-                        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                        style={{
-                            backgroundImage: 'url(https://images.pexels.com/photos/2263683/pexels-photo-2263683.jpeg)'
-                        }}
-                    />
+            <AuthLayout>
+                <div className="mb-8 text-center">
+                    <div className="flex justify-center mb-4">
+                        <CheckCircle2 className="size-16 text-green-500" />
+                    </div>
+                    <h1 className="text-3xl
+                    font-bold
+                    text-psi-dark
+                    dark:text-white
+                    mb-2">
+                        Cadastro Confirmado!
+                    </h1>
+                    <p className="text-muted-foreground">
+                        Seu cadastro foi confirmado com sucesso.
+                    </p>
                 </div>
 
-                <div className="relative
-                w-full
-                lg:w-1/2
-                flex
-                items-center
-                justify-center
-                p-4
-                sm:p-6
-                md:p-8
-                lg:p-12">
-                    <div className="absolute
-                    inset-0
-                    bg-cover
-                    bg-center
-                    bg-no-repeat
-                    lg:hidden">
-                        <div 
-                            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                            style={{
-                                backgroundImage: 'url(https://images.pexels.com/photos/2263683/pexels-photo-2263683.jpeg)'
-                            }}
-                        />
-                        <div className="absolute inset-0 bg-black/60" />
-                    </div>
-
-                    <div className="relative
-                    w-full
-                    max-w-md
-                    bg-white
-                    dark:bg-psi-dark
-                    rounded-lg
-                    shadow-lg
-                    p-6
-                    sm:p-8
-                    md:p-10
-                    z-10">
-                        <div className="mb-8 text-center">
-                            <div className="flex justify-center mb-4">
-                                <CheckCircle2 className="size-16 text-green-500" />
-                            </div>
-                            <h1 className="text-3xl
-                            font-bold
-                            text-psi-dark
-                            dark:text-white
-                            mb-2">
-                                Cadastro Confirmado!
-                            </h1>
-                            <p className="text-muted-foreground">
-                                Seu cadastro foi confirmado com sucesso.
-                            </p>
-                        </div>
-
-                        <Button
-                            asChild
-                            variant="primary"
-                            className="w-full"
-                            size="lg"
-                        >
-                            <Link href="/login" className="flex items-center justify-center">
-                                <LogIn className="size-4 mr-2" />
-                                Fazer Login
-                            </Link>
-                        </Button>
-                    </div>
-                </div>
-            </div>
+                <Button
+                    asChild
+                    variant="primary"
+                    className="w-full"
+                    size="lg"
+                >
+                    <Link href="/login" className="flex items-center justify-center">
+                        <LogIn className="size-4 mr-2" />
+                        Fazer Login
+                    </Link>
+                </Button>
+            </AuthLayout>
         )
     }
 
     if (isConfirmingByLink) {
         return (
-            <div className="min-h-screen flex">
-                <div className="hidden
-                lg:block
-                lg:w-1/2 relative overflow-hidden">
-                    <div 
-                        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                        style={{
-                            backgroundImage: 'url(https://images.pexels.com/photos/2263683/pexels-photo-2263683.jpeg)'
-                        }}
-                    />
-                </div>
-
-                <div className="relative
-                w-full
-                lg:w-1/2
-                flex
-                items-center
-                justify-center
-                p-4
-                sm:p-6
-                md:p-8
-                lg:p-12">
-                    <div className="absolute
-                    inset-0
-                    bg-cover
-                    bg-center
-                    bg-no-repeat
-                    lg:hidden">
-                        <div 
-                            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                            style={{
-                                backgroundImage: 'url(https://images.pexels.com/photos/2263683/pexels-photo-2263683.jpeg)'
-                            }}
-                        />
-                        <div className="absolute inset-0 bg-black/60" />
-                    </div>
-
-                    <div className="relative
-                    w-full
-                    max-w-md
-                    bg-white
-                    dark:bg-psi-dark
-                    rounded-lg
-                    shadow-lg
-                    p-6
-                    sm:p-8
-                    md:p-10
-                    z-10">
-                        <div className="mb-8 text-center">
-                            <h1 className="text-3xl
-                            font-bold
-                            text-psi-dark
-                            dark:text-white
-                            mb-2">
-                                Confirmar Cadastro
-                            </h1>
-                            <div className="space-y-2">
-                                <p className="text-muted-foreground">
-                                    Olá, <span className="font-semibold text-foreground">{firstName}</span>!
-                                </p>
-                                <p className="text-sm text-muted-foreground mt-4">
-                                    Verificando o link de confirmação...
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col items-center justify-center py-2">
-                            {isConfirmingByCodeMutation ? (
-                                <>
-                                    <Loader2 className="size-12 text-psi-primary animate-spin mb-4" />
-                                    <p className="text-muted-foreground text-center">
-                                        Aguarde enquanto validamos seu link de confirmação.
-                                    </p>
-                                </>
-                            ) : (
-                                <p className="text-muted-foreground text-center">
-                                    Processando...
-                                </p>
-                            )}
-                        </div>
+            <AuthLayout>
+                <div className="mb-8 text-center">
+                    <h1 className="text-3xl
+                    font-bold
+                    text-psi-dark
+                    dark:text-white
+                    mb-2">
+                        Confirmar Cadastro
+                    </h1>
+                    <div className="space-y-2">
+                        <p className="text-muted-foreground">
+                            Olá, <span className="font-semibold text-foreground">{firstName}</span>!
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-4">
+                            Verificando o link de confirmação...
+                        </p>
                     </div>
                 </div>
-            </div>
+
+                <div className="flex flex-col items-center justify-center py-2">
+                    {isConfirmingByCodeMutation ? (
+                        <>
+                            <Loader2 className="size-12 text-psi-primary animate-spin mb-4" />
+                            <p className="text-muted-foreground text-center">
+                                Aguarde enquanto validamos seu link de confirmação.
+                            </p>
+                        </>
+                    ) : (
+                        <p className="text-muted-foreground text-center">
+                            Processando...
+                        </p>
+                    )}
+                </div>
+            </AuthLayout>
         )
     }
 
     return (
-        <div className="min-h-screen flex">
-            <div className="hidden
-            lg:block
-            lg:w-1/2 relative overflow-hidden">
-                <div 
-                    className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                    style={{
-                        backgroundImage: 'url(https://images.pexels.com/photos/2263683/pexels-photo-2263683.jpeg)'
-                    }}
-                />
-            </div>
-
-            <div className="relative
-            w-full
-            lg:w-1/2
-            flex
-            items-center
-            justify-center
-            p-4
-            sm:p-6
-            md:p-8
-            lg:p-12">
-                <div className="absolute
-                inset-0
-                bg-cover
-                bg-center
-                bg-no-repeat
-                lg:hidden">
-                    <div 
-                        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                        style={{
-                            backgroundImage: 'url(https://images.pexels.com/photos/2263683/pexels-photo-2263683.jpeg)'
-                        }}
-                    />
-                    <div className="absolute inset-0 bg-black/60" />
+        <AuthLayout>
+            <div className="mb-8 text-center">
+                <h1 className="text-3xl
+                font-bold
+                text-psi-dark
+                dark:text-white
+                mb-2">
+                    Confirmar Cadastro
+                </h1>
+                <div className="space-y-2">
+                    <p className="text-muted-foreground">
+                        Olá, <span className="font-semibold text-foreground">{firstName}</span>!
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-4">
+                        Digite o código de 6 dígitos enviado para seu e-mail <span className="font-semibold text-foreground">{searchParams.email}</span> para confirmar seu cadastro.
+                    </p>
                 </div>
-
-                <div className="relative
-                w-full
-                max-w-md
-                bg-white
-                dark:bg-psi-dark
-                rounded-lg
-                shadow-lg
-                p-6
-                sm:p-8
-                md:p-10
-                z-10">
-                    <div className="mb-8 text-center">
-                        <h1 className="text-3xl
-                        font-bold
-                        text-psi-dark
-                        dark:text-white
-                        mb-2">
-                            Confirmar Cadastro
-                        </h1>
-                        <div className="space-y-2">
-                            <p className="text-muted-foreground">
-                                Olá, <span className="font-semibold text-foreground">{firstName}</span>!
-                            </p>
-                            <p className="text-sm text-muted-foreground mt-4">
-                                Digite o código de 6 dígitos enviado para seu e-mail <span className="font-semibold text-foreground">{searchParams.email}</span> para confirmar seu cadastro.
-                            </p>
-                        </div>
-                    </div>
+            </div>
 
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
                         <div className="space-y-2">
@@ -415,9 +271,7 @@ const CadastroConfirmarForm = () => {
                             </Link>
                         </Button>
                     </div>
-                </div>
-            </div>
-        </div>
+        </AuthLayout>
     )
 }
 

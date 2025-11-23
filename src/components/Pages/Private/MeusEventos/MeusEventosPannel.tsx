@@ -1,8 +1,8 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Share2, Download, BarChart } from "lucide-react"
+import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Share2, Download, BarChart, Ban } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
     DropdownMenu,
@@ -18,6 +18,8 @@ import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Hel
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 import type { TEvent } from "@/types/Event/TEvent"
 import type { TEventBatch } from "@/types/Event/TEventBatch"
+import { DialogUpdateEventWarning } from "@/components/Dialog/DialogUpdateEventWarning/DialogUpdateEventWarning"
+import { DialogCancelEventWarning } from "@/components/Dialog/DialogCancelEventWarning/DialogCancelEventWarning"
 
 type TEventWithStats = TEvent & {
     isActive: boolean
@@ -34,6 +36,9 @@ const mockStats = {
 
 const MeusEventosPannel = () => {
     const { data: eventsData, isLoading, isError } = useEventFind()
+    const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
+    const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+    const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
     
     const events = useMemo(() => {
         if (!eventsData?.data || !Array.isArray(eventsData.data)) return []
@@ -205,11 +210,15 @@ const MeusEventosPannel = () => {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end" className="w-56 rounded-xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/10 p-2">
-                                                    <DropdownMenuItem asChild>
-                                                        <Link href={`/eventos/atualizar?id=${event.id}`} className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer">
-                                                            <Edit className="h-4 w-4 mr-2 text-psi-primary" />
-                                                            Editar evento
-                                                        </Link>
+                                                    <DropdownMenuItem 
+                                                        className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer"
+                                                        onClick={() => {
+                                                            setSelectedEventId(event.id)
+                                                            setUpdateDialogOpen(true)
+                                                        }}
+                                                    >
+                                                        <Edit className="h-4 w-4 mr-2 text-psi-primary" />
+                                                        Editar evento
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator className="bg-[#E4E6F0]" />
                                                     <DropdownMenuItem className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer">
@@ -234,9 +243,15 @@ const MeusEventosPannel = () => {
                                                         Exportar dados
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator className="bg-[#E4E6F0]" />
-                                                    <DropdownMenuItem className="rounded-lg text-sm text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer">
-                                                        <Trash2 className="h-4 w-4 mr-2 text-destructive" />
-                                                        Excluir evento
+                                                    <DropdownMenuItem 
+                                                        className="rounded-lg text-sm text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                                                        onClick={() => {
+                                                            setSelectedEventId(event.id)
+                                                            setCancelDialogOpen(true)
+                                                        }}
+                                                    >
+                                                        <Ban className="h-4 w-4 mr-2 text-destructive" />
+                                                        Cancelar evento
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
@@ -308,9 +323,6 @@ const MeusEventosPannel = () => {
                                                         </div>
                                                         <div className="flex items-center justify-between text-xs">
                                                             <span className="text-psi-dark/70">
-                                                                Preço: <span className="font-bold text-psi-primary">{activeBatch.price ? formatCurrency(activeBatch.price) : "Grátis"}</span>
-                                                            </span>
-                                                            <span className="text-psi-dark/70">
                                                                 Disponível: <span className="font-semibold text-psi-dark">{activeBatch.tickets}</span>
                                                             </span>
                                                         </div>
@@ -350,6 +362,26 @@ const MeusEventosPannel = () => {
                     </div>
                 </div>
             </div>
+
+            <DialogUpdateEventWarning
+                open={updateDialogOpen}
+                onOpenChange={setUpdateDialogOpen}
+                onConfirm={() => {
+                    if (selectedEventId) {
+                        window.location.href = `/eventos/atualizar?id=${selectedEventId}`
+                    }
+                }}
+            />
+
+            <DialogCancelEventWarning
+                open={cancelDialogOpen}
+                onOpenChange={setCancelDialogOpen}
+                onConfirm={() => {
+                    if (selectedEventId) {
+                        console.log("Cancelar evento:", selectedEventId)
+                    }
+                }}
+            />
         </Background>
     )
 }

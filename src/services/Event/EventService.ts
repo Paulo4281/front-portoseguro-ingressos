@@ -43,6 +43,14 @@ class EventService {
         if (data.image) {
             formData.append("image", data.image)
         }
+
+        if (data.form) {
+            formData.append("form", JSON.stringify(data.form))
+        }
+
+        if (data.isFormForEachTicket) {
+            formData.append("isFormForEachTicket", String(data.isFormForEachTicket))
+        }
         
         if (data.categories && data.categories.length > 0) {
             data.categories.forEach((categoryId: string, index: number) => {

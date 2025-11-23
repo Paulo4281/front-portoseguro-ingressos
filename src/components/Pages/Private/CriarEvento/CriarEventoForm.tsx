@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useForm, Controller, useFieldArray, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
@@ -66,8 +66,68 @@ const parseCurrencyToNumber = (value: string): number => {
     return parseFloat(cleaned) || 0
 }
 
+const transformFormFieldsToJSON = (fields: TFormField[]): any => {
+    if (!fields || fields.length === 0) {
+        return undefined
+    }
+
+    const result: any = {
+        text: [],
+        number: [],
+        email: [],
+        phone: [],
+        textArea: [],
+        select: [],
+        multiSelect: []
+    }
+
+    fields.forEach((field, index) => {
+        const fieldData: any = {
+            label: field.label,
+            required: field.required,
+            order: index
+        }
+
+        if (field.placeholder) {
+            fieldData.placeholder = field.placeholder
+        }
+
+        if (field.type === "select" || field.type === "checkbox") {
+            if (field.options && field.options.length > 0) {
+                fieldData.options = field.options.map(opt => opt.label).filter(label => label.trim() !== "")
+            }
+        }
+
+        switch (field.type) {
+            case "text":
+                if (field.mask) {
+                    fieldData.mask = field.mask
+                }
+                result.text.push(fieldData)
+                break
+            case "email":
+                result.email.push(fieldData)
+                break
+            case "textarea":
+                result.textArea.push(fieldData)
+                break
+            case "select":
+                result.select.push(fieldData)
+                break
+            case "checkbox":
+                result.multiSelect.push(fieldData)
+                break
+        }
+    })
+
+    const hasAnyFields = Object.values(result).some((arr: any) => arr.length > 0)
+    return hasAnyFields ? result : undefined
+}
+
 const CriarEventoForm = () => {
     const [recurrenceEnabled, setRecurrenceEnabled] = useState(false)
+    const [formFields, setFormFields] = useState<TFormField[]>([])
+    const [isFormForEachTicket, setIsFormForEachTicket] = useState(false)
     const router = useRouter()
 
     const { data: eventCategoriesData, isLoading: isEventCategoriesLoading } = useEventCategoryFind()
@@ -155,6 +215,31 @@ const CriarEventoForm = () => {
         }, 0)
     }, [watchedBatches])
 
+    useEffect(() => {
+        if (ticketTypes.length > 0) {
+            const currentBatches = form.getValues("batches") || []
+            currentBatches.forEach((batch, batchIndex) => {
+                const currentTicketTypes = batch.ticketTypes || []
+                const updatedTicketTypes = [...currentTicketTypes]
+                
+                ticketTypes.forEach((_, typeIdx) => {
+                    const exists = updatedTicketTypes.some(ct => ct.ticketTypeId === typeIdx.toString())
+                    if (!exists) {
+                        updatedTicketTypes.push({
+                            ticketTypeId: typeIdx.toString(),
+                            price: 0,
+                            amount: 0
+                        })
+                    }
+                })
+                
+                if (updatedTicketTypes.length !== currentTicketTypes.length) {
+                    form.setValue(`batches.${batchIndex}.ticketTypes`, updatedTicketTypes)
+                }
+            })
+        }
+    }, [ticketTypes.length, form])
+
     const handleSubmit = async (data: TEventCreate) => {
         try {
             const hasBatches = data.batches && data.batches.length > 0
@@ -195,7 +280,9 @@ const CriarEventoForm = () => {
                     })) : null
                 })) : undefined),
                 recurrence: data.recurrence || null,
-                isClientTaxed: data.isClientTaxed || false
+                isClientTaxed: data.isClientTaxed || false,
+                form: transformFormFieldsToJSON(formFields),
+                isFormForEachTicket: isFormForEachTicket || false
             }
 
             if (batchesWithTicketTypes && !submitData.ticketTypes) {
@@ -229,6 +316,14 @@ const CriarEventoForm = () => {
     }
 
     const addBatch = () => {
+        const initialTicketTypes = ticketTypes.length > 0
+            ? ticketTypes.map((_, typeIdx) => ({
+                ticketTypeId: typeIdx.toString(),
+                price: 0,
+                amount: 0
+            }))
+            : []
+        
         appendBatch({
             name: "",
             price: undefined,
@@ -237,7 +332,7 @@ const CriarEventoForm = () => {
             endDate: null,
             autoActivateNext: false,
             accumulateUnsold: false,
-            ticketTypes: []
+            ticketTypes: initialTicketTypes
         })
     }
 
@@ -246,6 +341,23 @@ const CriarEventoForm = () => {
         appendTicketType({
             name: "",
             description: null
+        })
+        
+        const newTypeIndex = ticketTypes.length
+        const currentBatches = form.getValues("batches") || []
+        
+        currentBatches.forEach((batch, batchIndex) => {
+            const currentTicketTypes = batch.ticketTypes || []
+            if (!currentTicketTypes.some(ct => ct.ticketTypeId === newTypeIndex.toString())) {
+                form.setValue(`batches.${batchIndex}.ticketTypes`, [
+                    ...currentTicketTypes,
+                    {
+                        ticketTypeId: newTypeIndex.toString(),
+                        price: 0,
+                        amount: 0
+                    }
+                ])
+            }
         })
     }
 
@@ -435,10 +547,13 @@ const CriarEventoForm = () => {
                                     <FieldError message={form.formState.errors.location?.message || ""} />
                                 </div>
 
-                                <div >
+                                <div>
                                     <label className="block text-sm font-medium text-psi-dark mb-2">
                                         Imagem do Evento *
                                     </label>
+                                    <p className="text-xs text-psi-dark/60 mb-3">
+                                        Dimensões recomendadas: 1920x1080px (16:9) ou 1280x720px. Formatos aceitos: PNG, JPG, GIF até 10MB.
+                                    </p>
                                     <Controller
                                         name="image"
                                         control={form.control}
@@ -447,7 +562,6 @@ const CriarEventoForm = () => {
                                                 value={field.value}
                                                 onChange={field.onChange}
                                                 error={form.formState.errors.image?.message}
-                                                
                                             />
                                         )}
                                     />
@@ -708,70 +822,33 @@ const CriarEventoForm = () => {
                                                         </div>
                                                     ) : (
                                                         <div className="space-y-3">
-                                                            <div className="flex items-center justify-between">
-                                                                <label className="block text-sm font-medium text-psi-dark/70">
-                                                                    Tipos de Ingressos e Preços
-                                                                </label>
-                                                                <Select
-                                                                    onValueChange={(value) => {
-                                                                        const selectedIndex = parseInt(value)
-                                                                        if (selectedIndex >= 0 && selectedIndex < ticketTypes.length) {
-                                                                            const currentTicketTypes = form.getValues(`batches.${index}.ticketTypes`) || []
-                                                                            const selectedType = ticketTypes[selectedIndex]
-                                                                            if (!currentTicketTypes.some(ct => ct.ticketTypeId === selectedIndex.toString())) {
-                                                                                form.setValue(`batches.${index}.ticketTypes`, [
-                                                                                    ...currentTicketTypes,
-                                                                                    {
-                                                                                        ticketTypeId: selectedIndex.toString(),
-                                                                                        price: 0,
-                                                                                        amount: 0
-                                                                                    }
-                                                                                ])
-                                                                            }
-                                                                        }
-                                                                    }}
-                                                                    value={undefined}
-                                                                >
-                                                                    <SelectTrigger className="w-[200px]">
-                                                                        <SelectValue placeholder="Selecione um tipo..." />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        {ticketTypes.map((type, typeIdx) => {
-                                                                            const currentTicketTypes = form.watch(`batches.${index}.ticketTypes`) || []
-                                                                            const isAlreadyAdded = currentTicketTypes.some(ct => ct.ticketTypeId === typeIdx.toString())
-                                                                            if (isAlreadyAdded) return null
-                                                                            return (
-                                                                                <SelectItem key={typeIdx} value={typeIdx.toString()}>
-                                                                                    {type.name}
-                                                                                </SelectItem>
-                                                                            )
-                                                                        })}
-                                                                    </SelectContent>
-                                                                </Select>
-                                                            </div>
-
-                                                            {form.watch(`batches.${index}.ticketTypes`)?.map((batchTicketType, typeIndex) => {
-                                                                const typeIdx = parseInt(batchTicketType.ticketTypeId)
-                                                                const selectedType = ticketTypes[typeIdx]
+                                                            <label className="block text-sm font-medium text-psi-dark/70">
+                                                                Tipos de Ingressos e Preços *
+                                                            </label>
+                                                            {ticketTypes.map((ticketType, typeIdx) => {
+                                                                const currentTicketTypes = form.watch(`batches.${index}.ticketTypes`) || []
+                                                                let ticketTypeIndex = currentTicketTypes.findIndex(ct => ct.ticketTypeId === typeIdx.toString())
+                                                                
+                                                                if (ticketTypeIndex < 0) {
+                                                                    const newTicketType = {
+                                                                        ticketTypeId: typeIdx.toString(),
+                                                                        price: 0,
+                                                                        amount: 0
+                                                                    }
+                                                                    const updatedTicketTypes = [...currentTicketTypes, newTicketType]
+                                                                    form.setValue(`batches.${index}.ticketTypes`, updatedTicketTypes)
+                                                                    ticketTypeIndex = updatedTicketTypes.length - 1
+                                                                }
                                                                 
                                                                 return (
-                                                                    <div key={typeIndex} className="rounded-lg border border-[#E4E6F0] bg-white p-3 space-y-3">
+                                                                    <div key={typeIdx} className="rounded-lg border border-[#E4E6F0] bg-white p-3 space-y-3">
                                                                         <div className="flex items-center justify-between">
                                                                             <span className="text-sm font-semibold text-psi-dark">
-                                                                                {selectedType?.name || "Tipo não encontrado"}
+                                                                                {ticketType.name}
+                                                                                {ticketType.description && (
+                                                                                    <span className="text-xs text-psi-dark/60 ml-2">| {ticketType.description}</span>
+                                                                                )}
                                                                             </span>
-                                                                            <Button
-                                                                                type="button"
-                                                                                variant="ghost"
-                                                                                size="sm"
-                                                                                onClick={() => {
-                                                                                    const current = form.getValues(`batches.${index}.ticketTypes`) || []
-                                                                                    form.setValue(`batches.${index}.ticketTypes`, current.filter((_, i) => i !== typeIndex))
-                                                                                }}
-                                                                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                                            >
-                                                                                <Trash2 className="h-4 w-4" />
-                                                                            </Button>
                                                                         </div>
 
                                                                         <div className="grid grid-cols-1
@@ -779,7 +856,7 @@ const CriarEventoForm = () => {
                                                                             <div>
                                                                                 <label className="block text-xs text-psi-dark/60 mb-1">Preço *</label>
                                                                                 <Controller
-                                                                                    name={`batches.${index}.ticketTypes.${typeIndex}.price`}
+                                                                                    name={`batches.${index}.ticketTypes.${ticketTypeIndex}.price`}
                                                                                     control={form.control}
                                                                                     render={({ field }) => (
                                                                                         <InputCurrency
@@ -797,13 +874,13 @@ const CriarEventoForm = () => {
                                                                                         />
                                                                                     )}
                                                                                 />
-                                                                                <FieldError message={form.formState.errors.batches?.[index]?.ticketTypes?.[typeIndex]?.price?.message || ""} />
+                                                                                <FieldError message={form.formState.errors.batches?.[index]?.ticketTypes?.[ticketTypeIndex]?.price?.message || ""} />
                                                                             </div>
 
                                                                             <div>
                                                                                 <label className="block text-xs text-psi-dark/60 mb-1">Quantidade *</label>
                                                                                 <Controller
-                                                                                    name={`batches.${index}.ticketTypes.${typeIndex}.amount`}
+                                                                                    name={`batches.${index}.ticketTypes.${ticketTypeIndex}.amount`}
                                                                                     control={form.control}
                                                                                     render={({ field }) => (
                                                                                         <Input
@@ -817,18 +894,12 @@ const CriarEventoForm = () => {
                                                                                         />
                                                                                     )}
                                                                                 />
-                                                                                <FieldError message={form.formState.errors.batches?.[index]?.ticketTypes?.[typeIndex]?.amount?.message || ""} />
+                                                                                <FieldError message={form.formState.errors.batches?.[index]?.ticketTypes?.[ticketTypeIndex]?.amount?.message || ""} />
                                                                             </div>
                                                                         </div>
                                                                     </div>
                                                                 )
-                                                            }) || []}
-
-                                                            {(!form.watch(`batches.${index}.ticketTypes`) || form.watch(`batches.${index}.ticketTypes`)?.length === 0) && (
-                                                                <p className="text-xs text-psi-dark/60">
-                                                                    Adicione pelo menos um tipo de ingresso ou defina um preço único acima
-                                                                </p>
-                                                            )}
+                                                            })}
                                                         </div>
                                                     )}
 
@@ -1428,9 +1499,26 @@ const CriarEventoForm = () => {
                                     Por exemplo: tamanho da camisa, preferências alimentares, etc.
                                 </p>
 
+                                <div className="flex items-center gap-3 rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4">
+                                    <Checkbox
+                                        id="is-form-for-each-ticket"
+                                        checked={isFormForEachTicket}
+                                        onCheckedChange={(checked) => setIsFormForEachTicket(checked === true)}
+                                    />
+                                    <div className="flex-1">
+                                        <label htmlFor="is-form-for-each-ticket" className="text-sm font-medium text-psi-dark cursor-pointer">
+                                            Incluir para cada ingresso
+                                        </label>
+                                        <p className="text-xs text-psi-dark/60 mt-1">
+                                            Quando ativado, o formulário será preenchido separadamente para cada ingresso comprado.
+                                        </p>
+                                    </div>
+                                </div>
+
                                 <FormBuilder
+                                    fields={formFields}
                                     onChange={(fields) => {
-                                        console.log("FormBuilder fields:", fields)
+                                        setFormFields(fields)
                                     }}
                                 />
                             </div>

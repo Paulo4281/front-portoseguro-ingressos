@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Plus, Trash2, GripVertical, Type, List, CheckSquare, Radio, FileText, ChevronUp, ChevronDown } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Plus, Trash2, GripVertical, Type, List, CheckSquare, FileText, ChevronUp, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/Input/Input"
 import { Textarea } from "@/components/ui/textarea"
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
-export type TFormFieldType = "text" | "email" | "number" | "tel" | "textarea" | "select" | "checkbox" | "radio"
+export type TFormFieldType = "text" | "email" | "textarea" | "select" | "checkbox"
 
 export type TFormFieldOption = {
     id: string
@@ -29,6 +29,7 @@ export type TFormField = {
     placeholder?: string
     required: boolean
     options?: TFormFieldOption[]
+    mask?: string
 }
 
 type TFormBuilderProps = {
@@ -38,6 +39,10 @@ type TFormBuilderProps = {
 
 const FormBuilder = ({ fields: initialFields = [], onChange }: TFormBuilderProps) => {
     const [fields, setFields] = useState<TFormField[]>(initialFields)
+
+    useEffect(() => {
+        setFields(initialFields)
+    }, [initialFields])
 
     const generateId = () => {
         return `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -55,7 +60,7 @@ const FormBuilder = ({ fields: initialFields = [], onChange }: TFormBuilderProps
             label: "",
             placeholder: "",
             required: false,
-            ...(type === "select" || type === "radio" || type === "checkbox" ? { options: [{ id: generateId(), label: "" }] } : {})
+            ...(type === "select" || type === "checkbox" ? { options: [{ id: generateId(), label: "" }] } : {})
         }
         handleFieldsChange([...fields, newField])
     }
@@ -112,23 +117,17 @@ const FormBuilder = ({ fields: initialFields = [], onChange }: TFormBuilderProps
     const fieldTypeIcons = {
         text: Type,
         email: Type,
-        number: Type,
-        tel: Type,
         textarea: FileText,
         select: List,
-        checkbox: CheckSquare,
-        radio: Radio
+        checkbox: CheckSquare
     }
 
     const fieldTypeLabels = {
         text: "Texto",
         email: "Email",
-        number: "Número",
-        tel: "Telefone",
         textarea: "Texto Longo",
         select: "Seleção",
-        checkbox: "Múltipla Escolha",
-        radio: "Escolha Única"
+        checkbox: "Múltipla Escolha"
     }
 
     return (
@@ -162,18 +161,6 @@ const FormBuilder = ({ fields: initialFields = [], onChange }: TFormBuilderProps
                                 <span>Email</span>
                             </div>
                         </SelectItem>
-                        <SelectItem value="number">
-                            <div className="flex items-center gap-2">
-                                <Type className="h-4 w-4 text-psi-dark/60" />
-                                <span>Número</span>
-                            </div>
-                        </SelectItem>
-                        <SelectItem value="tel">
-                            <div className="flex items-center gap-2">
-                                <Type className="h-4 w-4 text-psi-dark/60" />
-                                <span>Telefone</span>
-                            </div>
-                        </SelectItem>
                         <SelectItem value="textarea">
                             <div className="flex items-center gap-2">
                                 <FileText className="h-4 w-4 text-psi-dark/60" />
@@ -190,12 +177,6 @@ const FormBuilder = ({ fields: initialFields = [], onChange }: TFormBuilderProps
                             <div className="flex items-center gap-2">
                                 <CheckSquare className="h-4 w-4 text-psi-dark/60" />
                                 <span>Múltipla Escolha</span>
-                            </div>
-                        </SelectItem>
-                        <SelectItem value="radio">
-                            <div className="flex items-center gap-2">
-                                <Radio className="h-4 w-4 text-psi-dark/60" />
-                                <span>Escolha Única</span>
                             </div>
                         </SelectItem>
                     </SelectContent>
@@ -247,7 +228,7 @@ const FormBuilder = ({ fields: initialFields = [], onChange }: TFormBuilderProps
                                                 />
                                             </div>
 
-                                            {(field.type === "text" || field.type === "email" || field.type === "number" || field.type === "tel" || field.type === "textarea") && (
+                                            {(field.type === "text" || field.type === "email" || field.type === "textarea") && (
                                                 <div>
                                                     <label className="block text-xs font-medium text-psi-dark/70 mb-1">
                                                         Placeholder (Opcional)
@@ -262,7 +243,28 @@ const FormBuilder = ({ fields: initialFields = [], onChange }: TFormBuilderProps
                                             )}
                                         </div>
 
-                                        {(field.type === "select" || field.type === "radio" || field.type === "checkbox") && (
+                                        {field.type === "text" && (
+                                            <div>
+                                                <label className="block text-xs font-medium text-psi-dark/70 mb-1">
+                                                    Máscara (Opcional)
+                                                </label>
+                                                <Select
+                                                    value={field.mask || "none"}
+                                                    onValueChange={(value) => updateField(field.id, { mask: value === "none" ? undefined : value })}
+                                                >
+                                                    <SelectTrigger className="w-full">
+                                                        <SelectValue placeholder="Selecione uma máscara..." />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="none">Nenhuma</SelectItem>
+                                                        <SelectItem value="000.000.000-00">CPF</SelectItem>
+                                                        <SelectItem value="(00) 00000-0000">Celular</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        )}
+
+                                        {(field.type === "select" || field.type === "checkbox") && (
                                             <div className="space-y-2">
                                                 <div className="flex items-center justify-between">
                                                     <label className="block text-xs font-medium text-psi-dark/70">

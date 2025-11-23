@@ -26,6 +26,13 @@ class ToastComponent {
         })
     }
 
+    static info(message: string) {
+        toast(message, {
+            ...globalToastOptions,
+            type: "info"
+        })
+    }
+
 }
 
 export {
