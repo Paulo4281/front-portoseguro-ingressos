@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell } from "lucide-react"
+import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Logo from "@/components/Logo/Logo"
 import { Avatar } from "@/components/Avatar/Avatar"
@@ -26,7 +26,12 @@ import { CartDropdown } from "@/components/Cart/CartDropdown"
 import type { ComponentType } from "react"
 import { Separator } from "@radix-ui/react-dropdown-menu"
 import { useNotificationFind } from "@/hooks/Notification/useNotificationFind"
+import { useNotificationRead } from "@/hooks/Notification/useNotificationRead"
+import { useNotificationDelete } from "@/hooks/Notification/useNotificationDelete"
+import { useNotificationDeleteAll } from "@/hooks/Notification/useNotificationDeleteAll"
 import { Badge } from "@/components/ui/badge"
+import { TNotification } from "@/types/Notification/TNotification"
+import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 
 type TSubLink = {
     href: string
@@ -188,10 +193,10 @@ const Menu = () => {
                             text-psi-primary
                             transition-colors duration-300
                             group-hover:text-psi-dark">
-                            <span className="bg-gradient-to-r from-psi-primary via-psi-secondary to-psi-tertiary bg-clip-text text-transparent">
+                            <span className="bg-linear-to-r from-psi-primary via-psi-secondary to-psi-tertiary bg-clip-text text-transparent">
                                 Porto
                             </span>{" "}
-                            <span className="bg-gradient-to-r from-psi-tertiary via-psi-secondary to-psi-primary bg-clip-text text-transparent">
+                            <span className="bg-linear-to-r from-psi-tertiary via-psi-secondary to-psi-primary bg-clip-text text-transparent">
                                 Seguro
                             </span>{" "}
                             <span className="inline-block font-bold text-psi-dark">
@@ -261,7 +266,7 @@ const Menu = () => {
                                             <ChevronDown className="h-4 w-4 text-psi-dark/60" />
                                         </button>
                                     </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-64 rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/10 p-2 z-[55] !overflow-visible">
+                                    <DropdownMenuContent align="end" className="w-64 rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/10 p-2 z-55 overflow-visible!">
                                         <DropdownMenuLabel className="px-3 py-2">
                                             <div className="flex flex-col">
                                                 <span className="text-sm font-semibold text-psi-dark">{fullName}</span>
@@ -283,7 +288,7 @@ const Menu = () => {
                                                                 <span>{link.label}</span>
                                                             </DropdownMenuSubTrigger>
                                                             <DropdownMenuSubContent 
-                                                                className="rounded-xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg z-[100] !overflow-visible" 
+                                                            className="rounded-xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg z-100 overflow-visible!" 
                                                                 sideOffset={8}
                                                                 alignOffset={0}
                                                             >
@@ -364,7 +369,7 @@ const Menu = () => {
                                         <ChevronDown className="h-4 w-4 text-psi-dark/60" />
                                     </button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-64 rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/10 p-2 z-[55] !overflow-visible">
+                                <DropdownMenuContent align="end" className="w-64 rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/10 p-2 z-55 overflow-visible!">
                                     <DropdownMenuLabel className="px-3 py-2">
                                         <div className="flex flex-col">
                                             <span className="text-sm font-semibold text-psi-dark">{fullName}</span>
@@ -386,7 +391,7 @@ const Menu = () => {
                                                             <span>{link.label}</span>
                                                         </DropdownMenuSubTrigger>
                                                         <DropdownMenuSubContent 
-                                                            className="rounded-xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg z-[100] !overflow-visible" 
+                                                            className="rounded-xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg z-100 overflow-visible!" 
                                                             sideOffset={8}
                                                             alignOffset={0}
                                                         >
@@ -492,26 +497,90 @@ const Menu = () => {
 
 const NotificationBell = () => {
     const { data: notificationsData, isLoading } = useNotificationFind()
-    const notifications = Array.isArray(notificationsData) ? notificationsData : []
+    const { mutate: markNotificationsAsRead, isPending: isMarkingRead } = useNotificationRead()
+    const { mutate: deleteNotification } = useNotificationDelete()
+    const { mutate: deleteAllNotifications, isPending: isDeletingAll } = useNotificationDeleteAll()
+    const [notifications, setNotifications] = useState<TNotification[]>([])
+    const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set())
+
+    useEffect(() => {
+        if (!notificationsData) return
+
+        const payload = notificationsData.data as unknown
+        if (Array.isArray(payload)) {
+            setNotifications(payload)
+            return
+        }
+
+        const nestedData = (payload as { data?: unknown })?.data
+        if (Array.isArray(nestedData)) {
+            setNotifications(nestedData)
+            return
+        }
+
+        setNotifications([])
+    }, [notificationsData])
+
     const unreadCount = notifications.filter((n) => !n.isRead).length
 
-    const getPriorityColors = (priority: "low" | "medium" | "high") => {
-        switch (priority) {
-            case "high":
+    const handleDeleteNotification = (notificationId: string) => {
+        if (!notificationId) return
+        setDeletingIds((prev) => {
+            const next = new Set(prev)
+            next.add(notificationId)
+            return next
+        })
+        deleteNotification(notificationId, {
+            onSuccess: () => {
+                setNotifications((prev) => prev.filter((notification) => notification.id !== notificationId))
+            },
+            onSettled: () => {
+                setDeletingIds((prev) => {
+                    const next = new Set(prev)
+                    next.delete(notificationId)
+                    return next
+                })
+            }
+        })
+    }
+
+    const handleDeleteAllNotifications = () => {
+        if (!notifications.length || isDeletingAll) return
+        deleteAllNotifications(undefined, {
+            onSuccess: () => {
+                setNotifications([])
+                setDeletingIds(new Set())
+            }
+        })
+    }
+
+    const handleDropdownOpenChange = (open: boolean) => {
+        if (open && unreadCount > 0 && !isMarkingRead) {
+            markNotificationsAsRead()
+            setNotifications((prev) => prev.map((notification) => ({
+                ...notification,
+                isRead: true
+            })))
+        }
+    }
+
+    const getImportanceColors = (importance: TNotification["importance"]) => {
+        switch (importance) {
+            case "HIGH":
                 return {
                     border: "border-psi-primary",
                     bg: "bg-psi-primary/10",
                     text: "text-psi-primary",
                     badge: "bg-psi-primary"
                 }
-            case "medium":
+            case "MEDIUM":
                 return {
                     border: "border-amber-200",
                     bg: "bg-amber-50/70",
                     text: "text-amber-900",
                     badge: "bg-amber-600"
                 }
-            case "low":
+            default:
                 return {
                     border: "border-blue-200",
                     bg: "bg-blue-50",
@@ -521,14 +590,67 @@ const NotificationBell = () => {
         }
     }
 
-    const getSubjectLabel = (subject: "EVENT" | "TICKET" | "PAYMENT") => {
+    const getSubjectLabel = (subject: TNotification["subject"]) => {
         switch (subject) {
-            case "EVENT":
-                return "Evento"
-            case "TICKET":
-                return "Ingresso"
-            case "PAYMENT":
+            case "PAYMENT_SUCCESS":
                 return "Pagamento"
+            case "DAYS_15_WARNING":
+            case "DAYS_7_WARNING":
+            case "DAYS_3_WARNING":
+                return "Aviso"
+            case "AFTER_EVENT":
+                return "Pós-evento"
+            default:
+                return "Atualização"
+        }
+    }
+
+    const formatCurrencyFromTemplate = (value?: string) => {
+        if (!value) return ""
+        const numericValue = Number(value)
+        if (Number.isNaN(numericValue)) {
+            return value
+        }
+        return ValueUtils.centsToCurrency(numericValue)
+    }
+
+    const getDaysFallback = (subject: TNotification["subject"]) => {
+        switch (subject) {
+            case "DAYS_15_WARNING":
+                return "15"
+            case "DAYS_7_WARNING":
+                return "7"
+            case "DAYS_3_WARNING":
+                return "3"
+            default:
+                return ""
+        }
+    }
+
+    const getNotificationMessage = (notification: TNotification) => {
+        const data = notification.templateData || {}
+
+        switch (notification.subject) {
+            case "PAYMENT_SUCCESS": {
+                const amount = formatCurrencyFromTemplate(data.amount)
+                const eventName = data.eventName || "seu evento"
+                const payoutDate = data.payoutDate ? new Date(data.payoutDate).toLocaleDateString("pt-BR") : ""
+                return `Pagamento de ${amount || "valor não informado"} referente ao ${eventName} confirmado${payoutDate ? ` para ${payoutDate}` : ""}.`
+            }
+            case "DAYS_15_WARNING":
+            case "DAYS_7_WARNING":
+            case "DAYS_3_WARNING": {
+                const eventName = data.eventName || "seu evento"
+                const days = data.daysRemaining || getDaysFallback(notification.subject)
+                return `Faltam ${days} dias para o ${eventName}. Revise ingressos, lotes e comunicações.`
+            }
+            case "AFTER_EVENT": {
+                const eventName = data.eventName || "seu evento"
+                const totalTickets = data.totalTickets ? `${data.totalTickets} ingressos validados.` : "Consulte os relatórios completos."
+                return `${eventName} foi finalizado. ${totalTickets}`
+            }
+            default:
+                return notification.message || "Você possui uma atualização importante."
         }
     }
 
@@ -554,7 +676,7 @@ const NotificationBell = () => {
     }
 
     return (
-        <DropdownMenu>
+        <DropdownMenu onOpenChange={handleDropdownOpenChange}>
             <DropdownMenuTrigger asChild>
                 <button
                     className="relative p-2 rounded-xl text-psi-dark/70 hover:text-psi-dark hover:bg-[#F3F4FB] transition-colors outline-none focus:ring-2 focus:ring-psi-primary/30 focus:ring-offset-2"
@@ -568,15 +690,31 @@ const NotificationBell = () => {
                     )}
                 </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-96 rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/10 p-2 z-[55] max-h-[600px] overflow-y-auto">
+            <DropdownMenuContent align="end" className="w-96 rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/10 p-2 z-55 max-h-[600px] overflow-y-auto">
                 <DropdownMenuLabel className="px-3 py-2 sticky top-0 bg-white/95 backdrop-blur-sm z-10">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                         <span className="text-sm font-semibold text-psi-dark">Notificações</span>
-                        {unreadCount > 0 && (
-                            <Badge variant="secondary" className="bg-psi-secondary text-white">
-                                {unreadCount} não lida{unreadCount > 1 ? "s" : ""}
-                            </Badge>
-                        )}
+                        <div className="flex items-center gap-2">
+                            {unreadCount > 0 && (
+                                <Badge variant="secondary" className="bg-psi-secondary text-white">
+                                    {unreadCount} não lida{unreadCount > 1 ? "s" : ""}
+                                </Badge>
+                            )}
+                            {notifications.length > 0 && (
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={handleDeleteAllNotifications}
+                                    disabled={isDeletingAll}
+                                >
+                                    {isDeletingAll && (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    )}
+                                    {isDeletingAll ? "Excluindo..." : "Excluir tudo"}
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-[#E4E6F0]" />
@@ -592,8 +730,9 @@ const NotificationBell = () => {
                         </div>
                     ) : (
                         notifications.map((notification) => {
-                            const colors = getPriorityColors(notification.priority)
+                            const colors = getImportanceColors(notification.importance)
                             const isUnread = !notification.isRead
+                            const isNotificationDeleting = deletingIds.has(notification.id)
                             
                             return (
                                 <div
@@ -610,9 +749,9 @@ const NotificationBell = () => {
                                             <div className="flex items-center justify-between gap-2 mb-1">
                                                 <div className="flex items-center gap-2">
                                                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                                                        notification.subject === "EVENT" ? "bg-psi-primary/10 text-psi-primary" :
-                                                        notification.subject === "TICKET" ? "bg-psi-secondary/10 text-psi-secondary" :
-                                                        "bg-emerald-100 text-emerald-700"
+                                                        notification.subject === "PAYMENT_SUCCESS" ? "bg-psi-primary/10 text-psi-primary" :
+                                                        notification.subject === "AFTER_EVENT" ? "bg-emerald-100 text-emerald-700" :
+                                                        "bg-psi-secondary/10 text-psi-secondary"
                                                     }`}>
                                                         {getSubjectLabel(notification.subject)}
                                                     </span>
@@ -622,9 +761,27 @@ const NotificationBell = () => {
                                                 </span>
                                             </div>
                                             <p className={`text-sm leading-relaxed ${colors.text}`}>
-                                                {notification.message}
+                                                {getNotificationMessage(notification)}
                                             </p>
                                         </div>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={(event) => {
+                                                event.preventDefault()
+                                                event.stopPropagation()
+                                                handleDeleteNotification(notification.id)
+                                            }}
+                                            disabled={isNotificationDeleting || isDeletingAll}
+                                            aria-label={`Excluir notificação ${getSubjectLabel(notification.subject)}`}
+                                        >
+                                            {isNotificationDeleting ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <X className="h-4 w-4" />
+                                            )}
+                                        </Button>
                                     </div>
                                 </div>
                             )

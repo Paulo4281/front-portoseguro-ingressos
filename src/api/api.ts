@@ -7,7 +7,8 @@ type Prefixes =
     "/user" |
     "/user-confirmation" |
     "/event" |
-    "/event-category"
+    "/event-category" |
+    "/notification"
 
 type TAPIParams = {
     prefix: Prefixes
