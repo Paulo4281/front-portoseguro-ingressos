@@ -193,7 +193,7 @@ const VerEventosPannel = () => {
     }
 
     return (
-        <Background variant="light">
+        <Background variant="hero">
             <div className="min-h-screen pt-32 pb-16 px-4
             sm:px-6
             lg:px-8">
@@ -250,7 +250,7 @@ const VerEventosPannel = () => {
                                     <button
                                         onClick={() => handleCategorySelect(null)}
                                         className={cn(
-                                            "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+                                            "px-4 py-2 rounded-lg cursor-pointer text-sm font-medium transition-all duration-200",
                                             !selectedCategoryId
                                                 ? "bg-psi-primary text-white shadow-md"
                                                 : "bg-white border border-[#E4E6F0] text-psi-dark/70 hover:bg-psi-light"
@@ -265,7 +265,7 @@ const VerEventosPannel = () => {
                                                 key={category.id}
                                                 onClick={() => handleCategorySelect(category.id)}
                                                 className={cn(
-                                                    "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2",
+                                                    "px-4 py-2 rounded-lg cursor-pointer text-sm font-medium transition-all duration-200 flex items-center gap-2",
                                                     selectedCategoryId === category.id
                                                         ? "bg-psi-primary text-white shadow-md"
                                                         : "bg-white border border-[#E4E6F0] text-psi-dark/70 hover:bg-psi-light"

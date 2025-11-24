@@ -10,7 +10,7 @@ const MeuPerfilOrganizer = () => {
                 <div className="max-w-3xl mx-auto">
                     <div className="space-y-8">
                         <div>
-                            <h1 className="text-3xl font-bold text-psi-dark mb-2
+                            <h1 className="text-3xl font-bold text-psi-primary mb-2
                             sm:text-4xl">
                                 Meu Perfil
                             </h1>

@@ -34,6 +34,18 @@ const generateMockData = (period: "day" | "week" | "month" | "year"): TDashboard
     const totalTickets = 3420
     const averageTicketPrice = Math.round(totalRevenue / totalTickets)
 
+    const upcomingPayouts = []
+    const today = new Date()
+    
+    for (let i = 0; i < 5; i++) {
+        const payoutDate = new Date(today)
+        payoutDate.setDate(today.getDate() + (i * 7) + 5)
+        upcomingPayouts.push({
+            date: payoutDate.toISOString(),
+            amount: Math.floor(Math.random() * 200000) + 300000
+        })
+    }
+
     return {
         totalRevenue,
         totalTickets,
@@ -43,6 +55,25 @@ const generateMockData = (period: "day" | "week" | "month" | "year"): TDashboard
         ticketsGrowth: 8.3,
         eventsGrowth: 15.2,
         averageTicketPriceGrowth: 4.1,
+        upcomingPayouts,
+        pendingRefunds: [
+            // {
+            //     eventName: "Festival de Inverno 2025",
+            //     eventDate: "2025-07-15T00:00:00.000Z",
+            //     reason: "postponement",
+            //     totalAmount: 125000,
+            //     refundedAmount: 125000,
+            //     status: "completed"
+            // },
+            // {
+            //     eventName: "Show Cancelado",
+            //     eventDate: "2025-08-20T00:00:00.000Z",
+            //     reason: "cancellation",
+            //     totalAmount: 85000,
+            //     refundedAmount: 0,
+            //     status: "processing"
+            // }
+        ],
         revenueOverTime: dates.map(date => ({
             date,
             revenue: Math.floor(Math.random() * 50000) + 20000

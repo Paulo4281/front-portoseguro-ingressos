@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User } from "lucide-react"
+import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Logo from "@/components/Logo/Logo"
 import { Avatar } from "@/components/Avatar/Avatar"
@@ -25,6 +25,8 @@ import { Toast } from "@/components/Toast/Toast"
 import { CartDropdown } from "@/components/Cart/CartDropdown"
 import type { ComponentType } from "react"
 import { Separator } from "@radix-ui/react-dropdown-menu"
+import { useNotificationFind } from "@/hooks/Notification/useNotificationFind"
+import { Badge } from "@/components/ui/badge"
 
 type TSubLink = {
     href: string
@@ -93,6 +95,12 @@ const menuLinks: TMenuLink[] = [
         icon: User,
         roles: ["CUSTOMER", "ORGANIZER", "ADMIN"]
     },
+    {
+        href: "/configuracoes",
+        label: "Configurações",
+        icon: Settings,
+        roles: ["ORGANIZER"]
+    }
 ]
 
 const Menu = () => {
@@ -171,8 +179,9 @@ const Menu = () => {
                             transition-transform duration-300 group-hover:scale-105"
                             variant="primary"
                         />
-                        <span className="ms-2 text-[1.15rem]
-                            xs:text-[1.4rem]
+                        <span className="
+                            ms-2 text-[0.85rem]
+                            xs:text-[1.12rem]
                             sm:text-2xl
                             font-extrabold
                             tracking-tight
@@ -218,6 +227,9 @@ const Menu = () => {
                                         Eventos
                                     </Link>
                                 </Button>
+                                {
+                                    isAuthenticated && <NotificationBell />
+                                }
                                 {
                                     !isAuthenticated && (
                                         <Button
@@ -332,6 +344,11 @@ const Menu = () => {
 
                     <div className="md:hidden flex items-center gap-2">
                         <CartDropdown />
+                        {isAuthenticated && (
+                            <div className="md:hidden">
+                                <NotificationBell />
+                            </div>
+                        )}
                         {isAuthenticated ? (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -470,6 +487,152 @@ const Menu = () => {
                     )}
             </div>
         </nav>
+    )
+}
+
+const NotificationBell = () => {
+    const { data: notificationsData, isLoading } = useNotificationFind()
+    const notifications = Array.isArray(notificationsData) ? notificationsData : []
+    const unreadCount = notifications.filter((n) => !n.isRead).length
+
+    const getPriorityColors = (priority: "low" | "medium" | "high") => {
+        switch (priority) {
+            case "high":
+                return {
+                    border: "border-psi-primary",
+                    bg: "bg-psi-primary/10",
+                    text: "text-psi-primary",
+                    badge: "bg-psi-primary"
+                }
+            case "medium":
+                return {
+                    border: "border-amber-200",
+                    bg: "bg-amber-50/70",
+                    text: "text-amber-900",
+                    badge: "bg-amber-600"
+                }
+            case "low":
+                return {
+                    border: "border-blue-200",
+                    bg: "bg-blue-50",
+                    text: "text-blue-900",
+                    badge: "bg-blue-600"
+                }
+        }
+    }
+
+    const getSubjectLabel = (subject: "EVENT" | "TICKET" | "PAYMENT") => {
+        switch (subject) {
+            case "EVENT":
+                return "Evento"
+            case "TICKET":
+                return "Ingresso"
+            case "PAYMENT":
+                return "Pagamento"
+        }
+    }
+
+    const formatDateTime = (dateString: string) => {
+        const date = new Date(dateString)
+        const now = new Date()
+        const diffMs = now.getTime() - date.getTime()
+        const diffMins = Math.floor(diffMs / 60000)
+        const diffHours = Math.floor(diffMs / 3600000)
+        const diffDays = Math.floor(diffMs / 86400000)
+
+        if (diffMins < 1) return "Agora"
+        if (diffMins < 60) return `Há ${diffMins} min`
+        if (diffHours < 24) return `Há ${diffHours} ${diffHours === 1 ? "hora" : "horas"}`
+        if (diffDays < 7) return `Há ${diffDays} ${diffDays === 1 ? "dia" : "dias"}`
+        
+        return date.toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit"
+        })
+    }
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <button
+                    className="relative p-2 rounded-xl text-psi-dark/70 hover:text-psi-dark hover:bg-[#F3F4FB] transition-colors outline-none focus:ring-2 focus:ring-psi-primary/30 focus:ring-offset-2"
+                    aria-label="Notificações"
+                >
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-psi-secondary text-xs font-bold text-white">
+                            {unreadCount > 9 ? "9+" : unreadCount}
+                        </span>
+                    )}
+                </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-96 rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/10 p-2 z-[55] max-h-[600px] overflow-y-auto">
+                <DropdownMenuLabel className="px-3 py-2 sticky top-0 bg-white/95 backdrop-blur-sm z-10">
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-psi-dark">Notificações</span>
+                        {unreadCount > 0 && (
+                            <Badge variant="secondary" className="bg-psi-secondary text-white">
+                                {unreadCount} não lida{unreadCount > 1 ? "s" : ""}
+                            </Badge>
+                        )}
+                    </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-[#E4E6F0]" />
+                <div className="p-1 space-y-2">
+                    {isLoading ? (
+                        <div className="px-3 py-4 text-center text-sm text-psi-dark/60">
+                            Carregando notificações...
+                        </div>
+                    ) : notifications.length === 0 ? (
+                        <div className="px-3 py-8 text-center">
+                            <Bell className="h-12 w-12 text-psi-dark/20 mx-auto mb-3" />
+                            <p className="text-sm text-psi-dark/60">Nenhuma notificação</p>
+                        </div>
+                    ) : (
+                        notifications.map((notification) => {
+                            const colors = getPriorityColors(notification.priority)
+                            const isUnread = !notification.isRead
+                            
+                            return (
+                                <div
+                                    key={notification.id}
+                                    className={`rounded-xl border p-3 cursor-pointer transition-all hover:shadow-md ${
+                                        isUnread
+                                            ? `${colors.border} ${colors.bg} border-2`
+                                            : "border-[#E4E6F0] bg-white"
+                                    }`}
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${colors.badge}`} />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center justify-between gap-2 mb-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                                                        notification.subject === "EVENT" ? "bg-psi-primary/10 text-psi-primary" :
+                                                        notification.subject === "TICKET" ? "bg-psi-secondary/10 text-psi-secondary" :
+                                                        "bg-emerald-100 text-emerald-700"
+                                                    }`}>
+                                                        {getSubjectLabel(notification.subject)}
+                                                    </span>
+                                                </div>
+                                                <span className="text-xs text-psi-dark/50 shrink-0">
+                                                    {formatDateTime(notification.createdAt)}
+                                                </span>
+                                            </div>
+                                            <p className={`text-sm leading-relaxed ${colors.text}`}>
+                                                {notification.message}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        })
+                    )}
+                </div>
+            </DropdownMenuContent>
+        </DropdownMenu>
     )
 }
 

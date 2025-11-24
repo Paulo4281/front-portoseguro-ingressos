@@ -370,6 +370,7 @@ const VerEventoInfo = (
             addItem({
                 eventId: event.id,
                 eventName: event.name,
+                eventImage: event.image,
                 batchId,
                 batchName,
                 price: currentPrice,
@@ -423,6 +424,7 @@ const VerEventoInfo = (
             addItem({
                 eventId: event.id,
                 eventName: event.name,
+                eventImage: event.image,
                 batchId,
                 batchName,
                 price: currentPrice,
@@ -449,6 +451,7 @@ const VerEventoInfo = (
             addItem({
                 eventId: event.id,
                 eventName: event.name,
+                eventImage: event.image,
                 batchId,
                 batchName,
                 price: currentPrice,
@@ -459,6 +462,7 @@ const VerEventoInfo = (
             addItem({
                 eventId: event.id,
                 eventName: event.name,
+                eventImage: event.image,
                 batchId,
                 batchName,
                 price: currentPrice,
@@ -1245,6 +1249,7 @@ const VerEventoInfo = (
                                                             addItem({
                                                                 eventId: event.id,
                                                                 eventName: event.name,
+                                                                eventImage: event.image,
                                                                 batchId: selectedBatchId,
                                                                 batchName: selectedBatch?.name,
                                                                 price: currentPrice,

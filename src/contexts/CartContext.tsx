@@ -17,6 +17,7 @@ type TCartItemTicketType = {
 type TCartItem = {
     eventId: string
     eventName: string
+    eventImage?: string
     batchId?: string
     batchName?: string
     price: number
