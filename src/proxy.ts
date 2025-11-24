@@ -25,7 +25,7 @@ const publicRoutes: TPublicRoutes[] = [
 export default async function proxy(request: NextRequest): Promise<NextResponse> {
     const path = request.nextUrl.pathname
     const isPublicRoute = publicRoutes.find((route) => route.path === path)
-    const authToken = request.cookies.get("pci_token")?.value
+    const authToken = request.cookies.get("psi_token")?.value
 
     try {
         if (authToken) {

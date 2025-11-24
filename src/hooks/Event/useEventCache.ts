@@ -1,21 +1,21 @@
 import { useQueryHook } from "../useQuery"
 import { EventService } from "@/services/Event/EventService"
-import type { TEvent } from "@/types/Event/TEvent"
 import type { TApiResponse } from "@/types/TApiResponse"
+import type { TEvent } from "@/types/Event/TEvent"
 
-export const useEventFindByUserId = () => {
+export const useEventCache = () => {
     const {
         data,
         isLoading,
-        isError,
+        isFetching
     } = useQueryHook<TApiResponse<TEvent[]>>({
-        queryKey: ["events", "user"],
-        queryFn: () => EventService.findByUserId()
+        queryKey: ["event-cache"],
+        queryFn: () => EventService.cache()
     })
 
     return {
         data,
         isLoading,
-        isError,
+        isFetching
     }
 }

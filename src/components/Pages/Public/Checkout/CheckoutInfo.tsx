@@ -39,11 +39,13 @@ import {
     Calendar,
     Clock,
     Check,
-    ClipboardList
+    ClipboardList,
+    Loader2
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { CTAButton } from "@/components/CTAButton/CTAButton"
 import { Toast } from "@/components/Toast/Toast"
+import { useCouponCheck } from "@/hooks/Coupon/useCouponCheck"
 
 type TPaymentMethod = "pix" | "credit"
 
@@ -78,6 +80,10 @@ const CheckoutInfo = () => {
     })
     
     const [formAnswers, setFormAnswers] = useState<Record<string, any>>({})
+    const [couponCodes, setCouponCodes] = useState<Record<string, string>>({})
+    const [couponLoading, setCouponLoading] = useState<Record<string, boolean>>({})
+
+    const { mutateAsync: checkCoupon } = useCouponCheck()
 
     const getInputMaskMin = useCallback((mask: string) => {
         switch (mask) {
@@ -267,6 +273,42 @@ const CheckoutInfo = () => {
             return sum + CheckoutUtils.calculateItemTotal(item, event || null)
         }, 0)
     }, [items, eventsData])
+
+    const handleCouponChange = useCallback((eventId: string, value: string) => {
+        setCouponCodes((prev) => ({
+            ...prev,
+            [eventId]: value
+        }))
+    }, [])
+
+    const handleApplyCoupon = useCallback(async (eventId: string) => {
+        const code = (couponCodes[eventId] || "").trim()
+
+        if (!code) {
+            Toast.info("Digite o código do cupom antes de aplicar.")
+            return
+        }
+
+        setCouponLoading((prev) => ({
+            ...prev,
+            [eventId]: true
+        }))
+
+        try {
+            await checkCoupon({
+                code,
+                eventId
+            })
+        } catch (error) {
+            console.error("Erro ao verificar cupom:", error)
+            Toast.error("Não foi possível verificar o cupom.")
+        } finally {
+            setCouponLoading((prev) => ({
+                ...prev,
+                [eventId]: false
+            }))
+        }
+    }, [checkCoupon, couponCodes])
     
     const handleNext = () => {
         if (currentStep === 3 && hasForms) {
@@ -788,6 +830,40 @@ const CheckoutInfo = () => {
                                                                 >
                                                                     <Trash2 className="size-4" />
                                                                 </button>
+                                                            </div>
+
+                                                            <div className="mt-4 p-4 rounded-xl bg-psi-dark/5 border border-psi-dark/10">
+                                                                <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                                    Cupom de desconto (opcional)
+                                                                </label>
+                                                                <div className="flex flex-col gap-3
+                                                                sm:flex-row">
+                                                                    <Input
+                                                                        value={couponCodes[event.id] || ""}
+                                                                        onChange={(e) => handleCouponChange(event.id, e.target.value.toUpperCase())}
+                                                                        placeholder="DIGITE O CÓDIGO"
+                                                                        className="uppercase"
+                                                                        maxLength={12}
+                                                                    />
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="secondary"
+                                                                        disabled={couponLoading[event.id] === true}
+                                                                        onClick={() => handleApplyCoupon(event.id)}
+                                                                    >
+                                                                        {couponLoading[event.id] ? (
+                                                                            <>
+                                                                                <Loader2 className="size-4 animate-spin" />
+                                                                                Verificando...
+                                                                            </>
+                                                                        ) : (
+                                                                            "Aplicar"
+                                                                        )}
+                                                                    </Button>
+                                                                </div>
+                                                                <p className="text-xs text-psi-dark/60 mt-2">
+                                                                    Caso possua um cupom para este evento, aplique-o aqui para validar o desconto.
+                                                                </p>
                                                             </div>
                                                             
                                                             <div className="pt-2 border-t border-psi-dark/10">

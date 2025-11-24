@@ -1,6 +1,6 @@
 import { TEvent } from "@/types/Event/TEvent"
 import { useQueryHook } from "../useQuery"
-import { eventService } from "@/services/Event/EventService"
+import { EventService } from "@/services/Event/EventService"
 import type { TApiResponse } from "@/types/TApiResponse"
 
 export const useEventFindById = (id: string) => {
@@ -10,7 +10,7 @@ export const useEventFindById = (id: string) => {
         isError,
     } = useQueryHook<TApiResponse<TEvent>>({
         queryKey: ["event", id],
-        queryFn: () => eventService.findById(id)
+        queryFn: () => EventService.findById(id)
     })
 
     return {

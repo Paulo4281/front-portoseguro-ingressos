@@ -1,6 +1,6 @@
 import { TEvent } from "@/types/Event/TEvent"
 import { useQueryHook } from "../useQuery"
-import { eventService } from "@/services/Event/EventService"
+import { EventService } from "@/services/Event/EventService"    
 import type { TApiResponse } from "@/types/TApiResponse"
 
 type TUseEventFindParams = {
@@ -15,7 +15,7 @@ export const useEventFind = (params?: TUseEventFindParams) => {
         isError,
     } = useQueryHook<TApiResponse<TEvent[]>>({
         queryKey: ["events", "user", params?.offset?.toString() || "", params?.name || ""],
-        queryFn: () => eventService.findByUserId({
+        queryFn: () => EventService.findByUserId({
             offset: params?.offset,
             name: params?.name
         })

@@ -72,7 +72,7 @@ const eventDetailedStatsMock: TEventDetailedStats = {
 
 }
 
-class EventService {
+class EventServiceClass {
     async create(data: TEventCreate): Promise<AxiosResponse["data"]> {
         const formData = new FormData()
         
@@ -188,6 +188,14 @@ class EventService {
         return response
     }
 
+    async cache(): Promise<AxiosResponse["data"]> {
+        const response = (await API.GET({
+            prefix: "/event",
+            url: "/cache"
+        }))?.data
+        return response
+    }
+
     async generateSalesReport(eventId: string): Promise<AxiosResponse["data"]> {
         return {
             success: true,
@@ -199,4 +207,4 @@ class EventService {
     }
 }
 
-export const eventService = new EventService()
+export const EventService = new EventServiceClass()

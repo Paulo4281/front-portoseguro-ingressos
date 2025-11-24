@@ -1,5 +1,5 @@
 import { useQueries } from "@tanstack/react-query"
-import { eventService } from "@/services/Event/EventService"
+import { EventService } from "@/services/Event/EventService"
 import type { TApiResponse } from "@/types/TApiResponse"
 import type { TEvent } from "@/types/Event/TEvent"
 
@@ -7,7 +7,7 @@ export const useEventFindByIds = (ids: string[]) => {
     const queries = useQueries({
         queries: ids.map((id) => ({
             queryKey: ["event", id],
-            queryFn: () => eventService.findById(id),
+            queryFn: () => EventService.findById(id),
             enabled: !!id
         }))
     })

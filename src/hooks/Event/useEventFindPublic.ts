@@ -1,6 +1,6 @@
 import { TEvent } from "@/types/Event/TEvent"
 import { useQueryHook } from "../useQuery"
-import { eventService } from "@/services/Event/EventService"
+import { EventService } from "@/services/Event/EventService"
 import type { TApiResponse } from "@/types/TApiResponse"
 
 type TUseEventFindPublicParams = {
@@ -16,7 +16,7 @@ export const useEventFindPublic = (params?: TUseEventFindPublicParams) => {
         isError,
     } = useQueryHook<TApiResponse<TEvent[]>>({
         queryKey: ["events", "public", params?.offset?.toString() || "", params?.name || "", params?.categoryId || ""],
-        queryFn: () => eventService.find({
+        queryFn: () => EventService.find({
             offset: params?.offset,
             name: params?.name,
             categoryId: params?.categoryId

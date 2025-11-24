@@ -1,5 +1,5 @@
 import { useQueryHook } from "../useQuery"
-import { eventService } from "@/services/Event/EventService"
+import { EventService } from "@/services/Event/EventService"
 import type { TEventSalesReport } from "@/types/Event/TEvent"
 import type { TApiResponse } from "@/types/TApiResponse"
 
@@ -16,7 +16,7 @@ export const useEventGenerateSalesReport = ({ eventId, enabled = true }: TUseEve
         refetch
     } = useQueryHook<TApiResponse<TEventSalesReport>>({
         queryKey: ["event", "sales-report", eventId],
-        queryFn: () => eventService.generateSalesReport(eventId),
+        queryFn: () => EventService.generateSalesReport(eventId),
         enabled: enabled && !!eventId
     })
 
