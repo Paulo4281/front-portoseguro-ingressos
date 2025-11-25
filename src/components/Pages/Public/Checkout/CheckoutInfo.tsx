@@ -78,6 +78,7 @@ import { PasswordStrength } from "@/components/PasswordStrength/PasswordStrength
 import { LoadingButton } from "@/components/Loading/LoadingButton"
 import { Icon } from "@/components/Icon/Icon"
 import { Timer } from "@/components/Timer/Timer"
+import { getStates, getCitiesByState } from "@/utils/Helpers/IBGECitiesAndStates/IBGECitiesAndStates"
 
 type TPaymentMethod = "pix" | "credit"
 
@@ -94,14 +95,14 @@ const CheckoutInfo = () => {
         email: user?.email || "",
         phone: user?.phone || "",
         document: user?.document || "",
-        street: user?.address?.street || "",
-        number: user?.address?.number || "",
-        complement: user?.address?.complement || "",
-        neighborhood: user?.address?.neighborhood || "",
-        zipcode: user?.address?.zipcode || "",
-        city: user?.address?.city || "",
-        state: user?.address?.state || "",
-        country: user?.address?.country || "Brasil",
+        street: user?.Address?.street || "",
+        number: user?.Address?.number || "",
+        complement: user?.Address?.complement || "",
+        neighborhood: user?.Address?.neighborhood || "",
+        zipCode: user?.Address?.zipCode || "",
+        city: user?.Address?.city || "",
+        state: user?.Address?.state || "",
+        country: user?.Address?.country || "Brasil",
     })
 
     const [emailInput, setEmailInput] = useState("")
@@ -154,6 +155,11 @@ const CheckoutInfo = () => {
 
     const passwordValue = cadastroForm.watch("password")
 
+    const states = useMemo(() => getStates(), [])
+    const cities = useMemo(() => {
+        return getCitiesByState(buyerData.state || "")
+    }, [buyerData.state])
+
     useEffect(() => {
         if (isAuthenticated && user) {
             setBuyerData({
@@ -162,14 +168,14 @@ const CheckoutInfo = () => {
                 email: user.email || "",
                 phone: user.phone || "",
                 document: user.document || "",
-                street: user.address?.street || "",
-                number: user.address?.number || "",
-                complement: user.address?.complement || "",
-                neighborhood: user.address?.neighborhood || "",
-                zipcode: user.address?.zipcode || "",
-                city: user.address?.city || "",
-                state: user.address?.state || "",
-                country: user.address?.country || "BR",
+                street: user.Address?.street || "",
+                number: user.Address?.number || "",
+                complement: user.Address?.complement || "",
+                neighborhood: user.Address?.neighborhood || "",
+                zipCode: user.Address?.zipCode || "",
+                city: user.Address?.city || "",
+                state: user.Address?.state || "",
+                country: user.Address?.country || "Brasil",
             })
             setEmailInput("")
         }
@@ -438,7 +444,7 @@ const CheckoutInfo = () => {
                 { field: buyerData.email, name: "E-mail" },
                 { field: buyerData.phone, name: "Telefone" },
                 { field: buyerData.document, name: "CPF" },
-                { field: buyerData.zipcode, name: "CEP" },
+                { field: buyerData.zipCode, name: "CEP" },
                 { field: buyerData.street, name: "Rua" },
                 { field: buyerData.neighborhood, name: "Bairro" },
                 { field: buyerData.city, name: "Cidade" },
@@ -470,7 +476,7 @@ const CheckoutInfo = () => {
                 return
             }
 
-            const zipcodeDigits = buyerData.zipcode.replace(/\D/g, "")
+            const zipcodeDigits = buyerData.zipCode.replace(/\D/g, "")
             if (zipcodeDigits.length < 8) {
                 Toast.info("Por favor, digite um CEP válido.")
                 return
@@ -593,14 +599,14 @@ const CheckoutInfo = () => {
                     email: loggedUser.email || "",
                     phone: loggedUser.phone || "",
                     document: loggedUser.document || "",
-                    street: loggedUser.address?.street || "",
-                    number: loggedUser.address?.number || "",
-                    complement: loggedUser.address?.complement || "",
-                    neighborhood: loggedUser.address?.neighborhood || "",
-                    zipcode: loggedUser.address?.zipcode || "",
-                    city: loggedUser.address?.city || "",
-                    state: loggedUser.address?.state || "",
-                    country: loggedUser.address?.country || "BR",
+                    street: loggedUser.Address?.street || "",
+                    number: loggedUser.Address?.number || "",
+                    complement: loggedUser.Address?.complement || "",
+                    neighborhood: loggedUser.Address?.neighborhood || "",
+                    zipCode: loggedUser.Address?.zipCode || "",
+                    city: loggedUser.Address?.city || "",
+                    state: loggedUser.Address?.state || "",
+                    country: loggedUser.Address?.country || "Brasil",
                 })
                 setShowLoginDialog(false)
                 loginForm.reset()
@@ -830,8 +836,8 @@ const CheckoutInfo = () => {
                                                     </label>
                                                     <InputMask
                                                         mask="00000-000"
-                                                        value={buyerData.zipcode}
-                                                        onAccept={(value) => setBuyerData({ ...buyerData, zipcode: value as string })}
+                                                        value={buyerData.zipCode}
+                                                        onAccept={(value) => setBuyerData({ ...buyerData, zipCode: value as string })}
                                                         placeholder="00000-000"
                                                         icon={MapPin}
                                                     />
@@ -887,24 +893,54 @@ const CheckoutInfo = () => {
                                                 sm:grid-cols-3 mt-4">
                                                     <div>
                                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                            Cidade *
+                                                            Estado *
                                                         </label>
-                                                        <Input
-                                                            value={buyerData.city}
-                                                            onChange={(e) => setBuyerData({ ...buyerData, city: e.target.value })}
-                                                            required
-                                                        />
+                                                        <Select
+                                                            value={buyerData.state || undefined}
+                                                            onValueChange={(value) => {
+                                                                setBuyerData({ 
+                                                                    ...buyerData, 
+                                                                    state: value,
+                                                                    city: ""
+                                                                })
+                                                            }}
+                                                        >
+                                                            <SelectTrigger className="w-full">
+                                                                <SelectValue placeholder="Selecione..." />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {states.map((state) => (
+                                                                    <SelectItem key={state.value} value={state.value}>
+                                                                        {state.label}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
                                                     </div>
                                                     
                                                     <div>
                                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                            Estado *
+                                                            Cidade *
                                                         </label>
-                                                        <Input
-                                                            value={buyerData.state}
-                                                            onChange={(e) => setBuyerData({ ...buyerData, state: e.target.value })}
-                                                            required
-                                                        />
+                                                        <Select
+                                                            value={buyerData.city || undefined}
+                                                            onValueChange={(value) => setBuyerData({ ...buyerData, city: value })}
+                                                            disabled={!buyerData.state}
+                                                        >
+                                                            <SelectTrigger className="w-full">
+                                                                <SelectValue placeholder={buyerData.state ? "Selecione..." : "Selecione um estado primeiro"} />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {cities.map((city) => {
+                                                                    const cityValue = city.value || ""
+                                                                    return (
+                                                                        <SelectItem key={cityValue} value={cityValue}>
+                                                                            {city.label || ""}
+                                                                        </SelectItem>
+                                                                    )
+                                                                })}
+                                                            </SelectContent>
+                                                        </Select>
                                                     </div>
                                                     
                                                     <div>

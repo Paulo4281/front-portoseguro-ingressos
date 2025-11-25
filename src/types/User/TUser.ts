@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { UserCreateValidator, UserResetPasswordValidator, UserResetPasswordByCodeValidator } from "@/validators/User/UserValidator"
+import { UserCreateValidator, UserResetPasswordValidator, UserResetPasswordByCodeValidator, UserUpdateValidator } from "@/validators/User/UserValidator"
 import type { TUserAddress } from "./TUserAddress"
 import { TOrganizer } from "../Organizer/TOrganizer"
 
@@ -35,7 +35,7 @@ type TUser = {
 
     Organizer?: TOrganizer | null
 
-    address: TUserAddress | null
+    Address: TUserAddress | null
 }
 
 type TUserCreate = z.infer<typeof UserCreateValidator>
@@ -44,11 +44,14 @@ type TUserResetPasswordByCode = z.infer<typeof UserResetPasswordByCodeValidator>
 
 type TUserResetPassword = z.infer<typeof UserResetPasswordValidator>
 
+type TUserUpdate = z.infer<typeof UserUpdateValidator>
+
 export type {
     TUser,
     TUserCreate,
     TUserResetPasswordByCode,
-    TUserResetPassword
+    TUserResetPassword,
+    TUserUpdate
 }
 
 export {

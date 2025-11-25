@@ -4,7 +4,7 @@ type TUserAddress = {
     number: string | null
     complement: string | null
     neighborhood: string
-    zipcode: string
+    zipCode: string
     city: string
     state: string
     country: string

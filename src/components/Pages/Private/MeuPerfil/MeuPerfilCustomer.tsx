@@ -10,7 +10,6 @@ import { InputMask } from "@/components/Input/InputMask"
 import { FieldError } from "@/components/FieldError/FieldError"
 import { LoadingButton } from "@/components/Loading/LoadingButton"
 import { Background } from "@/components/Background/Background"
-import { useAuthStore } from "@/stores/Auth/AuthStore"
 import { Avatar } from "@/components/Avatar/Avatar"
 import {
     Select,
@@ -20,28 +19,17 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import type { TUser } from "@/types/User/TUser"
+import { getStates, getCitiesByState } from "@/utils/Helpers/IBGECitiesAndStates/IBGECitiesAndStates"
+import { useMemo, useEffect } from "react"
+import { useUserUpdate } from "@/hooks/User/useUserUpdate"
+import { Toast } from "@/components/Toast/Toast"
+import { useAuthStore } from "@/stores/Auth/AuthStore"
 
 const countries = [
     { value: "BR", label: "Brasil" },
     { value: "AR", label: "Argentina" },
     { value: "US", label: "Estados Unidos" },
     { value: "PT", label: "Portugal" },
-]
-
-const states = [
-    { value: "BA", label: "Bahia" },
-    { value: "SP", label: "São Paulo" },
-    { value: "RJ", label: "Rio de Janeiro" },
-    { value: "MG", label: "Minas Gerais" },
-    { value: "RS", label: "Rio Grande do Sul" },
-]
-
-const cities = [
-    { value: "porto-seguro", label: "Porto Seguro" },
-    { value: "salvador", label: "Salvador" },
-    { value: "sao-paulo", label: "São Paulo" },
-    { value: "rio-de-janeiro", label: "Rio de Janeiro" },
-    { value: "belo-horizonte", label: "Belo Horizonte" },
 ]
 
 const genres = [
@@ -51,7 +39,18 @@ const genres = [
 ]
 
 const MeuPerfilCustomer = () => {
-    const { user } = useAuthStore()
+    const { user, setUser } = useAuthStore()
+    const states = getStates()
+    const { mutateAsync: updateUser, isPending: isUpdating } = useUserUpdate()
+
+    const formatBirthForForm = (birth: string | null | undefined): string => {
+        if (!birth) return ""
+        const [year, month, day] = birth.split("-")
+        if (year && month && day) {
+            return `${day}/${month}/${year}`
+        }
+        return birth
+    }
 
     const form = useForm<TUserProfileUpdate>({
         resolver: zodResolver(UserProfileUpdateValidator),
@@ -63,30 +62,95 @@ const MeuPerfilCustomer = () => {
             document: user?.document || "",
             nationality: user?.nationality || "",
             genre: user?.genre || null,
-            birth: user?.birth || "",
-            address: user?.address ? {
-                street: user.address.street,
-                number: user.address.number || "",
-                complement: user.address.complement || "",
-                neighborhood: user.address.neighborhood,
-                zipcode: user.address.zipcode,
-                city: user.address.city,
-                state: user.address.state,
-                country: user.address.country,
+            birth: formatBirthForForm(user?.birth),
+            address: user?.Address ? {
+                street: user.Address.street,
+                number: user.Address.number || "",
+                complement: user.Address.complement || "",
+                neighborhood: user.Address.neighborhood,
+                zipCode: user.Address?.zipCode,
+                city: user.Address.city,
+                state: user.Address.state,
+                country: user.Address.country,
             } : null
         }
     })
 
+    const selectedState = form.watch("address.state")
+    const cities = useMemo(() => {
+        const state = selectedState || ""
+        return getCitiesByState(state)
+    }, [selectedState])
+
+    useEffect(() => {
+        if (selectedState) {
+            const currentCity = form.getValues("address.city")
+            const availableCities = getCitiesByState(selectedState)
+            const cityExists = availableCities.some(city => city.value === currentCity)
+            if (!cityExists && currentCity) {
+                form.setValue("address.city", "")
+            }
+        }
+    }, [selectedState, form])
+
     const updateAddressField = (field: string, value: string) => {
         const currentAddress = form.getValues("address") || {}
-        form.setValue("address", {
+        const updatedAddress = {
             ...currentAddress,
             [field]: value || ""
-        } as any)
+        } as any
+        
+        if (field === "state") {
+            updatedAddress.city = ""
+        }
+        
+        form.setValue("address", updatedAddress)
     }
 
     const handleSubmit = async (data: TUserProfileUpdate) => {
-        console.log("Profile update data:", data)
+        try {
+            const updateData: any = {}
+
+            if (data.firstName) updateData.firstName = data.firstName
+            if (data.lastName) updateData.lastName = data.lastName
+            if (data.phone) updateData.phone = data.phone
+            if (data.document) updateData.document = data.document
+            if (data.nationality) updateData.nationality = data.nationality
+            if (data.genre) updateData.gender = data.genre
+
+            if (data.birth) {
+                const [day, month, year] = data.birth.split("/")
+                if (day && month && year) {
+                    updateData.birth = `${year}-${month}-${day}`
+                }
+            } else if (data.birth === null) {
+                updateData.birth = null
+            }
+
+            if (data.address) {
+                updateData.address = {}
+                
+                if (data.address.street !== undefined) updateData.address.street = data.address.street || null
+                if (data.address.number !== undefined) updateData.address.number = data.address.number || null
+                if (data.address.complement !== undefined) updateData.address.complement = data.address.complement || null
+                if (data.address.neighborhood !== undefined) updateData.address.neighborhood = data.address.neighborhood || null
+                if (data.address.city !== undefined) updateData.address.city = data.address.city || null
+                if (data.address.state !== undefined) updateData.address.state = data.address.state || null
+                if (data.address.country !== undefined) updateData.address.country = data.address.country || null
+                if (data.address.zipCode !== undefined) updateData.address.zipCode = data.address.zipCode || null
+            }
+
+            const response = await updateUser(updateData)
+
+            if (response && response.success && response.data?.user) {
+                setUser(response.data.user)
+                Toast.success("Perfil atualizado com sucesso!")
+            } else {
+                Toast.error("Erro ao atualizar perfil. Tente novamente.")
+            }
+        } catch (error: any) {
+            Toast.error(error?.response?.data?.message || "Erro ao atualizar perfil. Tente novamente.")
+        }
     }
 
     return (
@@ -325,11 +389,11 @@ const MeuPerfilCustomer = () => {
                                     <div className="grid gap-4
                                     sm:grid-cols-2">
                                         <div>
-                                            <label htmlFor="address.zipcode" className="block text-sm font-medium text-psi-dark mb-2">
+                                            <label htmlFor="address?.zipCode" className="block text-sm font-medium text-psi-dark mb-2">
                                                 CEP
                                             </label>
                                             <Controller
-                                                name="address.zipcode"
+                                                name="address.zipCode"
                                                 control={form.control}
                                                 render={({ field }) => (
                                                     <InputMask
@@ -341,7 +405,7 @@ const MeuPerfilCustomer = () => {
                                                     />
                                                 )}
                                             />
-                                            <FieldError message={form.formState.errors.address?.zipcode?.message || ""} />
+                                            <FieldError message={form.formState.errors.address?.zipCode?.message || ""} />
                                         </div>
 
                                         <div>
@@ -463,7 +527,10 @@ const MeuPerfilCustomer = () => {
                                                 render={({ field }) => (
                                                     <Select
                                                         value={field.value || undefined}
-                                                        onValueChange={(value) => updateAddressField("state", value)}
+                                                        onValueChange={(value) => {
+                                                            field.onChange(value)
+                                                            updateAddressField("state", value)
+                                                        }}
                                                     >
                                                         <SelectTrigger className="w-full">
                                                             <SelectValue placeholder="Selecione..." />
@@ -492,16 +559,27 @@ const MeuPerfilCustomer = () => {
                                                     <Select
                                                         value={field.value || undefined}
                                                         onValueChange={(value) => updateAddressField("city", value)}
+                                                        disabled={!selectedState}
                                                     >
                                                         <SelectTrigger className="w-full">
-                                                            <SelectValue placeholder="Selecione..." />
+                                                            <SelectValue placeholder={selectedState ? "Selecione..." : "Selecione um estado primeiro"} />
                                                         </SelectTrigger>
-                                                        <SelectContent>
-                                                            {cities.map((city) => (
-                                                                <SelectItem key={city.value} value={city.value}>
-                                                                    {city.label}
-                                                                </SelectItem>
-                                                            ))}
+                                                        <SelectContent key={selectedState || "no-state"}>
+                                                            {cities.length > 0 ? (
+                                                                cities.map((city) => {
+                                                                    const cityValue = city.value || ""
+                                                                    if (!cityValue) return null
+                                                                    return (
+                                                                        <SelectItem key={cityValue} value={cityValue}>
+                                                                            {city.label || ""}
+                                                                        </SelectItem>
+                                                                    )
+                                                                })
+                                                            ) : (
+                                                                <div className="px-2 py-1.5 text-sm text-psi-dark/60">
+                                                                    Nenhuma cidade encontrada
+                                                                </div>
+                                                            )}
                                                         </SelectContent>
                                                     </Select>
                                                 )}
@@ -516,9 +594,9 @@ const MeuPerfilCustomer = () => {
                                         type="submit"
                                         variant="primary"
                                         size="lg"
-                                        disabled={false}
+                                        disabled={isUpdating}
                                     >
-                                        {false ? (
+                                        {isUpdating ? (
                                             <LoadingButton message="Salvando..." />
                                         ) : (
                                             "Salvar Alterações"

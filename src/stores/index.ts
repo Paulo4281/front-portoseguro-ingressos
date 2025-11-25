@@ -55,7 +55,7 @@ const useCacheStore = create<TCacheStore>()(
             }
         }),
         {
-            name: "persist_pci"
+            name: process.env.NEXT_PUBLIC_CACHE_KEY || "persist:psi"
         }
     )
 )

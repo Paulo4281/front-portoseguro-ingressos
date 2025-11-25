@@ -1,10 +1,11 @@
 "use client"
 
-import { createContext, useContext, useState, useCallback, ReactNode } from "react"
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react"
 import type { TEvent } from "@/types/Event/TEvent"
 import type { TEventBatch } from "@/types/Event/TEventBatch"
 import { TicketFeeUtils } from "@/utils/Helpers/FeeUtils/TicketFeeUtils"
 import { CheckoutUtils } from "@/utils/Helpers/CheckoutUtils/CheckoutUtils"
+import { StoreManager } from "@/stores"
 
 type TCartItemTicketType = {
     ticketTypeId: string
@@ -39,8 +40,15 @@ type TCartContextType = {
 
 const CartContext = createContext<TCartContextType | undefined>(undefined)
 
+const CART_STORE_KEY = "cart-items"
+
+const loadCartItemsFromCache = (): TCartItem[] | null => {
+    return StoreManager.get<TCartItem[]>(CART_STORE_KEY) ?? null
+}
+
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-    const [items, setItems] = useState<TCartItem[]>([])
+    const cachedItems = loadCartItemsFromCache()
+    const [items, setItems] = useState<TCartItem[]>(cachedItems || [])
 
     const addItem = useCallback((item: Omit<TCartItem, "quantity">, quantity: number) => {
         setItems((prev) => {
@@ -241,6 +249,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     const getItemCount = useCallback(() => {
         return items.reduce((count, item) => count + item.quantity, 0)
+    }, [items])
+
+    useEffect(() => {
+        if (items.length > 0) {
+            StoreManager.add(CART_STORE_KEY, items)
+        } else {
+            StoreManager.remove(CART_STORE_KEY)
+        }
     }, [items])
 
     return (

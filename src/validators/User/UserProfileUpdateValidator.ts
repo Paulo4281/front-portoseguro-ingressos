@@ -12,7 +12,7 @@ const UserAddressValidator = z.object({
     number: z.string().nullable().optional(),
     complement: z.string().nullable().optional(),
     neighborhood: z.string({ error: DefaultFormErrors.required }),
-    zipcode: z.string({ error: DefaultFormErrors.required }),
+    zipCode: z.string({ error: DefaultFormErrors.required }),
     city: z.string({ error: DefaultFormErrors.required }),
     state: z.string({ error: DefaultFormErrors.required }),
     country: z.string({ error: DefaultFormErrors.required }),

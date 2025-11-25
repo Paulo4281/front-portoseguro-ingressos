@@ -104,8 +104,29 @@ const UserResetPasswordValidator = z.object({
     }
 })
 
+const UserUpdateValidator = z.object({
+    firstName: z.string().min(1).optional(),
+    lastName: z.string().min(1).optional(),
+    phone: z.string().min(1).optional(),
+    birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+    document: z.string().nullable().optional(),
+    nationality: z.string().nullable().optional(),
+    gender: z.string().nullable().optional(),
+    address: z.object({
+        street: z.string().nullable().optional(),
+        number: z.string().nullable().optional(),
+        complement: z.string().nullable().optional(),
+        neighborhood: z.string().nullable().optional(),
+        city: z.string().nullable().optional(),
+        state: z.string().nullable().optional(),
+        country: z.string().nullable().optional(),
+        zipCode: z.string().nullable().optional()
+    }).optional()
+})
+
 export {
     UserCreateValidator,
     UserResetPasswordByCodeValidator,
-    UserResetPasswordValidator
+    UserResetPasswordValidator,
+    UserUpdateValidator
 }
