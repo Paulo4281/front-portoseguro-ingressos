@@ -127,7 +127,7 @@ const CartDropdown = () => {
                                                     {item.quantity} {item.quantity === 1 ? "ingresso" : "ingressos"}
                                                 </span>
                                                 <span className="text-sm font-bold text-psi-primary">
-                                                    {ValueUtils.centsToCurrency(itemTotal)}
+                                                    {ValueUtils.formatPrice(itemTotal)}
                                                 </span>
                                             </div>
                                         </div>

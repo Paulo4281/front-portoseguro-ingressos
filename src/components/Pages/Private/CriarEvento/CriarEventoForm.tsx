@@ -174,7 +174,8 @@ const CriarEventoForm = () => {
                 }
             ],
             recurrence: null,
-            isClientTaxed: false
+            isClientTaxed: false,
+            buyTicketsLimit: 10
         }
     })
 
@@ -240,6 +241,20 @@ const CriarEventoForm = () => {
         }
     }, [ticketTypes.length, form])
 
+    useEffect(() => {
+        if (recurrenceEnabled) {
+            const currentBatches = form.getValues("batches") || []
+            if (currentBatches.length > 1) {
+                form.setValue("batches", [currentBatches[0]])
+            }
+            const updatedBatches = (form.getValues("batches") || []).map(batch => ({
+                ...batch,
+                endDate: null
+            }))
+            form.setValue("batches", updatedBatches)
+        }
+    }, [recurrenceEnabled, form])
+
     const handleSubmit = async (data: TEventCreate) => {
         try {
             const hasBatches = data.batches && data.batches.length > 0
@@ -282,7 +297,8 @@ const CriarEventoForm = () => {
                 recurrence: data.recurrence || null,
                 isClientTaxed: data.isClientTaxed || false,
                 form: transformFormFieldsToJSON(formFields),
-                isFormForEachTicket: isFormForEachTicket || false
+                isFormForEachTicket: isFormForEachTicket || false,
+                buyTicketsLimit: data.buyTicketsLimit || null
             }
 
             if (batchesWithTicketTypes && !submitData.ticketTypes) {
@@ -316,6 +332,7 @@ const CriarEventoForm = () => {
     }
 
     const addBatch = () => {
+        if (recurrenceEnabled && batchFields.length >= 1) return
         const initialTicketTypes = ticketTypes.length > 0
             ? ticketTypes.map((_, typeIdx) => ({
                 ticketTypeId: typeIdx.toString(),
@@ -366,15 +383,14 @@ const CriarEventoForm = () => {
         const existingIndex = current.findIndex(d => d.day === day)
         
         if (existingIndex >= 0) {
-            const newDays = current.filter((_, index) => index !== existingIndex)
-            form.setValue("recurrence.daysOfWeek", newDays)
+            form.setValue("recurrence.daysOfWeek", [])
         } else {
-            const newDays = [...current, {
+            const existingDay = current[0]
+            form.setValue("recurrence.daysOfWeek", [{
                 day,
-                hourStart: "",
-                hourEnd: null
-            }]
-            form.setValue("recurrence.daysOfWeek", newDays)
+                hourStart: existingDay?.hourStart || "",
+                hourEnd: existingDay?.hourEnd || null
+            }])
         }
     }
 
@@ -383,15 +399,14 @@ const CriarEventoForm = () => {
         const existingIndex = current.findIndex(d => d.day === day)
         
         if (existingIndex >= 0) {
-            const newDays = current.filter((_, index) => index !== existingIndex)
-            form.setValue("recurrence.daysOfWeek", newDays)
+            form.setValue("recurrence.daysOfWeek", [])
         } else {
-            const newDays = [...current, {
+            const existingDay = current[0]
+            form.setValue("recurrence.daysOfWeek", [{
                 day,
-                hourStart: "",
-                hourEnd: null
-            }]
-            form.setValue("recurrence.daysOfWeek", newDays)
+                hourStart: existingDay?.hourStart || "",
+                hourEnd: existingDay?.hourEnd || null
+            }])
         }
     }
 
@@ -701,6 +716,42 @@ const CriarEventoForm = () => {
                                 />
                                 <FieldError message={form.formState.errors.isClientTaxed?.message || ""} />
 
+                                <div>
+                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                        Limitar quantidade de ingressos por pessoa
+                                    </label>
+                                    <p className="text-xs text-psi-dark/60 mb-3">
+                                        Defina o número máximo de ingressos que uma única pessoa pode comprar para este evento. Se não definir, o padrão será 10 ingressos.
+                                    </p>
+                                    <Controller
+                                        name="buyTicketsLimit"
+                                        control={form.control}
+                                        render={({ field }) => (
+                                            <Input
+                                                {...field}
+                                                type="number"
+                                                placeholder="10"
+                                                min={1}
+                                                max={100}
+                                                className="w-full max-w-[200px]"
+                                                value={field.value || ""}
+                                                onChange={(e) => {
+                                                    const value = e.target.value
+                                                    if (value === "") {
+                                                        field.onChange(null)
+                                                    } else {
+                                                        const numValue = parseInt(value, 10)
+                                                        if (!isNaN(numValue) && numValue >= 1 && numValue <= 100) {
+                                                            field.onChange(numValue)
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                        )}
+                                    />
+                                    <FieldError message={form.formState.errors.buyTicketsLimit?.message || ""} />
+                                </div>
+
                                 <div className="space-y-4">
                                         <div className="flex items-center justify-between">
                                             <div>
@@ -711,15 +762,23 @@ const CriarEventoForm = () => {
                                                     </p>
                                                 )}
                                             </div>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={addBatch}
-                                            >
-                                                <Plus className="h-4 w-4 mr-2" />
-                                                Adicionar Lote
-                                            </Button>
+                                            <div className="flex flex-col items-end gap-2">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={addBatch}
+                                                    disabled={recurrenceEnabled && batchFields.length >= 1}
+                                                >
+                                                    <Plus className="h-4 w-4 mr-2" />
+                                                    Adicionar Lote
+                                                </Button>
+                                                {recurrenceEnabled && (
+                                                    <p className="text-xs text-psi-dark/60 text-right max-w-sm">
+                                                        Eventos recorrentes suportam apenas um lote contínuo. O estoque reinicia automaticamente a cada nova ocorrência.
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {batchFields.map((field, index) => {
@@ -904,10 +963,15 @@ const CriarEventoForm = () => {
                                                     )}
 
                                                     <div className="grid grid-cols-2 gap-4">
-                                                        <div>
-                                                            <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                                Data Início *
-                                                            </label>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                                            Data Início *
+                                                        </label>
+                                                        {recurrenceEnabled && (
+                                                            <p className="text-sm font-bold text-psi-primary mb-2">
+                                                                * Para o primeiro ciclo o lote começa nesta data. Nos próximos ciclos ele será reativado automaticamente assim que o evento terminar.
+                                                            </p>
+                                                        )}
                                                             <Controller
                                                                 name={`batches.${index}.startDate`}
                                                                 control={form.control}
@@ -952,55 +1016,57 @@ const CriarEventoForm = () => {
                                                             <FieldError message={form.formState.errors.batches?.[index]?.startDate?.message || ""} />
                                                         </div>
 
-                                                        <div>
-                                                            <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                                Data Fim
-                                                            </label>
-                                                            <Controller
-                                                                name={`batches.${index}.endDate`}
-                                                                control={form.control}
-                                                                render={({ field }) => {
-                                                                    const eventDates = form.watch("dates") || []
-                                                                    const recurrence = form.watch("recurrence")
-                                                                    
-                                                                    let maxDate: string | undefined = undefined
-                                                                    
-                                                                    if (recurrence) {
-                                                                        if (recurrence.endDate) {
-                                                                            maxDate = recurrence.endDate
+                                                        {!recurrenceEnabled && (
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                                                    Data Fim
+                                                                </label>
+                                                                <Controller
+                                                                    name={`batches.${index}.endDate`}
+                                                                    control={form.control}
+                                                                    render={({ field }) => {
+                                                                        const eventDates = form.watch("dates") || []
+                                                                        const recurrence = form.watch("recurrence")
+                                                                        
+                                                                        let maxDate: string | undefined = undefined
+                                                                        
+                                                                        if (recurrence) {
+                                                                            if (recurrence.endDate) {
+                                                                                maxDate = recurrence.endDate
+                                                                            }
+                                                                        } else if (eventDates.length > 0) {
+                                                                            const sortedDates = [...eventDates]
+                                                                                .map(d => d.date)
+                                                                                .filter(Boolean)
+                                                                                .sort()
+                                                                            if (sortedDates.length > 0) {
+                                                                                maxDate = sortedDates[sortedDates.length - 1]
+                                                                            }
                                                                         }
-                                                                    } else if (eventDates.length > 0) {
-                                                                        const sortedDates = [...eventDates]
-                                                                            .map(d => d.date)
-                                                                            .filter(Boolean)
-                                                                            .sort()
-                                                                        if (sortedDates.length > 0) {
-                                                                            maxDate = sortedDates[sortedDates.length - 1]
-                                                                        }
-                                                                    }
-                                                                    
-                                                                    const batchStartDate = form.watch(`batches.${index}.startDate`)
-                                                                    const minDate = batchStartDate || new Date().toISOString().split("T")[0]
-                                                                    
-                                                                    return (
-                                                                        <>
-                                                                            <DatePicker
-                                                                                value={field.value || ""}
-                                                                                onChange={(value) => field.onChange(value)}
-                                                                                minDate={minDate}
-                                                                                maxDate={maxDate}
-                                                                            />
-                                                                            {maxDate && field.value && new Date(field.value) > new Date(maxDate) && (
-                                                                                <p className="text-xs text-destructive mt-1">
-                                                                                    A data de fim do lote não pode ser posterior à última data do evento
-                                                                                </p>
-                                                                            )}
-                                                                        </>
-                                                                    )
-                                                                }}
-                                                            />
-                                                            <FieldError message={form.formState.errors.batches?.[index]?.endDate?.message || ""} />
-                                                        </div>
+                                                                        
+                                                                        const batchStartDate = form.watch(`batches.${index}.startDate`)
+                                                                        const minDate = batchStartDate || new Date().toISOString().split("T")[0]
+                                                                        
+                                                                        return (
+                                                                            <>
+                                                                                <DatePicker
+                                                                                    value={field.value || ""}
+                                                                                    onChange={(value) => field.onChange(value)}
+                                                                                    minDate={minDate}
+                                                                                    maxDate={maxDate}
+                                                                                />
+                                                                                {maxDate && field.value && new Date(field.value) > new Date(maxDate) && (
+                                                                                    <p className="text-xs text-destructive mt-1">
+                                                                                        A data de fim do lote não pode ser posterior à última data do evento
+                                                                                    </p>
+                                                                                )}
+                                                                            </>
+                                                                        )
+                                                                    }}
+                                                                />
+                                                                <FieldError message={form.formState.errors.batches?.[index]?.endDate?.message || ""} />
+                                                            </div>
+                                                        )}
                                                     </div>
 
 
@@ -1138,7 +1204,7 @@ const CriarEventoForm = () => {
                                             <div className="space-y-4">
                                                 <div>
                                                     <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                        Dias da Semana *
+                                                        Dia da Semana * <span className="text-xs font-normal text-psi-dark/60">(selecione apenas 1 dia)</span>
                                                     </label>
                                                     <div className="flex flex-wrap gap-2">
                                                         {weekDays.map((day) => {
@@ -1162,7 +1228,7 @@ const CriarEventoForm = () => {
                                                 {recurrenceDaysOfWeek.length > 0 && (
                                                     <div className="space-y-3 pt-3 border-t border-[#E4E6F0]">
                                                         <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                            Horários por Dia *
+                                                            Horário *
                                                         </label>
                                                         {recurrenceDaysOfWeek.map((dayData: TRecurrenceDayForm) => {
                                                             const dayLabel = weekDays.find(d => d.value === dayData.day)?.label || ""
@@ -1204,7 +1270,7 @@ const CriarEventoForm = () => {
                                             <div className="space-y-4">
                                                 <div>
                                                     <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                        Dias do Mês *
+                                                        Dia do Mês * <span className="text-xs font-normal text-psi-dark/60">(selecione apenas 1 dia)</span>
                                                     </label>
                                                     <div className="grid grid-cols-7 gap-2 max-h-48 overflow-y-auto">
                                                         {monthDays.map((day) => {
@@ -1229,7 +1295,7 @@ const CriarEventoForm = () => {
                                                 {recurrenceDaysOfWeek.length > 0 && (
                                                     <div className="space-y-3 pt-3 border-t border-[#E4E6F0]">
                                                         <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                            Horários por Dia *
+                                                            Horário *
                                                         </label>
                                                         {recurrenceDaysOfWeek.map((dayData: TRecurrenceDayForm) => {
                                                             const dayTime = getDayTime(dayData.day)

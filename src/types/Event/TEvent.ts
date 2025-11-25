@@ -29,6 +29,7 @@ type TEvent = {
     updatedAt: string | null
     form: any | null
     isFormForEachTicket: boolean
+    buyTicketsLimit: number | null
     
     EventDates: TEventDate[]
     EventBatches: TEventBatch[]
@@ -42,6 +43,7 @@ type TEventSalesReport = {
     eventId: string
     eventName: string
     totalTicketsSold: number
+    totalTickets: number
     totalRevenue: number
     totalViews: number
     conversionRate: number

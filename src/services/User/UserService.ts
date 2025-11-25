@@ -12,6 +12,15 @@ class UserServiceClass {
         return response
     }
 
+    async checkEmailExists(email: string): Promise<AxiosResponse["data"]> {
+        const response = (await API.POST({
+            prefix: "/user",
+            url: "/check-email-exists",
+            data: { email }
+        }))?.data
+        return response
+    }
+
     async resetPassword(data: TUserResetPassword): Promise<AxiosResponse["data"]> {
         const response = (await API.POST({
             prefix: "/user",

@@ -17,10 +17,10 @@
 * [X] Criar evento com 2+ dias, **sem preço por dia** (usar preço do lote)
 * [X] Criar evento com 2+ dias com **preço geral por dia**
 * [X] Criar evento com 2+ dias com **preço por tipo por dia**
-* [ ] Misturar dias com e sem preço específico:
-  * [ ] Dia 1 usa preço do lote
-  * [ ] Dia 2 usa preço geral do dia
-  * [ ] Dia 3 usa preço por tipo do dia
+* [X] Misturar dias com e sem preço específico:
+  * [X] Dia 1 usa preço do lote
+  * [X] Dia 2 usa preço geral do dia
+  * [X] Dia 3 usa preço por tipo do dia
 
 ---
 
@@ -40,8 +40,8 @@
 
 ### **2.1 Recorrência semanal**
 
-* [ ] Criar evento toda sexta 3 meses, sem preços por dia
-* [ ] Criar evento toda sexta com **preço geral por dia**
+* [X] Criar evento toda sexta 3 meses, sem preços por dia
+* [X] Criar evento toda sexta com **preço geral por dia**
 * [ ] Criar evento toda sexta com **preço por tipo por dia**
 * [ ] Criar evento misturando dias com e sem preço por dia
 * [ ] Criar evento semanal com **2 lotes**

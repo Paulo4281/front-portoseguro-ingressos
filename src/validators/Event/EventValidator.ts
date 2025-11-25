@@ -3,7 +3,7 @@ import { DefaultFormErrors } from "@/utils/Errors/DefaultFormErrors"
 
 const EventDateTicketTypePriceValidator = z.object({
     ticketTypeId: z.string({ error: DefaultFormErrors.required }),
-    price: z.number({ error: DefaultFormErrors.required }).min(0.01, { error: "Preço deve ser maior que 0" })
+    price: z.number({ error: DefaultFormErrors.required }).min(0, { error: "Preço não pode ser negativo" })
 })
 
 const EventDateValidator = z.object({
@@ -11,7 +11,7 @@ const EventDateValidator = z.object({
     hourStart: z.string({ error: DefaultFormErrors.required }),
     hourEnd: z.string().nullable().optional(),
     hasSpecificPrice: z.boolean().optional(),
-    price: z.number().min(0.01, { error: "Preço deve ser maior que 0" }).nullable().optional(),
+    price: z.number().min(0, { error: "Preço não pode ser negativo" }).nullable().optional(),
     ticketTypePrices: z.array(EventDateTicketTypePriceValidator).nullable().optional()
 })
 
@@ -36,18 +36,18 @@ const TicketTypeValidator = z.object({
 
 const EventBatchTicketTypeDayValidator = z.object({
     eventDateId: z.string({ error: DefaultFormErrors.required }),
-    price: z.number({ error: DefaultFormErrors.required }).min(0.01, { error: "Preço deve ser maior que 0" })
+    price: z.number({ error: DefaultFormErrors.required }).min(0, { error: "Preço não pode ser negativo" })
 })
 
 const EventBatchTicketTypeValidator = z.object({
     ticketTypeId: z.string({ error: DefaultFormErrors.required }),
-    price: z.number().min(0.01, { error: "Preço deve ser maior que 0" }).nullable().optional(),
+    price: z.number().min(0, { error: "Preço não pode ser negativo" }).nullable().optional(),
     amount: z.number({ error: DefaultFormErrors.required }).min(1, { error: "Quantidade deve ser maior que 0" })
 })
 
 const BatchValidator = z.object({
     name: z.string({ error: DefaultFormErrors.required }),
-    price: z.number().min(0.01, { error: "Preço deve ser maior que 0" }).nullable().optional(),
+    price: z.number().min(0, { error: "Preço não pode ser negativo" }).nullable().optional(),
     quantity: z.number().min(1, { error: "Quantidade deve ser maior que 0" }).nullable().optional(),
     startDate: z.string({ error: DefaultFormErrors.required }),
     endDate: z.string().nullable().optional(),
@@ -72,7 +72,8 @@ const EventCreateValidator = z.object({
     recurrence: RecurrenceValidator,
     isClientTaxed: z.boolean().optional(),
     form: z.any().optional(),
-    isFormForEachTicket: z.boolean().optional()
+    isFormForEachTicket: z.boolean().optional(),
+    buyTicketsLimit: z.number().int().min(1, { error: "O limite deve ser no mínimo 1" }).max(100, { error: "O limite deve ser no máximo 100" }).nullable().optional()
 }).superRefine((data, ctx) => {
     const hasBatches = data.batches && data.batches.length > 0
     
@@ -83,7 +84,7 @@ const EventCreateValidator = z.object({
             message: "Quantidade de ingressos é obrigatória quando não usar lotes"
         })
     }
-    if (!hasBatches && (!data.ticketPrice || data.ticketPrice <= 0)) {
+    if (!hasBatches && (data.ticketPrice === null || data.ticketPrice === undefined)) {
         ctx.addIssue({
             code: "custom",
             path: ["ticketPrice"],
@@ -236,7 +237,7 @@ const EventUpdateValidator = EventUpdateValidatorBase.superRefine((data, ctx) =>
             message: "Quantidade de ingressos é obrigatória quando não usar lotes"
         })
     }
-    if (!hasBatches && (!data.ticketPrice || data.ticketPrice <= 0)) {
+    if (!hasBatches && (data.ticketPrice === null || data.ticketPrice === undefined)) {
         ctx.addIssue({
             code: "custom",
             path: ["ticketPrice"],
@@ -311,7 +312,7 @@ const EventUpdateValidator = EventUpdateValidatorBase.superRefine((data, ctx) =>
     if (hasBatches && data.batches && data.batches.length > 0) {
         data.batches.forEach((batch, batchIndex) => {
             const hasTicketTypes = batch.ticketTypes && batch.ticketTypes.length > 0
-            const hasPrice = batch.price !== null && batch.price !== undefined && batch.price > 0
+            const hasPrice = batch.price !== null && batch.price !== undefined
             const hasQuantity = batch.quantity !== null && batch.quantity !== undefined && batch.quantity > 0
 
             if (!hasTicketTypes && !hasPrice) {

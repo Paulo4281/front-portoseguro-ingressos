@@ -11,15 +11,6 @@ const globalToastOptions: ToastOptions = {
     pauseOnHover: true,
     draggable: true,
     theme: "light",
-    closeButton: ({ closeToast }) => (
-        <button
-            onClick={closeToast}
-            className="absolute top-0 right-0 bg-psi-primary rounded-bl-[2.5px] rounded-tr-[10px] p-0.5 cursor-pointer hover:bg-psi-secondary transition-colors duration-200"
-            aria-label="Fechar"
-        >
-            <X className="w-3.5 h-3.5 text-white" />
-        </button>
-    ),
     className: "custom-toast"
 }
 

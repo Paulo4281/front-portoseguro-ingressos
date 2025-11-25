@@ -105,7 +105,9 @@ const EventSalesReport = ({
                                         </div>
                                     </div>
                                     <p className="text-sm text-psi-dark/60 mb-1">Ingressos Vendidos</p>
-                                    <p className="text-3xl font-bold text-psi-dark">{reportData.totalTicketsSold}</p>
+                                    <p className="text-2xl font-bold text-psi-dark/80">
+                                        <span className="text-psi-primary text-4xl">{reportData.totalTicketsSold}</span>/{reportData.totalTickets}
+                                    </p>
                                 </div>
 
                                 <div className="rounded-xl border border-[#E4E6F0] bg-white p-6 shadow-sm">

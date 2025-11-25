@@ -13,6 +13,13 @@ class ValueUtilsClass {
             currency: "BRL"
         }).format(value / 100)
     }
+
+    formatPrice(value: number): string {
+        if (value === 0) {
+            return "Gratuito"
+        }
+        return this.centsToCurrency(value)
+    }
 }
 
 export const ValueUtils = new ValueUtilsClass()

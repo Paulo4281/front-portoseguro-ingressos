@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useMemo, useCallback } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
+import { useForm, Controller } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useCart } from "@/contexts/CartContext"
 import { useAuthStore } from "@/stores/Auth/AuthStore"
 import { useEventFindByIds } from "@/hooks/Event/useEventFindByIds"
@@ -18,6 +20,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { TicketFeeUtils } from "@/utils/Helpers/FeeUtils/TicketFeeUtils"
 import { CheckoutUtils } from "@/utils/Helpers/CheckoutUtils/CheckoutUtils"
@@ -40,18 +50,40 @@ import {
     Clock,
     Check,
     ClipboardList,
-    Loader2
+    Loader2,
+    Lock,
+    Eye,
+    EyeOff,
+    LogIn,
+    UserCircle,
+    ArrowRight
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { CTAButton } from "@/components/CTAButton/CTAButton"
 import { Toast } from "@/components/Toast/Toast"
 import { useCouponCheck } from "@/hooks/Coupon/useCouponCheck"
+import { useUserCheckEmailExists } from "@/hooks/User/useUserCheckEmailExistst"
+import { useAuthLogin } from "@/hooks/Auth/useAuthLogin"
+import { useUserCreate } from "@/hooks/User/useUserCreate"
+import { useUserConfirmationConfirmByCode } from "@/hooks/UserConfirmation/useUserConfirmationConfirmByCode"
+import { useUserConfirmationResendConfirmation } from "@/hooks/UserConfirmation/useUserConfirmationResendConfirmation"
+import { AuthValidator } from "@/validators/Auth/AuthValidator"
+import { UserCreateValidator } from "@/validators/User/UserValidator"
+import { UserConfirmationCreateConfirmValidator } from "@/validators/User/UserConfirmationValidator"
+import type { TAuth } from "@/types/Auth/TAuth"
+import type { TUserCreate } from "@/types/User/TUser"
+import type { TUserCreateConfirm } from "@/types/User/TUserConfirmation"
+import { FieldError } from "@/components/FieldError/FieldError"
+import { PasswordStrength } from "@/components/PasswordStrength/PasswordStrength"
+import { LoadingButton } from "@/components/Loading/LoadingButton"
+import { Icon } from "@/components/Icon/Icon"
+import { Timer } from "@/components/Timer/Timer"
 
 type TPaymentMethod = "pix" | "credit"
 
 const CheckoutInfo = () => {
     const { items, updateQuantity, updateTicketTypeQuantity, addItem, removeItem, getTotal } = useCart()
-    const { user } = useAuthStore()
+    const { user, isAuthenticated, setUser } = useAuthStore()
     const router = useRouter()
     const [currentStep, setCurrentStep] = useState(1)
     const [paymentMethod, setPaymentMethod] = useState<TPaymentMethod>("pix")
@@ -69,8 +101,91 @@ const CheckoutInfo = () => {
         zipcode: user?.address?.zipcode || "",
         city: user?.address?.city || "",
         state: user?.address?.state || "",
-        country: user?.address?.country || "BR",
+        country: user?.address?.country || "Brasil",
     })
+
+    const [emailInput, setEmailInput] = useState("")
+    const [showLoginDialog, setShowLoginDialog] = useState(false)
+    const [showCadastroDialog, setShowCadastroDialog] = useState(false)
+    const [showConfirmacaoDialog, setShowConfirmacaoDialog] = useState(false)
+    const [showPassword, setShowPassword] = useState(false)
+    const [canResend, setCanResend] = useState(false)
+    const [timerKey, setTimerKey] = useState(0)
+    const [hasResent, setHasResent] = useState(false)
+    const [cadastroEmail, setCadastroEmail] = useState("")
+    const [cadastroName, setCadastroName] = useState("")
+
+    const { mutateAsync: checkEmailExists, isPending: isCheckingEmail } = useUserCheckEmailExists()
+    const { mutateAsync: loginUser, isPending: isLoggingIn } = useAuthLogin()
+    const { mutateAsync: createUser, isPending: isCreatingUser } = useUserCreate()
+    const { mutateAsync: confirmByCode, isPending: isConfirmingByCode } = useUserConfirmationConfirmByCode()
+    const { mutateAsync: resendConfirmation, isPending: isResendingConfirmation } = useUserConfirmationResendConfirmation()
+
+    const loginForm = useForm<TAuth>({
+        resolver: zodResolver(AuthValidator),
+        defaultValues: {
+            email: "",
+            password: ""
+        }
+    })
+
+    const cadastroForm = useForm<TUserCreate>({
+        resolver: zodResolver(UserCreateValidator),
+        defaultValues: {
+            firstName: "",
+            lastName: "",
+            email: "",
+            phone: "",
+            password: "",
+            role: "CUSTOMER"
+        }
+    })
+
+    useEffect(() => {
+        cadastroForm.setValue("role", "CUSTOMER")
+    }, [cadastroForm])
+
+    const confirmacaoForm = useForm<TUserCreateConfirm>({
+        resolver: zodResolver(UserConfirmationCreateConfirmValidator),
+        defaultValues: {
+            code: ""
+        }
+    })
+
+    const passwordValue = cadastroForm.watch("password")
+
+    useEffect(() => {
+        if (isAuthenticated && user) {
+            setBuyerData({
+                firstName: user.firstName || "",
+                lastName: user.lastName || "",
+                email: user.email || "",
+                phone: user.phone || "",
+                document: user.document || "",
+                street: user.address?.street || "",
+                number: user.address?.number || "",
+                complement: user.address?.complement || "",
+                neighborhood: user.address?.neighborhood || "",
+                zipcode: user.address?.zipcode || "",
+                city: user.address?.city || "",
+                state: user.address?.state || "",
+                country: user.address?.country || "BR",
+            })
+            setEmailInput("")
+        }
+    }, [isAuthenticated, user])
+
+    useEffect(() => {
+        if (showLoginDialog && emailInput) {
+            loginForm.setValue("email", emailInput)
+        }
+    }, [showLoginDialog, emailInput, loginForm])
+
+    useEffect(() => {
+        if (showCadastroDialog && cadastroEmail) {
+            cadastroForm.setValue("email", cadastroEmail)
+        }
+    }, [showCadastroDialog, cadastroEmail, cadastroForm])
     
     const [cardData, setCardData] = useState({
         number: "",
@@ -311,6 +426,57 @@ const CheckoutInfo = () => {
     }, [checkCoupon, couponCodes])
     
     const handleNext = () => {
+        if (currentStep === 1) {
+            if (!isAuthenticated) {
+                Toast.info("Por favor, faça login ou cadastre-se para continuar.")
+                return
+            }
+
+            const requiredFields = [
+                { field: buyerData.firstName, name: "Nome" },
+                { field: buyerData.lastName, name: "Sobrenome" },
+                { field: buyerData.email, name: "E-mail" },
+                { field: buyerData.phone, name: "Telefone" },
+                { field: buyerData.document, name: "CPF" },
+                { field: buyerData.zipcode, name: "CEP" },
+                { field: buyerData.street, name: "Rua" },
+                { field: buyerData.neighborhood, name: "Bairro" },
+                { field: buyerData.city, name: "Cidade" },
+                { field: buyerData.state, name: "Estado" },
+                { field: buyerData.country, name: "País" }
+            ]
+
+            const missingFields = requiredFields.filter(({ field }) => !field || field.trim() === "")
+
+            if (missingFields.length > 0) {
+                Toast.info(`Por favor, preencha todos os campos obrigatórios: ${missingFields.map(f => f.name).join(", ")}`)
+                return
+            }
+
+            if (!buyerData.email.includes("@")) {
+                Toast.info("Por favor, digite um e-mail válido.")
+                return
+            }
+
+            const phoneDigits = buyerData.phone.replace(/\D/g, "")
+            if (phoneDigits.length < 10) {
+                Toast.info("Por favor, digite um telefone válido.")
+                return
+            }
+
+            const documentDigits = buyerData.document.replace(/\D/g, "")
+            if (documentDigits.length < 11) {
+                Toast.info("Por favor, digite um CPF válido.")
+                return
+            }
+
+            const zipcodeDigits = buyerData.zipcode.replace(/\D/g, "")
+            if (zipcodeDigits.length < 8) {
+                Toast.info("Por favor, digite um CEP válido.")
+                return
+            }
+        }
+
         if (currentStep === 3 && hasForms) {
             const eventsWithFormForEachTicket = eventsWithForms.filter(event => event && event.isFormForEachTicket === true)
             
@@ -393,6 +559,108 @@ const CheckoutInfo = () => {
     const handleFinalize = () => {
         console.log("Finalizando compra...")
     }
+
+    const handleEmailCheck = async () => {
+        if (!emailInput || !emailInput.includes("@")) {
+            Toast.error("Digite um e-mail válido")
+            return
+        }
+
+        try {
+            const response = await checkEmailExists(emailInput)
+            if (response?.success && response?.data === true) {
+                loginForm.setValue("email", emailInput)
+                setShowLoginDialog(true)
+            } else {
+                setCadastroEmail(emailInput)
+                cadastroForm.setValue("email", emailInput)
+                setShowCadastroDialog(true)
+            }
+        } catch (error) {
+            Toast.error("Erro ao verificar e-mail. Tente novamente.")
+        }
+    }
+
+    const handleLogin = async (data: TAuth) => {
+        try {
+            const response = await loginUser(data)
+            if (response && response.success && response.data?.user) {
+                const loggedUser = response.data.user
+                setUser(loggedUser)
+                setBuyerData({
+                    firstName: loggedUser.firstName || "",
+                    lastName: loggedUser.lastName || "",
+                    email: loggedUser.email || "",
+                    phone: loggedUser.phone || "",
+                    document: loggedUser.document || "",
+                    street: loggedUser.address?.street || "",
+                    number: loggedUser.address?.number || "",
+                    complement: loggedUser.address?.complement || "",
+                    neighborhood: loggedUser.address?.neighborhood || "",
+                    zipcode: loggedUser.address?.zipcode || "",
+                    city: loggedUser.address?.city || "",
+                    state: loggedUser.address?.state || "",
+                    country: loggedUser.address?.country || "BR",
+                })
+                setShowLoginDialog(false)
+                loginForm.reset()
+                setEmailInput("")
+                Toast.success("Login realizado com sucesso!")
+            }
+        } catch (error: any) {
+            Toast.error(error?.response?.data?.message || "Erro ao fazer login. Verifique suas credenciais.")
+        }
+    }
+
+    const handleCadastro = async (data: TUserCreate) => {
+        try {
+            const response = await createUser(data)
+            if (response.success) {
+                setCadastroName(data.firstName)
+                setShowCadastroDialog(false)
+                setShowConfirmacaoDialog(true)
+                setCanResend(false)
+                setTimerKey(prev => prev + 1)
+                cadastroForm.reset()
+                Toast.success("Cadastro realizado! Verifique seu e-mail para confirmar.")
+            }
+        } catch (error: any) {
+            Toast.error(error?.response?.data?.message || "Erro ao criar conta. Tente novamente.")
+        }
+    }
+
+    const handleConfirmacao = async (data: TUserCreateConfirm) => {
+        try {
+            const response = await confirmByCode({
+                code: data.code,
+                email: cadastroEmail
+            })
+            if (response && response.success && response.data?.isValid) {
+                setShowConfirmacaoDialog(false)
+                confirmacaoForm.reset()
+                Toast.success("Cadastro confirmado com sucesso! Faça login para continuar.")
+                setEmailInput(cadastroEmail)
+                loginForm.setValue("email", cadastroEmail)
+                setShowLoginDialog(true)
+            } else {
+                Toast.error("Código inválido. Tente novamente.")
+            }
+        } catch (error: any) {
+            Toast.error(error?.response?.data?.message || "Erro ao confirmar código. Tente novamente.")
+        }
+    }
+
+    const handleResendCode = async () => {
+        try {
+            await resendConfirmation(cadastroEmail)
+            setHasResent(true)
+            setCanResend(false)
+            setTimerKey(prev => prev + 1)
+            Toast.success("Código reenviado com sucesso!")
+        } catch (error) {
+            Toast.error("Erro ao reenviar código. Tente novamente.")
+        }
+    }
     
     if (items.length === 0) {
         return (
@@ -416,7 +684,7 @@ const CheckoutInfo = () => {
             sm:py-12">
                 <div className="max-w-5xl mx-auto">
                     <div className="mb-8">
-                        <h1 className="text-3xl font-bold text-psi-dark mb-2
+                        <h1 className="text-3xl font-bold text-psi-primary mb-2
                         sm:text-4xl">
                             Checkout
                         </h1>
@@ -485,172 +753,211 @@ const CheckoutInfo = () => {
                                 sm:p-8 shadow-sm">
                                     <h2 className="text-xl font-semibold text-psi-dark mb-6">Dados do Comprador</h2>
                                     
-                                    <div className="space-y-4">
-                                        <div className="grid gap-4
-                                        sm:grid-cols-2">
+                                    {isAuthenticated ? (
+                                        <div className="space-y-4">
+                                            <div className="grid gap-4
+                                            sm:grid-cols-2">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                        Nome *
+                                                    </label>
+                                                    <Input
+                                                        value={buyerData.firstName}
+                                                        onChange={(e) => setBuyerData({ ...buyerData, firstName: e.target.value })}
+                                                        icon={User}
+                                                        required
+                                                    />
+                                                </div>
+                                                
+                                                <div>
+                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                        Sobrenome *
+                                                    </label>
+                                                    <Input
+                                                        value={buyerData.lastName}
+                                                        onChange={(e) => setBuyerData({ ...buyerData, lastName: e.target.value })}
+                                                        icon={User}
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+                                            
                                             <div>
                                                 <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    Nome *
+                                                    E-mail *
                                                 </label>
                                                 <Input
-                                                    value={buyerData.firstName}
-                                                    onChange={(e) => setBuyerData({ ...buyerData, firstName: e.target.value })}
-                                                    icon={User}
+                                                    type="email"
+                                                    value={buyerData.email}
+                                                    onChange={(e) => setBuyerData({ ...buyerData, email: e.target.value })}
+                                                    icon={Mail}
                                                     required
                                                 />
                                             </div>
                                             
                                             <div>
                                                 <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    Sobrenome *
-                                                </label>
-                                                <Input
-                                                    value={buyerData.lastName}
-                                                    onChange={(e) => setBuyerData({ ...buyerData, lastName: e.target.value })}
-                                                    icon={User}
-                                                    required
-                                                />
-                                            </div>
-                                        </div>
-                                        
-                                        <div>
-                                            <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                E-mail *
-                                            </label>
-                                            <Input
-                                                type="email"
-                                                value={buyerData.email}
-                                                onChange={(e) => setBuyerData({ ...buyerData, email: e.target.value })}
-                                                icon={Mail}
-                                                required
-                                            />
-                                        </div>
-                                        
-                                        <div>
-                                            <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                Telefone *
-                                            </label>
-                                            <InputMask
-                                                mask="(00) 00000-0000"
-                                                value={buyerData.phone}
-                                                onAccept={(value) => setBuyerData({ ...buyerData, phone: value as string })}
-                                                placeholder="(00) 00000-0000"
-                                                icon={Phone}
-                                            />
-                                        </div>
-                                        
-                                        <div>
-                                            <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                CPF/CNPJ *
-                                            </label>
-                                            <InputMask
-                                                mask="000.000.000-00"
-                                                value={buyerData.document}
-                                                onAccept={(value) => setBuyerData({ ...buyerData, document: value as string })}
-                                                placeholder="000.000.000-00"
-                                                icon={FileText}
-                                            />
-                                        </div>
-                                        
-                                        <div className="pt-4 border-t border-psi-dark/10">
-                                            <h3 className="text-lg font-semibold text-psi-dark mb-4">Endereço</h3>
-                                            
-                                            <div>
-                                                <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    CEP *
+                                                    Telefone *
                                                 </label>
                                                 <InputMask
-                                                    mask="00000-000"
-                                                    value={buyerData.zipcode}
-                                                    onAccept={(value) => setBuyerData({ ...buyerData, zipcode: value as string })}
-                                                    placeholder="00000-000"
-                                                    icon={MapPin}
+                                                    mask="(00) 00000-0000"
+                                                    value={buyerData.phone}
+                                                    onAccept={(value) => setBuyerData({ ...buyerData, phone: value as string })}
+                                                    placeholder="(00) 00000-0000"
+                                                    icon={Phone}
                                                 />
                                             </div>
                                             
-                                            <div className="grid gap-4
-                                            sm:grid-cols-2 mt-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                    CPF *
+                                                </label>
+                                                <InputMask
+                                                    mask="000.000.000-00"
+                                                    value={buyerData.document}
+                                                    onAccept={(value) => setBuyerData({ ...buyerData, document: value as string })}
+                                                    placeholder="000.000.000-00"
+                                                    icon={FileText}
+                                                />
+                                            </div>
+                                            
+                                            <div className="pt-4 border-t border-psi-dark/10">
+                                                <h3 className="text-lg font-semibold text-psi-dark mb-4">Endereço</h3>
+                                                
                                                 <div>
                                                     <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                        Rua *
+                                                        CEP *
                                                     </label>
-                                                    <Input
-                                                        value={buyerData.street}
-                                                        onChange={(e) => setBuyerData({ ...buyerData, street: e.target.value })}
+                                                    <InputMask
+                                                        mask="00000-000"
+                                                        value={buyerData.zipcode}
+                                                        onAccept={(value) => setBuyerData({ ...buyerData, zipcode: value as string })}
+                                                        placeholder="00000-000"
                                                         icon={MapPin}
+                                                    />
+                                                </div>
+                                                
+                                                <div className="grid gap-4
+                                                sm:grid-cols-2 mt-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                            Rua *
+                                                        </label>
+                                                        <Input
+                                                            value={buyerData.street}
+                                                            onChange={(e) => setBuyerData({ ...buyerData, street: e.target.value })}
+                                                            icon={MapPin}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                            Número (opcional)
+                                                        </label>
+                                                        <Input
+                                                            value={buyerData.number}
+                                                            onChange={(e) => setBuyerData({ ...buyerData, number: e.target.value })}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="mt-4">
+                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                        Complemento (opcional)
+                                                    </label>
+                                                    <Input
+                                                        value={buyerData.complement}
+                                                        onChange={(e) => setBuyerData({ ...buyerData, complement: e.target.value })}
+                                                    />
+                                                </div>
+                                                
+                                                <div className="mt-4">
+                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                        Bairro *
+                                                    </label>
+                                                    <Input
+                                                        value={buyerData.neighborhood}
+                                                        onChange={(e) => setBuyerData({ ...buyerData, neighborhood: e.target.value })}
                                                         required
                                                     />
                                                 </div>
                                                 
-                                                <div>
-                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                        Número
-                                                    </label>
-                                                    <Input
-                                                        value={buyerData.number}
-                                                        onChange={(e) => setBuyerData({ ...buyerData, number: e.target.value })}
-                                                    />
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="mt-4">
-                                                <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    Complemento
-                                                </label>
-                                                <Input
-                                                    value={buyerData.complement}
-                                                    onChange={(e) => setBuyerData({ ...buyerData, complement: e.target.value })}
-                                                />
-                                            </div>
-                                            
-                                            <div className="mt-4">
-                                                <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    Bairro *
-                                                </label>
-                                                <Input
-                                                    value={buyerData.neighborhood}
-                                                    onChange={(e) => setBuyerData({ ...buyerData, neighborhood: e.target.value })}
-                                                    required
-                                                />
-                                            </div>
-                                            
-                                            <div className="grid gap-4
-                                            sm:grid-cols-3 mt-4">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                        Cidade *
-                                                    </label>
-                                                    <Input
-                                                        value={buyerData.city}
-                                                        onChange={(e) => setBuyerData({ ...buyerData, city: e.target.value })}
-                                                        required
-                                                    />
-                                                </div>
-                                                
-                                                <div>
-                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                        Estado *
-                                                    </label>
-                                                    <Input
-                                                        value={buyerData.state}
-                                                        onChange={(e) => setBuyerData({ ...buyerData, state: e.target.value })}
-                                                        required
-                                                    />
-                                                </div>
-                                                
-                                                <div>
-                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                        País *
-                                                    </label>
-                                                    <Input
-                                                        value={buyerData.country}
-                                                        onChange={(e) => setBuyerData({ ...buyerData, country: e.target.value })}
-                                                        required
-                                                    />
+                                                <div className="grid gap-4
+                                                sm:grid-cols-3 mt-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                            Cidade *
+                                                        </label>
+                                                        <Input
+                                                            value={buyerData.city}
+                                                            onChange={(e) => setBuyerData({ ...buyerData, city: e.target.value })}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                            Estado *
+                                                        </label>
+                                                        <Input
+                                                            value={buyerData.state}
+                                                            onChange={(e) => setBuyerData({ ...buyerData, state: e.target.value })}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                            País *
+                                                        </label>
+                                                        <Input
+                                                            value={buyerData.country}
+                                                            onChange={(e) => setBuyerData({ ...buyerData, country: e.target.value })}
+                                                            required
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    ) : (
+                                        <div className="space-y-6">
+                                            <div>
+                                                <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                    E-mail *
+                                                </label>
+                                                <Input
+                                                    type="email"
+                                                    value={emailInput}
+                                                    onChange={(e) => setEmailInput(e.target.value)}
+                                                    icon={Mail}
+                                                    placeholder="seu@email.com"
+                                                    required
+                                                />
+                                                <p className="text-xs text-psi-dark/60 mt-2">
+                                                    Digite seu e-mail para fazer login ou criar uma conta rapidamente
+                                                </p>
+                                            </div>
+                                            
+                                            <Button
+                                                type="button"
+                                                variant="primary"
+                                                className="w-full"
+                                                size="lg"
+                                                onClick={handleEmailCheck}
+                                                disabled={isCheckingEmail || !emailInput}
+                                            >
+                                                {isCheckingEmail ? (
+                                                    <LoadingButton />
+                                                ) : (
+                                                    <>
+                                                        Continuar
+                                                        <ArrowRight className="size-4 ml-2" />
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                             
@@ -811,7 +1118,7 @@ const CheckoutInfo = () => {
                                                                                         updateTicketTypeQuantity(item.eventId, item.batchId, tt.ticketTypeId, qty)
                                                                                     }}
                                                                                     min={1}
-                                                                                    max={10}
+                                                                                    max={event?.buyTicketsLimit || 10}
                                                                                 />
                                                                             </div>
                                                                         </div>
@@ -826,7 +1133,7 @@ const CheckoutInfo = () => {
                                                                         value={item.quantity}
                                                                         onChange={(qty) => updateQuantity(item.eventId, item.batchId, qty)}
                                                                         min={1}
-                                                                        max={10}
+                                                                        max={event?.buyTicketsLimit || 10}
                                                                     />
                                                                 </div>
                                                                 </div>
@@ -1307,6 +1614,343 @@ const CheckoutInfo = () => {
                     </div>
                 </div>
             </div>
+
+            <Dialog open={showLoginDialog} onOpenChange={(open) => {
+                setShowLoginDialog(open)
+                if (!open) {
+                    loginForm.reset()
+                }
+            }}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Fazer Login</DialogTitle>
+                        <DialogDescription>
+                            Digite sua senha para continuar com o e-mail {loginForm.watch("email") || emailInput}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-psi-dark mb-2">
+                                Senha *
+                            </label>
+                            <Controller
+                                name="password"
+                                control={loginForm.control}
+                                render={({ field }) => (
+                                    <div className="relative">
+                                        <Input
+                                            {...field}
+                                            type={showPassword ? "text" : "password"}
+                                            placeholder="Sua senha"
+                                            icon={Lock}
+                                            className="pr-10"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-psi-dark/60 hover:text-psi-dark transition-colors"
+                                            aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                                        >
+                                            {showPassword ? (
+                                                <EyeOff className="size-4" />
+                                            ) : (
+                                                <Eye className="size-4" />
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
+                            />
+                            <FieldError message={loginForm.formState.errors.password?.message || ""} />
+                        </div>
+                        <Button
+                            type="submit"
+                            variant="primary"
+                            className="w-full"
+                            size="lg"
+                            disabled={isLoggingIn}
+                        >
+                            {isLoggingIn ? (
+                                <LoadingButton />
+                            ) : (
+                                <>
+                                    <LogIn className="size-4 mr-2" />
+                                    Entrar
+                                </>
+                            )}
+                        </Button>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showCadastroDialog} onOpenChange={(open) => {
+                setShowCadastroDialog(open)
+                if (!open) {
+                    cadastroForm.reset()
+                }
+            }}>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Criar Conta</DialogTitle>
+                        <DialogDescription>
+                            Preencha os dados abaixo para criar sua conta e continuar com a compra
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={cadastroForm.handleSubmit(handleCadastro)} className="space-y-4">
+                        <Controller
+                            name="role"
+                            control={cadastroForm.control}
+                            render={({ field }) => (
+                                <input type="hidden" {...field} value="CUSTOMER" />
+                            )}
+                        />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-psi-dark mb-2">
+                                    Nome *
+                                </label>
+                                <Controller
+                                    name="firstName"
+                                    control={cadastroForm.control}
+                                    render={({ field }) => (
+                                        <Input
+                                            {...field}
+                                            icon={UserCircle}
+                                            placeholder="Seu nome"
+                                            required
+                                        />
+                                    )}
+                                />
+                                <FieldError message={cadastroForm.formState.errors.firstName?.message || ""} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-psi-dark mb-2">
+                                    Sobrenome *
+                                </label>
+                                <Controller
+                                    name="lastName"
+                                    control={cadastroForm.control}
+                                    render={({ field }) => (
+                                        <Input
+                                            {...field}
+                                            placeholder="Seu sobrenome"
+                                            required
+                                        />
+                                    )}
+                                />
+                                <FieldError message={cadastroForm.formState.errors.lastName?.message || ""} />
+                            </div>
+                        </div>
+                        <div>
+                            <div>
+                                <label className="block text-sm font-medium text-psi-dark mb-2">
+                                    E-mail *
+                                </label>
+                                <Controller
+                                    name="email"
+                                    control={cadastroForm.control}
+                                    render={({ field }) => (
+                                        <Input
+                                            {...field}
+                                            type="email"
+                                            value={cadastroEmail || field.value}
+                                            onChange={(e) => {
+                                                field.onChange(e)
+                                                setCadastroEmail(e.target.value)
+                                            }}
+                                            icon={Mail}
+                                            placeholder="seu@email.com"
+                                            required
+                                        />
+                                    )}
+                                />
+                                <FieldError message={cadastroForm.formState.errors.email?.message || ""} />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-psi-dark mb-2">
+                                Telefone *
+                            </label>
+                            <Controller
+                                name="phone"
+                                control={cadastroForm.control}
+                                render={({ field }) => (
+                                    <InputMask
+                                        {...field}
+                                        mask="(00) 00000-0000"
+                                        placeholder="(00) 00000-0000"
+                                        icon={Phone}
+                                        required
+                                    />
+                                )}
+                            />
+                            <FieldError message={cadastroForm.formState.errors.phone?.message || ""} />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-psi-dark mb-2">
+                                Senha *
+                            </label>
+                            <Controller
+                                name="password"
+                                control={cadastroForm.control}
+                                render={({ field }) => (
+                                    <div className="relative">
+                                        <Input
+                                            {...field}
+                                            type={showPassword ? "text" : "password"}
+                                            placeholder="Sua senha"
+                                            icon={Lock}
+                                            className="pr-10"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-psi-dark/60 hover:text-psi-dark transition-colors"
+                                            aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                                        >
+                                            {showPassword ? (
+                                                <EyeOff className="size-4" />
+                                            ) : (
+                                                <Eye className="size-4" />
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
+                            />
+                            <PasswordStrength password={passwordValue || ""} />
+                            <FieldError message={cadastroForm.formState.errors.password?.message || ""} />
+                        </div>
+                        <Button
+                            type="submit"
+                            variant="primary"
+                            className="w-full"
+                            size="lg"
+                            disabled={isCreatingUser}
+                        >
+                            {isCreatingUser ? (
+                                <LoadingButton />
+                            ) : (
+                                "Criar Conta"
+                            )}
+                        </Button>
+                        <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-psi-dark/10" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-white px-2 text-psi-dark/60">
+                                    Ou
+                                </span>
+                            </div>
+                        </div>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full"
+                            size="lg"
+                        >
+                            <Icon
+                                icon="google"
+                                className="size-6"
+                            />
+                            Continuar com o Google
+                        </Button>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showConfirmacaoDialog} onOpenChange={(open) => {
+                setShowConfirmacaoDialog(open)
+                if (!open) {
+                    confirmacaoForm.reset()
+                    setCanResend(false)
+                    setHasResent(false)
+                    setTimerKey(prev => prev + 1)
+                }
+            }}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Confirmar Cadastro</DialogTitle>
+                        <DialogDescription>
+                            Olá, <span className="font-semibold">{cadastroName}</span>! Digite o código de 6 dígitos enviado para <span className="font-semibold">{cadastroEmail}</span>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={confirmacaoForm.handleSubmit(handleConfirmacao)} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-psi-dark mb-2 text-center">
+                                Código de Verificação
+                            </label>
+                            <Controller
+                                name="code"
+                                control={confirmacaoForm.control}
+                                render={({ field }) => (
+                                    <div className="flex justify-center">
+                                        <InputOTP
+                                            maxLength={6}
+                                            {...field}
+                                        >
+                                            <InputOTPGroup>
+                                                <InputOTPSlot index={0} />
+                                                <InputOTPSlot index={1} />
+                                                <InputOTPSlot index={2} />
+                                                <InputOTPSlot index={3} />
+                                                <InputOTPSlot index={4} />
+                                                <InputOTPSlot index={5} />
+                                            </InputOTPGroup>
+                                        </InputOTP>
+                                    </div>
+                                )}
+                            />
+                            <div className="text-center mt-2">
+                                <FieldError message={confirmacaoForm.formState.errors.code?.message || ""} />
+                            </div>
+                        </div>
+                        <Button
+                            type="submit"
+                            variant="primary"
+                            className="w-full"
+                            size="lg"
+                            disabled={isConfirmingByCode}
+                        >
+                            {isConfirmingByCode ? (
+                                <LoadingButton />
+                            ) : (
+                                "Confirmar Cadastro"
+                            )}
+                        </Button>
+                        <div className="text-center">
+                            <p className="text-sm text-psi-dark/60">
+                                Ainda não recebeu o código?{" "}
+                                {hasResent ? (
+                                    <span className="text-psi-dark/60 text-sm block mt-2">
+                                        Se o código ainda não chegou aguarde. Ou entre em contato com o suporte.
+                                    </span>
+                                ) : canResend ? (
+                                    <button
+                                        type="button"
+                                        onClick={handleResendCode}
+                                        disabled={isResendingConfirmation || hasResent}
+                                        className="text-psi-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isResendingConfirmation ? "Reenviando..." : "Reenviar"}
+                                    </button>
+                                ) : (
+                                    <>
+                                        <span className="text-psi-dark/60">Reenviar em </span>
+                                        <Timer
+                                            key={timerKey}
+                                            seconds={10}
+                                            onFinish={() => setCanResend(true)}
+                                            variant="badge"
+                                        />
+                                    </>
+                                )}
+                            </p>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </Background>
     )
 }

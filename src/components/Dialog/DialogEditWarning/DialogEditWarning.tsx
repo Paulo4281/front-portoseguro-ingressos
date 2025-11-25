@@ -42,7 +42,6 @@ const DialogEditWarning = ({ changes, riskScore, isOpen, onClose }: TDialogEditW
         <div className="fixed
         bottom-4
         right-4
-        z-50
         w-full
         max-w-sm
         rounded-xl
@@ -50,7 +49,7 @@ const DialogEditWarning = ({ changes, riskScore, isOpen, onClose }: TDialogEditW
         shadow-lg
         bg-white
         p-4
-        space-y-3">
+        space-y-3" style={{ zIndex: 9999! }}>
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <AlertTriangle className={cn("h-5 w-5", riskLevel.color)} />

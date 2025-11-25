@@ -10,6 +10,7 @@ const eventSalesReportMock: TEventSalesReport = {
     eventId: "",
     eventName: "",
     totalTicketsSold: 245,
+    totalTickets: 960,
     totalRevenue: 3675000,
     totalViews: 1250,
     conversionRate: 19.6,
@@ -185,6 +186,24 @@ class EventServiceClass {
             prefix: "/event",
             url: `/${id}`
         }))?.data
+        return response
+    }
+
+    async findSimilar(params: { categories: string; excludeEventId?: string }): Promise<AxiosResponse["data"]> {
+        const queryParams: Record<string, string> = {
+            categories: params.categories
+        }
+        
+        if (params.excludeEventId) {
+            queryParams.excludeEventId = params.excludeEventId
+        }
+        
+        const response = (await API.GET({
+            prefix: "/event",
+            url: "/similar",
+            params: queryParams
+        }))?.data
+        
         return response
     }
 

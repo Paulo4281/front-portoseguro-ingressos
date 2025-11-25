@@ -6,8 +6,9 @@ import Link from "next/link"
 import { Calendar, Clock, MapPin, Repeat, Tag, ShieldCheck, Lock, CreditCard, ArrowRight, TrendingDown, Users, QrCode, Headphones, Zap, CheckCircle2, Share2, MessageCircle, Star, TrendingUp, Gift, Instagram, Facebook, Mail, Phone, Building2, ExternalLink } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useEventFindById } from "@/hooks/Event/useEventFindById"
-import { useEventFind } from "@/hooks/Event/useEventFind"
+import { useEventFindSimilar } from "@/hooks/Event/useEventFindSimilar"
 import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
+import { useEventClickCreate } from "@/hooks/EventClick/useEventClickCreate"
 import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { TicketFeeUtils } from "@/utils/Helpers/FeeUtils/TicketFeeUtils"
@@ -23,8 +24,10 @@ import { CardEvent } from "@/components/Card/CardEvent/CardEvent"
 import ReactMarkdown from "react-markdown"
 import type { TEvent, TRecurrenceDay } from "@/types/Event/TEvent"
 import type { TEventBatch } from "@/types/Event/TEventBatch"
+import type { TEventClickCreate } from "@/types/Event/TEventClick"
 import { EventCategoryIconHandler } from "@/utils/Helpers/EventCategoryIconHandler/EventCategoryIconHandler"
 import { DialogTaxes } from "@/components/Dialog/DialogTaxes/DialogTaxes"
+import { useAuthStore } from "@/stores/Auth/AuthStore"
 
 type TVerEventoInfoProps = {
     eventId: string
@@ -36,17 +39,38 @@ const VerEventoInfo = (
     }: TVerEventoInfoProps
 ) => {
     const { data: eventData, isLoading, isError } = useEventFindById(eventId)
-    const { data: allEventsData } = useEventFind()
     const { data: eventCategoriesData } = useEventCategoryFind()
+    const { mutateAsync: registerEventClick } = useEventClickCreate()
+    const { user } = useAuthStore()
     
     const event = useMemo(() => {
         return eventData?.data
     }, [eventData])
+
+    const buyTicketsLimit = useMemo(() => {
+        return event?.buyTicketsLimit || 10
+    }, [event])
+
+    const eventCategoriesString = useMemo(() => {
+        if (!event?.EventCategoryEvents || event.EventCategoryEvents.length === 0) return ""
+        return event.EventCategoryEvents.map(ce => ce.categoryId).join(",")
+    }, [event])
+
+    const shouldFetchSimilar = useMemo(() => {
+        return !!event && eventCategoriesString.length > 0
+    }, [event, eventCategoriesString])
+
+    const { data: similarEventsData } = useEventFindSimilar({
+        categories: eventCategoriesString,
+        excludeEventId: event?.id,
+        enabled: shouldFetchSimilar
+    })
+
+    const similarEvents = useMemo(() => {
+        if (!similarEventsData?.data || !Array.isArray(similarEventsData.data)) return []
+        return similarEventsData.data.slice(0, 8)
+    }, [similarEventsData])
     
-    const allEvents = useMemo(() => {
-        if (!allEventsData?.data || !Array.isArray(allEventsData.data)) return []
-        return allEventsData.data
-    }, [allEventsData])
     const { addItem, items } = useCart()
     const [selectedBatchId, setSelectedBatchId] = useState<string | undefined>(undefined)
     const [quantity, setQuantity] = useState(0)
@@ -57,6 +81,7 @@ const VerEventoInfo = (
     const [selectedDaysAndTypes, setSelectedDaysAndTypes] = useState<Record<string, Record<string, number>>>({})
     const [totalAnimationKey, setTotalAnimationKey] = useState(0)
     const previousTotalRef = useRef<number>(0)
+    const eventClickRegisteredRef = useRef<string | null>(null)
 
     const formatDate = (dateString?: string | null) => {
         return formatEventDate(dateString, "DD [de] MMMM [de] YYYY")
@@ -168,6 +193,48 @@ const VerEventoInfo = (
         return sortedBatches.filter(batch => getBatchStatus(batch) === "ended")
     }, [sortedBatches])
 
+    useEffect(() => {
+        if (!event?.id) return
+        if (eventClickRegisteredRef.current === event.id) return
+
+        const payload: TEventClickCreate = {
+            eventId: event.id
+        }
+
+        if (user?.id) {
+            payload.userId = user.id
+        }
+
+        if (typeof window !== "undefined") {
+            const searchParams = new URLSearchParams(window.location.search)
+            const utmMappings: Record<string, keyof TEventClickCreate> = {
+                utm_id: "utmId",
+                utm_source: "utmSource",
+                utm_medium: "utmMedium",
+                utm_campaign: "utmCampaign",
+                utm_content: "utmContent",
+                utm_term: "utmTerm"
+            }
+
+            Object.entries(utmMappings).forEach(([paramKey, payloadKey]) => {
+                const value = searchParams.get(paramKey)
+                if (value) {
+                    payload[payloadKey] = value
+                }
+            })
+        }
+
+        if (typeof document !== "undefined" && document.referrer) {
+            payload.referer = document.referrer
+        }
+
+        eventClickRegisteredRef.current = event.id
+
+        registerEventClick(payload).catch(() => {
+            eventClickRegisteredRef.current = null
+        })
+    }, [event?.id, registerEventClick, user?.id])
+
     const eventCategoryBadges = useMemo(() => {
         if (!event?.EventCategoryEvents?.length) return []
         const categories = eventCategoriesData?.data
@@ -190,11 +257,6 @@ const VerEventoInfo = (
             }
         }).filter(Boolean) as { id: string; label: string }[]
     }, [event, eventCategoriesData])
-
-    const similarEvents = useMemo(() => {
-        if (!allEvents || !event) return []
-        return allEvents.filter(e => e.id !== event.id).slice(0, 8)
-    }, [allEvents, event])
 
     const similarEventSlides = useMemo(() => {
         return similarEvents.map((event) => (
@@ -662,18 +724,39 @@ const VerEventoInfo = (
                                         )
                                     })()}
 
-                                    {isRecurrent && recurrenceInfo && (
-                                        <div className="flex items-center gap-2">
-                                            <Repeat className="h-4 w-4 text-psi-primary shrink-0" />
-                                            <span className="font-semibold text-psi-primary">
-                                                {recurrenceInfo.type === "DAILY" && "Diário"}
-                                                {recurrenceInfo.type === "WEEKLY" && "Semanal"}
-                                                {recurrenceInfo.type === "MONTHLY" && "Mensal"}
-                                            </span>
-                                            <span className="text-psi-dark/50">•</span>
-                                            <span>{recurrenceInfo.text}</span>
-                                        </div>
-                                    )}
+                                    {isRecurrent && (() => {
+                                        const nextEventDate = event.EventDates?.[0]
+                                        return (
+                                            <div className="space-y-3">
+                                                {recurrenceInfo && (
+                                                    <div className="flex items-center gap-2">
+                                                        <Repeat className="h-4 w-4 text-psi-primary shrink-0" />
+                                                        <span className="font-semibold text-psi-primary">
+                                                            {recurrenceInfo.type === "DAILY" && "Diário"}
+                                                            {recurrenceInfo.type === "WEEKLY" && "Semanal"}
+                                                            {recurrenceInfo.type === "MONTHLY" && "Mensal"}
+                                                        </span>
+                                                        <span className="text-psi-dark/50">•</span>
+                                                        <span>{recurrenceInfo.text}</span>
+                                                    </div>
+                                                )}
+                                                {nextEventDate && (
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <Calendar className="h-4 w-4 text-psi-primary shrink-0" />
+                                                            <span className="font-medium">
+                                                                Próxima data: {formatDate(nextEventDate.date)}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <Clock className="h-4 w-4 text-psi-primary shrink-0" />
+                                                            <span>{formatTimeRange(nextEventDate.hourStart, nextEventDate.hourEnd)}</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                    })()}
 
                                     {event.location && (
                                         <div className="flex items-center gap-2">
@@ -832,11 +915,13 @@ const VerEventoInfo = (
                                                                                     return (
                                                                                         <>
                                                                                             <p className="text-psi-primary font-semibold mt-1">
-                                                                                                A partir de {ValueUtils.centsToCurrency(minPrice)}
+                                                                                                {minPrice === 0 ? "Gratuito" : `A partir de ${ValueUtils.centsToCurrency(minPrice)}`}
                                                                                             </p>
-                                                                                            <p className="text-xs text-psi-dark/60">
-                                                                                                + Taxa: {ValueUtils.centsToCurrency(minFeeCents)} por ingresso
-                                                                                            </p>
+                                                                                            {minPrice > 0 && (
+                                                                                                <p className="text-xs text-psi-dark/60">
+                                                                                                    + Taxa: {ValueUtils.centsToCurrency(minFeeCents)} por ingresso
+                                                                                                </p>
+                                                                                            )}
                                                                                         </>
                                                                                     )
                                                                                 }
@@ -863,9 +948,9 @@ const VerEventoInfo = (
                                                                                 <div key={ebt.ticketTypeId} className="text-sm">
                                                                                     <p className="font-medium text-psi-dark">{ticketTypeName}</p>
                                                                                     <p className="text-psi-primary font-semibold">
-                                                                                        {hasPricePerDay ? "Preço por dia" : (displayPrice ? ValueUtils.centsToCurrency(displayPrice) : "Preço não definido")}
+                                                                                        {hasPricePerDay ? "Preço por dia" : (displayPrice !== null && displayPrice !== undefined ? ValueUtils.formatPrice(displayPrice) : "Preço não definido")}
                                                                                     </p>
-                                                                                    {!hasPricePerDay && displayPrice && (
+                                                                                    {!hasPricePerDay && displayPrice && displayPrice > 0 && (
                                                                                         <p className="text-xs text-psi-dark/60">
                                                                                             + Taxa: {ValueUtils.centsToCurrency(typeFeeCents)}
                                                                                         </p>
@@ -892,7 +977,8 @@ const VerEventoInfo = (
                                                                                         })
                                                                                     })
                                                                                     if (isFinite(min)) {
-                                                                                        return `A partir de ${ValueUtils.centsToCurrency(Math.round(min))}`
+                                                                                        const roundedMin = Math.round(min)
+                                                                                        return roundedMin === 0 ? "Gratuito" : `A partir de ${ValueUtils.centsToCurrency(roundedMin)}`
                                                                                     }
                                                                                 }
 
@@ -900,26 +986,40 @@ const VerEventoInfo = (
                                                                                     ed => ed.hasSpecificPrice && typeof ed.price === 'number'
                                                                                 )
                                                                                 if (daysWithSpecificOnly.length > 0) {
-                                                                                    const minPrice = Math.min(...daysWithSpecificOnly.map(ed => ed.price!))
-                                                                                    return `A partir de ${ValueUtils.centsToCurrency(Math.round(minPrice))}`
+                                                                                    const minPrice = Math.round(Math.min(...daysWithSpecificOnly.map(ed => ed.price!)))
+                                                                                    return minPrice === 0 ? "Gratuito" : `A partir de ${ValueUtils.centsToCurrency(minPrice)}`
                                                                                 }
                                                                             }
-                                                                            return ValueUtils.centsToCurrency(Math.round(getBatchPrice(batch)))
+                                                                            const batchPrice = Math.round(getBatchPrice(batch))
+                                                                            return ValueUtils.formatPrice(batchPrice)
                                                                         })()}
                                                                     </p>
-                                                                    <p className="text-xs text-psi-dark/60 mt-1">
-                                                                        {(() => {
-                                                                            if (hasMultipleDaysWithSpecificPrices && event.EventDates) {
-                                                                                const daysWithSpecificPrices = event.EventDates.filter(ed => ed.hasSpecificPrice && ed.price !== null && ed.price !== undefined)
-                                                                                if (daysWithSpecificPrices.length > 0) {
-                                                                                    const minPrice = Math.min(...daysWithSpecificPrices.map(ed => ed.price!))
+                                                                    {(() => {
+                                                                        if (hasMultipleDaysWithSpecificPrices && event.EventDates) {
+                                                                            const daysWithSpecificPrices = event.EventDates.filter(ed => ed.hasSpecificPrice && ed.price !== null && ed.price !== undefined)
+                                                                            if (daysWithSpecificPrices.length > 0) {
+                                                                                const minPrice = Math.min(...daysWithSpecificPrices.map(ed => ed.price!))
+                                                                                if (minPrice > 0) {
                                                                                     const minFeeCents = TicketFeeUtils.calculateFeeInCents(minPrice, event.isClientTaxed)
-                                                                                    return `+ Taxa de serviço: ${ValueUtils.centsToCurrency(minFeeCents)}`
+                                                                                    return (
+                                                                                        <p className="text-xs text-psi-dark/60 mt-1">
+                                                                                            + Taxa de serviço: {ValueUtils.centsToCurrency(minFeeCents)}
+                                                                                        </p>
+                                                                                    )
                                                                                 }
+                                                                                return null
                                                                             }
-                                                                            return `+ Taxa de serviço: ${ValueUtils.centsToCurrency(TicketFeeUtils.calculateFeeInCents(Math.round(getBatchPrice(batch)), event.isClientTaxed))}`
-                                                                        })()}
-                                                                    </p>
+                                                                        }
+                                                                        const batchPrice = Math.round(getBatchPrice(batch))
+                                                                        if (batchPrice > 0) {
+                                                                            return (
+                                                                                <p className="text-xs text-psi-dark/60 mt-1">
+                                                                                    + Taxa de serviço: {ValueUtils.centsToCurrency(TicketFeeUtils.calculateFeeInCents(batchPrice, event.isClientTaxed))}
+                                                                                </p>
+                                                                            )
+                                                                        }
+                                                                        return null
+                                                                    })()}
                                                                 </>
                                                             )}
                                                         </div>
@@ -953,11 +1053,13 @@ const VerEventoInfo = (
                                                                 </span>
                                                             </div>
                                                             <p className="text-2xl font-bold text-psi-dark/40 mt-2">
-                                                                {ValueUtils.centsToCurrency(Math.round(batchPrice))}
+                                                                {ValueUtils.formatPrice(Math.round(batchPrice))}
                                                             </p>
-                                                            <p className="text-xs text-psi-dark/50">
-                                                                Taxa de serviço: {ValueUtils.centsToCurrency(feeCents)}
-                                                            </p>
+                                                            {Math.round(batchPrice) > 0 && (
+                                                                <p className="text-xs text-psi-dark/50">
+                                                                    Taxa de serviço: {ValueUtils.centsToCurrency(feeCents)}
+                                                                </p>
+                                                            )}
                                                         </div>
                                                     </div>
                                                     <div className="text-xs text-psi-dark/40 space-y-1">
@@ -984,10 +1086,10 @@ const VerEventoInfo = (
                                         return (
                                             <>
                                                 <p className="text-3xl font-bold text-psi-primary">
-                                                    {displayPrice ? ValueUtils.centsToCurrency(Math.round(displayPrice)) : "Preço não definido"}
+                                                    {displayPrice !== null && displayPrice !== undefined ? ValueUtils.formatPrice(Math.round(displayPrice)) : "Preço não definido"}
                                                 </p>
                                                 <p className="text-sm text-psi-dark/60">Ingresso único</p>
-                                                {displayPrice && (
+                                                {displayPrice && displayPrice > 0 && (
                                                     <p className="text-xs text-psi-dark/60">
                                                         + Taxa de serviço: {ValueUtils.centsToCurrency(feeCents)}
                                                     </p>
@@ -1005,7 +1107,7 @@ const VerEventoInfo = (
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between">
                                             <span className="text-sm font-medium text-psi-dark">Selecione a quantidade por tipo</span>
-                                            <span className="text-xs text-psi-dark/60">Máximo 10 por pessoa</span>
+                                            <span className="text-xs text-psi-dark/60">Máximo {buyTicketsLimit} por pessoa</span>
                                         </div>
                                         <div className="space-y-4">
                                             {selectedBatch.EventBatchTicketTypes.map((ebt) => {
@@ -1056,14 +1158,14 @@ const VerEventoInfo = (
                                                                     <div className="mt-2 space-y-1">
                                                                         {typeof displayPrice === "object" ? (
                                                                             <p className="text-sm font-medium text-psi-primary">
-                                                                                {ValueUtils.centsToCurrency(displayPrice.min)} - {ValueUtils.centsToCurrency(displayPrice.max)} por ingresso
+                                                                                {displayPrice.min === 0 && displayPrice.max === 0 ? "Gratuito" : `${ValueUtils.formatPrice(displayPrice.min)} - ${ValueUtils.formatPrice(displayPrice.max)} por ingresso`}
                                                                             </p>
                                                                         ) : (
                                                                             <p className="text-sm font-medium text-psi-primary">
-                                                                                {ValueUtils.centsToCurrency(displayPrice)} por ingresso
+                                                                                {ValueUtils.formatPrice(displayPrice)} por ingresso
                                                                             </p>
                                                                         )}
-                                                                        {typeof displayPrice === "number" && (
+                                                                        {typeof displayPrice === "number" && displayPrice > 0 && (
                                                                             <p className="text-xs text-psi-dark/60">
                                                                                 + Taxa: {ValueUtils.centsToCurrency(TicketFeeUtils.calculateFeeInCents(displayPrice, event.isClientTaxed))} por ingresso
                                                                             </p>
@@ -1126,11 +1228,13 @@ const VerEventoInfo = (
                                                                                     </div>
                                                                                     <div className="text-right">
                                                                                         <div className="text-sm font-semibold text-psi-primary">
-                                                                                            {ValueUtils.centsToCurrency(priceForThisDay)}
+                                                                                            {ValueUtils.formatPrice(priceForThisDay)}
                                                                                         </div>
-                                                                                        <div className="text-xs text-psi-dark/60">
-                                                                                            + {ValueUtils.centsToCurrency(feeCents)} taxa
-                                                                                        </div>
+                                                                                        {priceForThisDay > 0 && (
+                                                                                            <div className="text-xs text-psi-dark/60">
+                                                                                                + {ValueUtils.centsToCurrency(feeCents)} taxa
+                                                                                            </div>
+                                                                                        )}
                                                                                     </div>
                                                                                 </div>
                                                                             )
@@ -1152,7 +1256,7 @@ const VerEventoInfo = (
                                                                     [ebt.ticketTypeId]: newQuantity
                                                                 }))
                                                             }}
-                                                            max={10}
+                                                            max={buyTicketsLimit}
                                                             min={0}
                                                             disabled={event.EventDates && event.EventDates.length > 1 && selectedDaysForType.length === 0}
                                                         />
@@ -1165,7 +1269,7 @@ const VerEventoInfo = (
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between">
                                             <span className="text-sm font-medium text-psi-dark">Selecione os dias e tipos de ingressos</span>
-                                            <span className="text-xs text-psi-dark/60">Máximo 10 por pessoa</span>
+                                            <span className="text-xs text-psi-dark/60">Máximo {buyTicketsLimit} por pessoa</span>
                                         </div>
                                         {event.EventDates.filter(ed => ed.hasSpecificPrice && ed.EventDateTicketTypePrices && ed.EventDateTicketTypePrices.length > 0).map((eventDate) => {
                                             const dayTypes = selectedDaysAndTypes[eventDate.id] || {}
@@ -1194,11 +1298,13 @@ const VerEventoInfo = (
                                                                                 <div className="flex-1">
                                                                                     <p className="text-sm font-medium text-psi-dark">{ticketType?.name || "Tipo desconhecido"}</p>
                                                                                     <p className="text-xs text-psi-primary font-semibold mt-1">
-                                                                                        {ValueUtils.centsToCurrency(edttp.price)} por ingresso
+                                                                                        {ValueUtils.formatPrice(edttp.price)} por ingresso
                                                                                     </p>
-                                                                                    <p className="text-xs text-psi-dark/60">
-                                                                                        + Taxa: {ValueUtils.centsToCurrency(feeCents)} por ingresso
-                                                                                    </p>
+                                                                                    {edttp.price > 0 && (
+                                                                                        <p className="text-xs text-psi-dark/60">
+                                                                                            + Taxa: {ValueUtils.centsToCurrency(feeCents)} por ingresso
+                                                                                        </p>
+                                                                                    )}
                                                                                     {qty > 0 && (
                                                                                         <p className="text-xs font-semibold text-psi-dark mt-1">
                                                                                             Subtotal: {ValueUtils.centsToCurrency((edttp.price + feeCents) * qty)}
@@ -1232,7 +1338,7 @@ const VerEventoInfo = (
                                                                                             }
                                                                                         })
                                                                                     }}
-                                                                                    max={10}
+                                                                                    max={buyTicketsLimit}
                                                                                     min={0}
                                                                                 />
                                                                             </div>
@@ -1252,7 +1358,7 @@ const VerEventoInfo = (
                                             <div className="space-y-4">
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-sm font-medium text-psi-dark">Selecione os dias e quantidades</span>
-                                                    <span className="text-xs text-psi-dark/60">Máximo 10 por pessoa</span>
+                                                    <span className="text-xs text-psi-dark/60">Máximo {buyTicketsLimit} por pessoa</span>
                                                 </div>
                                                 {event.EventDates && event.EventDates.filter(ed => ed.hasSpecificPrice).map((eventDate) => {
                                                     const isSelected = selectedDaysWithoutTicketTypes.includes(eventDate.id)
@@ -1295,11 +1401,13 @@ const VerEventoInfo = (
                                                                     {isSelected && (
                                                                         <div className="mt-2 space-y-1">
                                                                             <p className="text-sm font-medium text-psi-primary">
-                                                                                {ValueUtils.centsToCurrency(price)} por ingresso
+                                                                                {ValueUtils.formatPrice(price)} por ingresso
                                                                             </p>
-                                                                            <p className="text-xs text-psi-dark/60">
-                                                                                + Taxa: {ValueUtils.centsToCurrency(feeCents)} por ingresso
-                                                                            </p>
+                                                                            {price > 0 && (
+                                                                                <p className="text-xs text-psi-dark/60">
+                                                                                    + Taxa: {ValueUtils.centsToCurrency(feeCents)} por ingresso
+                                                                                </p>
+                                                                            )}
                                                                             {qty > 0 && (
                                                                                 <p className="text-sm font-semibold text-psi-dark mt-2">
                                                                                     Subtotal: {ValueUtils.centsToCurrency((price + feeCents) * qty)}
@@ -1318,7 +1426,7 @@ const VerEventoInfo = (
                                                                             [eventDate.id]: newQuantity
                                                                         }))
                                                                     }}
-                                                                    max={10}
+                                                                    max={buyTicketsLimit}
                                                                     min={0}
                                                                 />
                                                             )}
@@ -1330,7 +1438,7 @@ const VerEventoInfo = (
                                             <div className="space-y-4">
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-sm font-medium text-psi-dark">Quantidade</span>
-                                                    <span className="text-xs text-psi-dark/60">Máximo 10 por pessoa</span>
+                                                    <span className="text-xs text-psi-dark/60">Máximo {buyTicketsLimit} por pessoa</span>
                                                 </div>
                                                 <QuantitySelector
                                                     value={currentQuantity}
@@ -1348,7 +1456,7 @@ const VerEventoInfo = (
                                                             }, newQuantity)
                                                         }
                                                     }}
-                                                    max={10}
+                                                    max={buyTicketsLimit}
                                                     min={0}
                                                 />
                                             </div>
