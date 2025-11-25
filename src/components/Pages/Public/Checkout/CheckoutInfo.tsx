@@ -676,7 +676,17 @@ const CheckoutInfo = () => {
                                                         </div>
                                                         
                                                         <div className="flex-1 space-y-2">
-                                                            <h3 className="font-semibold text-psi-dark">{event.name}</h3>
+                                                            <div className="flex items-center justify-between">
+                                                                <h3 className="font-semibold text-psi-dark">{event.name}</h3>
+
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => removeItem(item.eventId, item.batchId)}
+                                                                    className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                                                                >
+                                                                    <Trash2 className="size-4" />
+                                                                </button>
+                                                            </div>
                                                             
                                                             {item.batchName && (
                                                                 <p className="text-sm text-psi-dark/60">Lote: {item.batchName}</p>
@@ -821,16 +831,6 @@ const CheckoutInfo = () => {
                                                                 </div>
                                                                 </div>
                                                             )}
-                                                                
-                                                            <div className="flex items-center justify-between pt-2">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => removeItem(item.eventId, item.batchId)}
-                                                                    className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                                                                >
-                                                                    <Trash2 className="size-4" />
-                                                                </button>
-                                                            </div>
 
                                                             <div className="mt-4 p-4 rounded-xl bg-psi-dark/5 border border-psi-dark/10">
                                                                 <label className="block text-sm font-medium text-psi-dark mb-2">

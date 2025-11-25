@@ -83,6 +83,12 @@ const menuLinks: TMenuLink[] = [
         ]
     },
     {
+        label: "Leads",
+        href: "/leads",
+        icon: Users,
+        roles: ["ORGANIZER"]
+    },
+    {
         label: "Cupons",
         href: "/cupons",
         icon: TicketPercent,

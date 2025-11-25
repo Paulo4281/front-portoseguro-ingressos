@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation"
 import { AtualizarEventoForm } from "@/components/Pages/Private/AutalizarEvento/AtualizarEventoForm"
+import { VerificationStatusGuard } from "@/components/VerificationStatus/VerificationStatusGuard"
 
 const AtualizarEventoPage = () => {
     const searchParams = useSearchParams()
@@ -15,7 +16,11 @@ const AtualizarEventoPage = () => {
         )
     }
 
-    return <AtualizarEventoForm eventId={eventId} />
+    return (
+        <VerificationStatusGuard>
+            <AtualizarEventoForm eventId={eventId} />
+        </VerificationStatusGuard>
+    )
 }
 
 export default AtualizarEventoPage

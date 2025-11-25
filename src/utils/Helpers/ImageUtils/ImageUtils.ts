@@ -12,6 +12,13 @@ class ImageUtilsClass {
         const bucketUrl = process.env.NEXT_PUBLIC_BUCKET_URL || ""
         return `${bucketUrl}/users/${imageHash}`
     }
+
+    getOrganizerLogoUrl(logoHash: string | null | undefined): string {
+        if (!logoHash) return ""
+
+        const bucketUrl = process.env.NEXT_PUBLIC_BUCKET_URL || ""
+        return `${bucketUrl}/organizers/${logoHash}`
+    }
 }
 
 export const ImageUtils = new ImageUtilsClass()

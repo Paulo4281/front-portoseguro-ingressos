@@ -4,8 +4,12 @@ import { useEffect, useMemo, useState } from "react"
 import type { ChangeEvent } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { useCouponFind } from "@/hooks/Coupon/useCouponFind"
+import { useCouponCreate } from "@/hooks/Coupon/useCouponCreate"
+import { useCouponUpdate } from "@/hooks/Coupon/useCouponUpdate"
+import { useCouponUpdateIsActive } from "@/hooks/Coupon/useCouponUpdateIsActive"
+import { useCouponDelete } from "@/hooks/Coupon/useCouponDelete"
 import { useEventCache } from "@/hooks/Event/useEventCache"
-import { CouponService } from "@/services/Coupon/CouponService"
+import { DialogConfirm } from "@/components/Dialog/DialogConfirm/DialogConfirm"
 import type { TCoupon } from "@/types/Coupon/TCoupon"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { Toast } from "@/components/Toast/Toast"
@@ -26,14 +30,13 @@ import { DatePicker } from "@/components/DatePicker/DatePicker"
 import {
     Percent,
     Gift,
-    ShieldCheck,
-    Calendar,
     Loader2,
-    RefreshCcw,
     TicketPercent,
-    ShoppingBag,
-    TimerReset
+    TimerReset,
+    Trash2
 } from "lucide-react"
+import { InputCurrency } from "@/components/Input/InputCurrency"
+import { queryClient } from "@/providers/QueryClientProvider/QueryClientProvider"
 
 type TNewCouponForm = {
     code: string
@@ -57,7 +60,13 @@ const defaultNewCouponValues: TNewCouponForm = {
 
 const CuponsPannel = () => {
     const { data, isLoading } = useCouponFind()
+    const { mutateAsync: createCoupon, isPending: isCreating } = useCouponCreate()
+    const { mutateAsync: updateCoupon, isPending: isUpdating } = useCouponUpdate()
+    const { mutateAsync: updateIsActive } = useCouponUpdateIsActive()
+    const { mutateAsync: deleteCoupon, isPending: isDeleting } = useCouponDelete()
     const { data: eventCacheData, isLoading: isEventCacheLoading } = useEventCache()
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+    const [couponToDelete, setCouponToDelete] = useState<string | null>(null)
     const couponsFromApi = useMemo(() => {
         if (data?.data && Array.isArray(data.data)) {
             return data.data
@@ -73,7 +82,6 @@ const CuponsPannel = () => {
     const [coupons, setCoupons] = useState<TCoupon[]>([])
     const [dirtyCoupons, setDirtyCoupons] = useState<Record<string, boolean>>({})
     const [savingCoupons, setSavingCoupons] = useState<Record<string, boolean>>({})
-    const [isCreating, setIsCreating] = useState(false)
 
     const {
         control,
@@ -89,8 +97,15 @@ const CuponsPannel = () => {
     const selectedEventId = watch("eventId")
 
     useEffect(() => {
-        setCoupons(couponsFromApi)
-    }, [couponsFromApi])
+        const couponsWithEventName = couponsFromApi.map((coupon) => {
+            const event = availableEvents.find((evt) => evt.id === coupon.eventId)
+            return {
+                ...coupon,
+                eventName: event?.name || "Evento não encontrado"
+            }
+        })
+        setCoupons(couponsWithEventName)
+    }, [couponsFromApi, availableEvents])
 
     useEffect(() => {
         if (!selectedEventId && availableEvents.length > 0) {
@@ -160,25 +175,36 @@ const CuponsPannel = () => {
             [couponId]: true
         }))
 
-        const response = await CouponService.update(couponId, coupon)
+        const updatePayload = {
+            code: coupon.code,
+            discountType: coupon.discountType,
+            discountValue: coupon.discountValue,
+            expirationDate: coupon.expirationDate,
+            usageLimit: coupon.usageLimit,
+            minPurchaseValue: coupon.minPurchaseValue
+        }
 
-        if (response.success && response.data) {
-            setCoupons((prev) =>
-                prev.map((item) => (item.id === couponId ? response.data as TCoupon : item))
-            )
-            setDirtyCoupons((prev) => ({
+        try {
+            const response = await updateCoupon({ id: couponId, data: updatePayload })
+
+            if (response.success) {
+                setDirtyCoupons((prev) => ({
+                    ...prev,
+                    [couponId]: false
+                }))
+                Toast.success("Cupom atualizado com sucesso")
+                queryClient.invalidateQueries({ queryKey: ["coupons"] })
+            } else {
+                Toast.error(response.message || "Não foi possível atualizar o cupom")
+            }
+        } catch (error) {
+            Toast.error("Não foi possível atualizar o cupom")
+        } finally {
+            setSavingCoupons((prev) => ({
                 ...prev,
                 [couponId]: false
             }))
-            Toast.success("Cupom atualizado com sucesso")
-        } else {
-            Toast.error(response.message || "Não foi possível atualizar o cupom")
         }
-
-        setSavingCoupons((prev) => ({
-            ...prev,
-            [couponId]: false
-        }))
     }
 
     const onCreateCoupon = async (formData: TNewCouponForm) => {
@@ -208,28 +234,50 @@ const CuponsPannel = () => {
             return
         }
 
-        setIsCreating(true)
+        try {
+            const response = await createCoupon({
+                code: formData.code,
+                eventId: selectedEvent.id,
+                discountType: formData.discountType,
+                discountValue: normalizedDiscountValue,
+                expirationDate: formData.expirationDate ? new Date(`${formData.expirationDate}T00:00:00`).toISOString() : null,
+                usageLimit: formData.usageLimit ? Number(formData.usageLimit) : null,
+                minPurchaseValue: formData.minPurchaseValue ? Math.round(Number(formData.minPurchaseValue.replace(",", ".")) * 100) : null
+            })
 
-        const response = await CouponService.create({
-            code: formData.code,
-            eventName: selectedEvent.name,
-            eventId: selectedEvent.id,
-            discountType: formData.discountType,
-            discountValue: normalizedDiscountValue,
-            expirationDate: formData.expirationDate ? new Date(`${formData.expirationDate}T00:00:00`).toISOString() : null,
-            usageLimit: formData.usageLimit ? Number(formData.usageLimit) : null,
-            minPurchaseValue: formData.minPurchaseValue ? Math.round(Number(formData.minPurchaseValue.replace(",", ".")) * 100) : null
-        })
-
-        if (response.success && response.data) {
-            setCoupons((prev) => [response.data as TCoupon, ...prev])
-            Toast.success("Cupom criado com sucesso")
-            reset(defaultNewCouponValues)
-        } else {
-            Toast.error(response.message || "Não foi possível criar o cupom")
+            if (response.success) {
+                Toast.success("Cupom criado com sucesso")
+                reset(defaultNewCouponValues)
+                queryClient.invalidateQueries({ queryKey: ["coupons"] })
+            } else {
+                Toast.error(response.message || "Não foi possível criar o cupom")
+            }
+        } catch (error) {
+            Toast.error("Não foi possível criar o cupom")
         }
+    }
 
-        setIsCreating(false)
+    const handleDeleteCoupon = async () => {
+        if (!couponToDelete) return
+
+        try {
+            const response = await deleteCoupon(couponToDelete)
+            if (response.success) {
+                Toast.success("Cupom excluído com sucesso")
+                setCoupons((prev) => prev.filter((coupon) => coupon.id !== couponToDelete))
+                setDeleteDialogOpen(false)
+                setCouponToDelete(null)
+            } else {
+                Toast.error(response.message || "Não foi possível excluir o cupom")
+            }
+        } catch (error) {
+            Toast.error("Não foi possível excluir o cupom")
+        }
+    }
+
+    const openDeleteDialog = (couponId: string) => {
+        setCouponToDelete(couponId)
+        setDeleteDialogOpen(true)
     }
 
     const renderDiscountValue = (coupon: TCoupon) => {
@@ -239,13 +287,8 @@ const CuponsPannel = () => {
         return ValueUtils.centsToCurrency(coupon.discountValue)
     }
 
-    const renderMinPurchase = (coupon: TCoupon) => {
-        if (!coupon.minPurchaseValue) return "Sem mínimo"
-        return ValueUtils.centsToCurrency(coupon.minPurchaseValue)
-    }
-
     return (
-        <Background variant="light" className="min-h-screen py-10 mt-[80px]">
+        <Background variant="light" className="min-h-screen py-10 mt-[80px] container">
             <section className="space-y-10 px-4
             sm:px-6
             lg:px-8">
@@ -284,7 +327,7 @@ const CuponsPannel = () => {
                 />
             </div>
 
-            <div className="rounded-3xl border border-[#E4E6F0] bg-white/90 p-6 space-y-6 shadow-lg shadow-black/5">
+            <div className="rounded-3xl border border-[#E4E6F0] bg-white/90 p-8 space-y-8 shadow-lg shadow-black/5">
                 <div className="flex flex-col gap-2">
                     <h2 className="text-xl font-semibold text-psi-dark flex items-center gap-2">
                         <Percent className="h-5 w-5 text-psi-primary" />
@@ -295,146 +338,159 @@ const CuponsPannel = () => {
                     </p>
                 </div>
                 <form
-                    className="grid gap-4
-                    lg:flex lg:flex-nowrap lg:items-end"
+                    className="space-y-6"
                     onSubmit={handleSubmit(onCreateCoupon)}
                 >
-                    <div className="grid gap-2
-                    ">
-                        <span className="text-sm font-medium text-psi-dark">Código (máximo de 12 caracteres)</span>
-                        <Controller
-                            control={control}
-                            name="code"
-                            render={({ field }) => (
-                                <Input
-                                    {...field}
-                                    required
-                                    placeholder="PORTO2025"
-                                    onChange={(event: ChangeEvent<HTMLInputElement>) => field.onChange(event.target.value.toUpperCase())}
-                                    maxLength={12}
+                    <div className="grid gap-6
+                    md:grid-cols-2">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-psi-dark">Código do cupom</label>
+                            <Controller
+                                control={control}
+                                name="code"
+                                render={({ field }) => (
+                                    <Input
+                                        {...field}
+                                        required
+                                        placeholder="PORTO2025"
+                                        onChange={(event: ChangeEvent<HTMLInputElement>) => field.onChange(event.target.value.toUpperCase())}
+                                        maxLength={12}
+                                        
+                                    />
+                                )}
+                            />
+                            <p className="text-xs text-psi-dark/50">Máximo de 12 caracteres</p>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-psi-dark">Evento</label>
+                            <Controller
+                                control={control}
+                                name="eventId"
+                                render={({ field }) => (
+                                    <Select
+                                        value={field.value}
+                                        onValueChange={field.onChange}
+                                        disabled={isEventCacheLoading || availableEvents.length === 0}
+                                    >
+                                        <SelectTrigger aria-label="Evento do cupom" >
+                                            <SelectValue placeholder={isEventCacheLoading ? "Carregando eventos..." : "Selecione um evento"} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {availableEvents.map((eventItem) => (
+                                                <SelectItem key={eventItem.id} value={eventItem.id}>
+                                                    {eventItem.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="border-t border-psi-dark/10 pt-6">
+                        <h3 className="text-sm font-semibold text-psi-dark mb-4">Configuração de desconto</h3>
+                        <div className="grid gap-6
+                        md:grid-cols-2">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-psi-dark">Tipo de desconto</label>
+                                <Controller
+                                    control={control}
+                                    name="discountType"
+                                    render={({ field }) => (
+                                        <Select
+                                            value={field.value}
+                                            onValueChange={field.onChange}
+                                        >
+                                            <SelectTrigger aria-label="Tipo de desconto" >
+                                                <SelectValue placeholder="Selecione o tipo" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="PERCENTAGE">Percentual (%)</SelectItem>
+                                                <SelectItem value="FIXED">Valor fixo (R$)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    )}
                                 />
-                            )}
-                        />
-                    </div>
-                    <div className="grid gap-2
-                    lg:flex-2">
-                        <span className="text-sm font-medium text-psi-dark">Evento</span>
-                        <Controller
-                            control={control}
-                            name="eventId"
-                            render={({ field }) => (
-                                <Select
-                                    value={field.value}
-                                    onValueChange={field.onChange}
-                                    disabled={isEventCacheLoading || availableEvents.length === 0}
-                                >
-                                    <SelectTrigger aria-label="Evento do cupom">
-                                        <SelectValue placeholder={isEventCacheLoading ? "Carregando eventos..." : "Selecione um evento"} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {availableEvents.map((eventItem) => (
-                                            <SelectItem key={eventItem.id} value={eventItem.id}>
-                                                {eventItem.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            )}
-                        />
-                    </div>
-                    <div className="grid gap-2
-                    lg:flex-1 lg:max-w-[180px]">
-                        <span className="text-sm font-medium text-psi-dark">Tipo de desconto</span>
-                        <Controller
-                            control={control}
-                            name="discountType"
-                            render={({ field }) => (
-                                <Select
-                                    value={field.value}
-                                    onValueChange={field.onChange}
-                                >
-                                    <SelectTrigger aria-label="Tipo de desconto">
-                                        <SelectValue placeholder="Selecione o tipo" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="PERCENTAGE">Percentual (%)</SelectItem>
-                                        <SelectItem value="FIXED">Valor fixo (R$)</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            )}
-                        />
-                    </div>
-                    <div className="grid gap-2
-                    lg:flex-1 lg:max-w-[180px]">
-                        <span className="text-sm font-medium text-psi-dark">
-                            {newCouponDiscountType === "PERCENTAGE" ? "Percentual" : "Valor em reais"}
-                        </span>
-                        <Controller
-                            control={control}
-                            name="discountValue"
-                            render={({ field }) => (
-                                <Input
-                                    {...field}
-                                    required
-                                    type="number"
-                                    min="1"
-                                    max={newCouponDiscountType === "PERCENTAGE" ? "100" : undefined}
-                                    step={newCouponDiscountType === "PERCENTAGE" ? "1" : "0.01"}
-                                    placeholder={newCouponDiscountType === "PERCENTAGE" ? "10" : "50"}
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-psi-dark">
+                                    {newCouponDiscountType === "PERCENTAGE" ? "Percentual de desconto (em %)" : "Valor do desconto (em R$)"}
+                                </label>
+                                <Controller
+                                    control={control}
+                                    name="discountValue"
+                                    render={({ field }) => (
+                                        <Input
+                                            {...field}
+                                            required
+                                            type="number"
+                                            min="1"
+                                            max={newCouponDiscountType === "PERCENTAGE" ? "100" : undefined}
+                                            step={newCouponDiscountType === "PERCENTAGE" ? "1" : "0.01"}
+                                            placeholder={newCouponDiscountType === "PERCENTAGE" ? "10" : "50.00"}
+                                            
+                                        />
+                                    )}
                                 />
-                            )}
-                        />
+                            </div>
+                        </div>
                     </div>
-                    <div className="grid gap-2
-                    lg:flex-1 lg:max-w-[200px]">
-                        <span className="text-sm font-medium text-psi-dark">Data de expiração</span>
-                        <Controller
-                            control={control}
-                            name="expirationDate"
-                            render={({ field }) => (
-                                <DatePicker
-                                    value={field.value || null}
-                                    onChange={(date) => field.onChange(date ?? "")}
-                                    minDate={new Date().toISOString().split("T")[0]}
+
+                    <div className="border-t border-psi-dark/10 pt-6">
+                        <h3 className="text-sm font-semibold text-psi-dark mb-4">Regras e limites</h3>
+                        <div className="grid gap-6
+                        md:grid-cols-2
+                        lg:grid-cols-3">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-psi-dark">Data de expiração (opcional)</label>
+                                <Controller
+                                    control={control}
+                                    name="expirationDate"
+                                    render={({ field }) => (
+                                        <DatePicker
+                                            value={field.value || null}
+                                            onChange={(date) => field.onChange(date ?? "")}
+                                            minDate={new Date().toISOString().split("T")[0]}
+                                        />
+                                    )}
                                 />
-                            )}
-                        />
-                    </div>
-                    <div className="grid gap-2
-                    lg:flex-1 lg:max-w-[150px]">
-                        <span className="text-sm font-medium text-psi-dark">Uso máximo</span>
-                        <Controller
-                            control={control}
-                            name="usageLimit"
-                            render={({ field }) => (
-                                <Input
-                                    {...field}
-                                    type="number"
-                                    min="1"
-                                    placeholder="Ex: 100"
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-psi-dark">Limite de uso (opcional)</label>
+                                <Controller
+                                    control={control}
+                                    name="usageLimit"
+                                    render={({ field }) => (
+                                        <Input
+                                            {...field}
+                                            type="number"
+                                            min="1"
+                                            placeholder="Ex: 100"
+                                        />
+                                    )}
                                 />
-                            )}
-                        />
-                    </div>
-                    <div className="grid gap-2
-                    lg:flex-1 lg:max-w-[200px]">
-                        <span className="text-sm font-medium text-psi-dark">Valor mínimo (opcional)</span>
-                        <Controller
-                            control={control}
-                            name="minPurchaseValue"
-                            render={({ field }) => (
-                                <Input
-                                    {...field}
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    placeholder="Ex: 150.00"
+                                <p className="text-xs text-psi-dark/50">Deixe vazio para ilimitado</p>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-psi-dark">Valor mínimo de compra (opcional)</label>
+                                <Controller
+                                    control={control}
+                                    name="minPurchaseValue"
+                                    render={({ field }) => (
+                                        <InputCurrency
+                                            {...field}
+                                            placeholder="Ex: R$ 150.00"
+                                        />
+                                    )}
                                 />
-                            )}
-                        />
+                                <p className="text-xs text-psi-dark/50">Opcional</p>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex justify-end flex-wrap gap-3 lg:flex-none lg:self-end lg:pl-4">
-                        <Button type="submit" variant="primary" disabled={isCreating}>
+
+                    <div className="flex justify-end pt-4 border-t border-psi-dark/10">
+                        <Button type="submit" variant="primary" disabled={isCreating} className="min-w-[160px]">
                             {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Criar cupom
                         </Button>
@@ -467,25 +523,39 @@ const CuponsPannel = () => {
                             return (
                                 <div
                                     key={coupon.id}
-                                    className="rounded-3xl border border-[#E4E6F0] bg-white/90 p-6 space-y-6 shadow-lg shadow-black/5"
+                                    className="rounded-3xl border border-[#E4E6F0] bg-white/90 p-8 space-y-6 shadow-lg shadow-black/5"
                                 >
-                                    <div className="flex flex-wrap items-center justify-between gap-4">
-                                        <div>
-                                            <p className="text-xs uppercase tracking-[0.2em] text-psi-dark/50">Código</p>
+                                    <div className="flex flex-wrap items-start justify-between gap-4 pb-6 border-b border-psi-dark/10">
+                                        <div className="space-y-2">
                                             <div className="flex items-center gap-3">
                                                 <span className="text-2xl font-semibold text-psi-dark">{coupon.code}</span>
                                                 <Badge variant={coupon.isActive ? "default" : "secondary"} className={coupon.isActive ? "bg-emerald-100 text-emerald-700" : "bg-psi-dark/10 text-psi-dark"}>
                                                     {coupon.isActive ? "Ativo" : "Inativo"}
                                                 </Badge>
                                             </div>
-                                            <p className="text-sm text-psi-dark/60">
+                                            <hr />
+                                            <p className="text-lg font-bold text-psi-primary/80">
                                                 {coupon.eventName}
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <Switch
                                                 checked={coupon.isActive}
-                                                onCheckedChange={(checked) => handleCouponFieldChange(coupon.id, "isActive", checked)}
+                                                onCheckedChange={async (checked) => {
+                                                    handleCouponFieldChange(coupon.id, "isActive", checked)
+                                                    try {
+                                                        const response = await updateIsActive(coupon.id)
+                                                        if (!response.success) {
+                                                            handleCouponFieldChange(coupon.id, "isActive", !checked)
+                                                            Toast.error(response.message || "Não foi possível atualizar o status do cupom")
+                                                        } else {
+                                                            Toast.success("Status do cupom atualizado")
+                                                        }
+                                                    } catch (error) {
+                                                        handleCouponFieldChange(coupon.id, "isActive", !checked)
+                                                        Toast.error("Não foi possível atualizar o status do cupom")
+                                                    }
+                                                }}
                                                 aria-label={`Ativar cupom ${coupon.code}`}
                                             />
                                             <span className="text-sm font-medium text-psi-dark/70">
@@ -494,123 +564,171 @@ const CuponsPannel = () => {
                                         </div>
                                     </div>
 
-                                    <div className="grid gap-4
-                                    md:grid-cols-2
-                                    lg:flex lg:flex-nowrap lg:items-end">
-                                        <div className="space-y-2">
-                                            <span className="text-xs font-semibold text-psi-dark/60">Tipo</span>
-                                            <Select
-                                                value={coupon.discountType}
-                                                onValueChange={(value) => handleDiscountTypeChange(coupon.id, value as "PERCENTAGE" | "FIXED")}
-                                            >
-                                                <SelectTrigger aria-label={`Tipo do cupom ${coupon.code}`}>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="PERCENTAGE">Percentual</SelectItem>
-                                                    <SelectItem value="FIXED">Valor fixo</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="space-y-2 lg:flex-1 min-w-[180px]">
-                                            <span className="text-xs font-semibold text-psi-dark/60">Valor do desconto ({coupon.discountType === "PERCENTAGE" ? "%" : "R$"})</span>
-                                            <Input
-                                                type="number"
-                                                min="1"
-                                                max={coupon.discountType === "PERCENTAGE" ? "100" : undefined}
-                                                step={coupon.discountType === "PERCENTAGE" ? "1" : "0.01"}
-                                                value={coupon.discountType === "PERCENTAGE" ? String(coupon.discountValue) : (coupon.discountValue / 100).toString()}
-                                                onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                                                    const value = event.target.value
-                                                    const parsed = coupon.discountType === "PERCENTAGE"
-                                                        ? Math.max(1, Math.min(100, Number(value)))
-                                                        : Math.round((Number(value) || 0) * 100)
-                                                    handleCouponFieldChange(coupon.id, "discountValue", parsed || 0)
-                                                }}
-                                                required
-                                            />
-                                        </div>
-                                        <div className="space-y-2 lg:flex-1 min-w-[180px]">
-                                            <span className="text-xs font-semibold text-psi-dark/60">Valor mínimo (opcional) (R$)</span>
-                                            <Input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                value={coupon.minPurchaseValue ? (coupon.minPurchaseValue / 100).toString() : ""}
-                                                onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                                                    const value = event.target.value
-                                                        ? event.target.value.replace(",", ".")
-                                                        : ""
-                                                    handleCouponFieldChange(
-                                                        coupon.id,
-                                                        "minPurchaseValue",
-                                                        value ? Math.round(Number(value) * 100) : null
-                                                    )
-                                                }}
-                                            />
-                                        </div>
-                                        <div className="space-y-2 lg:flex-1 min-w-[150px]">
-                                            <span className="text-xs font-semibold text-psi-dark/60">Limite de uso</span>
-                                            <Input
-                                                type="number"
-                                                min="1"
-                                                value={coupon.usageLimit ?? ""}
-                                                onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                                                    const value = event.target.value
-                                                    handleCouponFieldChange(coupon.id, "usageLimit", value ? Number(value) : null)
-                                                }}
-                                            />
-                                        </div>
-                                        <div className="space-y-2 lg:flex-1 min-w-[200px]">
-                                            <span className="text-xs font-semibold text-psi-dark/60">Expiração</span>
-                                            <DatePicker
-                                                value={coupon.expirationDate ? coupon.expirationDate.split("T")[0] : null}
-                                                onChange={(value) => handleCouponFieldChange(
-                                                    coupon.id,
-                                                    "expirationDate",
-                                                    value ? new Date(`${value}T00:00:00`).toISOString() : null
-                                                )}
-                                                minDate={new Date().toISOString().split("T")[0]}
-                                            />
-                                        </div>
-                                        <div className="space-y-2 lg:flex-1 min-w-[160px]">
-                                            <span className="text-xs font-semibold text-psi-dark/60">Utilizações</span>
-                                            <div className="rounded-2xl border border-[#E4E6F0] bg-psi-dark/3 px-4 py-3">
-                                                <p className="text-psi-dark font-semibold">{coupon.usageCount}{coupon.usageLimit ? ` / ${coupon.usageLimit}` : ""}</p>
-                                                <p className="text-xs text-psi-dark/60">Clientes impactados</p>
+                                    <div className="space-y-6">
+                                        <div>
+                                            <h3 className="text-sm font-semibold text-psi-dark mb-4">Configuração de desconto</h3>
+                                            <div className="grid gap-4
+                                            md:grid-cols-2">
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium text-psi-dark">Tipo de desconto</label>
+                                                    <Select
+                                                        value={coupon.discountType}
+                                                        onValueChange={(value) => handleDiscountTypeChange(coupon.id, value as "PERCENTAGE" | "FIXED")}
+                                                    >
+                                                        <SelectTrigger aria-label={`Tipo do cupom ${coupon.code}`} >
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="PERCENTAGE">Percentual</SelectItem>
+                                                            <SelectItem value="FIXED">Valor fixo</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium text-psi-dark">
+                                                        Valor do desconto ({coupon.discountType === "PERCENTAGE" ? "%" : "R$"})
+                                                    </label>
+                                                    <Input
+                                                        type="number"
+                                                        min="1"
+                                                        max={coupon.discountType === "PERCENTAGE" ? "100" : undefined}
+                                                        step={coupon.discountType === "PERCENTAGE" ? "1" : "0.01"}
+                                                        value={coupon.discountType === "PERCENTAGE" ? String(coupon.discountValue) : (coupon.discountValue / 100).toString()}
+                                                        onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                                                            const value = event.target.value
+                                                            const parsed = coupon.discountType === "PERCENTAGE"
+                                                                ? Math.max(1, Math.min(100, Number(value)))
+                                                                : Math.round((Number(value) || 0) * 100)
+                                                            handleCouponFieldChange(coupon.id, "discountValue", parsed || 0)
+                                                        }}
+                                                        required
+                                                        
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="flex justify-end flex-wrap gap-3 lg:flex-none lg:self-end">
-                                            {isDirty && (
-                                                <Badge variant="secondary" className="bg-amber-100 text-amber-700">
-                                                    Alterações pendentes
-                                                </Badge>
-                                            )}
-                                            <Button
-                                                type="button"
-                                                variant="primary"
-                                                disabled={!isDirty || isSaving}
-                                                onClick={() => handleSaveCoupon(coupon.id)}
-                                            >
-                                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                                Salvar alterações
-                                            </Button>
-                                        </div>
-                                    </div>
 
-                                    <div className="flex flex-wrap items-center gap-4">
-                                        <div className="text-sm text-psi-dark/60 flex items-center gap-2">
-                                            <ShoppingBag className="h-4 w-4 text-psi-primary" />
-                                            {renderDiscountValue(coupon)} • {renderMinPurchase(coupon)}
-                                            {coupon.expirationDate && (
-                                                <>
-                                                    <span className="text-psi-dark/30">•</span>
-                                                    <span className="flex items-center gap-1">
-                                                        <Calendar className="h-4 w-4" />
-                                                        expira em {new Date(coupon.expirationDate).toLocaleDateString("pt-BR")}
-                                                    </span>
-                                                </>
-                                            )}
+                                        <div className="border-t border-psi-dark/10 pt-6">
+                                            <h3 className="text-sm font-semibold text-psi-dark mb-4">Regras e limites</h3>
+                                            <div className="grid gap-4
+                                            md:grid-cols-2
+                                            lg:grid-cols-3">
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium text-psi-dark">Valor mínimo de compra</label>
+                                                    <InputCurrency
+                                                        type="number"
+                                                        min="0"
+                                                        step="0.01"
+                                                        value={coupon.minPurchaseValue ? (coupon.minPurchaseValue / 100).toString() : ""}
+                                                        onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                                                            const value = event.target.value
+                                                                ? event.target.value.replace(",", ".")
+                                                                : ""
+                                                            handleCouponFieldChange(
+                                                                coupon.id,
+                                                                "minPurchaseValue",
+                                                                value ? Math.round(Number(value) * 100) : null
+                                                            )
+                                                        }}
+                                                        placeholder="Sem mínimo"
+                                                        
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium text-psi-dark">Limite de uso</label>
+                                                    <Input
+                                                        type="number"
+                                                        min="1"
+                                                        value={coupon.usageLimit ?? ""}
+                                                        onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                                                            const value = event.target.value
+                                                            handleCouponFieldChange(coupon.id, "usageLimit", value ? Number(value) : null)
+                                                        }}
+                                                        placeholder="Ilimitado"
+                                                        
+                                                    />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-sm font-medium text-psi-dark">Data de expiração</label>
+                                                    <DatePicker
+                                                        value={coupon.expirationDate ? coupon.expirationDate.split("T")[0] : null}
+                                                        onChange={(value) => handleCouponFieldChange(
+                                                            coupon.id,
+                                                            "expirationDate",
+                                                            value ? new Date(`${value}T00:00:00`).toISOString() : null
+                                                        )}
+                                                        minDate={new Date().toISOString().split("T")[0]}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="border-t border-psi-dark/10 pt-6">
+                                            <div className="flex flex-wrap items-center justify-between gap-4">
+                                                <div className="flex items-center gap-6">
+                                                    <div className="space-y-1">
+                                                        <p className="text-xs text-psi-dark/50">Utilizações</p>
+                                                        <p className="text-lg font-semibold text-psi-dark">
+                                                            {coupon.usageCount}{coupon.usageLimit ? ` / ${coupon.usageLimit}` : " (ilimitado)"}
+                                                        </p>
+                                                    </div>
+                                                    <div className="h-12 w-px bg-psi-dark/10" />
+                                                    <div className="space-y-1">
+                                                        <p className="text-xs text-psi-dark/50">Desconto</p>
+                                                        <p className="text-lg font-semibold text-psi-primary">
+                                                            {renderDiscountValue(coupon)}
+                                                        </p>
+                                                    </div>
+                                                    {coupon.minPurchaseValue && (
+                                                        <>
+                                                            <div className="h-12 w-px bg-psi-dark/10" />
+                                                            <div className="space-y-1">
+                                                                <p className="text-xs text-psi-dark/50">Mínimo</p>
+                                                                <p className="text-lg font-semibold text-psi-dark">
+                                                                    {ValueUtils.centsToCurrency(coupon.minPurchaseValue)}
+                                                                </p>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                    {coupon.expirationDate && (
+                                                        <>
+                                                            <div className="h-12 w-px bg-psi-dark/10" />
+                                                            <div className="space-y-1">
+                                                                <p className="text-xs text-psi-dark/50">Expira em</p>
+                                                                <p className="text-lg font-semibold text-psi-dark">
+                                                                    {new Date(coupon.expirationDate).toLocaleDateString("pt-BR")}
+                                                                </p>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    {isDirty && (
+                                                        <Badge variant="secondary" className="bg-amber-100 text-amber-700">
+                                                            Alterações pendentes
+                                                        </Badge>
+                                                    )}
+                                                    <Button
+                                                        type="button"
+                                                        variant="primary"
+                                                        disabled={!isDirty || isSaving}
+                                                        onClick={() => handleSaveCoupon(coupon.id)}
+                                                        className="min-w-[160px]"
+                                                    >
+                                                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                        Salvar alterações
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        variant="destructive"
+                                                        onClick={() => openDeleteDialog(coupon.id)}
+                                                        className="min-w-[120px]"
+                                                    >
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        Excluir
+                                                    </Button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -628,6 +746,18 @@ const CuponsPannel = () => {
                 )}
             </div>
             </section>
+
+            <DialogConfirm
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                onConfirm={handleDeleteCoupon}
+                title="Excluir cupom"
+                description={`Tem certeza que deseja excluir o cupom "${coupons.find(c => c.id === couponToDelete)?.code}"? Esta ação não pode ser desfeita.`}
+                confirmText="Excluir"
+                cancelText="Cancelar"
+                isLoading={isDeleting}
+                variant="destructive"
+            />
         </Background>
     )
 }

@@ -17,6 +17,7 @@ type TImageUploadProps = {
     onChange: (file: File | null) => void
     className?: string
     error?: string
+    variant?: "default" | "document"
 }
 
 const ImageUpload = (
@@ -24,7 +25,8 @@ const ImageUpload = (
         value,
         onChange,
         className,
-        error
+        error,
+        variant = "default"
     }: TImageUploadProps
 ) => {
     const [preview, setPreview] = useState<string | null>(
@@ -191,14 +193,16 @@ const ImageUpload = (
                 />
 
                 {preview ? (
-                    <div className="relative p-4">
+                    <div className={`relative ${variant === "document" ? "p-2" : "p-4"}`}>
                         <img
                             src={preview}
                             alt="Preview"
-                            className="
-                            w-full h-[280px] object-cover rounded-lg
-                            lg:h-[600px]
-                            "
+                            className={cn(
+                                "w-full rounded-lg",
+                                variant === "document"
+                                    ? "h-[400px] object-contain bg-psi-dark/5"
+                                    : "h-[280px] object-cover lg:h-[600px]"
+                            )}
                         />
                         <div className="absolute top-6 right-6 flex gap-2">
                             <Button

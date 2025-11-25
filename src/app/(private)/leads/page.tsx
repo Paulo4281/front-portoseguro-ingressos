@@ -1,14 +1,14 @@
 "use client"
 
-import CriarEventoForm from "@/components/Pages/Private/CriarEvento/CriarEventoForm"
+import { LeadsPannel } from "@/components/Pages/Private/Lead/LeadsPannel"
 import { VerificationStatusGuard } from "@/components/VerificationStatus/VerificationStatusGuard"
 
-const CriarEventoPage = () => {
+const LeadsPage = () => {
     return (
         <VerificationStatusGuard>
-            <CriarEventoForm />
+            <LeadsPannel />
         </VerificationStatusGuard>
     )
 }
 
-export default CriarEventoPage
+export default LeadsPage

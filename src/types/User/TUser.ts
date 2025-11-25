@@ -1,6 +1,7 @@
 import { z } from "zod"
 import { UserCreateValidator, UserResetPasswordValidator, UserResetPasswordByCodeValidator } from "@/validators/User/UserValidator"
 import type { TUserAddress } from "./TUserAddress"
+import { TOrganizer } from "../Organizer/TOrganizer"
 
 const UserRoles = [
     "CUSTOMER",
@@ -31,6 +32,8 @@ type TUser = {
     role: typeof UserRoles[number]
     createdAt: string
     updatedAt: string | null
+
+    Organizer?: TOrganizer | null
 
     address: TUserAddress | null
 }

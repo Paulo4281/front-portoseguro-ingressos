@@ -534,8 +534,10 @@ const HomeHero = () => {
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4 pt-4
-                                sm:grid-cols-4">
-                                    {["Porto Seguro", "Arraial D'Ajuda", "Trancoso", "Caraíva"].map((city) => (
+                                sm:grid-cols-4
+                                lg:grid-cols-3
+                                ">
+                                    {["Porto Seguro", "Arraial D'Ajuda", "Trancoso", "Caraíva", "Cabrália", "Coroa Vermelha"].map((city) => (
                                         <div key={city} className="rounded-xl bg-white/90 backdrop-blur-sm border border-white/20 p-3 text-center">
                                             <p className="text-sm font-semibold text-psi-dark">{city}</p>
                                         </div>

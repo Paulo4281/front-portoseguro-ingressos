@@ -1,30 +1,925 @@
 "use client"
 
+import { useForm, Controller } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useMemo, useEffect } from "react"
+import { 
+    Building2, 
+    CreditCard, 
+    Wallet, 
+    FileText, 
+    Camera, 
+    Instagram, 
+    Facebook, 
+    Mail, 
+    Phone,
+    AlertCircle,
+    CheckCircle2,
+    Clock,
+    XCircle,
+    ImageIcon,
+    FileEdit
+} from "lucide-react"
+import { OrganizerUpdateValidator, type TOrganizerUpdate } from "@/validators/Organizer/OrganizerValidator"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/Input/Input"
+import { InputMask } from "@/components/Input/InputMask"
+import { FieldError } from "@/components/FieldError/FieldError"
+import { Textarea } from "@/components/ui/textarea"
+import { Loader2 } from "lucide-react"
 import { Background } from "@/components/Background/Background"
+import { ImageUpload } from "@/components/ImageUpload/ImageUpload"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { useOrganizerUpdate } from "@/hooks/Organizer/useOrganizerUpdate"
+import { useBankFind } from "@/hooks/Organizer/useBankFind"
+import { Toast } from "@/components/Toast/Toast"
+import { useAuthStore } from "@/stores/Auth/AuthStore"
+import type { TOrganizer } from "@/types/Organizer/TOrganizer"
+import type { TUser } from "@/types/User/TUser"
+import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 
 const MeuPerfilOrganizer = () => {
+    const { user } = useAuthStore()
+    const { data: banksData, isLoading: isLoadingBanks } = useBankFind()
+    const { mutateAsync: updateOrganizer, isPending: isUpdating } = useOrganizerUpdate()
+
+    const organizer = useMemo(() => {
+        return user?.Organizer || null
+    }, [user])
+
+    const banks = useMemo(() => {
+        if (banksData?.data && Array.isArray(banksData.data)) {
+            return banksData.data
+        }
+        return []
+    }, [banksData])
+
+    const form = useForm<TOrganizerUpdate>({
+        resolver: zodResolver(OrganizerUpdateValidator),
+        defaultValues: {
+            companyName: "",
+            companyDocument: "",
+            companyAddress: "",
+            description: "",
+            logo: null,
+            bankId: "",
+            bankAccountName: "",
+            bankAccountOwnerName: "",
+            bankAccountOwnerBirth: "",
+            bankAccountOwnerDocument: "",
+            bankAccountAgency: "",
+            bankAccountNumber: "",
+            bankAccountDigit: "",
+            bankAccountType: null,
+            pixAddressKey: "",
+            pixAddressType: null,
+            payoutMethod: null,
+            identityDocumentFronUrl: null,
+            identityDocumentBackUrl: null,
+            identityDocumentSelfieUrl: null,
+            instagramUrl: "",
+            facebookUrl: "",
+            supportEmail: "",
+            supportPhone: "",
+        }
+    })
+
+    useEffect(() => {
+        if (organizer) {
+            form.reset({
+                companyName: organizer.companyName || "",
+                companyDocument: organizer.companyDocument || "",
+                companyAddress: organizer.companyAddress || "",
+                description: organizer.description || "",
+                logo: organizer.logo || null,
+                bankId: organizer.bankId || "",
+                bankAccountName: organizer.bankAccountName || "",
+                bankAccountOwnerName: organizer.bankAccountOwnerName || "",
+                bankAccountOwnerBirth: organizer.bankAccountOwnerBirth || "",
+                bankAccountOwnerDocument: organizer.bankAccountOwnerDocument || "",
+                bankAccountAgency: organizer.bankAccountAgency || "",
+                bankAccountNumber: organizer.bankAccountNumber || "",
+                bankAccountDigit: organizer.bankAccountDigit || "",
+                bankAccountType: organizer.bankAccountType || null,
+                pixAddressKey: organizer.pixAddressKey || "",
+                pixAddressType: organizer.pixAddressType || null,
+                payoutMethod: organizer.payoutMethod || null,
+                identityDocumentFronUrl: organizer.identityDocumentFront || null,
+                identityDocumentBackUrl: organizer.identityDocumentBack || null,
+                identityDocumentSelfieUrl: organizer.identityDocumentSelfie || null,
+                instagramUrl: organizer.instagramUrl || "",
+                facebookUrl: organizer.facebookUrl || "",
+                supportEmail: organizer.supportEmail || "",
+                supportPhone: organizer.supportPhone || "",
+            })
+        }
+    }, [organizer, form])
+
+    const hasBankAccount = useMemo(() => {
+        const values = form.watch()
+        return !!(
+            values.bankId &&
+            values.bankAccountName &&
+            values.bankAccountOwnerName &&
+            values.bankAccountOwnerDocument &&
+            values.bankAccountAgency &&
+            values.bankAccountNumber &&
+            values.bankAccountDigit &&
+            values.bankAccountType
+        )
+    }, [form.watch(["bankId", "bankAccountName", "bankAccountOwnerName", "bankAccountOwnerDocument", "bankAccountAgency", "bankAccountNumber", "bankAccountDigit", "bankAccountType"])])
+
+    const hasPix = useMemo(() => {
+        const values = form.watch()
+        return !!(values.pixAddressKey && values.pixAddressType)
+    }, [form.watch(["pixAddressKey", "pixAddressType"])])
+
+    const handleSubmit = async (data: TOrganizerUpdate) => {
+        try {
+            const response = await updateOrganizer(data)
+            if (response.success) {
+                Toast.success("Dados atualizados com sucesso")
+                
+                if (user && response.data) {
+                    const updatedOrganizer = response.data as TOrganizer
+                    const updatedUser: TUser = {
+                        ...user,
+                        Organizer: updatedOrganizer
+                    }
+                    useAuthStore.getState().setUser(updatedUser)
+                }
+            } else {
+                Toast.error(response.message || "Não foi possível atualizar os dados")
+            }
+        } catch (error) {
+            Toast.error("Não foi possível atualizar os dados")
+        }
+    }
+
+    const getVerificationStatusMessage = () => {
+        if (!organizer?.verificationStatus) {
+            return {
+                message: "Complete seu cadastro para iniciar a verificação",
+                icon: AlertCircle,
+                variant: "default" as const
+            }
+        }
+
+        switch (organizer.verificationStatus) {
+            case "PENDING":
+                return {
+                    message: "Sua conta está em processo de aprovação, aguarde.",
+                    icon: Clock,
+                    variant: "secondary" as const
+                }
+            case "APPROVED":
+                return {
+                    message: "Sua conta está ativa!",
+                    icon: CheckCircle2,
+                    variant: "default" as const
+                }
+            case "REJECTED":
+                return {
+                    message: "Seus dados foram rejeitados. Entre em contato com a organização da plataforma para mais informações.",
+                    icon: XCircle,
+                    variant: "destructive" as const
+                }
+            default:
+                return {
+                    message: "Status desconhecido",
+                    icon: AlertCircle,
+                    variant: "default" as const
+                }
+        }
+    }
+
+    const statusInfo = getVerificationStatusMessage()
+    const StatusIcon = statusInfo.icon
+
     return (
         <Background variant="light" className="min-h-screen">
             <div className="container py-8 mt-[100px]
             sm:py-12">
-                <div className="max-w-3xl mx-auto">
+                <div className="max-w-4xl mx-auto px-4
+                sm:px-6
+                lg:px-8">
                     <div className="space-y-8">
                         <div>
                             <h1 className="text-3xl font-bold text-psi-primary mb-2
                             sm:text-4xl">
-                                Meu Perfil
+                                { organizer?.verificationStatus === "APPROVED" ? "Meu Perfil" : "Verificação de Organizador" }
                             </h1>
-                            <p className="text-psi-dark/60">
-                                Área do organizador
-                            </p>
+                            {organizer?.verificationStatus === "APPROVED" ? (
+                                <p className="text-psi-dark/60">
+                                    Mantenha seus dados atualizados para garantir uma melhor experiência para seus clientes!
+                                </p>
+                            ) : (
+                                <p className="text-psi-dark/60">
+                                    Preencha os dados necessários para verificar sua conta e começar a anunciar eventos
+                                </p>
+                            )}
                         </div>
 
-                        <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
-                        sm:p-8 shadow-sm">
-                            <p className="text-psi-dark/60">
-                                Funcionalidade em desenvolvimento
-                            </p>
-                        </div>
+                        {organizer?.verificationStatus && (
+                            <div className={`rounded-2xl border p-6 flex items-start gap-4 ${
+                                organizer.verificationStatus === "APPROVED" 
+                                    ? "border-green-200 bg-green-50" 
+                                    : organizer.verificationStatus === "REJECTED"
+                                    ? "border-red-200 bg-red-50"
+                                    : "border-amber-200 bg-amber-50"
+                            }`}>
+                                <StatusIcon className={`h-6 w-6 shrink-0 ${
+                                    organizer.verificationStatus === "APPROVED"
+                                        ? "text-green-600"
+                                        : organizer.verificationStatus === "REJECTED"
+                                        ? "text-red-600"
+                                        : "text-amber-600"
+                                }`} />
+                                <div>
+                                    <p className={`font-semibold ${
+                                        organizer.verificationStatus === "APPROVED"
+                                            ? "text-green-900"
+                                            : organizer.verificationStatus === "REJECTED"
+                                            ? "text-red-900"
+                                            : "text-amber-900"
+                                    }`}>
+                                        {statusInfo.message}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+                            <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
+                            sm:p-8 shadow-sm space-y-6">
+                                <div className="flex items-center gap-3 pb-4 border-b border-psi-dark/10">
+                                    <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
+                                        <Building2 className="h-5 w-5 text-psi-primary" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-lg font-semibold text-psi-dark">Informações da Empresa</h2>
+                                        <p className="text-sm text-psi-dark/60">Opcional - Preencha se for pessoa jurídica</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-4
+                                sm:grid-cols-2">
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Nome da empresa
+                                        </label>
+                                        <Controller
+                                            name="companyName"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <Input
+                                                    {...field}
+                                                    value={field.value || ""}
+                                                    placeholder="Nome da empresa"
+                                                    icon={Building2}
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.companyName?.message || ""} />
+                                        <p className="text-xs text-psi-dark/50 mt-1">
+                                            Preencha se você for uma pessoa jurídica para aumentar as chances de aprovação
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            CNPJ
+                                        </label>
+                                        <Controller
+                                            name="companyDocument"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <InputMask
+                                                    {...field}
+                                                    value={field.value || ""}
+                                                    mask="00.000.000/0000-00"
+                                                    placeholder="00.000.000/0000-00"
+                                                    icon={FileText}
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.companyDocument?.message || ""} />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-psi-dark mb-2">
+                                        Endereço da empresa
+                                    </label>
+                                    <Controller
+                                        name="companyAddress"
+                                        control={form.control}
+                                        render={({ field }) => (
+                                            <Input
+                                                {...field}
+                                                value={field.value || ""}
+                                                placeholder="Endereço completo"
+                                                icon={Building2}
+                                            />
+                                        )}
+                                    />
+                                    <FieldError message={form.formState.errors.companyAddress?.message || ""} />
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
+                            sm:p-8 shadow-sm space-y-6">
+                                <div className="flex items-center gap-3 pb-4 border-b border-psi-dark/10">
+                                    <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
+                                        <ImageIcon className="h-5 w-5 text-psi-primary" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-lg font-semibold text-psi-dark">Logo e Descrição</h2>
+                                        <p className="text-sm text-amber-700 font-medium">Altamente recomendado</p>
+                                    </div>
+                                </div>
+
+                                <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4">
+                                    <p className="text-sm text-amber-900">
+                                        <strong>Importante:</strong> Adicionar uma logo e descrição ajuda a criar conexão com o público e aumenta a confiança nos seus eventos.
+                                    </p>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Logo do organizador
+                                        </label>
+                                        <Controller
+                                            name="logo"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <ImageUpload
+                                                    value={field.value}
+                                                    onChange={(file) => field.onChange(file)}
+                                                    error={form.formState.errors.logo?.message}
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.logo?.message || ""} />
+                                        <p className="text-xs text-psi-dark/50 mt-1">
+                                            Recomendado: imagem quadrada (1:1) ou retangular, até 10MB
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Descrição do organizador
+                                        </label>
+                                        <Controller
+                                            name="description"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <div className="space-y-2">
+                                                    <Textarea
+                                                        {...field}
+                                                        value={field.value || ""}
+                                                        placeholder="Conte um pouco sobre você ou sua organização. Isso ajuda a criar conexão com o público..."
+                                                        className="min-h-[200px] resize-none"
+                                                        maxLength={600}
+                                                    />
+                                                    <div className="flex items-center justify-between text-xs text-psi-dark/50">
+                                                        <span>Máximo de 600 caracteres</span>
+                                                        <span className={field.value && field.value.length > 550 ? "text-amber-600 font-medium" : ""}>
+                                                            {field.value?.length || 0}/600
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.description?.message || ""} />
+                                        <p className="text-xs text-psi-dark/50 mt-1">
+                                            Uma boa descrição gera conexão com o público e aumenta a confiança
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
+                            sm:p-8 shadow-sm space-y-6">
+                                <div className="flex items-center gap-3 pb-4 border-b border-psi-dark/10">
+                                    <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
+                                        <CreditCard className="h-5 w-5 text-psi-primary" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-lg font-semibold text-psi-dark">Conta Bancária</h2>
+                                        <p className="text-sm text-psi-dark/60">Opcional - Preencha se desejar receber via transferência bancária</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-4
+                                sm:grid-cols-2">
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Banco
+                                        </label>
+                                        <Controller
+                                            name="bankId"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <Select
+                                                    value={field.value || undefined}
+                                                    onValueChange={field.onChange}
+                                                    disabled={isLoadingBanks}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Selecione o banco" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {banks.map((bank) => (
+                                                            <SelectItem key={bank.id} value={bank.id}>
+                                                                {bank.name} ({bank.code})
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.bankId?.message || ""} />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Tipo de conta
+                                        </label>
+                                        <Controller
+                                            name="bankAccountType"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <Select
+                                                    value={field.value || undefined}
+                                                    onValueChange={field.onChange}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Selecione o tipo" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="CONTA_CORRENTE">Conta Corrente</SelectItem>
+                                                        <SelectItem value="CONTA_POUPANCA">Conta Poupança</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.bankAccountType?.message || ""} />
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-4
+                                sm:grid-cols-2">
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Nome da conta
+                                        </label>
+                                        <Controller
+                                            name="bankAccountName"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <Input
+                                                    {...field}
+                                                    value={field.value || ""}
+                                                    placeholder="Nome da conta"
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.bankAccountName?.message || ""} />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Nome do titular
+                                        </label>
+                                        <Controller
+                                            name="bankAccountOwnerName"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <Input
+                                                    {...field}
+                                                    value={field.value || ""}
+                                                    placeholder="Nome completo do titular"
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.bankAccountOwnerName?.message || ""} />
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-4
+                                sm:grid-cols-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            CPF/CNPJ do titular
+                                        </label>
+                                        <Controller
+                                            name="bankAccountOwnerDocument"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <InputMask
+                                                    {...field}
+                                                    value={field.value || ""}
+                                                    mask={field.value?.length === 11 ? "000.000.000-00" : "00.000.000/0000-00"}
+                                                    placeholder="CPF ou CNPJ"
+                                                    icon={FileText}
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.bankAccountOwnerDocument?.message || ""} />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Data de nascimento do titular
+                                        </label>
+                                        <Controller
+                                            name="bankAccountOwnerBirth"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <Input
+                                                    {...field}
+                                                    value={field.value || ""}
+                                                    type="date"
+                                                    placeholder="DD/MM/AAAA"
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.bankAccountOwnerBirth?.message || ""} />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Agência
+                                        </label>
+                                        <Controller
+                                            name="bankAccountAgency"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <Input
+                                                    {...field}
+                                                    value={field.value || ""}
+                                                    placeholder="Número da agência"
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.bankAccountAgency?.message || ""} />
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-4
+                                sm:grid-cols-2">
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Número da conta
+                                        </label>
+                                        <Controller
+                                            name="bankAccountNumber"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <Input
+                                                    {...field}
+                                                    value={field.value || ""}
+                                                    placeholder="Número da conta"
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.bankAccountNumber?.message || ""} />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Dígito verificador
+                                        </label>
+                                        <Controller
+                                            name="bankAccountDigit"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <Input
+                                                    {...field}
+                                                    value={field.value || ""}
+                                                    placeholder="Dígito"
+                                                    maxLength={2}
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.bankAccountDigit?.message || ""} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
+                            sm:p-8 shadow-sm space-y-6">
+                                <div className="flex items-center gap-3 pb-4 border-b border-psi-dark/10">
+                                    <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
+                                        <Wallet className="h-5 w-5 text-psi-primary" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-lg font-semibold text-psi-dark">Chave PIX</h2>
+                                        <p className="text-sm text-psi-dark/60">Opcional - Preencha se desejar receber via PIX</p>
+                                    </div>
+                                </div>
+
+                                <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4">
+                                    <p className="text-sm text-amber-900">
+                                        <strong>Importante:</strong> É necessário preencher pelo menos uma conta bancária ou chave PIX para receber os pagamentos.
+                                    </p>
+                                </div>
+
+                                <div className="grid gap-4
+                                sm:grid-cols-2">
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Tipo de chave PIX
+                                        </label>
+                                        <Controller
+                                            name="pixAddressType"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <Select
+                                                    value={field.value || undefined}
+                                                    onValueChange={field.onChange}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Selecione o tipo" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="CPF">CPF</SelectItem>
+                                                        <SelectItem value="CNPJ">CNPJ</SelectItem>
+                                                        <SelectItem value="EMAIL">E-mail</SelectItem>
+                                                        <SelectItem value="PHONE">Telefone</SelectItem>
+                                                        <SelectItem value="EVP">Chave aleatória</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.pixAddressType?.message || ""} />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Chave PIX
+                                        </label>
+                                        <Controller
+                                            name="pixAddressKey"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <Input
+                                                    {...field}
+                                                    value={field.value || ""}
+                                                    placeholder="Digite a chave PIX"
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.pixAddressKey?.message || ""} />
+                                    </div>
+                                </div>
+
+                                {hasBankAccount && hasPix && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Método de pagamento preferido
+                                        </label>
+                                        <Controller
+                                            name="payoutMethod"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <Select
+                                                    value={field.value || undefined}
+                                                    onValueChange={field.onChange}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Selecione o método preferido" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="PIX">PIX</SelectItem>
+                                                        <SelectItem value="BANK_ACCOUNT">Conta Bancária</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.payoutMethod?.message || ""} />
+                                        <p className="text-xs text-psi-dark/50 mt-1">
+                                            Selecione como você prefere receber os pagamentos quando ambos os métodos estiverem configurados
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
+                            sm:p-8 shadow-sm space-y-6">
+                                <div className="flex items-center gap-3 pb-4 border-b border-psi-dark/10">
+                                    <div className="h-10 w-10 rounded-xl bg-red-100 flex items-center justify-center">
+                                        <FileText className="h-5 w-5 text-red-600" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-lg font-semibold text-psi-dark">Documentos de Identidade</h2>
+                                        <p className="text-sm text-red-600 font-medium">Obrigatório</p>
+                                    </div>
+                                </div>
+
+                                <div className="rounded-xl border-2 border-red-200 bg-red-50 p-4">
+                                    <p className="text-sm text-red-900">
+                                        <strong>Atenção:</strong> É obrigatório enviar a foto da frente e verso do RG, além de uma selfie segurando o RG. Sem essas imagens, sua conta não será verificada.
+                                    </p>
+                                </div>
+
+                                <div className="grid gap-6
+                                sm:grid-cols-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Foto da frente do RG *
+                                        </label>
+                                        <Controller
+                                            name="identityDocumentFronUrl"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <ImageUpload
+                                                    value={field.value}
+                                                    onChange={(file) => field.onChange(file)}
+                                                    error={form.formState.errors.identityDocumentFronUrl?.message}
+                                                    variant="document"
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.identityDocumentFronUrl?.message || ""} />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Foto do verso do RG *
+                                        </label>
+                                        <Controller
+                                            name="identityDocumentBackUrl"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <ImageUpload
+                                                    value={field.value}
+                                                    onChange={(file) => field.onChange(file)}
+                                                    error={form.formState.errors.identityDocumentBackUrl?.message}
+                                                    variant="document"
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.identityDocumentBackUrl?.message || ""} />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Selfie segurando o RG *
+                                        </label>
+                                        <Controller
+                                            name="identityDocumentSelfieUrl"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <ImageUpload
+                                                    value={field.value}
+                                                    onChange={(file) => field.onChange(file)}
+                                                    error={form.formState.errors.identityDocumentSelfieUrl?.message}
+                                                    variant="document"
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.identityDocumentSelfieUrl?.message || ""} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
+                            sm:p-8 shadow-sm space-y-6">
+                                <div className="flex items-center gap-3 pb-4 border-b border-psi-dark/10">
+                                    <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
+                                        <Instagram className="h-5 w-5 text-psi-primary" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-lg font-semibold text-psi-dark">Redes Sociais</h2>
+                                        <p className="text-sm text-psi-dark/60">Opcional - Links para suas redes sociais</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-4
+                                sm:grid-cols-2">
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Link do Instagram
+                                        </label>
+                                        <Controller
+                                            name="instagramUrl"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <Input
+                                                    {...field}
+                                                    value={field.value || ""}
+                                                    placeholder="https://instagram.com/seu-perfil"
+                                                    icon={Instagram}
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.instagramUrl?.message || ""} />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Link do Facebook
+                                        </label>
+                                        <Controller
+                                            name="facebookUrl"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <Input
+                                                    {...field}
+                                                    value={field.value || ""}
+                                                    placeholder="https://facebook.com/seu-perfil"
+                                                    icon={Facebook}
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.facebookUrl?.message || ""} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
+                            sm:p-8 shadow-sm space-y-6">
+                                <div className="flex items-center gap-3 pb-4 border-b border-psi-dark/10">
+                                    <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                                        <Mail className="h-5 w-5 text-amber-600" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-lg font-semibold text-psi-dark">Contato de Suporte</h2>
+                                        <p className="text-sm text-amber-700 font-medium">Altamente recomendado</p>
+                                    </div>
+                                </div>
+
+                                <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4">
+                                    <p className="text-sm text-amber-900">
+                                        <strong>Importante:</strong> É necessário informar pelo menos um email ou telefone de suporte para que os clientes possam entrar em contato caso necessário.
+                                    </p>
+                                </div>
+
+                                <div className="grid gap-4
+                                sm:grid-cols-2">
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Email de suporte
+                                        </label>
+                                        <Controller
+                                            name="supportEmail"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <Input
+                                                    {...field}
+                                                    value={field.value || ""}
+                                                    type="email"
+                                                    placeholder="suporte@exemplo.com"
+                                                    icon={Mail}
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.supportEmail?.message || ""} />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Telefone de suporte
+                                        </label>
+                                        <Controller
+                                            name="supportPhone"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <InputMask
+                                                    {...field}
+                                                    value={field.value || ""}
+                                                    mask="(00) 00000-0000"
+                                                    placeholder="(00) 00000-0000"
+                                                    icon={Phone}
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.supportPhone?.message || ""} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end">
+                                <Button
+                                    type="submit"
+                                    variant="primary"
+                                    disabled={isUpdating}
+                                >
+                                    {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Salvar alterações
+                                </Button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -35,4 +930,3 @@ const MeuPerfilOrganizer = () => {
 export {
     MeuPerfilOrganizer
 }
-

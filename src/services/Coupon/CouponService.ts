@@ -1,11 +1,11 @@
 import type { TCoupon, TCouponCheckRequest } from "@/types/Coupon/TCoupon"
 import type { TApiResponse } from "@/types/TApiResponse"
 import { AxiosResponse } from "axios"
+import { API } from "@/api/api"
 
 type TCouponCreatePayload = {
     code: string
-    eventName: string
-    eventId?: string
+    eventId: string
     discountType: TCoupon["discountType"]
     discountValue: number
     expirationDate?: string | null
@@ -13,67 +13,29 @@ type TCouponCreatePayload = {
     minPurchaseValue?: number | null
 }
 
-type TCouponUpdatePayload = Partial<Omit<TCoupon, "id" | "createdAt" | "usageCount">> & {
-    usageCount?: number
+type TCouponUpdatePayload = {
+    code?: string
+    discountType?: TCoupon["discountType"]
+    discountValue?: number
+    expirationDate?: string | null
+    usageLimit?: number | null
+    minPurchaseValue?: number | null
 }
 
-const now = new Date()
-
-let mockCoupons: TCoupon[] = [
-    {
-        id: "cps-001",
-        code: "PORTO10",
-        discountType: "PERCENTAGE",
-        discountValue: 10,
-        expirationDate: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        usageLimit: 150,
-        usageCount: 87,
-        minPurchaseValue: 15000,
-        isActive: true,
-        eventId: "evt-ax1",
-        eventName: "Festival Beira Mar",
-        createdAt: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: null
-    },
-    {
-        id: "cps-002",
-        code: "SUNSETVIP",
-        discountType: "FIXED",
-        discountValue: 8000,
-        expirationDate: null,
-        usageLimit: null,
-        usageCount: 42,
-        minPurchaseValue: 25000,
-        isActive: true,
-        eventId: "evt-ax2",
-        eventName: "Sunset Privé Trancoso",
-        createdAt: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: null
-    },
-    {
-        id: "cps-003",
-        code: "CARAIVA20",
-        discountType: "PERCENTAGE",
-        discountValue: 20,
-        expirationDate: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-        usageLimit: 50,
-        usageCount: 18,
-        minPurchaseValue: null,
-        isActive: false,
-        eventId: "evt-ax3",
-        eventName: "Caraíva Experience",
-        createdAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: null
-    }
-]
-
-const generateId = () => `cps-${Math.random().toString(36).substring(2, 10)}`
-
 class CouponServiceClass {
-    async find(): Promise<TApiResponse<TCoupon[]>> {
+    async find(): Promise<AxiosResponse["data"]> {
+        const response = await API.GET({
+            prefix: "/coupon",
+            url: ""
+        })
+
+        if (response?.data) {
+            return response.data
+        }
+
         return {
-            success: true,
-            data: mockCoupons
+            success: false,
+            message: "Não foi possível buscar os cupons"
         }
     }
 
@@ -81,51 +43,105 @@ class CouponServiceClass {
         console.log(data)
     }
 
-    async create(payload: TCouponCreatePayload): Promise<TApiResponse<TCoupon>> {
-        const newCoupon: TCoupon = {
-            id: generateId(),
-            code: payload.code.toUpperCase(),
-            discountType: payload.discountType,
-            discountValue: payload.discountValue,
-            expirationDate: payload.expirationDate || null,
-            usageLimit: payload.usageLimit ?? null,
-            usageCount: 0,
-            minPurchaseValue: payload.minPurchaseValue ?? null,
-            isActive: true,
-            eventId: payload.eventId || `evt-${generateId()}`,
-            eventName: payload.eventName,
-            createdAt: new Date().toISOString(),
-            updatedAt: null
+    async create(payload: TCouponCreatePayload): Promise<AxiosResponse["data"]> {
+        const expirationDate = payload.expirationDate 
+            ? payload.expirationDate.split("T")[0] 
+            : null
+
+        const response = await API.POST({
+            prefix: "/coupon",
+            url: "",
+            data: {
+                code: payload.code.toUpperCase(),
+                eventId: payload.eventId,
+                discountType: payload.discountType,
+                discountValue: payload.discountValue,
+                expirationDate,
+                usageLimit: payload.usageLimit ?? null,
+                minPurchaseValue: payload.minPurchaseValue ?? null
+            }
+        })
+
+        if (response?.data) {
+            return response.data
         }
 
-        mockCoupons = [newCoupon, ...mockCoupons]
-
         return {
-            success: true,
-            data: newCoupon
+            success: false,
+            message: "Não foi possível criar o cupom"
         }
     }
 
-    async update(id: string, payload: TCouponUpdatePayload): Promise<TApiResponse<TCoupon>> {
-        const couponIndex = mockCoupons.findIndex((coupon) => coupon.id === id)
-        if (couponIndex === -1) {
-            return {
-                success: false,
-                message: "Cupom não encontrado"
-            }
+    async update(id: string, payload: TCouponUpdatePayload): Promise<AxiosResponse["data"]> {
+        const updateData: TCouponUpdatePayload = {}
+
+        if (payload.code !== undefined) {
+            updateData.code = payload.code.toUpperCase()
+        }
+        if (payload.discountType !== undefined) {
+            updateData.discountType = payload.discountType
+        }
+        if (payload.discountValue !== undefined) {
+            updateData.discountValue = payload.discountValue
+        }
+        if (payload.expirationDate !== undefined) {
+            updateData.expirationDate = payload.expirationDate 
+                ? payload.expirationDate.split("T")[0] 
+                : null
+        }
+        if (payload.usageLimit !== undefined) {
+            updateData.usageLimit = payload.usageLimit ?? null
+        }
+        if (payload.minPurchaseValue !== undefined) {
+            updateData.minPurchaseValue = payload.minPurchaseValue ?? null
         }
 
-        const updatedCoupon: TCoupon = {
-            ...mockCoupons[couponIndex],
-            ...payload,
-            updatedAt: new Date().toISOString()
-        }
+        const response = await API.PUT({
+            prefix: "/coupon",
+            url: `/${id}`,
+            data: updateData
+        })
 
-        mockCoupons[couponIndex] = updatedCoupon
+        if (response?.data) {
+            return response.data
+        }
 
         return {
-            success: true,
-            data: updatedCoupon
+            success: false,
+            message: "Não foi possível atualizar o cupom"
+        }
+    }
+
+    async updateIsActive(id: string): Promise<AxiosResponse["data"]> {
+        const response = await API.PATCH({
+            prefix: "/coupon",
+            url: `/${id}`,
+            data: {}
+        })
+
+        if (response?.data) {
+            return response.data
+        }
+
+        return {
+            success: false,
+            message: "Não foi possível atualizar o status do cupom"
+        }
+    }
+
+    async deleteById(id: string): Promise<AxiosResponse["data"]> {
+        const response = await API.DELETE({
+            prefix: "/coupon",
+            url: `/${id}`
+        })
+
+        if (response?.data) {
+            return response.data
+        }
+
+        return {
+            success: false,
+            message: "Não foi possível excluir o cupom"
         }
     }
 }

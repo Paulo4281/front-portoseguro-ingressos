@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Repeat, Tag, ShieldCheck, Lock, CreditCard, ArrowRight, TrendingDown, Users, QrCode, Headphones, Zap, CheckCircle2, Share2, MessageCircle, Star, TrendingUp, Gift } from "lucide-react"
+import { Calendar, Clock, MapPin, Repeat, Tag, ShieldCheck, Lock, CreditCard, ArrowRight, TrendingDown, Users, QrCode, Headphones, Zap, CheckCircle2, Share2, MessageCircle, Star, TrendingUp, Gift, Instagram, Facebook, Mail, Phone, Building2, ExternalLink } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useEventFindById } from "@/hooks/Event/useEventFindById"
 import { useEventFind } from "@/hooks/Event/useEventFind"
@@ -689,6 +689,97 @@ const VerEventoInfo = (
                                     {descriptionContent}
                                 </div>
                             )}
+
+                            {event.Organizer && (() => {
+                                const hasCompanyInfo = event.Organizer.companyName || event.Organizer.companyAddress
+                                const hasSocialMedia = event.Organizer.instagramUrl || event.Organizer.facebookUrl
+                                const hasLogo = event.Organizer.logo
+                                const hasDescription = event.Organizer.description
+                                
+                                if (!hasCompanyInfo && !hasSocialMedia && !hasLogo && !hasDescription) {
+                                    return null
+                                }
+                                
+                                return (
+                                    <div className="rounded-2xl border border-psi-primary/20 bg-linear-to-br from-psi-primary/5 via-white to-psi-primary/10 p-6 space-y-4">
+                                        <div className="flex items-center gap-3 pb-4 border-b border-psi-primary/10">
+                                            {hasLogo ? (
+                                                <div className="h-25 w-25 rounded-xl overflow-hidden bg-white border border-psi-primary/20 shrink-0">
+                                                    <img
+                                                        src={ImageUtils.getOrganizerLogoUrl(event.Organizer.logo)}
+                                                        alt={event.Organizer.companyName || "Logo do organizador"}
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
+                                                    <Users className="h-5 w-5 text-psi-primary" />
+                                                </div>
+                                            )}
+                                            <div className="flex-1">
+                                                <h3 className="font-semibold text-psi-dark">Organizador do Evento</h3>
+                                                <p className="text-xs text-psi-dark/60">Informações de contato e redes sociais</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            {hasDescription && (
+                                                <div className="rounded-lg bg-white/80 p-4 border border-psi-primary/10">
+                                                    <p className="text-sm text-psi-dark leading-relaxed">
+                                                        {event.Organizer.description}
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {hasCompanyInfo && (
+                                                <div className="flex items-start gap-3">
+                                                    <Building2 className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
+                                                    <div className="flex-1">
+                                                        {event.Organizer.companyName && (
+                                                            <p className="text-sm font-medium text-psi-dark">{event.Organizer.companyName}</p>
+                                                        )}
+                                                        {event.Organizer.companyAddress && (
+                                                            <p className="text-xs text-psi-dark/60 mt-1">{event.Organizer.companyAddress}</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {hasSocialMedia && (
+                                                <div className="space-y-2 pt-2 border-t border-psi-primary/10">
+                                                    <p className="text-xs font-medium text-psi-dark/70 mb-2">Redes Sociais</p>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {event.Organizer.instagramUrl && (
+                                                            <a
+                                                                href={event.Organizer.instagramUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 text-psi-dark hover:from-purple-500/20 hover:to-pink-500/20 transition-all group"
+                                                            >
+                                                                <Instagram className="h-4 w-4 text-purple-600" />
+                                                                <span className="text-sm font-medium">Instagram</span>
+                                                                <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                            </a>
+                                                        )}
+                                                        {event.Organizer.facebookUrl && (
+                                                            <a
+                                                                href={event.Organizer.facebookUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-600/10 border border-blue-500/20 text-psi-dark hover:from-blue-500/20 hover:to-blue-600/20 transition-all group"
+                                                            >
+                                                                <Facebook className="h-4 w-4 text-blue-600" />
+                                                                <span className="text-sm font-medium">Facebook</span>
+                                                                <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )
+                            })()}
                         </div>
                     </div>
 
