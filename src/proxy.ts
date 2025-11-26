@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from "next/server"
-import { jwtVerify } from "jose"
+import { jwtVerify, decodeJwt } from "jose"
 import type { MiddlewareConfig } from "next/server"
 
 const SECRET = new TextEncoder().encode(process.env.JWT_SECRET)
+const SECRET_ADMIN = new TextEncoder().encode(process.env.JWT_SECRET_ADMIN)
 
 type TPublicRoutes = {
     path: string
     whenAuthenticated: "redirect" | "next"
+}
+
+type TJwtDecoded = {
+    id: string
+    role: "CUSTOMER" | "ORGANIZER" | "ADMIN"
+    customerId?: string
+    organizer?: string
 }
 
 const publicRoutes: TPublicRoutes[] = [
@@ -29,13 +37,21 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
 
     try {
         if (authToken) {
-            await jwtVerify(authToken, SECRET)
+            const { id, role, customerId = null, organizer = null } = decodeJwt(authToken) as TJwtDecoded
+
+            if (role === "ADMIN") {
+                await jwtVerify(authToken, SECRET_ADMIN)
+            } else {
+                await jwtVerify(authToken, SECRET)
+            }
+
             if (isPublicRoute?.whenAuthenticated === "redirect") {
                 const redirectUrl = request.nextUrl.clone()
                 redirectUrl.pathname = "/"
                 return NextResponse.redirect(redirectUrl)
-              }
-              return NextResponse.next()
+            }
+
+            return NextResponse.next()
         }
     } catch(error) {
         console.error(error)

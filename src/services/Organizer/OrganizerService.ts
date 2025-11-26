@@ -4,21 +4,39 @@ import { AxiosResponse } from "axios"
 import { API } from "@/api/api"
 import type { TOrganizerUpdate } from "@/validators/Organizer/OrganizerValidator"
 
+type TFindOrganizersParams = {
+    offset?: number
+    name?: string
+    verificationStatus?: "PENDING" | "APPROVED" | "REJECTED"
+    createdAt?: string
+}
+
 class OrganizerServiceClass {
-    async find(): Promise<AxiosResponse["data"]> {
-        const response = await API.GET({
-            prefix: "/organizer",
-            url: ""
-        })
+    async find(params?: TFindOrganizersParams): Promise<AxiosResponse["data"]> {
+        const queryParams: Record<string, string | number> = {}
+        
+        if (params?.offset !== undefined) queryParams.offset = params.offset
+        if (params?.name) queryParams.name = params.name
+        if (params?.verificationStatus) queryParams.verificationStatus = params.verificationStatus
+        if (params?.createdAt) queryParams.createdAt = params.createdAt
 
-        if (response?.data) {
-            return response.data
-        }
+        const response = (await API.GET({
+            prefix: "/user",
+            url: "/organizers",
+            params: queryParams
+        }))?.data
 
-        return {
-            success: false,
-            message: "Não foi possível buscar os dados do organizador"
-        }
+        return response
+    }
+
+    async updateVerificationStatus(organizerId: string, status: "APPROVED" | "REJECTED"): Promise<AxiosResponse["data"]> {
+        const response = (await API.PATCH({
+            prefix: "/user",
+            url: `/organizers/${organizerId}/verification-status`,
+            data: { verificationStatus: status }
+        }))?.data
+
+        return response
     }
 
     async update(payload: TOrganizerUpdate): Promise<AxiosResponse["data"]> {
@@ -77,36 +95,22 @@ class OrganizerServiceClass {
         if (payload.supportEmail) formData.append("supportEmail", payload.supportEmail)
         if (payload.supportPhone) formData.append("supportPhone", payload.supportPhone)
 
-        const response = await API.POST_FILE({
+        const response = (await API.POST_FILE({
             prefix: "/user",
             url: "/update-organizer",
             formData
-        })
+        }))?.data
 
-        if (response?.data) {
-            return response.data
-        }
-
-        return {
-            success: false,
-            message: "Não foi possível atualizar os dados do organizador"
-        }
+        return response
     }
 
     async findBanks(): Promise<AxiosResponse["data"]> {
-        const response = await API.GET({
+        const response = (await API.GET({
             prefix: "/bank",
             url: ""
-        })
+        }))?.data
 
-        if (response?.data) {
-            return response.data
-        }
-
-        return {
-            success: false,
-            message: "Não foi possível buscar os bancos"
-        }
+        return response
     }
 }
 

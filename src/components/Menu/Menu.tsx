@@ -57,7 +57,7 @@ const menuLinks: TMenuLink[] = [
         href: "/dashboard",
         label: "Dashboard",
         icon: BarChart3,
-        roles: ["ORGANIZER", "ADMIN"]
+        roles: ["ORGANIZER"]
     },
     {
         href: "/meus-ingressos",
@@ -101,8 +101,8 @@ const menuLinks: TMenuLink[] = [
         roles: ["CUSTOMER", "ORGANIZER", "ADMIN"]
     },
     {
-        href: "/usuarios",
-        label: "Usuários",
+        href: "/adm-organizadores",
+        label: "Organizadores",
         icon: Users,
         roles: ["ADMIN"]
     },
@@ -110,7 +110,7 @@ const menuLinks: TMenuLink[] = [
         href: "/meu-perfil",
         label: "Meu Perfil",
         icon: User,
-        roles: ["CUSTOMER", "ORGANIZER", "ADMIN"]
+        roles: ["CUSTOMER", "ORGANIZER"]
     },
     {
         href: "/configuracoes",
