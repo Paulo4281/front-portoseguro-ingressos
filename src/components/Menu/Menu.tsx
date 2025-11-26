@@ -295,12 +295,12 @@ const Menu = () => {
                                                 if (link.sublinks && link.sublinks.length > 0) {
                                                     return (
                                                         <DropdownMenuSub key={link.label}>
-                                                            <DropdownMenuSubTrigger className="rounded-xl text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB]">
+                                                            <DropdownMenuSubTrigger className="rounded-xl cursor-pointer text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB]">
                                                                 <Icon className="h-4 w-4" />
                                                                 <span>{link.label}</span>
                                                             </DropdownMenuSubTrigger>
                                                             <DropdownMenuSubContent 
-                                                            className="rounded-xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg z-100 overflow-visible!" 
+                                                            className="rounded-xl border border-[#E4E6F0] cursor-pointer bg-white/95 backdrop-blur-md shadow-lg z-100 overflow-visible!" 
                                                                 sideOffset={8}
                                                                 alignOffset={0}
                                                             >
@@ -324,7 +324,7 @@ const Menu = () => {
                                                 const isActive = link.href && (pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href)))
                                                 
                                                 return (
-                                                    <DropdownMenuItem key={link.href || link.label} asChild className={`rounded-xl text-sm ${isActive ? "bg-[#F3F4FB] text-psi-primary" : "text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB]"}`}>
+                                                    <DropdownMenuItem key={link.href || link.label} asChild className={`rounded-xl text-sm ${isActive ? "bg-[#F3F4FB] text-psi-primary cursor-pointer" : "text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer"}`}>
                                                         <Link href={link.href || "#"}>
                                                             <Icon className="h-4 w-4" />
                                                             <span>{link.label}</span>

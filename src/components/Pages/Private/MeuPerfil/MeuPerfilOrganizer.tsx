@@ -18,7 +18,8 @@ import {
     Clock,
     XCircle,
     ImageIcon,
-    FileEdit
+    FileEdit,
+    User
 } from "lucide-react"
 import { OrganizerUpdateValidator, type TOrganizerUpdate } from "@/validators/Organizer/OrganizerValidator"
 import { Button } from "@/components/ui/button"
@@ -44,15 +45,28 @@ import { useAuthStore } from "@/stores/Auth/AuthStore"
 import type { TOrganizer } from "@/types/Organizer/TOrganizer"
 import type { TUser } from "@/types/User/TUser"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
+import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 
 const MeuPerfilOrganizer = () => {
-    const { user } = useAuthStore()
+    const { user, setUser } = useAuthStore()
     const { data: banksData, isLoading: isLoadingBanks } = useBankFind()
     const { mutateAsync: updateOrganizer, isPending: isUpdating } = useOrganizerUpdate()
 
     const organizer = useMemo(() => {
         return user?.Organizer || null
     }, [user])
+
+    const formatBirthForForm = (birth: string | null | undefined): string => {
+        if (!birth) return ""
+        if (birth.includes("/")) {
+            return birth
+        }
+        const [year, month, day] = birth.split("-")
+        if (year && month && day) {
+            return `${day}/${month}/${year}`
+        }
+        return birth
+    }
 
     const banks = useMemo(() => {
         if (banksData?.data && Array.isArray(banksData.data)) {
@@ -61,39 +75,60 @@ const MeuPerfilOrganizer = () => {
         return []
     }, [banksData])
 
+    const getDocumentType = (document: string | null | undefined): "CPF" | "CNPJ" | null => {
+        if (!document) return null
+        const digitsOnly = document.replace(/\D/g, "")
+        return digitsOnly.length === 11 ? "CPF" : digitsOnly.length === 14 ? "CNPJ" : null
+    }
+
     const form = useForm<TOrganizerUpdate>({
         resolver: zodResolver(OrganizerUpdateValidator),
         defaultValues: {
-            companyName: "",
-            companyDocument: "",
-            companyAddress: "",
-            description: "",
-            logo: null,
-            bankId: "",
-            bankAccountName: "",
-            bankAccountOwnerName: "",
-            bankAccountOwnerBirth: "",
-            bankAccountOwnerDocument: "",
-            bankAccountAgency: "",
-            bankAccountNumber: "",
-            bankAccountDigit: "",
-            bankAccountType: null,
-            pixAddressKey: "",
-            pixAddressType: null,
-            payoutMethod: null,
-            identityDocumentFronUrl: null,
-            identityDocumentBackUrl: null,
-            identityDocumentSelfieUrl: null,
-            instagramUrl: "",
-            facebookUrl: "",
-            supportEmail: "",
-            supportPhone: "",
+            firstName: user?.firstName || "",
+            lastName: user?.lastName || "",
+            birth: user?.birth || "",
+            document: user?.document || "",
+            companyName: user?.Organizer?.companyName || "",
+            companyDocument: user?.Organizer?.companyDocument || "",
+            companyAddress: user?.Organizer?.companyAddress || "",
+            description: user?.Organizer?.description || "",
+            logo: user?.Organizer?.logo || null,
+            bankId: user?.Organizer?.bankId || "",
+            bankAccountName: user?.Organizer?.bankAccountName || "",
+            bankAccountOwnerName: user?.Organizer?.bankAccountOwnerName || "",
+            bankAccountOwnerBirth: user?.Organizer?.bankAccountOwnerBirth || "",
+            bankAccountOwnerDocumentType: getDocumentType(user?.Organizer?.bankAccountOwnerDocument) || null,
+            bankAccountOwnerDocument: user?.Organizer?.bankAccountOwnerDocument || "",
+            bankAccountAgency: user?.Organizer?.bankAccountAgency || "",
+            bankAccountNumber: user?.Organizer?.bankAccountNumber || "",
+            bankAccountDigit: user?.Organizer?.bankAccountDigit || "",
+            bankAccountType: user?.Organizer?.bankAccountType || null,
+            pixAddressKey: user?.Organizer?.pixAddressKey || "",
+            pixAddressType: user?.Organizer?.pixAddressType || null,
+            payoutMethod: user?.Organizer?.payoutMethod || null,
+            identityDocumentFronUrl: user?.Organizer?.identityDocumentFront || null,
+            identityDocumentBackUrl: user?.Organizer?.identityDocumentBack || null,
+            identityDocumentSelfieUrl: user?.Organizer?.identityDocumentSelfie || null,
+            instagramUrl: user?.Organizer?.instagramUrl || "",
+            facebookUrl: user?.Organizer?.facebookUrl || "",
+            supportEmail: user?.Organizer?.supportEmail || "",
+            supportPhone: user?.Organizer?.supportPhone || "",
         }
     })
 
     useEffect(() => {
-        if (organizer) {
-            form.reset({
+        if (organizer && user) {
+            const getDocumentType = (document: string | null | undefined): "CPF" | "CNPJ" | null => {
+                if (!document) return null
+                const digitsOnly = document.replace(/\D/g, "")
+                return digitsOnly.length === 11 ? "CPF" : digitsOnly.length === 14 ? "CNPJ" : null
+            }
+
+            const resetData = {
+                firstName: user.firstName || "",
+                lastName: user.lastName || "",
+                birth: formatBirthForForm(user.birth),
+                document: user.document || "",
                 companyName: organizer.companyName || "",
                 companyDocument: organizer.companyDocument || "",
                 companyAddress: organizer.companyAddress || "",
@@ -102,15 +137,16 @@ const MeuPerfilOrganizer = () => {
                 bankId: organizer.bankId || "",
                 bankAccountName: organizer.bankAccountName || "",
                 bankAccountOwnerName: organizer.bankAccountOwnerName || "",
-                bankAccountOwnerBirth: organizer.bankAccountOwnerBirth || "",
+                bankAccountOwnerBirth: formatBirthForForm(organizer.bankAccountOwnerBirth),
+                bankAccountOwnerDocumentType: getDocumentType(organizer.bankAccountOwnerDocument),
                 bankAccountOwnerDocument: organizer.bankAccountOwnerDocument || "",
                 bankAccountAgency: organizer.bankAccountAgency || "",
                 bankAccountNumber: organizer.bankAccountNumber || "",
                 bankAccountDigit: organizer.bankAccountDigit || "",
-                bankAccountType: organizer.bankAccountType || null,
+                bankAccountType: organizer.bankAccountType ?? null,
                 pixAddressKey: organizer.pixAddressKey || "",
-                pixAddressType: organizer.pixAddressType || null,
-                payoutMethod: organizer.payoutMethod || null,
+                pixAddressType: organizer.pixAddressType ?? null,
+                payoutMethod: organizer.payoutMethod ?? null,
                 identityDocumentFronUrl: organizer.identityDocumentFront || null,
                 identityDocumentBackUrl: organizer.identityDocumentBack || null,
                 identityDocumentSelfieUrl: organizer.identityDocumentSelfie || null,
@@ -118,9 +154,10 @@ const MeuPerfilOrganizer = () => {
                 facebookUrl: organizer.facebookUrl || "",
                 supportEmail: organizer.supportEmail || "",
                 supportPhone: organizer.supportPhone || "",
-            })
+            }
+            form.reset(resetData)
         }
-    }, [organizer, form])
+    }, [organizer, user])
 
     const hasBankAccount = useMemo(() => {
         const values = form.watch()
@@ -141,25 +178,30 @@ const MeuPerfilOrganizer = () => {
         return !!(values.pixAddressKey && values.pixAddressType)
     }, [form.watch(["pixAddressKey", "pixAddressType"])])
 
+    const hasAllDocuments = useMemo(() => {
+        if (!organizer) return false
+        return !!(
+            organizer.identityDocumentFront &&
+            organizer.identityDocumentBack &&
+            organizer.identityDocumentSelfie
+        )
+    }, [organizer])
+
     const handleSubmit = async (data: TOrganizerUpdate) => {
         try {
-            const response = await updateOrganizer(data)
+            const updateData: TOrganizerUpdate = { ...data }
+
+            const response = await updateOrganizer(updateData)
             if (response.success) {
                 Toast.success("Dados atualizados com sucesso")
                 
                 if (user && response.data) {
-                    const updatedOrganizer = response.data as TOrganizer
-                    const updatedUser: TUser = {
-                        ...user,
-                        Organizer: updatedOrganizer
-                    }
-                    useAuthStore.getState().setUser(updatedUser)
+                    const updatedUser = response.data as TUser
+                    setUser(updatedUser)
                 }
             } else {
-                Toast.error(response.message || "Não foi possível atualizar os dados")
             }
         } catch (error) {
-            Toast.error("Não foi possível atualizar os dados")
         }
     }
 
@@ -257,6 +299,103 @@ const MeuPerfilOrganizer = () => {
                         )}
 
                         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+                            <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
+                            sm:p-8 shadow-sm space-y-6">
+                                <div className="flex items-center gap-3 pb-4 border-b border-psi-dark/10">
+                                    <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
+                                        <User className="h-5 w-5 text-psi-primary" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-lg font-semibold text-psi-dark">Dados Pessoais</h2>
+                                        <p className="text-sm text-psi-dark/60">Informações básicas do organizador</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-4
+                                sm:grid-cols-2">
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Nome
+                                        </label>
+                                        <Controller
+                                            name="firstName"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <Input
+                                                    {...field}
+                                                    value={field.value || ""}
+                                                    placeholder="Nome"
+                                                    icon={User}
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.firstName?.message || ""} />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Sobrenome
+                                        </label>
+                                        <Controller
+                                            name="lastName"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <Input
+                                                    {...field}
+                                                    value={field.value || ""}
+                                                    placeholder="Sobrenome"
+                                                    icon={User}
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.lastName?.message || ""} />
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-4
+                                sm:grid-cols-2">
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            Data de Nascimento
+                                        </label>
+                                        <Controller
+                                            name="birth"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <InputMask
+                                                    {...field}
+                                                    value={field.value || ""}
+                                                    mask="00/00/0000"
+                                                    placeholder="DD/MM/AAAA"
+                                                    icon={FileText}
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.birth?.message || ""} />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            CPF
+                                        </label>
+                                        <Controller
+                                            name="document"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <InputMask
+                                                    {...field}
+                                                    value={field.value || ""}
+                                                    mask="000.000.000-00"
+                                                    placeholder="000.000.000-00"
+                                                    icon={FileText}
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.document?.message || ""} />
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
                             sm:p-8 shadow-sm space-y-6">
                                 <div className="flex items-center gap-3 pb-4 border-b border-psi-dark/10">
@@ -362,7 +501,7 @@ const MeuPerfilOrganizer = () => {
                                             control={form.control}
                                             render={({ field }) => (
                                                 <ImageUpload
-                                                    value={field.value}
+                                                    value={ImageUtils.getOrganizerLogoUrl(field.value as string || "")}
                                                     onChange={(file) => field.onChange(file)}
                                                     error={form.formState.errors.logo?.message}
                                                 />
@@ -415,7 +554,7 @@ const MeuPerfilOrganizer = () => {
                                     </div>
                                     <div>
                                         <h2 className="text-lg font-semibold text-psi-dark">Conta Bancária</h2>
-                                        <p className="text-sm text-psi-dark/60">Opcional - Preencha se desejar receber via transferência bancária</p>
+                                        <p className="text-sm text-psi-dark/60">Opcional - Se preencher, todos os campos marcados com * são obrigatórios</p>
                                     </div>
                                 </div>
 
@@ -423,15 +562,15 @@ const MeuPerfilOrganizer = () => {
                                 sm:grid-cols-2">
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Banco
+                                            Banco *
                                         </label>
                                         <Controller
                                             name="bankId"
                                             control={form.control}
                                             render={({ field }) => (
                                                 <Select
-                                                    value={field.value || undefined}
-                                                    onValueChange={field.onChange}
+                                                    value={field.value ? String(field.value) : undefined}
+                                                    onValueChange={(value) => field.onChange(value || "")}
                                                     disabled={isLoadingBanks}
                                                 >
                                                     <SelectTrigger>
@@ -452,15 +591,15 @@ const MeuPerfilOrganizer = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Tipo de conta
+                                            Tipo de conta *
                                         </label>
                                         <Controller
                                             name="bankAccountType"
                                             control={form.control}
                                             render={({ field }) => (
                                                 <Select
-                                                    value={field.value || undefined}
-                                                    onValueChange={field.onChange}
+                                                    value={field.value ? String(field.value) : undefined}
+                                                    onValueChange={(value) => field.onChange(value || null)}
                                                 >
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Selecione o tipo" />
@@ -480,7 +619,7 @@ const MeuPerfilOrganizer = () => {
                                 sm:grid-cols-2">
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Nome da conta
+                                            Nome da conta *
                                         </label>
                                         <Controller
                                             name="bankAccountName"
@@ -498,7 +637,7 @@ const MeuPerfilOrganizer = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Nome do titular
+                                            Nome do titular *
                                         </label>
                                         <Controller
                                             name="bankAccountOwnerName"
@@ -516,40 +655,79 @@ const MeuPerfilOrganizer = () => {
                                 </div>
 
                                 <div className="grid gap-4
-                                sm:grid-cols-3">
+                                sm:grid-cols-2
+                                lg:grid-cols-4">
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            CPF/CNPJ do titular
+                                            Tipo de documento *
+                                        </label>
+                                        <Controller
+                                            name="bankAccountOwnerDocumentType"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <Select
+                                                    value={field.value || undefined}
+                                                    onValueChange={(value) => {
+                                                        field.onChange(value || null)
+                                                        if (!value) {
+                                                            form.setValue("bankAccountOwnerDocument", "")
+                                                        }
+                                                    }}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Tipo" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="CPF">CPF</SelectItem>
+                                                        <SelectItem value="CNPJ">CNPJ</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.bankAccountOwnerDocumentType?.message || ""} />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                            CPF/CNPJ do titular *
                                         </label>
                                         <Controller
                                             name="bankAccountOwnerDocument"
                                             control={form.control}
-                                            render={({ field }) => (
-                                                <InputMask
-                                                    {...field}
-                                                    value={field.value || ""}
-                                                    mask={field.value?.length === 11 ? "000.000.000-00" : "00.000.000/0000-00"}
-                                                    placeholder="CPF ou CNPJ"
-                                                    icon={FileText}
-                                                />
-                                            )}
+                                            render={({ field }) => {
+                                                const documentType = form.watch("bankAccountOwnerDocumentType")
+                                                const mask = documentType === "CPF" ? "000.000.000-00" : "00.000.000/0000-00"
+                                                const placeholder = documentType === "CPF" ? "000.000.000-00" : "00.000.000/0000-00"
+                                                
+                                                return (
+                                                    <InputMask
+                                                        {...field}
+                                                        value={field.value || ""}
+                                                        mask={mask}
+                                                        placeholder={placeholder}
+                                                        icon={FileText}
+                                                        disabled={!documentType}
+                                                    />
+                                                )
+                                            }}
                                         />
                                         <FieldError message={form.formState.errors.bankAccountOwnerDocument?.message || ""} />
                                     </div>
 
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Data de nascimento do titular
+                                            Data de nascimento do titular *
                                         </label>
                                         <Controller
                                             name="bankAccountOwnerBirth"
                                             control={form.control}
                                             render={({ field }) => (
-                                                <Input
+                                                <InputMask
                                                     {...field}
                                                     value={field.value || ""}
-                                                    type="date"
+                                                    mask="00/00/0000"
                                                     placeholder="DD/MM/AAAA"
+                                                    icon={FileText}
                                                 />
                                             )}
                                         />
@@ -558,7 +736,7 @@ const MeuPerfilOrganizer = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Agência
+                                            Agência *
                                         </label>
                                         <Controller
                                             name="bankAccountAgency"
@@ -579,7 +757,7 @@ const MeuPerfilOrganizer = () => {
                                 sm:grid-cols-2">
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Número da conta
+                                            Número da conta *
                                         </label>
                                         <Controller
                                             name="bankAccountNumber"
@@ -597,7 +775,7 @@ const MeuPerfilOrganizer = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Dígito verificador
+                                            Dígito verificador *
                                         </label>
                                         <Controller
                                             name="bankAccountDigit"
@@ -624,7 +802,7 @@ const MeuPerfilOrganizer = () => {
                                     </div>
                                     <div>
                                         <h2 className="text-lg font-semibold text-psi-dark">Chave PIX</h2>
-                                        <p className="text-sm text-psi-dark/60">Opcional - Preencha se desejar receber via PIX</p>
+                                        <p className="text-sm text-psi-dark/60">Opcional - Se preencher, todos os campos marcados com * são obrigatórios</p>
                                     </div>
                                 </div>
 
@@ -638,15 +816,15 @@ const MeuPerfilOrganizer = () => {
                                 sm:grid-cols-2">
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Tipo de chave PIX
+                                            Tipo de chave PIX *
                                         </label>
                                         <Controller
                                             name="pixAddressType"
                                             control={form.control}
                                             render={({ field }) => (
                                                 <Select
-                                                    value={field.value || undefined}
-                                                    onValueChange={field.onChange}
+                                                    value={field.value ? String(field.value) : undefined}
+                                                    onValueChange={(value) => field.onChange(value || null)}
                                                 >
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Selecione o tipo" />
@@ -666,7 +844,7 @@ const MeuPerfilOrganizer = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Chave PIX
+                                            Chave PIX *
                                         </label>
                                         <Controller
                                             name="pixAddressKey"
@@ -686,15 +864,15 @@ const MeuPerfilOrganizer = () => {
                                 {hasBankAccount && hasPix && (
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Método de pagamento preferido
+                                            Método de pagamento preferido *
                                         </label>
                                         <Controller
                                             name="payoutMethod"
                                             control={form.control}
                                             render={({ field }) => (
                                                 <Select
-                                                    value={field.value || undefined}
-                                                    onValueChange={field.onChange}
+                                                    value={field.value ? String(field.value) : undefined}
+                                                    onValueChange={(value) => field.onChange(value || null)}
                                                 >
                                                     <SelectTrigger>
                                                         <SelectValue placeholder="Selecione o método preferido" />
@@ -714,84 +892,85 @@ const MeuPerfilOrganizer = () => {
                                 )}
                             </div>
 
-                            <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
-                            sm:p-8 shadow-sm space-y-6">
-                                <div className="flex items-center gap-3 pb-4 border-b border-psi-dark/10">
-                                    <div className="h-10 w-10 rounded-xl bg-red-100 flex items-center justify-center">
-                                        <FileText className="h-5 w-5 text-red-600" />
+                            {!hasAllDocuments && (
+                                <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
+                                sm:p-8 shadow-sm space-y-6">
+                                    <div className="flex items-center gap-3 pb-4 border-b border-psi-dark/10">
+                                        <div className="h-10 w-10 rounded-xl bg-red-100 flex items-center justify-center">
+                                            <FileText className="h-5 w-5 text-red-600" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-lg font-semibold text-psi-dark">Documentos de Identidade</h2>
+                                            <p className="text-sm text-red-600 font-medium">Obrigatório</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h2 className="text-lg font-semibold text-psi-dark">Documentos de Identidade</h2>
-                                        <p className="text-sm text-red-600 font-medium">Obrigatório</p>
+
+                                    <div className="rounded-xl border-2 border-red-200 bg-red-50 p-4">
+                                        <p className="text-sm text-red-900">
+                                            <strong>Atenção:</strong> É obrigatório enviar a foto da frente e verso do RG, além de uma selfie segurando o RG. Sem essas imagens, sua conta não será verificada.
+                                        </p>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                                        <div>
+                                            <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                Foto da frente do RG *
+                                            </label>
+                                            <Controller
+                                                name="identityDocumentFronUrl"
+                                                control={form.control}
+                                                render={({ field }) => (
+                                                    <ImageUpload
+                                                        value={field.value}
+                                                        onChange={(file) => field.onChange(file)}
+                                                        error={form.formState.errors.identityDocumentFronUrl?.message}
+                                                        variant="document"
+                                                    />
+                                                )}
+                                            />
+                                            <FieldError message={form.formState.errors.identityDocumentFronUrl?.message || ""} />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                Foto do verso do RG *
+                                            </label>
+                                            <Controller
+                                                name="identityDocumentBackUrl"
+                                                control={form.control}
+                                                render={({ field }) => (
+                                                    <ImageUpload
+                                                        value={field.value}
+                                                        onChange={(file) => field.onChange(file)}
+                                                        error={form.formState.errors.identityDocumentBackUrl?.message}
+                                                        variant="document"
+                                                    />
+                                                )}
+                                            />
+                                            <FieldError message={form.formState.errors.identityDocumentBackUrl?.message || ""} />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                Selfie segurando o RG *
+                                            </label>
+                                            <Controller
+                                                name="identityDocumentSelfieUrl"
+                                                control={form.control}
+                                                render={({ field }) => (
+                                                    <ImageUpload
+                                                        value={field.value}
+                                                        onChange={(file) => field.onChange(file)}
+                                                        error={form.formState.errors.identityDocumentSelfieUrl?.message}
+                                                        variant="document"
+                                                    />
+                                                )}
+                                            />
+                                            <FieldError message={form.formState.errors.identityDocumentSelfieUrl?.message || ""} />
+                                        </div>
                                     </div>
                                 </div>
-
-                                <div className="rounded-xl border-2 border-red-200 bg-red-50 p-4">
-                                    <p className="text-sm text-red-900">
-                                        <strong>Atenção:</strong> É obrigatório enviar a foto da frente e verso do RG, além de uma selfie segurando o RG. Sem essas imagens, sua conta não será verificada.
-                                    </p>
-                                </div>
-
-                                <div className="grid gap-6
-                                sm:grid-cols-3">
-                                    <div>
-                                        <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Foto da frente do RG *
-                                        </label>
-                                        <Controller
-                                            name="identityDocumentFronUrl"
-                                            control={form.control}
-                                            render={({ field }) => (
-                                                <ImageUpload
-                                                    value={field.value}
-                                                    onChange={(file) => field.onChange(file)}
-                                                    error={form.formState.errors.identityDocumentFronUrl?.message}
-                                                    variant="document"
-                                                />
-                                            )}
-                                        />
-                                        <FieldError message={form.formState.errors.identityDocumentFronUrl?.message || ""} />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Foto do verso do RG *
-                                        </label>
-                                        <Controller
-                                            name="identityDocumentBackUrl"
-                                            control={form.control}
-                                            render={({ field }) => (
-                                                <ImageUpload
-                                                    value={field.value}
-                                                    onChange={(file) => field.onChange(file)}
-                                                    error={form.formState.errors.identityDocumentBackUrl?.message}
-                                                    variant="document"
-                                                />
-                                            )}
-                                        />
-                                        <FieldError message={form.formState.errors.identityDocumentBackUrl?.message || ""} />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Selfie segurando o RG *
-                                        </label>
-                                        <Controller
-                                            name="identityDocumentSelfieUrl"
-                                            control={form.control}
-                                            render={({ field }) => (
-                                                <ImageUpload
-                                                    value={field.value}
-                                                    onChange={(file) => field.onChange(file)}
-                                                    error={form.formState.errors.identityDocumentSelfieUrl?.message}
-                                                    variant="document"
-                                                />
-                                            )}
-                                        />
-                                        <FieldError message={form.formState.errors.identityDocumentSelfieUrl?.message || ""} />
-                                    </div>
-                                </div>
-                            </div>
+                            )}
 
                             <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
                             sm:p-8 shadow-sm space-y-6">
@@ -855,7 +1034,7 @@ const MeuPerfilOrganizer = () => {
                                     </div>
                                     <div>
                                         <h2 className="text-lg font-semibold text-psi-dark">Contato de Suporte</h2>
-                                        <p className="text-sm text-amber-700 font-medium">Altamente recomendado</p>
+                                        <p className="text-sm text-amber-700 font-medium">Obrigatório - Preencha pelo menos um dos campos marcados com *</p>
                                     </div>
                                 </div>
 
@@ -869,7 +1048,7 @@ const MeuPerfilOrganizer = () => {
                                 sm:grid-cols-2">
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Email de suporte
+                                            Email de suporte *
                                         </label>
                                         <Controller
                                             name="supportEmail"
@@ -889,7 +1068,7 @@ const MeuPerfilOrganizer = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Telefone de suporte
+                                            Telefone de suporte *
                                         </label>
                                         <Controller
                                             name="supportPhone"

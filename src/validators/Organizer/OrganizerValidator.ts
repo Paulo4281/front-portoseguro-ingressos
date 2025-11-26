@@ -2,15 +2,21 @@ import { z } from "zod"
 import { DefaultFormErrors } from "@/utils/Errors/DefaultFormErrors"
 
 export const OrganizerUpdateValidator = z.object({
+    firstName: z.string().min(1).optional(),
+    lastName: z.string().min(1).optional(),
+    birth: z.string().nullable().optional().or(z.literal("")),
+    document: z.string().nullable().optional(),
+
     companyName: z.string().nullable().optional(),
     companyDocument: z.string().nullable().optional(),
     companyAddress: z.string().nullable().optional(),
     description: z.string().max(600, { error: "A descrição deve ter no máximo 600 caracteres" }).nullable().optional().or(z.literal("")),
     logo: z.union([z.string(), z.instanceof(File)]).nullable().optional(),
-    bankId: z.string().uuid().nullable().optional(),
+    bankId: z.string().uuid().nullable().optional().or(z.literal("")),
     bankAccountName: z.string().nullable().optional(),
     bankAccountOwnerName: z.string().nullable().optional(),
-    bankAccountOwnerBirth: z.string().nullable().optional(),
+    bankAccountOwnerBirth: z.string().nullable().optional().or(z.literal("")),
+    bankAccountOwnerDocumentType: z.enum(["CPF", "CNPJ"]).nullable().optional(),
     bankAccountOwnerDocument: z.string().nullable().optional(),
     bankAccountAgency: z.string().nullable().optional(),
     bankAccountNumber: z.string().nullable().optional(),
@@ -26,6 +32,7 @@ export const OrganizerUpdateValidator = z.object({
     facebookUrl: z.string().url({ error: DefaultFormErrors.required }).nullable().optional().or(z.literal("")),
     supportEmail: z.email({ error: DefaultFormErrors.required }).nullable().optional(),
     supportPhone: z.string().nullable().optional(),
+    verificationStatus: z.enum(["PENDING", "APPROVED", "REJECTED"]).nullable().optional(),
 }).superRefine((data, ctx) => {
     const hasBankAccount = !!(
         data.bankId &&

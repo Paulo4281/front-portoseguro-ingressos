@@ -63,32 +63,36 @@ const ImageUpload = (
             throw new Error('No 2d context')
         }
 
-        const maxSize = Math.max(image.width, image.height)
-        const safeArea = 2 * ((maxSize / 2) * Math.sqrt(2))
+        const rad = (rotation * Math.PI) / 180
+        const sin = Math.abs(Math.sin(rad))
+        const cos = Math.abs(Math.cos(rad))
 
-        canvas.width = safeArea
-        canvas.height = safeArea
+        const imageWidth = image.width
+        const imageHeight = image.height
 
-        ctx.translate(safeArea / 2, safeArea / 2)
-        ctx.rotate((rotation * Math.PI) / 180)
-        ctx.translate(-safeArea / 2, -safeArea / 2)
+        const rotatedWidth = imageWidth * cos + imageHeight * sin
+        const rotatedHeight = imageWidth * sin + imageHeight * cos
 
-        ctx.drawImage(
-            image,
-            safeArea / 2 - image.width * 0.5,
-            safeArea / 2 - image.height * 0.5
+        canvas.width = rotatedWidth
+        canvas.height = rotatedHeight
+
+        ctx.translate(rotatedWidth / 2, rotatedHeight / 2)
+        ctx.rotate(rad)
+        ctx.translate(-imageWidth / 2, -imageHeight / 2)
+
+        ctx.drawImage(image, 0, 0)
+
+        const data = ctx.getImageData(
+            pixelCrop.x,
+            pixelCrop.y,
+            pixelCrop.width,
+            pixelCrop.height
         )
-
-        const data = ctx.getImageData(0, 0, safeArea, safeArea)
 
         canvas.width = pixelCrop.width
         canvas.height = pixelCrop.height
 
-        ctx.putImageData(
-            data,
-            Math.round(0 - safeArea / 2 + image.width * 0.5 - pixelCrop.x),
-            Math.round(0 - safeArea / 2 + image.height * 0.5 - pixelCrop.y)
-        )
+        ctx.putImageData(data, 0, 0)
 
         return new Promise((resolve) => {
             canvas.toBlob((blob) => {
@@ -262,7 +266,7 @@ const ImageUpload = (
                                     crop={crop}
                                     zoom={zoom}
                                     rotation={rotation}
-                                    aspect={16 / 9}
+                                    aspect={variant === "document" ? undefined : 16 / 9}
                                     onCropChange={setCrop}
                                     onZoomChange={setZoom}
                                     onRotationChange={setRotation}

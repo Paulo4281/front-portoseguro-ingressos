@@ -24,6 +24,10 @@ class OrganizerServiceClass {
     async update(payload: TOrganizerUpdate): Promise<AxiosResponse["data"]> {
         const formData = new FormData()
 
+        if (payload.firstName) formData.append("firstName", payload.firstName)
+        if (payload.lastName) formData.append("lastName", payload.lastName)
+        if (payload.birth) formData.append("birth", payload.birth)
+        if (payload.document) formData.append("document", payload.document)
         if (payload.companyName) formData.append("companyName", payload.companyName)
         if (payload.companyDocument) formData.append("companyDocument", payload.companyDocument)
         if (payload.companyAddress) formData.append("companyAddress", payload.companyAddress)
@@ -74,8 +78,8 @@ class OrganizerServiceClass {
         if (payload.supportPhone) formData.append("supportPhone", payload.supportPhone)
 
         const response = await API.POST_FILE({
-            prefix: "/organizer",
-            url: "",
+            prefix: "/user",
+            url: "/update-organizer",
             formData
         })
 

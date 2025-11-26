@@ -17,7 +17,14 @@ class ImageUtilsClass {
         if (!logoHash) return ""
 
         const bucketUrl = process.env.NEXT_PUBLIC_BUCKET_URL || ""
-        return `${bucketUrl}/organizers/${logoHash}`
+        return `${bucketUrl}/organizers-logos/${logoHash}`
+    }
+
+    getOrganizerIdentityDocumentUrl(documentHash: string | null | undefined): string {
+        if (!documentHash) return ""
+
+        const bucketUrl = process.env.NEXT_PUBLIC_BUCKET_URL || ""
+        return `${bucketUrl}/organizers-documents/${documentHash}`
     }
 }
 
