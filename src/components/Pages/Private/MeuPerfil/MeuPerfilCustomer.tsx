@@ -20,17 +20,13 @@ import {
 } from "@/components/ui/select"
 import type { TUser } from "@/types/User/TUser"
 import { getStates, getCitiesByState } from "@/utils/Helpers/IBGECitiesAndStates/IBGECitiesAndStates"
-import { useMemo, useEffect } from "react"
+import { getCountries, getCountriesSync } from "@/utils/Helpers/Countries/Countries"
+import { useMemo, useEffect, useRef, useState } from "react"
 import { useUserUpdate } from "@/hooks/User/useUserUpdate"
+import { useUserUploadProfilePicture } from "@/hooks/User/useUserUploadProfilePicture"
 import { Toast } from "@/components/Toast/Toast"
 import { useAuthStore } from "@/stores/Auth/AuthStore"
-
-const countries = [
-    { value: "BR", label: "Brasil" },
-    { value: "AR", label: "Argentina" },
-    { value: "US", label: "Estados Unidos" },
-    { value: "PT", label: "Portugal" },
-]
+import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 
 const genres = [
     { value: "MALE", label: "Masculino" },
@@ -42,6 +38,8 @@ const MeuPerfilCustomer = () => {
     const { user, setUser } = useAuthStore()
     const states = getStates()
     const { mutateAsync: updateUser, isPending: isUpdating } = useUserUpdate()
+    const { mutateAsync: uploadProfilePicture, isPending: isUploading } = useUserUploadProfilePicture()
+    const [countries, setCountries] = useState(getCountriesSync())
 
     const formatBirthForForm = (birth: string | null | undefined): string => {
         if (!birth) return ""
@@ -61,7 +59,7 @@ const MeuPerfilCustomer = () => {
             phone: user?.phone || "",
             document: user?.document || "",
             nationality: user?.nationality || "",
-            genre: user?.genre || null,
+            gender: user?.gender || null,
             birth: formatBirthForForm(user?.birth),
             address: user?.Address ? {
                 street: user.Address.street,
@@ -83,6 +81,14 @@ const MeuPerfilCustomer = () => {
     }, [selectedState])
 
     useEffect(() => {
+        const loadCountries = async () => {
+            const countriesList = await getCountries()
+            setCountries(countriesList)
+        }
+        loadCountries()
+    }, [])
+
+    useEffect(() => {
         if (selectedState) {
             const currentCity = form.getValues("address.city")
             const availableCities = getCitiesByState(selectedState)
@@ -92,6 +98,32 @@ const MeuPerfilCustomer = () => {
             }
         }
     }, [selectedState, form])
+
+    const imageValue = form.watch("image")
+    const uploadedFileRef = useRef<File | null>(null)
+    
+    useEffect(() => {
+        const uploadImage = async () => {
+            if (imageValue instanceof File && imageValue !== uploadedFileRef.current) {
+                uploadedFileRef.current = imageValue
+                try {
+                    const response = await uploadProfilePicture(imageValue)
+                    if (response && response.success && response.data?.user) {
+                        setUser(response.data.user)
+                        form.setValue("image", null)
+                        uploadedFileRef.current = null
+                        Toast.success("Foto de perfil atualizada com sucesso!")
+                    }
+                } catch (error: any) {
+                    Toast.error(error?.response?.data?.message || "Erro ao fazer upload da foto. Tente novamente.")
+                    form.setValue("image", null)
+                    uploadedFileRef.current = null
+                }
+            }
+        }
+
+        uploadImage()
+    }, [imageValue, uploadProfilePicture, setUser, form])
 
     const updateAddressField = (field: string, value: string) => {
         const currentAddress = form.getValues("address") || {}
@@ -115,16 +147,17 @@ const MeuPerfilCustomer = () => {
             if (data.lastName) updateData.lastName = data.lastName
             if (data.phone) updateData.phone = data.phone
             if (data.document) updateData.document = data.document
-            if (data.nationality) updateData.nationality = data.nationality
-            if (data.genre) updateData.gender = data.genre
+            
+            if (data.nationality !== undefined) {
+                updateData.nationality = data.nationality || null
+            }
+            
+            if (data.gender !== undefined) {
+                updateData.gender = data.gender || null
+            }
 
             if (data.birth) {
-                const [day, month, year] = data.birth.split("/")
-                if (day && month && year) {
-                    updateData.birth = `${year}-${month}-${day}`
-                }
-            } else if (data.birth === null) {
-                updateData.birth = null
+                updateData.birth = data.birth
             }
 
             if (data.address) {
@@ -142,8 +175,8 @@ const MeuPerfilCustomer = () => {
 
             const response = await updateUser(updateData)
 
-            if (response && response.success && response.data?.user) {
-                setUser(response.data.user)
+            if (response && response.success && response.data) {
+                setUser(response.data)
                 Toast.success("Perfil atualizado com sucesso!")
             } else {
                 Toast.error("Erro ao atualizar perfil. Tente novamente.")
@@ -184,7 +217,7 @@ const MeuPerfilCustomer = () => {
                                                     src={
                                                         field.value instanceof File
                                                             ? URL.createObjectURL(field.value)
-                                                            : user?.image || null
+                                                            : user?.image ? ImageUtils.getUserImageUrl(user.image) : null
                                                     }
                                                     name={`${form.watch("firstName") || user?.firstName || ""} ${form.watch("lastName") || user?.lastName || ""}`}
                                                     size="lg"
@@ -200,6 +233,11 @@ const MeuPerfilCustomer = () => {
                                             <p className="text-xs text-psi-dark/60">
                                                 Opcional. Formatos aceitos: PNG, JPG, GIF até 10MB
                                             </p>
+                                            {isUploading && (
+                                                <p className="text-xs text-psi-primary mt-1">
+                                                    Enviando foto...
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -339,7 +377,7 @@ const MeuPerfilCustomer = () => {
                                                 Gênero
                                             </label>
                                             <Controller
-                                                name="genre"
+                                                name="gender"
                                                 control={form.control}
                                                 render={({ field }) => (
                                                     <Select
@@ -359,7 +397,7 @@ const MeuPerfilCustomer = () => {
                                                     </Select>
                                                 )}
                                             />
-                                            <FieldError message={form.formState.errors.genre?.message || ""} />
+                                            <FieldError message={form.formState.errors.gender?.message || ""} />
                                         </div>
 
                                         <div>

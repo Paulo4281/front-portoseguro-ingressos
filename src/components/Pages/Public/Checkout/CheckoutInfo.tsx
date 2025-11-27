@@ -79,6 +79,7 @@ import { LoadingButton } from "@/components/Loading/LoadingButton"
 import { Icon } from "@/components/Icon/Icon"
 import { Timer } from "@/components/Timer/Timer"
 import { getStates, getCitiesByState } from "@/utils/Helpers/IBGECitiesAndStates/IBGECitiesAndStates"
+import { getCountries, getCountriesSync } from "@/utils/Helpers/Countries/Countries"
 
 type TPaymentMethod = "pix" | "credit"
 
@@ -159,6 +160,7 @@ const CheckoutInfo = () => {
     const cities = useMemo(() => {
         return getCitiesByState(buyerData.state || "")
     }, [buyerData.state])
+    const [countries, setCountries] = useState(getCountriesSync())
 
     useEffect(() => {
         if (isAuthenticated && user) {
@@ -192,6 +194,14 @@ const CheckoutInfo = () => {
             cadastroForm.setValue("email", cadastroEmail)
         }
     }, [showCadastroDialog, cadastroEmail, cadastroForm])
+
+    useEffect(() => {
+        const loadCountries = async () => {
+            const countriesList = await getCountries()
+            setCountries(countriesList)
+        }
+        loadCountries()
+    }, [])
     
     const [cardData, setCardData] = useState({
         number: "",
@@ -203,6 +213,11 @@ const CheckoutInfo = () => {
     const [formAnswers, setFormAnswers] = useState<Record<string, any>>({})
     const [couponCodes, setCouponCodes] = useState<Record<string, string>>({})
     const [couponLoading, setCouponLoading] = useState<Record<string, boolean>>({})
+    const [appliedCoupons, setAppliedCoupons] = useState<Record<string, {
+        id: string
+        discountType: "PERCENTAGE" | "FIXED"
+        discountValue: number
+    }>>({})
 
     const { mutateAsync: checkCoupon } = useCouponCheck()
 
@@ -388,12 +403,52 @@ const CheckoutInfo = () => {
     
     const maxStep = hasForms ? 4 : 3
     
+    const getEventTotal = useCallback((eventId: string) => {
+        const eventItems = items.filter(item => item.eventId === eventId)
+        return eventItems.reduce((sum, item) => {
+            const event = eventsData.find(e => e?.id === item.eventId)
+            return sum + CheckoutUtils.calculateItemTotal(item, event || null)
+        }, 0)
+    }, [items, eventsData])
+    
+    const getEventDiscount = useCallback((eventId: string) => {
+        const coupon = appliedCoupons[eventId]
+        if (!coupon) return 0
+        
+        const eventTotal = getEventTotal(eventId)
+        
+        if (coupon.discountType === "PERCENTAGE") {
+            return Math.round(eventTotal * (coupon.discountValue / 100))
+        } else {
+            return Math.min(coupon.discountValue, eventTotal)
+        }
+    }, [appliedCoupons, getEventTotal])
+    
     const total = useMemo(() => {
+        const subtotal = items.reduce((sum, item) => {
+            const event = eventsData.find(e => e?.id === item.eventId)
+            return sum + CheckoutUtils.calculateItemTotal(item, event || null)
+        }, 0)
+        
+        const totalDiscount = Object.keys(appliedCoupons).reduce((sum, eventId) => {
+            return sum + getEventDiscount(eventId)
+        }, 0)
+        
+        return subtotal - totalDiscount
+    }, [items, eventsData, appliedCoupons, getEventDiscount])
+    
+    const subtotal = useMemo(() => {
         return items.reduce((sum, item) => {
             const event = eventsData.find(e => e?.id === item.eventId)
             return sum + CheckoutUtils.calculateItemTotal(item, event || null)
         }, 0)
     }, [items, eventsData])
+    
+    const totalDiscount = useMemo(() => {
+        return Object.keys(appliedCoupons).reduce((sum, eventId) => {
+            return sum + getEventDiscount(eventId)
+        }, 0)
+    }, [appliedCoupons, getEventDiscount])
 
     const handleCouponChange = useCallback((eventId: string, value: string) => {
         setCouponCodes((prev) => ({
@@ -416,10 +471,23 @@ const CheckoutInfo = () => {
         }))
 
         try {
-            await checkCoupon({
+            const response = await checkCoupon({
                 code,
                 eventId
             })
+
+            if (response?.success && response?.data) {
+                const couponData: { id: string; discountType: "PERCENTAGE" | "FIXED"; discountValue: number } = response.data
+                setAppliedCoupons((prev) => ({
+                    ...prev,
+                    [eventId]: {
+                        id: couponData.id,
+                        discountType: couponData.discountType,
+                        discountValue: couponData.discountValue
+                    }
+                }))
+                Toast.success("Cupom aplicado com sucesso!")
+            }
         } catch (error) {
             console.error("Erro ao verificar cupom:", error)
             Toast.error("Não foi possível verificar o cupom.")
@@ -947,11 +1015,21 @@ const CheckoutInfo = () => {
                                                         <label className="block text-sm font-medium text-psi-dark mb-2">
                                                             País *
                                                         </label>
-                                                        <Input
-                                                            value={buyerData.country}
-                                                            onChange={(e) => setBuyerData({ ...buyerData, country: e.target.value })}
-                                                            required
-                                                        />
+                                                        <Select
+                                                            value={buyerData.country || undefined}
+                                                            onValueChange={(value) => setBuyerData({ ...buyerData, country: value })}
+                                                        >
+                                                            <SelectTrigger className="w-full">
+                                                                <SelectValue placeholder="Selecione..." />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {countries.map((country) => (
+                                                                    <SelectItem key={country.value} value={country.value}>
+                                                                        {country.label}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1179,40 +1257,105 @@ const CheckoutInfo = () => {
                                                                 <label className="block text-sm font-medium text-psi-dark mb-2">
                                                                     Cupom de desconto (opcional)
                                                                 </label>
-                                                                <div className="flex flex-col gap-3
-                                                                sm:flex-row">
-                                                                    <Input
-                                                                        value={couponCodes[event.id] || ""}
-                                                                        onChange={(e) => handleCouponChange(event.id, e.target.value.toUpperCase())}
-                                                                        placeholder="DIGITE O CÓDIGO"
-                                                                        className="uppercase"
-                                                                        maxLength={12}
-                                                                    />
-                                                                    <Button
-                                                                        type="button"
-                                                                        variant="secondary"
-                                                                        disabled={couponLoading[event.id] === true}
-                                                                        onClick={() => handleApplyCoupon(event.id)}
-                                                                    >
-                                                                        {couponLoading[event.id] ? (
-                                                                            <>
-                                                                                <Loader2 className="size-4 animate-spin" />
-                                                                                Verificando...
-                                                                            </>
-                                                                        ) : (
-                                                                            "Aplicar"
-                                                                        )}
-                                                                    </Button>
-                                                                </div>
-                                                                <p className="text-xs text-psi-dark/60 mt-2">
-                                                                    Caso possua um cupom para este evento, aplique-o aqui para validar o desconto.
-                                                                </p>
+                                                                {appliedCoupons[event.id] ? (
+                                                                    <div className="space-y-2">
+                                                                        <div className="flex items-center justify-between p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <CheckCircle2 className="size-5 text-emerald-600" />
+                                                                                <div>
+                                                                                    <p className="text-sm font-semibold text-emerald-900">
+                                                                                        Cupom {couponCodes[event.id]} aplicado
+                                                                                    </p>
+                                                                                    <p className="text-xs text-emerald-700">
+                                                                                        Desconto: {appliedCoupons[event.id].discountType === "PERCENTAGE" 
+                                                                                            ? `${appliedCoupons[event.id].discountValue}%`
+                                                                                            : ValueUtils.centsToCurrency(appliedCoupons[event.id].discountValue)}
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                onClick={() => {
+                                                                                    setAppliedCoupons((prev) => {
+                                                                                        const newCoupons = { ...prev }
+                                                                                        delete newCoupons[event.id]
+                                                                                        return newCoupons
+                                                                                    })
+                                                                                    setCouponCodes((prev) => {
+                                                                                        const newCodes = { ...prev }
+                                                                                        delete newCodes[event.id]
+                                                                                        return newCodes
+                                                                                    })
+                                                                                }}
+                                                                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                                            >
+                                                                                <Trash2 className="size-4" />
+                                                                            </Button>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <>
+                                                                        <div className="flex flex-col gap-3
+                                                                        sm:flex-row">
+                                                                            <Input
+                                                                                value={couponCodes[event.id] || ""}
+                                                                                onChange={(e) => handleCouponChange(event.id, e.target.value.toUpperCase())}
+                                                                                placeholder="DIGITE O CÓDIGO"
+                                                                                className="uppercase"
+                                                                                maxLength={12}
+                                                                                disabled={couponLoading[event.id] === true}
+                                                                            />
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="secondary"
+                                                                                disabled={couponLoading[event.id] === true || !couponCodes[event.id]?.trim()}
+                                                                                onClick={() => handleApplyCoupon(event.id)}
+                                                                            >
+                                                                                {couponLoading[event.id] ? (
+                                                                                    <>
+                                                                                        <Loader2 className="size-4 animate-spin" />
+                                                                                        Verificando...
+                                                                                    </>
+                                                                                ) : (
+                                                                                    "Aplicar"
+                                                                                )}
+                                                                            </Button>
+                                                                        </div>
+                                                                        <p className="text-xs text-psi-dark/60 mt-2">
+                                                                            Caso possua um cupom para este evento, aplique-o aqui para validar o desconto.
+                                                                        </p>
+                                                                    </>
+                                                                )}
                                                             </div>
                                                             
-                                                            <div className="pt-2 border-t border-psi-dark/10">
-                                                                <p className="text-lg font-semibold text-psi-primary">
-                                                                    {ValueUtils.centsToCurrency(CheckoutUtils.calculateItemTotal(item, event))}
-                                                                </p>
+                                                            <div className="pt-2 border-t border-psi-dark/10 space-y-2">
+                                                                {appliedCoupons[event.id] && (
+                                                                    <div className="flex items-center justify-between text-sm">
+                                                                        <span className="text-psi-dark/70">Subtotal:</span>
+                                                                        <span className="text-psi-dark/70">
+                                                                            {ValueUtils.centsToCurrency(CheckoutUtils.calculateItemTotal(item, event))}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                                {appliedCoupons[event.id] && (
+                                                                    <div className="flex items-center justify-between text-sm">
+                                                                        <span className="text-emerald-600 font-medium">Desconto:</span>
+                                                                        <span className="text-emerald-600 font-medium">
+                                                                            -{ValueUtils.centsToCurrency(getEventDiscount(event.id))}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-sm font-medium text-psi-dark">Total:</span>
+                                                                    <p className="text-lg font-semibold text-psi-primary">
+                                                                        {ValueUtils.centsToCurrency(
+                                                                            CheckoutUtils.calculateItemTotal(item, event) - 
+                                                                            (appliedCoupons[event.id] ? getEventDiscount(event.id) : 0)
+                                                                        )}
+                                                                    </p>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1534,10 +1677,25 @@ const CheckoutInfo = () => {
                                         
                                         <div className="p-4 rounded-xl bg-psi-dark/5">
                                             <h3 className="font-semibold text-psi-dark mb-2">Resumo</h3>
-                                            <div className="space-y-1 text-sm text-psi-dark/70">
-                                                <p><strong>Total:</strong> {ValueUtils.centsToCurrency(total)}</p>
-                                                <p><strong>Itens:</strong> {items.reduce((sum, item) => sum + item.quantity, 0)} ingresso(s)</p>
-                                                <p><strong>Pagamento:</strong> {paymentMethod === "pix" ? "PIX" : "Cartão de Crédito"}</p>
+                                            <div className="space-y-2 text-sm">
+                                                {totalDiscount > 0 && (
+                                                    <>
+                                                        <div className="flex items-center justify-between text-psi-dark/70">
+                                                            <span>Subtotal:</span>
+                                                            <span>{ValueUtils.centsToCurrency(subtotal)}</span>
+                                                        </div>
+                                                        <div className="flex items-center justify-between text-emerald-600 font-medium">
+                                                            <span>Desconto:</span>
+                                                            <span>-{ValueUtils.centsToCurrency(totalDiscount)}</span>
+                                                        </div>
+                                                    </>
+                                                )}
+                                                <div className="flex items-center justify-between font-semibold text-psi-dark pt-2 border-t border-psi-dark/10">
+                                                    <span>Total:</span>
+                                                    <span>{ValueUtils.centsToCurrency(total)}</span>
+                                                </div>
+                                                <p className="text-psi-dark/70"><strong>Itens:</strong> {items.reduce((sum, item) => sum + item.quantity, 0)} ingresso(s)</p>
+                                                <p className="text-psi-dark/70"><strong>Pagamento:</strong> {paymentMethod === "pix" ? "PIX" : "Cartão de Crédito"}</p>
                                             </div>
                                         </div>
                                         
@@ -1637,8 +1795,20 @@ const CheckoutInfo = () => {
                                     })}
                                 </div>
                                 
-                                <div className="pt-4 border-t border-psi-dark/10">
-                                    <div className="flex items-center justify-between mb-2">
+                                <div className="pt-4 border-t border-psi-dark/10 space-y-2">
+                                    {totalDiscount > 0 && (
+                                        <>
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-psi-dark/70">Subtotal:</span>
+                                                <span className="text-psi-dark/70">{ValueUtils.centsToCurrency(subtotal)}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-emerald-600 font-medium">Desconto:</span>
+                                                <span className="text-emerald-600 font-medium">-{ValueUtils.centsToCurrency(totalDiscount)}</span>
+                                            </div>
+                                        </>
+                                    )}
+                                    <div className="flex items-center justify-between pt-2 border-t border-psi-dark/10">
                                         <span className="font-semibold text-psi-dark">Total</span>
                                         <span className="text-2xl font-bold text-psi-primary">
                                             {ValueUtils.centsToCurrency(total)}

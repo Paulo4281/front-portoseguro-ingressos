@@ -6,7 +6,6 @@ type TCoupon = {
     expirationDate?: string | null
     usageLimit?: number | null
     usageCount: number
-    minPurchaseValue?: number | null
     isActive: boolean
     eventId: string
     eventName: string
@@ -20,7 +19,9 @@ type TCouponCheckRequest = {
 }
 
 type TCouponCheckResponse = {
-
+    id: string
+    discountType: "PERCENTAGE" | "FIXED"
+    discountValue: number
 }
 
 export type {

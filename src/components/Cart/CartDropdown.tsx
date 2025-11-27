@@ -6,6 +6,7 @@ import { useCart } from "@/contexts/CartContext"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { TicketFeeUtils } from "@/utils/Helpers/FeeUtils/TicketFeeUtils"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
+import { CheckoutUtils } from "@/utils/Helpers/CheckoutUtils/CheckoutUtils"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -70,29 +71,7 @@ const CartDropdown = () => {
                     <>
                         <div className="max-h-[400px] overflow-y-auto p-4 space-y-3">
                             {items.map((item, index) => {
-                                const itemTotal = (() => {
-                                    if (item.ticketTypes && item.ticketTypes.length > 0) {
-                                        const hasDays = item.ticketTypes.some(tt => tt.days && tt.days.length > 0)
-                                        
-                                        if (hasDays) {
-                                            const feeCents = TicketFeeUtils.calculateFeeInCents(item.price, item.isClientTaxed)
-                                            const totalWithFees = item.price + (feeCents * item.quantity)
-                                            return totalWithFees
-                                        }
-                                        
-                                        const total = item.ticketTypes.reduce((sum, tt) => {
-                                            if (tt.price !== null && tt.price !== undefined) {
-                                                const feeCents = TicketFeeUtils.calculateFeeInCents(tt.price, item.isClientTaxed)
-                                                return sum + (tt.price * tt.quantity) + (feeCents * tt.quantity)
-                                            }
-                                            return sum
-                                        }, 0)
-                                        return total
-                                    }
-                                    const feeCents = TicketFeeUtils.calculateFeeInCents(item.price, item.isClientTaxed)
-                                    const totalWithFees = (item.price * item.quantity) + (feeCents * item.quantity)
-                                    return totalWithFees
-                                })()
+                                const itemTotal = CheckoutUtils.calculateItemTotal(item, null)
 
                                 return (
                                     <div

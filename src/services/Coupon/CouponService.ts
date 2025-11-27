@@ -10,7 +10,6 @@ type TCouponCreatePayload = {
     discountValue: number
     expirationDate?: string | null
     usageLimit?: number | null
-    minPurchaseValue?: number | null
 }
 
 type TCouponUpdatePayload = {
@@ -19,7 +18,6 @@ type TCouponUpdatePayload = {
     discountValue?: number
     expirationDate?: string | null
     usageLimit?: number | null
-    minPurchaseValue?: number | null
 }
 
 class CouponServiceClass {
@@ -40,7 +38,12 @@ class CouponServiceClass {
     }
 
     async check(data: TCouponCheckRequest): Promise<AxiosResponse["data"]> {
-        console.log(data)
+        const response = (await API.POST({
+            prefix: "/coupon",
+            url: "/check",
+            data: data
+        }))?.data
+        return response
     }
 
     async create(payload: TCouponCreatePayload): Promise<AxiosResponse["data"]> {
@@ -58,7 +61,6 @@ class CouponServiceClass {
                 discountValue: payload.discountValue,
                 expirationDate,
                 usageLimit: payload.usageLimit ?? null,
-                minPurchaseValue: payload.minPurchaseValue ?? null
             }
         })
 
@@ -91,9 +93,6 @@ class CouponServiceClass {
         }
         if (payload.usageLimit !== undefined) {
             updateData.usageLimit = payload.usageLimit ?? null
-        }
-        if (payload.minPurchaseValue !== undefined) {
-            updateData.minPurchaseValue = payload.minPurchaseValue ?? null
         }
 
         const response = await API.PUT({

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent } from "lucide-react"
@@ -32,6 +32,7 @@ import { useNotificationDeleteAll } from "@/hooks/Notification/useNotificationDe
 import { Badge } from "@/components/ui/badge"
 import { TNotification } from "@/types/Notification/TNotification"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
+import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 
 type TSubLink = {
     href: string
@@ -168,6 +169,20 @@ const Menu = () => {
         : []
 
     const fullName = user ? `${user.firstName} ${user.lastName}` : ""
+    
+    const avatarSrc = useMemo(() => {
+        if (!user) return null
+        
+        if (user.role === "ORGANIZER" && user.Organizer?.logo) {
+            return ImageUtils.getOrganizerLogoUrl(user.Organizer.logo)
+        }
+        
+        if (user.image) {
+            return ImageUtils.getUserImageUrl(user.image)
+        }
+        
+        return null
+    }, [user])
 
     useEffect(() => {
         const handleScroll = () => {
@@ -271,7 +286,7 @@ const Menu = () => {
                                             aria-label="Menu do usuário"
                                         >
                                             <Avatar
-                                                src={null}
+                                                src={avatarSrc}
                                                 name={fullName}
                                                 size="md"
                                             />
@@ -374,7 +389,7 @@ const Menu = () => {
                                         aria-label="Menu do usuário"
                                     >
                                         <Avatar
-                                            src={null}
+                                            src={avatarSrc}
                                             name={fullName}
                                             size="md"
                                         />

@@ -123,6 +123,13 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+@media screen and (min-width: 1921px) and (max-width: 2560px) {
+  .container {
+    max-width: 2560px !important;
+    padding: 30px 200px 30px 200px;
+  }
+}
+
 @media screen and (min-width: 1537px) and (max-width: 1920px) {
   .container {
     max-width: 1920px !important;

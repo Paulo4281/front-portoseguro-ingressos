@@ -6,6 +6,18 @@ export const OrganizerUpdateValidator = z.object({
     lastName: z.string().min(1).optional(),
     birth: z.string().nullable().optional().or(z.literal("")),
     document: z.string().nullable().optional(),
+    nationality: z.string().nullable().optional(),
+    gender: z.string().nullable().optional(),
+    address: z.object({
+        street: z.string().nullable().optional(),
+        number: z.string().nullable().optional(),
+        complement: z.string().nullable().optional(),
+        neighborhood: z.string().nullable().optional(),
+        city: z.string().nullable().optional(),
+        state: z.string().nullable().optional(),
+        country: z.string().nullable().optional(),
+        zipCode: z.string().nullable().optional()
+    }).optional(),
 
     companyName: z.string().nullable().optional(),
     companyDocument: z.string().nullable().optional(),

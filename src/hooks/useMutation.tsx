@@ -6,7 +6,7 @@ type TUseMutationProps = {
 
 function useMutationHook<T, R>(
     {
-        mutationFn
+        mutationFn,
     }: TUseMutationProps
 ) {
     return useMutation<R, unknown, T>({

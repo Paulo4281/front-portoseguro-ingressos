@@ -400,8 +400,6 @@ const VerEventoInfo = (
 
         if (hasMultipleDaysWithTicketTypePrices && event?.EventDates && event?.TicketTypes) {
             const ticketTypes: any[] = []
-
-            console.log("B")
             
             Object.entries(selectedDaysAndTypes).forEach(([eventDateId, types]) => {
                 const eventDate = event.EventDates?.find(ed => ed.id === eventDateId)
@@ -438,7 +436,7 @@ const VerEventoInfo = (
                 price: currentPrice,
                 ticketTypes,
                 isClientTaxed: event.isClientTaxed
-            }, totalQuantity)
+            }, totalQuantity || 0)
         } else if (batchHasTicketTypes && selectedBatch?.EventBatchTicketTypes) {
             const ticketTypes: any[] = []
 
@@ -492,7 +490,7 @@ const VerEventoInfo = (
                 price: currentPrice,
                 ticketTypes,
                 isClientTaxed: event.isClientTaxed
-            }, totalQuantity)
+            }, totalQuantity || 0)
         } else if (hasMultipleDaysWithSpecificPrices && selectedDaysWithoutTicketTypes.length > 0) {
             const ticketTypes = selectedDaysWithoutTicketTypes.map(eventDateId => {
                 const eventDate = event.EventDates?.find(ed => ed.id === eventDateId)
@@ -519,7 +517,7 @@ const VerEventoInfo = (
                 price: currentPrice,
                 ticketTypes,
                 isClientTaxed: event.isClientTaxed
-            }, totalQuantity)
+            }, totalQuantity || 0)
         } else {
             addItem({
                 eventId: event.id,
@@ -1103,7 +1101,101 @@ const VerEventoInfo = (
 
                         {(activeBatches?.length > 0 || !event.EventBatches || event.EventBatches.length === 0) && (
                             <div className="space-y-4 rounded-xl border border-psi-primary/20 bg-white p-6">
-                                {batchHasTicketTypes && selectedBatch?.EventBatchTicketTypes ? (
+                                {hasMultipleDaysWithTicketTypePrices && event?.EventDates && event?.TicketTypes ? (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-medium text-psi-dark">Selecione os dias e tipos de ingressos</span>
+                                            <span className="text-xs text-psi-dark/60">Máximo {buyTicketsLimit} por pessoa</span>
+                                        </div>
+                                        {event.EventDates.filter(ed => ed.hasSpecificPrice && ed.EventDateTicketTypePrices && ed.EventDateTicketTypePrices.length > 0).map((eventDate) => {
+                                            const dayTypes = selectedDaysAndTypes[eventDate.id] || {}
+                                            
+                                            return (
+                                                <div key={eventDate.id} className="rounded-lg border border-psi-primary/20 bg-psi-primary/5 p-4 space-y-3">
+                                                    <div className="flex items-start justify-between">
+                                                        <div className="flex-1">
+                                                            <div className="text-sm font-semibold text-psi-dark mb-2">
+                                                                {formatDate(eventDate.date)}
+                                                            </div>
+                                                            {eventDate.hourStart && (
+                                                                <div className="text-xs text-psi-dark/60 mb-3">
+                                                                    {formatTimeRange(eventDate.hourStart, eventDate.hourEnd)}
+                                                                </div>
+                                                            )}
+                                                            <div className="space-y-2">
+                                                                {eventDate.EventDateTicketTypePrices?.map((edttp: any) => {
+                                                                    const ticketType = event.TicketTypes?.find(tt => tt.id === edttp.ticketTypeId)
+                                                                    const qty = dayTypes[edttp.ticketTypeId] || 0
+                                                                    const feeCents = TicketFeeUtils.calculateFeeInCents(edttp.price, event.isClientTaxed)
+                                                                    
+                                                                    return (
+                                                                        <div key={edttp.ticketTypeId} className="rounded-lg border border-psi-primary/20 bg-white p-3 space-y-2">
+                                                                            <div className="flex items-center justify-between">
+                                                                                <div className="flex-1">
+                                                                                    <p className="text-sm font-medium text-psi-dark">{ticketType?.name || "Tipo desconhecido"}</p>
+                                                                                    <p className="text-xs text-psi-primary font-semibold mt-1">
+                                                                                        {ValueUtils.formatPrice(edttp.price)} por ingresso
+                                                                                    </p>
+                                                                                    {edttp.price > 0 && (
+                                                                                        <p className="text-xs text-psi-dark/60">
+                                                                                            + Taxa: {ValueUtils.centsToCurrency(feeCents)} por ingresso
+                                                                                        </p>
+                                                                                    )}
+                                                                                    {qty > 0 && (
+                                                                                        <p className="text-xs font-semibold text-psi-dark mt-1">
+                                                                                            Subtotal: {ValueUtils.centsToCurrency((edttp.price + feeCents) * qty)}
+                                                                                        </p>
+                                                                                    )}
+                                                                                </div>
+                                                                                <QuantitySelector
+                                                                                    value={qty}
+                                                                                    onChange={(newQuantity) => {
+                                                                                        console.log("onChange chamado:", { eventDateId: eventDate.id, ticketTypeId: edttp.ticketTypeId, newQuantity })
+                                                                                        setSelectedDaysAndTypes(prev => {
+                                                                                            const current = prev[eventDate.id] || {}
+                                                                                            console.log("Estado anterior:", prev, "current para eventDate:", current)
+                                                                                            if (newQuantity === 0) {
+                                                                                                const updated = { ...current }
+                                                                                                delete updated[edttp.ticketTypeId]
+                                                                                                if (Object.keys(updated).length === 0) {
+                                                                                                    const newState = { ...prev }
+                                                                                                    delete newState[eventDate.id]
+                                                                                                    console.log("Novo estado (removendo eventDate):", newState)
+                                                                                                    return newState
+                                                                                                }
+                                                                                                const result = {
+                                                                                                    ...prev,
+                                                                                                    [eventDate.id]: updated
+                                                                                                }
+                                                                                                console.log("Novo estado (removendo ticketType):", result)
+                                                                                                return result
+                                                                                            }
+                                                                                            const result = {
+                                                                                                ...prev,
+                                                                                                [eventDate.id]: {
+                                                                                                    ...current,
+                                                                                                    [edttp.ticketTypeId]: newQuantity
+                                                                                                }
+                                                                                            }
+                                                                                            console.log("Novo estado (adicionando/atualizando):", result)
+                                                                                            return result
+                                                                                        })
+                                                                                    }}
+                                                                                    max={buyTicketsLimit}
+                                                                                    min={0}
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                    )
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                ) : batchHasTicketTypes && selectedBatch?.EventBatchTicketTypes ? (
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between">
                                             <span className="text-sm font-medium text-psi-dark">Selecione a quantidade por tipo</span>
@@ -1264,93 +1356,6 @@ const VerEventoInfo = (
                                                 )
                                             })}
                                         </div>
-                                    </div>
-                                ) : hasMultipleDaysWithTicketTypePrices && event?.EventDates && event?.TicketTypes ? (
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-psi-dark">Selecione os dias e tipos de ingressos</span>
-                                            <span className="text-xs text-psi-dark/60">Máximo {buyTicketsLimit} por pessoa</span>
-                                        </div>
-                                        {event.EventDates.filter(ed => ed.hasSpecificPrice && ed.EventDateTicketTypePrices && ed.EventDateTicketTypePrices.length > 0).map((eventDate) => {
-                                            const dayTypes = selectedDaysAndTypes[eventDate.id] || {}
-                                            
-                                            return (
-                                                <div key={eventDate.id} className="rounded-lg border border-psi-primary/20 bg-psi-primary/5 p-4 space-y-3">
-                                                    <div className="flex items-start justify-between">
-                                                        <div className="flex-1">
-                                                            <div className="text-sm font-semibold text-psi-dark mb-2">
-                                                                {formatDate(eventDate.date)}
-                                                            </div>
-                                                            {eventDate.hourStart && (
-                                                                <div className="text-xs text-psi-dark/60 mb-3">
-                                                                    {formatTimeRange(eventDate.hourStart, eventDate.hourEnd)}
-                                                                </div>
-                                                            )}
-                                                            <div className="space-y-2">
-                                                                {eventDate.EventDateTicketTypePrices?.map((edttp: any) => {
-                                                                    const ticketType = event.TicketTypes?.find(tt => tt.id === edttp.ticketTypeId)
-                                                                    const qty = dayTypes[edttp.ticketTypeId] || 0
-                                                                    const feeCents = TicketFeeUtils.calculateFeeInCents(edttp.price, event.isClientTaxed)
-                                                                    
-                                                                    return (
-                                                                        <div key={edttp.ticketTypeId} className="rounded-lg border border-psi-primary/20 bg-white p-3 space-y-2">
-                                                                            <div className="flex items-center justify-between">
-                                                                                <div className="flex-1">
-                                                                                    <p className="text-sm font-medium text-psi-dark">{ticketType?.name || "Tipo desconhecido"}</p>
-                                                                                    <p className="text-xs text-psi-primary font-semibold mt-1">
-                                                                                        {ValueUtils.formatPrice(edttp.price)} por ingresso
-                                                                                    </p>
-                                                                                    {edttp.price > 0 && (
-                                                                                        <p className="text-xs text-psi-dark/60">
-                                                                                            + Taxa: {ValueUtils.centsToCurrency(feeCents)} por ingresso
-                                                                                        </p>
-                                                                                    )}
-                                                                                    {qty > 0 && (
-                                                                                        <p className="text-xs font-semibold text-psi-dark mt-1">
-                                                                                            Subtotal: {ValueUtils.centsToCurrency((edttp.price + feeCents) * qty)}
-                                                                                        </p>
-                                                                                    )}
-                                                                                </div>
-                                                                                <QuantitySelector
-                                                                                    value={qty}
-                                                                                    onChange={(newQuantity) => {
-                                                                                        setSelectedDaysAndTypes(prev => {
-                                                                                            const current = prev[eventDate.id] || {}
-                                                                                            if (newQuantity === 0) {
-                                                                                                const updated = { ...current }
-                                                                                                delete updated[edttp.ticketTypeId]
-                                                                                                if (Object.keys(updated).length === 0) {
-                                                                                                    const newState = { ...prev }
-                                                                                                    delete newState[eventDate.id]
-                                                                                                    return newState
-                                                                                                }
-                                                                                                return {
-                                                                                                    ...prev,
-                                                                                                    [eventDate.id]: updated
-                                                                                                }
-                                                                                            }
-                                                                                            return {
-                                                                                                ...prev,
-                                                                                                [eventDate.id]: {
-                                                                                                    ...current,
-                                                                                                    [edttp.ticketTypeId]: newQuantity
-                                                                                                }
-                                                                                            }
-                                                                                        })
-                                                                                    }}
-                                                                                    max={buyTicketsLimit}
-                                                                                    min={0}
-                                                                                />
-                                                                            </div>
-                                                                        </div>
-                                                                    )
-                                                                })}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )
-                                        })}
                                     </div>
                                 ) : (
                                     <div className="space-y-4">

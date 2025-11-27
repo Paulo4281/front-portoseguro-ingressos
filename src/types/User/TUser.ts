@@ -24,7 +24,7 @@ type TUser = {
     phone: string | null
     document: string | null
     nationality: string | null
-    genre: typeof UserGenres[number] | null
+    gender: typeof UserGenres[number] | null
     birth: string | null
     image: string | null
     payCustomerId: string | null

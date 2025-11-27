@@ -1,8 +1,10 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import React from "react"
 import { useOrganizerFind } from "@/hooks/Organizer/useOrganizerFind"
-import { useOrganizerUpdateVerificationStatus } from "@/hooks/Organizer/useOrganizerUpdateVerificationStatus"
+import { useOrganizerAccept } from "@/hooks/Organizer/useOrganizerAccept"
+import { useOrganizerReject } from "@/hooks/Organizer/useOrganizerReject"
 import type { TUser } from "@/types/User/TUser"
 import { Background } from "@/components/Background/Background"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -88,7 +90,8 @@ const AdmOrganizadoresPannel = () => {
         ...filters
     })
 
-    const { mutateAsync: updateVerificationStatus, isPending: isUpdatingStatus } = useOrganizerUpdateVerificationStatus()
+    const { mutateAsync: acceptOrganizer, isPending: isAccepting } = useOrganizerAccept()
+    const { mutateAsync: rejectOrganizer, isPending: isRejecting } = useOrganizerReject()
 
     const organizers = useMemo(() => {
         if (data?.data?.data && Array.isArray(data.data.data)) {
@@ -194,10 +197,9 @@ const AdmOrganizadoresPannel = () => {
 
     const handleConfirmStatus = async () => {
         try {
-            const response = await updateVerificationStatus({
-                organizerId: confirmDialog.organizerId,
-                status: confirmDialog.status
-            })
+            const response = confirmDialog.status === "APPROVED"
+                ? await acceptOrganizer({ organizerId: confirmDialog.organizerId })
+                : await rejectOrganizer({ organizerId: confirmDialog.organizerId })
 
             if (response.success) {
                 Toast.success(
@@ -306,8 +308,8 @@ const AdmOrganizadoresPannel = () => {
                                         const org = organizer.Organizer
                                         
                                         return (
-                                            <>
-                                                <TableRow key={organizer.id} className="border-b border-psi-dark/5 hover:bg-psi-dark/3 transition-colors">
+                                            <React.Fragment key={organizer.id}>
+                                                <TableRow className="border-b border-psi-dark/5 hover:bg-psi-dark/3 transition-colors">
                                                     <TableCell className="py-5 px-6">
                                                         <div className="flex items-center gap-4">
                                                             {org?.logo ? (
@@ -373,7 +375,7 @@ const AdmOrganizadoresPannel = () => {
                                                     </TableCell>
                                                 </TableRow>
                                                 {openRows[organizer.id] && (
-                                                    <TableRow className="border-0">
+                                                    <TableRow key={`${organizer.id}-details`} className="border-0">
                                                         <TableCell colSpan={4} className="p-0 w-full">
                                                             <div className="bg-gradient-to-br from-psi-dark/2 to-psi-dark/5 px-4 py-6 space-y-6 border-t border-psi-dark/10 overflow-x-hidden w-full
                                                             sm:px-6
@@ -721,7 +723,7 @@ const AdmOrganizadoresPannel = () => {
                                                         </TableCell>
                                                     </TableRow>
                                                 )}
-                                            </>
+                                            </React.Fragment>
                                         )
                                     })
                                 )}
@@ -767,7 +769,7 @@ const AdmOrganizadoresPannel = () => {
                     }
                     confirmText={confirmDialog.status === "APPROVED" ? "Aprovar" : "Rejeitar"}
                     variant={confirmDialog.status === "APPROVED" ? "default" : "destructive"}
-                    isLoading={isUpdatingStatus}
+                    isLoading={isAccepting || isRejecting}
                 />
 
                 <Dialog open={imageModal.open} onOpenChange={(open) => setImageModal({ ...imageModal, open })}>

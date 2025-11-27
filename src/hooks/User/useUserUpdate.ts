@@ -3,9 +3,7 @@ import { UserService } from "@/services/User/UserService"
 import type { TUserUpdate, TUser } from "@/types/User/TUser"
 import type { TApiResponse } from "@/types/TApiResponse"
 
-type TUserUpdateResponse = {
-    user: TUser
-}
+type TUserUpdateResponse = TUser
 
 export const useUserUpdate = () => {
     const {

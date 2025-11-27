@@ -8,7 +8,6 @@ type TCouponUpdatePayload = {
     discountValue?: number
     expirationDate?: string | null
     usageLimit?: number | null
-    minPurchaseValue?: number | null
 }
 
 type TCouponUpdateParams = {

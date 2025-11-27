@@ -9,7 +9,6 @@ type TCouponCreatePayload = {
     discountValue: number
     expirationDate?: string | null
     usageLimit?: number | null
-    minPurchaseValue?: number | null
 }
 
 export const useCouponCreate = () => {

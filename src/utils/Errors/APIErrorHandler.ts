@@ -12,9 +12,12 @@ export const APIErrorHandler: Record<number, string> = {
     10: "Este cupom não está mais ativo",
     11: "Este cupom já expirou",
     12: "Este cupom já atingiu o limite de uso",
+    13: "Documento já cadastrado",
 
     // EXTERNAL
     900: "Erro ao escrever a descrição do evento com IA",
     901: "Ocorreu algum erro ao tentar se autenticar com o Google",
-    902: "Erro ao testar o pixel do Facebook"
+    902: "Erro ao testar o pixel do Facebook",
+    903: "Máximo de criações de descrição de evento com IA atingido hoje",
+    904: "Ocorreu algum erro ao tentar escrever a descrição do evento com IA"
 }

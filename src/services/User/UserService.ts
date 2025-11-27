@@ -47,6 +47,18 @@ class UserServiceClass {
         }))?.data
         return response
     }
+
+    async uploadProfilePicture(file: File): Promise<AxiosResponse["data"]> {
+        const formData = new FormData()
+        formData.append("image", file)
+
+        const response = (await API.POST_FILE({
+            prefix: "/user",
+            url: "/upload-profile-picture",
+            formData
+        }))?.data
+        return response
+    }
 }
 
 export const UserService = new UserServiceClass()

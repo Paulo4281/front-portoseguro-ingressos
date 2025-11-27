@@ -35,7 +35,6 @@ import {
     TimerReset,
     Trash2
 } from "lucide-react"
-import { InputCurrency } from "@/components/Input/InputCurrency"
 import { queryClient } from "@/providers/QueryClientProvider/QueryClientProvider"
 
 type TNewCouponForm = {
@@ -43,7 +42,6 @@ type TNewCouponForm = {
     eventId: string
     discountType: "PERCENTAGE" | "FIXED"
     discountValue: string
-    minPurchaseValue: string
     usageLimit: string
     expirationDate: string
 }
@@ -53,7 +51,6 @@ const defaultNewCouponValues: TNewCouponForm = {
     eventId: "",
     discountType: "PERCENTAGE",
     discountValue: "10",
-    minPurchaseValue: "",
     usageLimit: "",
     expirationDate: ""
 }
@@ -180,8 +177,7 @@ const CuponsPannel = () => {
             discountType: coupon.discountType,
             discountValue: coupon.discountValue,
             expirationDate: coupon.expirationDate,
-            usageLimit: coupon.usageLimit,
-            minPurchaseValue: coupon.minPurchaseValue
+            usageLimit: coupon.usageLimit
         }
 
         try {
@@ -241,8 +237,7 @@ const CuponsPannel = () => {
                 discountType: formData.discountType,
                 discountValue: normalizedDiscountValue,
                 expirationDate: formData.expirationDate ? new Date(`${formData.expirationDate}T00:00:00`).toISOString() : null,
-                usageLimit: formData.usageLimit ? Number(formData.usageLimit) : null,
-                minPurchaseValue: formData.minPurchaseValue ? Math.round(Number(formData.minPurchaseValue.replace(",", ".")) * 100) : null
+                usageLimit: formData.usageLimit ? Number(formData.usageLimit) : null
             })
 
             if (response.success) {
@@ -440,8 +435,7 @@ const CuponsPannel = () => {
                     <div className="border-t border-psi-dark/10 pt-6">
                         <h3 className="text-sm font-semibold text-psi-dark mb-4">Regras e limites</h3>
                         <div className="grid gap-6
-                        md:grid-cols-2
-                        lg:grid-cols-3">
+                        md:grid-cols-2">
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-psi-dark">Data de expiração (opcional)</label>
                                 <Controller
@@ -471,20 +465,6 @@ const CuponsPannel = () => {
                                     )}
                                 />
                                 <p className="text-xs text-psi-dark/50">Deixe vazio para ilimitado</p>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-psi-dark">Valor mínimo de compra (opcional)</label>
-                                <Controller
-                                    control={control}
-                                    name="minPurchaseValue"
-                                    render={({ field }) => (
-                                        <InputCurrency
-                                            {...field}
-                                            placeholder="Ex: R$ 150.00"
-                                        />
-                                    )}
-                                />
-                                <p className="text-xs text-psi-dark/50">Opcional</p>
                             </div>
                         </div>
                     </div>
@@ -611,29 +591,7 @@ const CuponsPannel = () => {
                                         <div className="border-t border-psi-dark/10 pt-6">
                                             <h3 className="text-sm font-semibold text-psi-dark mb-4">Regras e limites</h3>
                                             <div className="grid gap-4
-                                            md:grid-cols-2
-                                            lg:grid-cols-3">
-                                                <div className="space-y-2">
-                                                    <label className="text-sm font-medium text-psi-dark">Valor mínimo de compra</label>
-                                                    <InputCurrency
-                                                        type="number"
-                                                        min="0"
-                                                        step="0.01"
-                                                        value={coupon.minPurchaseValue ? (coupon.minPurchaseValue / 100).toString() : ""}
-                                                        onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                                                            const value = event.target.value
-                                                                ? event.target.value.replace(",", ".")
-                                                                : ""
-                                                            handleCouponFieldChange(
-                                                                coupon.id,
-                                                                "minPurchaseValue",
-                                                                value ? Math.round(Number(value) * 100) : null
-                                                            )
-                                                        }}
-                                                        placeholder="Sem mínimo"
-                                                        
-                                                    />
-                                                </div>
+                                            md:grid-cols-2">
                                                 <div className="space-y-2">
                                                     <label className="text-sm font-medium text-psi-dark">Limite de uso</label>
                                                     <Input
@@ -679,17 +637,6 @@ const CuponsPannel = () => {
                                                             {renderDiscountValue(coupon)}
                                                         </p>
                                                     </div>
-                                                    {coupon.minPurchaseValue && (
-                                                        <>
-                                                            <div className="h-12 w-px bg-psi-dark/10" />
-                                                            <div className="space-y-1">
-                                                                <p className="text-xs text-psi-dark/50">Mínimo</p>
-                                                                <p className="text-lg font-semibold text-psi-dark">
-                                                                    {ValueUtils.centsToCurrency(coupon.minPurchaseValue)}
-                                                                </p>
-                                                            </div>
-                                                        </>
-                                                    )}
                                                     {coupon.expirationDate && (
                                                         <>
                                                             <div className="h-12 w-px bg-psi-dark/10" />

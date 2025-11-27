@@ -25,7 +25,7 @@ export const UserProfileUpdateValidator = z.object({
     phone: z.string().nullable().optional(),
     document: z.string().nullable().optional(),
     nationality: z.string().nullable().optional(),
-    genre: z.enum(UserGenres).nullable().optional(),
+    gender: z.enum(UserGenres).nullable().optional(),
     birth: z.string().nullable().optional(),
     address: UserAddressValidator,
 })
