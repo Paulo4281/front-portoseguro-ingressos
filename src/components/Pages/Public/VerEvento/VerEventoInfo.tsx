@@ -1202,6 +1202,8 @@ const VerEventoInfo = (
                                                 const ticketTypeDescription = ebt.TicketType?.description
                                                 const qty = ticketTypeQuantities[ebt.ticketTypeId] || 0
                                                 const selectedDaysForType = selectedDays[ebt.ticketTypeId] || []
+
+                                                console.log(selectedDays)
                                                 
                                                 const getPriceForTicketTypeLocal = (eventDateId: string) => {
                                                     return CheckoutUtils.getPriceForTicketType(ebt, eventDateId, event)
@@ -1259,7 +1261,7 @@ const VerEventoInfo = (
                                                                         )}
                                                                     </div>
                                                                 )}
-                                                                {event.EventDates && event.EventDates.length > 1 && (
+                                                                {event.EventDates && event.EventDates.length > 1 && hasMultipleDaysWithSpecificPrices && (
                                                                     <div className="mt-3 space-y-2">
                                                                         <p className="text-xs font-medium text-psi-dark/70">Selecione os dias:</p>
                                                                         {event.EventDates.map((eventDate) => {
@@ -1345,7 +1347,7 @@ const VerEventoInfo = (
                                                             }}
                                                             max={buyTicketsLimit}
                                                             min={0}
-                                                            disabled={event.EventDates && event.EventDates.length > 1 && selectedDaysForType.length === 0}
+                                                            // disabled={event.EventDates && event.EventDates.length > 1 && selectedDaysForType.length === 0}
                                                         />
                                                     </div>
                                                 )
