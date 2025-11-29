@@ -18,7 +18,7 @@ import { Info, TrendingDown, Users, Calculator } from "lucide-react"
 
 const TAX_FIXED_CLIENT = Number(process.env.NEXT_PUBLIC_TAX_FEE_FIXED_CLIENT_CENTS ?? 0)
 const TAX_PERCENTAGE = Number(process.env.NEXT_PUBLIC_TAX_FEE_PERCENTAGE ?? 0)
-const TAX_FIXED = Number(process.env.NEXT_PUBLIC_TAX_FEE_FIXED ?? 0)
+const TAX_FIXED = Number(process.env.NEXT_PUBLIC_TAX_FEE_FIXED_BELOW_THRESHOLD ?? 0)
 const TAX_THRESHOLD_CENTS = Number(process.env.NEXT_PUBLIC_TAX_THRESHOLD_CENTS ?? 3990)
 
 type TDialogTaxesProps = {

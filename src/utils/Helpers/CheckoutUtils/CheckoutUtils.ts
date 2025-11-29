@@ -393,27 +393,17 @@ class CheckoutUtilsClass {
         event: TEvent | null | undefined,
         isClientTaxed: boolean | undefined
     ): number {
-        console.log("calculateTotalForSelectedDaysAndTypes chamado com:", {
-            selectedDaysAndTypes,
-            eventDates: event?.EventDates?.map(ed => ({ id: ed.id, hasSpecificPrice: ed.hasSpecificPrice, ticketTypePrices: ed.EventDateTicketTypePrices?.length || 0 })),
-            isClientTaxed
-        })
-        
         if (!event?.EventDates) {
-            console.log("EventDates não encontrado")
             return 0
         }
 
         let total = 0
         Object.entries(selectedDaysAndTypes).forEach(([eventDateId, types]) => {
-            console.log(`Processando eventDateId: ${eventDateId}, types:`, types)
             const eventDate = event.EventDates?.find(ed => ed.id === eventDateId)
             if (!eventDate) {
-                console.log("EventDate não encontrado para:", eventDateId)
                 return
             }
             if (!eventDate.EventDateTicketTypePrices || eventDate.EventDateTicketTypePrices.length === 0) {
-                console.log("EventDateTicketTypePrices não encontrado para:", eventDateId)
                 return
             }
             Object.entries(types).forEach(([ticketTypeId, qty]) => {
@@ -424,14 +414,11 @@ class CheckoutUtilsClass {
                     if (dayPrice) {
                         const itemTotal = this.calculateTotalWithFees(dayPrice.price, qty, isClientTaxed)
                         total += itemTotal
-                        console.log(`Calculando: ${dayPrice.price} x ${qty} = ${itemTotal}, total acumulado: ${total}`)
                     } else {
-                        console.log("Preço não encontrado para ticketTypeId:", ticketTypeId, "no eventDateId:", eventDateId)
                     }
                 }
             })
         })
-        console.log("Total final:", total)
         return total
     }
 

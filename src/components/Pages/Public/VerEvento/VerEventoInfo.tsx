@@ -1150,24 +1150,20 @@ const VerEventoInfo = (
                                                                                 <QuantitySelector
                                                                                     value={qty}
                                                                                     onChange={(newQuantity) => {
-                                                                                        console.log("onChange chamado:", { eventDateId: eventDate.id, ticketTypeId: edttp.ticketTypeId, newQuantity })
                                                                                         setSelectedDaysAndTypes(prev => {
                                                                                             const current = prev[eventDate.id] || {}
-                                                                                            console.log("Estado anterior:", prev, "current para eventDate:", current)
                                                                                             if (newQuantity === 0) {
                                                                                                 const updated = { ...current }
                                                                                                 delete updated[edttp.ticketTypeId]
                                                                                                 if (Object.keys(updated).length === 0) {
                                                                                                     const newState = { ...prev }
                                                                                                     delete newState[eventDate.id]
-                                                                                                    console.log("Novo estado (removendo eventDate):", newState)
                                                                                                     return newState
                                                                                                 }
                                                                                                 const result = {
                                                                                                     ...prev,
                                                                                                     [eventDate.id]: updated
                                                                                                 }
-                                                                                                console.log("Novo estado (removendo ticketType):", result)
                                                                                                 return result
                                                                                             }
                                                                                             const result = {
@@ -1177,7 +1173,6 @@ const VerEventoInfo = (
                                                                                                     [edttp.ticketTypeId]: newQuantity
                                                                                                 }
                                                                                             }
-                                                                                            console.log("Novo estado (adicionando/atualizando):", result)
                                                                                             return result
                                                                                         })
                                                                                     }}

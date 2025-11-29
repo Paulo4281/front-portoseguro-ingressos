@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CTAButton } from "@/components/CTAButton/CTAButton"
-import { ArrowUpRight, Lock, ShieldCheck, Ticket, Music2, SunMedium, Waves, PartyPopper, TrendingDown, Users, CreditCard, TrendingUp, Megaphone, Tag, Fingerprint, Cpu, Sparkles, Globe2, CheckCircle2, HeartHandshake, DollarSign, Star, BookOpen, ArrowRight } from "lucide-react"
+import { ArrowUpRight, Lock, ShieldCheck, Ticket, Music2, SunMedium, Waves, PartyPopper, TrendingDown, Users, CreditCard, TrendingUp, Megaphone, Tag, Fingerprint, Cpu, Sparkles, Globe2, CheckCircle2, HeartHandshake, DollarSign, Star, BookOpen, ArrowRight, DollarSignIcon } from "lucide-react"
 import { useEventFindFeatured } from "@/hooks/Event/useEventFindFeatured"
 import { CardEvent } from "@/components/Card/CardEvent/CardEvent"
 import { Carousel } from "@/components/Carousel/Carousel"
@@ -16,6 +16,7 @@ import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind
 import { EventCategoryIconHandler } from "@/utils/Helpers/EventCategoryIconHandler/EventCategoryIconHandler"
 import { TEvent } from "@/types/Event/TEvent"
 import { Toast } from "@/components/Toast/Toast"
+import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 
 const HomeHero = () => {
     const { data: eventsData, isLoading, isError } = useEventFindFeatured()
@@ -97,7 +98,7 @@ const HomeHero = () => {
         },
         {
             title: "Taxas que cabem no bolso",
-            description: "1% acima de R$ 39,90 ou R$ 1 fixo. Sem letrinhas miúdas, sem retenções injustas.",
+            description: `${process.env.NEXT_PUBLIC_TAX_FEE_PERCENTAGE}% acima de ${ ValueUtils.centsToCurrency(Number(process.env.NEXT_PUBLIC_TAX_THRESHOLD_CENTS)) } ou ${ ValueUtils.centsToCurrency(Number(process.env.NEXT_PUBLIC_TAX_FEE_FIXED_BELOW_THRESHOLD)) } fixo. Sem letrinhas miúdas, sem retenções injustas.`,
             icon: TrendingDown
         },
         {
@@ -310,11 +311,11 @@ const HomeHero = () => {
                                 sm:flex-row sm:items-center sm:justify-between gap-4
                                 sm:gap-4">
                                     <div className="flex flex-col items-start gap-1 flex-1 min-w-0">
-                                        <span className="text-xs uppercase tracking-wider text-psi-dark/60">Acima de R$39,90</span>
+                                        <span className="text-xs uppercase tracking-wider text-psi-dark/60">Acima de { ValueUtils.centsToCurrency(Number(process.env.NEXT_PUBLIC_TAX_THRESHOLD_CENTS)) }</span>
                                         <div className="flex items-end gap-2 flex-wrap">
                                             <span className="text-4xl
                                             sm:text-5xl
-                                            lg:text-6xl font-extrabold text-psi-secondary leading-none">1%</span>
+                                            lg:text-6xl font-extrabold text-psi-secondary leading-none">{process.env.NEXT_PUBLIC_TAX_FEE_PERCENTAGE}%</span>
                                             <span className="text-sm
                                             sm:text-base
                                             md:text-lg text-psi-dark/60 font-medium pb-1">por ingresso</span>
@@ -324,11 +325,11 @@ const HomeHero = () => {
                                     sm:block border-l border-psi-primary/10 h-12 mx-4" aria-hidden="true" />
                                     <div className="flex flex-col items-start gap-1 flex-1 min-w-0
                                     sm:items-start">
-                                        <span className="text-xs uppercase tracking-wider text-psi-dark/60">Até R$39,90</span>
+                                        <span className="text-xs uppercase tracking-wider text-psi-dark/60">Até { ValueUtils.centsToCurrency(Number(process.env.NEXT_PUBLIC_TAX_THRESHOLD_CENTS)) }</span>
                                         <div className="flex items-end gap-2 flex-wrap">
                                             <span className="text-4xl
                                             sm:text-5xl
-                                            lg:text-6xl font-extrabold text-psi-secondary leading-none">R$1</span>
+                                            lg:text-6xl font-extrabold text-psi-secondary leading-none">{ ValueUtils.centsToCurrency(Number(process.env.NEXT_PUBLIC_TAX_FEE_FIXED_BELOW_THRESHOLD)).replace(",00", "") }</span>
                                             <span className="text-sm
                                             sm:text-base
                                             md:text-lg text-psi-dark/60 font-medium pb-1">por ingresso</span>
@@ -336,7 +337,7 @@ const HomeHero = () => {
                                     </div>
                                 </div>
                                 <div className="mt-3 flex items-center gap-2 flex-wrap">
-                                    <TrendingUp className="h-5 w-5 text-psi-secondary shrink-0" aria-hidden="true" />
+                                    <TrendingDown className="h-5 w-5 text-psi-secondary shrink-0" aria-hidden="true" />
                                     <span className="text-sm text-psi-dark/65">
                                         Taxas 100% transparentes e as menores da região.
                                     </span>

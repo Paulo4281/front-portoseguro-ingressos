@@ -73,6 +73,7 @@ import { UserConfirmationCreateConfirmValidator } from "@/validators/User/UserCo
 import type { TAuth } from "@/types/Auth/TAuth"
 import type { TUserCreate } from "@/types/User/TUser"
 import type { TUserCreateConfirm } from "@/types/User/TUserConfirmation"
+import type { TTicketBuy, TTicketBuyResponse } from "@/types/Ticket/TTicket"
 import { FieldError } from "@/components/FieldError/FieldError"
 import { PasswordStrength } from "@/components/PasswordStrength/PasswordStrength"
 import { LoadingButton } from "@/components/Loading/LoadingButton"
@@ -80,6 +81,8 @@ import { Icon } from "@/components/Icon/Icon"
 import { Timer } from "@/components/Timer/Timer"
 import { getStates, getCitiesByState } from "@/utils/Helpers/IBGECitiesAndStates/IBGECitiesAndStates"
 import { getCountries, getCountriesSync } from "@/utils/Helpers/Countries/Countries"
+import { SelectInstallment, calculateTotalWithInstallmentFee } from "@/components/SelectInstallment/SelectInstallment"
+import { useTicketBuy } from "@/hooks/Ticket/useTicketBuy"
 
 type TPaymentMethod = "pix" | "credit"
 
@@ -122,6 +125,9 @@ const CheckoutInfo = () => {
     const { mutateAsync: createUser, isPending: isCreatingUser } = useUserCreate()
     const { mutateAsync: confirmByCode, isPending: isConfirmingByCode } = useUserConfirmationConfirmByCode()
     const { mutateAsync: resendConfirmation, isPending: isResendingConfirmation } = useUserConfirmationResendConfirmation()
+    const { mutateAsync: buyTicket, isPending: isBuyingTicket } = useTicketBuy()
+
+    const [buyTicketResponse, setBuyTicketResponse] = useState<TTicketBuyResponse | null>(null)
 
     const loginForm = useForm<TAuth>({
         resolver: zodResolver(AuthValidator),
@@ -209,6 +215,8 @@ const CheckoutInfo = () => {
         expiry: "",
         cvv: "",
     })
+    
+    const [installments, setInstallments] = useState(1)
     
     const [formAnswers, setFormAnswers] = useState<Record<string, any>>({})
     const [couponCodes, setCouponCodes] = useState<Record<string, string>>({})
@@ -424,20 +432,7 @@ const CheckoutInfo = () => {
         }
     }, [appliedCoupons, getEventTotal])
     
-    const total = useMemo(() => {
-        const subtotal = items.reduce((sum, item) => {
-            const event = eventsData.find(e => e?.id === item.eventId)
-            return sum + CheckoutUtils.calculateItemTotal(item, event || null)
-        }, 0)
-        
-        const totalDiscount = Object.keys(appliedCoupons).reduce((sum, eventId) => {
-            return sum + getEventDiscount(eventId)
-        }, 0)
-        
-        return subtotal - totalDiscount
-    }, [items, eventsData, appliedCoupons, getEventDiscount])
-    
-    const subtotal = useMemo(() => {
+    const subtotalBeforeDiscount = useMemo(() => {
         return items.reduce((sum, item) => {
             const event = eventsData.find(e => e?.id === item.eventId)
             return sum + CheckoutUtils.calculateItemTotal(item, event || null)
@@ -449,6 +444,24 @@ const CheckoutInfo = () => {
             return sum + getEventDiscount(eventId)
         }, 0)
     }, [appliedCoupons, getEventDiscount])
+    
+    const subtotal = useMemo(() => {
+        return subtotalBeforeDiscount - totalDiscount
+    }, [subtotalBeforeDiscount, totalDiscount])
+    
+    const total = useMemo(() => {
+        if (paymentMethod === "credit") {
+            return calculateTotalWithInstallmentFee(subtotal, installments)
+        }
+        return subtotal
+    }, [subtotal, paymentMethod, installments])
+    
+    useEffect(() => {
+        if (paymentMethod === "pix") {
+            setInstallments(1)
+        }
+    }, [paymentMethod])
+    
 
     const handleCouponChange = useCallback((eventId: string, value: string) => {
         setCouponCodes((prev) => ({
@@ -562,7 +575,7 @@ const CheckoutInfo = () => {
                 for (let ticketIndex = 0; ticketIndex < ticketQuantity; ticketIndex++) {
                     const requiredFields = eventFields.filter(f => f.field.required)
                     const missingFields = requiredFields.filter(f => {
-                        const key = `${f.eventId}-${ticketIndex}-${f.type}-${f.field.order}`
+                        const key = `${f.eventId}_${ticketIndex}-${f.type}-${f.field.order}`
                         const answer = formAnswers[key]
                         
                         if (!answer) return true
@@ -630,8 +643,192 @@ const CheckoutInfo = () => {
         }
     }
     
-    const handleFinalize = () => {
-        console.log("Finalizando compra...")
+    const handleFinalize = async () => {
+        const data: TTicketBuy = {
+            eventIds: uniqueEventIds,
+            eventDatesIds: null,
+            eventTicketTypesIds: null,
+            eventTicketAmount: null,
+            eventForms: null,
+            paymentMethod: paymentMethod === "pix" ? "PIX" : "CREDIT_CARD",
+            ccInfo: null,
+            couponCodes: null,
+            vfc: total
+        }
+
+        const hasMultipleDays = items.some((item) => item.ticketTypes?.some((ticketType) => ticketType.days && ticketType.days?.length > 0))
+        const hasNotMultipleDays = items.some((item) => !item.ticketTypes || item.ticketTypes?.length === 0)
+
+        if (hasMultipleDays) {
+            data["eventDatesIds"] = items.reduce((acc, item) => {
+              let eventGroup = acc.find((e) => e.eventId === item.eventId)
+          
+              if (!eventGroup) {
+                eventGroup = { eventId: item.eventId, eventDates: [] }
+                acc.push(eventGroup)
+              }
+          
+              item.ticketTypes?.forEach((ticketType) => {
+                const eventDateId = ticketType.days?.[0] || ""
+                const amount = ticketType.quantity || 0
+          
+                const existingDate = eventGroup.eventDates.find(
+                  (d) => d.eventDateId === eventDateId
+                )
+          
+                if (existingDate) {
+                  existingDate.amount += amount
+                } else {
+                  eventGroup.eventDates.push({ eventDateId, amount })
+                }
+              })
+          
+              return acc
+            }, [] as { eventId: string; eventDates: { eventDateId: string; amount: number }[] }[])
+        }
+        
+        if (hasNotMultipleDays) {
+            data["eventTicketAmount"] = items.map((item) => ({
+                eventId: item.eventId,
+                amount: item.quantity
+            }))
+        }
+
+        const hasTicketTypes = items.some((item) => item.ticketTypes && item.ticketTypes.length > 0)
+        if (hasTicketTypes) {
+            data["eventTicketTypesIds"] = items.map((item) => ({
+                eventId: item.eventId,
+                ticketTypes: item.ticketTypes?.map((ticketType) => ({
+                    ticketTypeId: ticketType.ticketTypeId || null,
+                    amount: ticketType.quantity,
+                    eventDateId: ticketType.days?.[0] || null
+                })) || []
+            })) || null
+        }
+
+        const ticketTypeMap: Record<string, string> = {}
+
+        items.forEach(item => {
+        let counter = 0
+
+        item.ticketTypes?.forEach(tt => {
+            for (let i = 0; i < tt.quantity; i++) {
+                ticketTypeMap[`${item.eventId}_${counter}`] = tt.ticketTypeId
+                counter++
+                }
+            })
+        })
+
+        data["eventForms"] = Object.entries(formAnswers).reduce((acc, [key, value]) => {
+            const [eventId, rest] = key.split("_")
+            const [ticketNumber, type, order] = (rest || "").split("-")
+          
+            // pega (ou cria) o form do eventId
+            let form = acc.find((f) => f.eventId === eventId)
+            if (!form) {
+              form = { eventId, answers: [] as any[] }
+              acc.push(form)
+            }
+          
+            // pega (ou cria) o answer para aquele ticketNumber
+            let answer = form.answers.find((a) => a.ticketNumber === ticketNumber)
+            if (!answer) {
+            
+              const item = items.find((it) => it.eventId === eventId)
+            
+              // aplica o único ticketTypeId do evento
+              const ticketTypeId = ticketTypeMap[`${eventId}_${ticketNumber}`] ?? null
+            
+              answer = {
+                ticketNumber,
+                ticketTypeId,
+                text: null,
+                email: null,
+                textArea: null,
+                select: null,
+                multiSelect: null
+              }
+            
+              form.answers.push(answer)
+            }
+            
+          
+            // prepara o par label/answer
+            const entry = { 
+                label: value?.label || null,   // <-- aqui vem o label real da pergunta
+                answer: value?.answer ?? null  // <-- aqui vem a resposta
+              }
+              
+          
+            // insere no campo correto (cria array se necessário)
+            switch (type) {
+              case "text":
+                answer.text = answer.text || []
+                answer.text.push(entry)
+                break
+              case "email":
+                answer.email = answer.email || []
+                answer.email.push(entry)
+                break
+              case "textArea":
+                answer.textArea = answer.textArea || []
+                answer.textArea.push(entry)
+                break
+              case "select":
+                answer.select = answer.select || []
+                answer.select.push(entry)
+                break
+              case "multiSelect":
+                answer.multiSelect = answer.multiSelect || []
+                answer.multiSelect.push(entry)
+                break
+              default:
+                // se tiver tipos extras, trate aqui ou ignore
+                break
+            }
+          
+            return acc
+          }, [] as {
+            eventId: string
+            answers: {
+              ticketNumber: string
+              ticketTypeId: string | null
+              text: { label: string; answer: string | null }[] | null
+              email: { label: string; answer: string | null }[] | null
+              textArea: { label: string; answer: string | null }[] | null
+              select: { label: string; answer: string | null }[] | null
+              multiSelect: { label: string; answer: string | null }[] | null
+            }[]
+        }[])
+
+        data["couponCodes"] = Object.entries(couponCodes).map(([eventId, couponCode]) => ({
+            eventId: eventId,
+            couponCode: couponCode
+        })) || null
+          
+        if (data.paymentMethod === "CREDIT_CARD") {
+            if (!cardData.number || !cardData.name || !cardData.expiry || !cardData.cvv) {
+                Toast.error("Por favor, preencha todos os campos do cartão de crédito.")
+                return
+            }
+
+            data["ccInfo"] = {
+                number: cardData.number,
+                holderName: cardData.name,
+                exp: cardData.expiry,
+                cvv: cardData.cvv,
+                installments: installments,
+                cardId: null
+            }
+        }
+
+        console.log(data)
+
+        const response = await buyTicket(data)
+
+        if (response?.success && response?.data) {
+            setBuyTicketResponse(response.data)
+        }
     }
 
     const handleEmailCheck = async () => {
@@ -1412,8 +1609,8 @@ const CheckoutInfo = () => {
                                                             <div className="space-y-6">
                                                                 {fields.map((formField) => {
                                                                     const key = isForEachTicket 
-                                                                        ? `${formField.eventId}-${ticketIndex}-${formField.type}-${formField.field.order}`
-                                                                        : `${formField.eventId}-${formField.type}-${formField.field.order}`
+                                                                        ? `${formField.eventId}_${ticketIndex}-${formField.type}-${formField.field.order}`
+                                                                        : `${formField.eventId}_${formField.type}-${formField.field.order}`
                                                                     const currentValue = formAnswers[key] || (formField.type === 'multiSelect' ? [] : '')
                                                                     
                                                                     return (
@@ -1427,15 +1624,15 @@ const CheckoutInfo = () => {
                                                                                 formField.field.mask ? (
                                                                                     <InputMask
                                                                                         mask={formField.field.mask}
-                                                                                        value={currentValue}
-                                                                                        onAccept={(value) => setFormAnswers({ ...formAnswers, [key]: value as string })}
+                                                                                        value={currentValue?.answer || ""}
+                                                                                        onAccept={(value) => setFormAnswers({ ...formAnswers, [key]: { label: formField.field.label, answer: value as string } })}
                                                                                         placeholder={formField.field.placeholder || ""}
                                                                                         min={getInputMaskMin(formField.field.mask)}
                                                                                     />
                                                                                 ) : (
                                                                                     <Input
-                                                                                        value={currentValue}
-                                                                                        onChange={(e) => setFormAnswers({ ...formAnswers, [key]: e.target.value })}
+                                                                                        value={currentValue?.answer || ""}
+                                                                                        onChange={(e) => setFormAnswers({ ...formAnswers, [key]: { label: formField.field.label, answer: e.target.value } })}
                                                                                         placeholder={formField.field.placeholder || ""}
                                                                                         required={formField.field.required}
                                                                                     />
@@ -1445,8 +1642,8 @@ const CheckoutInfo = () => {
                                                                             {formField.type === 'email' && (
                                                                                 <Input
                                                                                     type="email"
-                                                                                    value={currentValue}
-                                                                                    onChange={(e) => setFormAnswers({ ...formAnswers, [key]: e.target.value })}
+                                                                                    value={currentValue?.answer || ""}
+                                                                                    onChange={(e) => setFormAnswers({ ...formAnswers, [key]: { label: formField.field.label, answer: e.target.value } })}
                                                                                     placeholder={formField.field.placeholder || ""}
                                                                                     required={formField.field.required}
                                                                                 />
@@ -1454,8 +1651,8 @@ const CheckoutInfo = () => {
                                                                             
                                                                             {formField.type === 'textArea' && (
                                                                                 <Textarea
-                                                                                    value={currentValue}
-                                                                                    onChange={(e) => setFormAnswers({ ...formAnswers, [key]: e.target.value })}
+                                                                                    value={currentValue?.answer || ""}
+                                                                                    onChange={(e) => setFormAnswers({ ...formAnswers, [key]: { label: formField.field.label, answer: e.target.value } })}
                                                                                     placeholder={formField.field.placeholder || ""}
                                                                                     required={formField.field.required}
                                                                                     className="min-h-[100px]"
@@ -1464,8 +1661,8 @@ const CheckoutInfo = () => {
                                                                             
                                                                             {formField.type === 'select' && (
                                                                                 <Select
-                                                                                    value={currentValue}
-                                                                                    onValueChange={(value) => setFormAnswers({ ...formAnswers, [key]: value })}
+                                                                                    value={currentValue?.answer || ""}
+                                                                                    onValueChange={(value) => setFormAnswers({ ...formAnswers, [key]: { label: formField.field.label, answer: value } })}
                                                                                     required={formField.field.required}
                                                                                 >
                                                                                     <SelectTrigger className="w-full">
@@ -1484,7 +1681,7 @@ const CheckoutInfo = () => {
                                                                             {formField.type === 'multiSelect' && (
                                                                                 <div className="space-y-2">
                                                                                     {formField.field.options?.map((option: string, optIndex: number) => {
-                                                                                        const isChecked = Array.isArray(currentValue) && currentValue.includes(option)
+                                                                                        const isChecked = Array.isArray(currentValue?.answer) && currentValue?.answer.includes(option)
                                                                                         return (
                                                                                             <div key={optIndex} className="flex items-center gap-2">
                                                                                                 <Checkbox
@@ -1493,9 +1690,9 @@ const CheckoutInfo = () => {
                                                                                                     onCheckedChange={(checked) => {
                                                                                                         const currentArray = Array.isArray(currentValue) ? currentValue : []
                                                                                                         if (checked) {
-                                                                                                            setFormAnswers({ ...formAnswers, [key]: [...currentArray, option] })
+                                                                                                            setFormAnswers({ ...formAnswers, [key]: { label: formField.field.label, answer: [...currentArray, option] } })
                                                                                                         } else {
-                                                                                                            setFormAnswers({ ...formAnswers, [key]: currentArray.filter((v: string) => v !== option) })
+                                                                                                            setFormAnswers({ ...formAnswers, [key]: { label: formField.field.label, answer: currentArray.filter((v: string) => v !== option) } })
                                                                                                         }
                                                                                                     }}
                                                                                                 />
@@ -1671,6 +1868,14 @@ const CheckoutInfo = () => {
                                                             />
                                                         </div>
                                                     </div>
+                                                    
+                                                    <div className="pt-4 border-t border-psi-dark/10">
+                                                        <SelectInstallment
+                                                            value={installments}
+                                                            totalValue={subtotal}
+                                                            onChange={setInstallments}
+                                                        />
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
@@ -1706,8 +1911,13 @@ const CheckoutInfo = () => {
                                                 variant="primary"
                                                 size="lg"
                                                 className=""
+                                                disabled={isBuyingTicket}
                                             >
-                                                <Check className="size-4" />
+                                                {isBuyingTicket ? (
+                                                    <LoadingButton />
+                                                ) : (
+                                                    <Check className="size-4" />
+                                                )}
                                                 Finalizar Compra
                                             </Button>
                                         </div>
@@ -1800,7 +2010,7 @@ const CheckoutInfo = () => {
                                         <>
                                             <div className="flex items-center justify-between text-sm">
                                                 <span className="text-psi-dark/70">Subtotal:</span>
-                                                <span className="text-psi-dark/70">{ValueUtils.centsToCurrency(subtotal)}</span>
+                                                <span className="text-psi-dark/70">{ValueUtils.centsToCurrency(subtotalBeforeDiscount)}</span>
                                             </div>
                                             <div className="flex items-center justify-between text-sm">
                                                 <span className="text-emerald-600 font-medium">Desconto:</span>
@@ -1808,12 +2018,39 @@ const CheckoutInfo = () => {
                                             </div>
                                         </>
                                     )}
+                                    {paymentMethod === "credit" && installments > 1 && (
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-psi-dark/70">Subtotal após desconto:</span>
+                                            <span className="text-psi-dark/70">{ValueUtils.centsToCurrency(subtotal)}</span>
+                                        </div>
+                                    )}
+                                    {paymentMethod === "credit" && (
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-psi-dark/70">Taxa de parcelamento ({installments}x):</span>
+                                            <span className="text-psi-dark/70">{ValueUtils.centsToCurrency(total - subtotal)}</span>
+                                        </div>
+                                    )}
                                     <div className="flex items-center justify-between pt-2 border-t border-psi-dark/10">
                                         <span className="font-semibold text-psi-dark">Total</span>
                                         <span className="text-2xl font-bold text-psi-primary">
                                             {ValueUtils.centsToCurrency(total)}
                                         </span>
                                     </div>
+                                    {paymentMethod === "credit" && installments > 1 && (
+                                        <p className="text-psi-dark/70 text-xs">
+                                            {installments}x de {ValueUtils.centsToCurrency(Math.round(total / installments))}
+                                        </p>
+                                    )}
+                                    {paymentMethod === "credit" && installments === 1 && (
+                                        <p className="text-psi-dark/70 text-xs">
+                                            À vista com taxa de {ValueUtils.centsToCurrency(total - subtotal)}
+                                        </p>
+                                    )}
+                                                {paymentMethod === "credit" && installments === 1 && (
+                                                    <p className="text-psi-dark/70 text-xs">
+                                                        À vista com taxa de {ValueUtils.centsToCurrency(total - subtotal)}
+                                                    </p>
+                                                )}
                                 </div>
                             </div>
                         </div>

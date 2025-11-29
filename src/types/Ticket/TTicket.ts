@@ -15,6 +15,77 @@ type TTicket = {
     eventBatch: TEventBatch | null
 }
 
+type TTicketBuy = {
+    eventIds: string[]
+    eventDatesIds: {
+        eventId: string
+        eventDates: {
+            eventDateId: string
+            amount: number
+        }[]
+    }[] | null
+    eventTicketTypesIds: {
+        eventId: string
+        ticketTypes: {
+            ticketTypeId: string | null
+            amount: number
+            eventDateId: string | null
+        }[]
+    }[] | null
+    eventTicketAmount: {
+        eventId: string
+        amount: number
+    }[] | null
+    eventForms: {
+        eventId: string
+        answers: {
+            ticketNumber: string
+            ticketTypeId: string | null
+            text: {
+                label: string
+                answer: string | null
+            }[] | null
+            email: {
+                label: string
+                answer: string | null
+            }[] | null
+            textArea: {
+                label: string
+                answer: string | null
+            }[] | null
+            select: {
+                label: string
+                answer: string | null
+            }[] | null
+            multiSelect: {
+                label: string
+                answer: string | null
+            }[] | null
+        }[]
+    }[] | null
+    paymentMethod: "CREDIT_CARD" | "PIX"
+    ccInfo: {
+        number: string
+        holderName: string
+        exp: string
+        cvv: string
+        installments: number
+        cardId: string | null
+    } | null
+    couponCodes: {
+        eventId: string
+        couponCode: string
+    }[] | null
+    vfc: number | null
+}
+
+type TTicketBuyResponse = {
+    pixQrCode: string | null
+    isConfirmed: boolean
+}
+
 export type {
-    TTicket
+    TTicket,
+    TTicketBuy,
+    TTicketBuyResponse
 }
