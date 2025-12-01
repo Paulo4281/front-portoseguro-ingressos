@@ -923,9 +923,9 @@ const VerEventoInfo = (
                                                                                     return (
                                                                                         <>
                                                                                             <p className="text-psi-primary font-semibold mt-1">
-                                                                                                {minPrice === 0 ? "Gratuito" : `A partir de ${ValueUtils.centsToCurrency(minPrice)}`}
+                                                                                                {event.isFree ? "Gratuito" : `A partir de ${ValueUtils.centsToCurrency(minPrice)}`}
                                                                                             </p>
-                                                                                            {minPrice > 0 && (
+                                                                                            {!event.isFree && (
                                                                                                 <p className="text-xs text-psi-dark/60">
                                                                                                     + Taxa: {ValueUtils.centsToCurrency(minFeeCents)} por ingresso
                                                                                                 </p>
@@ -986,7 +986,7 @@ const VerEventoInfo = (
                                                                                     })
                                                                                     if (isFinite(min)) {
                                                                                         const roundedMin = Math.round(min)
-                                                                                        return roundedMin === 0 ? "Gratuito" : `A partir de ${ValueUtils.centsToCurrency(roundedMin)}`
+                                                                                        return event.isFree ? "Gratuito" : `A partir de ${ValueUtils.centsToCurrency(roundedMin)}`
                                                                                     }
                                                                                 }
 
@@ -995,7 +995,7 @@ const VerEventoInfo = (
                                                                                 )
                                                                                 if (daysWithSpecificOnly.length > 0) {
                                                                                     const minPrice = Math.round(Math.min(...daysWithSpecificOnly.map(ed => ed.price!)))
-                                                                                    return minPrice === 0 ? "Gratuito" : `A partir de ${ValueUtils.centsToCurrency(minPrice)}`
+                                                                                    return event.isFree ? "Gratuito" : `A partir de ${ValueUtils.centsToCurrency(minPrice)}`
                                                                                 }
                                                                             }
                                                                             const batchPrice = Math.round(getBatchPrice(batch))
@@ -1003,6 +1003,9 @@ const VerEventoInfo = (
                                                                         })()}
                                                                     </p>
                                                                     {(() => {
+                                                                        if (event.isFree) {
+                                                                            return null
+                                                                        }
                                                                         if (hasMultipleDaysWithSpecificPrices && event.EventDates) {
                                                                             const daysWithSpecificPrices = event.EventDates.filter(ed => ed.hasSpecificPrice && ed.price !== null && ed.price !== undefined)
                                                                             if (daysWithSpecificPrices.length > 0) {
@@ -1061,9 +1064,9 @@ const VerEventoInfo = (
                                                                 </span>
                                                             </div>
                                                             <p className="text-2xl font-bold text-psi-dark/40 mt-2">
-                                                                {ValueUtils.formatPrice(Math.round(batchPrice))}
+                                                                {event.isFree ? "Gratuito" : ValueUtils.formatPrice(Math.round(batchPrice))}
                                                             </p>
-                                                            {Math.round(batchPrice) > 0 && (
+                                                            {!event.isFree && Math.round(batchPrice) > 0 && (
                                                                 <p className="text-xs text-psi-dark/50">
                                                                     Taxa de serviço: {ValueUtils.centsToCurrency(feeCents)}
                                                                 </p>
@@ -1094,10 +1097,10 @@ const VerEventoInfo = (
                                         return (
                                             <>
                                                 <p className="text-3xl font-bold text-psi-primary">
-                                                    {displayPrice !== null && displayPrice !== undefined ? ValueUtils.formatPrice(Math.round(displayPrice)) : "Preço não definido"}
+                                                    {event.isFree ? "Gratuito" : (displayPrice !== null && displayPrice !== undefined ? ValueUtils.formatPrice(Math.round(displayPrice)) : "Preço não definido")}
                                                 </p>
                                                 <p className="text-sm text-psi-dark/60">Ingresso único</p>
-                                                {displayPrice && displayPrice > 0 && (
+                                                {!event.isFree && displayPrice && displayPrice > 0 && (
                                                     <p className="text-xs text-psi-dark/60">
                                                         + Taxa de serviço: {ValueUtils.centsToCurrency(feeCents)}
                                                     </p>
@@ -1144,9 +1147,9 @@ const VerEventoInfo = (
                                                                                 <div className="flex-1">
                                                                                     <p className="text-sm font-medium text-psi-dark">{ticketType?.name || "Tipo desconhecido"}</p>
                                                                                     <p className="text-xs text-psi-primary font-semibold mt-1">
-                                                                                        {ValueUtils.formatPrice(edttp.price)} por ingresso
+                                                                                        {event.isFree ? "Gratuito" : `${ValueUtils.formatPrice(edttp.price)} por ingresso`}
                                                                                     </p>
-                                                                                    {edttp.price > 0 && (
+                                                                                    {!event.isFree && edttp.price > 0 && (
                                                                                         <p className="text-xs text-psi-dark/60">
                                                                                             + Taxa: {ValueUtils.centsToCurrency(feeCents)} por ingresso
                                                                                         </p>
@@ -1257,14 +1260,14 @@ const VerEventoInfo = (
                                                                     <div className="mt-2 space-y-1">
                                                                         {typeof displayPrice === "object" ? (
                                                                             <p className="text-sm font-medium text-psi-primary">
-                                                                                {displayPrice.min === 0 && displayPrice.max === 0 ? "Gratuito" : `${ValueUtils.formatPrice(displayPrice.min)} - ${ValueUtils.formatPrice(displayPrice.max)} por ingresso`}
+                                                                                {event.isFree ? "Gratuito" : `${ValueUtils.formatPrice(displayPrice.min)} - ${ValueUtils.formatPrice(displayPrice.max)} por ingresso`}
                                                                             </p>
                                                                         ) : (
                                                                             <p className="text-sm font-medium text-psi-primary">
-                                                                                {ValueUtils.formatPrice(displayPrice)} por ingresso
+                                                                                {event.isFree ? "Gratuito" : `${ValueUtils.formatPrice(displayPrice)} por ingresso`}
                                                                             </p>
                                                                         )}
-                                                                        {typeof displayPrice === "number" && displayPrice > 0 && (
+                                                                        {!event.isFree && typeof displayPrice === "number" && displayPrice > 0 && (
                                                                             <p className="text-xs text-psi-dark/60">
                                                                                 + Taxa: {ValueUtils.centsToCurrency(TicketFeeUtils.calculateFeeInCents(displayPrice, event.isClientTaxed))} por ingresso
                                                                             </p>
@@ -1413,9 +1416,9 @@ const VerEventoInfo = (
                                                                     {isSelected && (
                                                                         <div className="mt-2 space-y-1">
                                                                             <p className="text-sm font-medium text-psi-primary">
-                                                                                {ValueUtils.formatPrice(price)} por ingresso
+                                                                                {event.isFree ? "Gratuito" : `${ValueUtils.formatPrice(price)} por ingresso`}
                                                                             </p>
-                                                                            {price > 0 && (
+                                                                            {!event.isFree && price > 0 && (
                                                                                 <p className="text-xs text-psi-dark/60">
                                                                                     + Taxa: {ValueUtils.centsToCurrency(feeCents)} por ingresso
                                                                                 </p>

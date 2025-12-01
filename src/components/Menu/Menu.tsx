@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent, Wallet } from "lucide-react"
+import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent, Wallet, QrCode } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Logo from "@/components/Logo/Logo"
 import { Avatar } from "@/components/Avatar/Avatar"
@@ -99,6 +99,12 @@ const menuLinks: TMenuLink[] = [
         label: "Cupons",
         href: "/cupons",
         icon: TicketPercent,
+        roles: ["ORGANIZER"]
+    },
+    {
+        label: "QR Scanner",
+        href: "/qr-scanner",
+        icon: QrCode,
         roles: ["ORGANIZER"]
     },
     {
@@ -212,8 +218,8 @@ const Menu = () => {
                         aria-label="Ir para a página inicial"
                     >
                         <Logo
-                            className="h-8 w-auto
-                            sm:h-10
+                            className="h-10 w-auto
+                            sm:h-20 sm:me-[-6px]
                             transition-transform duration-300 group-hover:scale-105"
                             variant="primary"
                         />

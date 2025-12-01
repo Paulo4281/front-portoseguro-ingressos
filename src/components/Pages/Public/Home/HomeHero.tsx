@@ -315,7 +315,8 @@ const HomeHero = () => {
                                         <div className="flex items-end gap-2 flex-wrap">
                                             <span className="text-4xl
                                             sm:text-5xl
-                                            lg:text-6xl font-extrabold text-psi-secondary leading-none">{process.env.NEXT_PUBLIC_TAX_FEE_PERCENTAGE}%</span>
+                                            lg:text-7xl font-extrabold text-psi-secondary leading-none
+                                            ">{process.env.NEXT_PUBLIC_TAX_FEE_PERCENTAGE}%</span>
                                             <span className="text-sm
                                             sm:text-base
                                             md:text-lg text-psi-dark/60 font-medium pb-1">por ingresso</span>
@@ -329,7 +330,9 @@ const HomeHero = () => {
                                         <div className="flex items-end gap-2 flex-wrap">
                                             <span className="text-4xl
                                             sm:text-5xl
-                                            lg:text-6xl font-extrabold text-psi-secondary leading-none">{ ValueUtils.centsToCurrency(Number(process.env.NEXT_PUBLIC_TAX_FEE_FIXED_BELOW_THRESHOLD)).replace(",00", "") }</span>
+                                            lg:text-[44px] font-extrabold text-psi-secondary leading-none
+                                            3xl:text-6xl
+                                            ">{ ValueUtils.centsToCurrency(Number(process.env.NEXT_PUBLIC_TAX_FEE_FIXED_BELOW_THRESHOLD)).replace(",00", "") }</span>
                                             <span className="text-sm
                                             sm:text-base
                                             md:text-lg text-psi-dark/60 font-medium pb-1">por ingresso</span>

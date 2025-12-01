@@ -15,6 +15,33 @@ type TTicket = {
     eventBatch: TEventBatch | null
 }
 
+type TTicketScanResponse = {
+    status: "VALID" | "EXPIRED" | "CANCELLED" | "USED"
+    description: string | null
+}
+
+type TTicketScanLinkGenerateResponse = {
+    link: string
+}
+
+type TTicketScanLink = {
+    id: string
+    link: string
+    maxUsers: number
+    currentUsers: number
+    password: string
+    createdAt: string
+}
+
+type TTicketScanLinkCreate = {
+    maxUsers: number
+    password: string
+}
+
+type TTicketScanLinkDelete = {
+    linkId: string
+}
+
 type TTicketBuy = {
     eventIds: string[]
     eventDatesIds: {
@@ -87,5 +114,10 @@ type TTicketBuyResponse = {
 export type {
     TTicket,
     TTicketBuy,
-    TTicketBuyResponse
+    TTicketBuyResponse,
+    TTicketScanResponse,
+    TTicketScanLinkGenerateResponse,
+    TTicketScanLink,
+    TTicketScanLinkCreate,
+    TTicketScanLinkDelete
 }
