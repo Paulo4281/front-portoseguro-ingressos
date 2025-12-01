@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent } from "lucide-react"
+import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Logo from "@/components/Logo/Logo"
 import { Avatar } from "@/components/Avatar/Avatar"
@@ -84,7 +84,13 @@ const menuLinks: TMenuLink[] = [
         ]
     },
     {
-        label: "Leads",
+        label: "Carteira",
+        href: "/carteira",
+        icon: Wallet,
+        roles: ["ORGANIZER"]
+    },
+    {
+        label: "Clientes",
         href: "/leads",
         icon: Users,
         roles: ["ORGANIZER"]

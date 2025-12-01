@@ -14,6 +14,10 @@ class ValueUtilsClass {
         }).format(value / 100)
     }
 
+    getPercentageValue(total: number, percentage: number): number {
+        return (total * percentage) / 100
+    }
+
     formatPrice(value: number): string {
         if (value === 0) {
             return "Gratuito"

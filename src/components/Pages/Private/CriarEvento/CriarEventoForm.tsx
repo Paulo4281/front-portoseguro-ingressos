@@ -175,7 +175,9 @@ const CriarEventoForm = () => {
             ],
             recurrence: null,
             isClientTaxed: false,
-            buyTicketsLimit: 10
+            isFree: false,
+            buyTicketsLimit: 10,
+            maxInstallments: 1
         }
     })
 
@@ -296,9 +298,11 @@ const CriarEventoForm = () => {
                 })) : undefined),
                 recurrence: data.recurrence || null,
                 isClientTaxed: data.isClientTaxed || false,
+                isFree: data.isFree || false,
                 form: transformFormFieldsToJSON(formFields),
                 isFormForEachTicket: isFormForEachTicket || false,
-                buyTicketsLimit: data.buyTicketsLimit || null
+                buyTicketsLimit: data.buyTicketsLimit || null,
+                maxInstallments: data.maxInstallments || null
             }
 
             if (batchesWithTicketTypes && !submitData.ticketTypes) {
@@ -708,13 +712,36 @@ const CriarEventoForm = () => {
                                                     />
                                                 </div>
                                                 <p className="text-xs text-psi-dark/60 mt-1">
-                                                    Quando ativado, a taxa de serviço é adicionada ao valor pago pelo comprador.
+                                                    Quando ativado, a taxa de serviço é adicionada ao valor pago pelo comprador. Obs: As taxas de cartão de crédito já são repassadas ao comprador por padrão.
                                                 </p>
                                             </div>
                                         </div>
                                     )}
                                 />
                                 <FieldError message={form.formState.errors.isClientTaxed?.message || ""} />
+
+                                <Controller
+                                    name="isFree"
+                                    control={form.control}
+                                    render={({ field }) => (
+                                        <div className="flex items-center gap-3 rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4">
+                                            <Checkbox
+                                                id="is-free"
+                                                checked={field.value || false}
+                                                onCheckedChange={(checked) => field.onChange(checked === true)}
+                                            />
+                                            <div className="flex-1">
+                                                <label htmlFor="is-free" className="text-sm font-medium text-psi-dark cursor-pointer">
+                                                    Evento gratuito
+                                                </label>
+                                                <p className="text-xs text-psi-dark/60 mt-1">
+                                                    Quando ativado, os ingressos serão gratuitos e não haverá cobrança ao comprador.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                />
+                                <FieldError message={form.formState.errors.isFree?.message || ""} />
 
                                 <div>
                                     <label className="block text-sm font-medium text-psi-dark/70 mb-2">
@@ -751,6 +778,44 @@ const CriarEventoForm = () => {
                                     />
                                     <FieldError message={form.formState.errors.buyTicketsLimit?.message || ""} />
                                 </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                        Máximo de parcelas
+                                    </label>
+                                    <p className="text-xs text-psi-dark/60 mb-3">
+                                        Defina em até quantas vezes o comprador poderá parcelar a compra no cartão de crédito (ex: 1, 2, 3... até 12).
+                                    </p>
+                                    <Controller
+                                        name="maxInstallments"
+                                        control={form.control}
+                                        render={({ field }) => (
+                                            <Input
+                                                {...field}
+                                                type="number"
+                                                placeholder="1"
+                                                min={1}
+                                                max={12}
+                                                className="w-full max-w-[200px]"
+                                                value={field.value || ""}
+                                                onChange={(e) => {
+                                                    const value = e.target.value
+                                                    if (value === "") {
+                                                        field.onChange(null)
+                                                    } else {
+                                                        const numValue = parseInt(value, 10)
+                                                        if (!isNaN(numValue) && numValue >= 1 && numValue <= 12) {
+                                                            field.onChange(numValue)
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                        )}
+                                    />
+                                    <FieldError message={form.formState.errors.maxInstallments?.message || ""} />
+                                </div>
+
+                                <hr />
 
                                 <div className="space-y-4">
                                         <div className="flex items-center justify-between">

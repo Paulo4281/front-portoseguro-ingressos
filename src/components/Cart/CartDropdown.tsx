@@ -45,9 +45,6 @@ const CartDropdown = () => {
                             <h3 className="text-lg font-bold text-psi-dark">
                                 Carrinho
                             </h3>
-                            <p className="text-xs text-psi-dark/60 mt-0.5">
-                                {itemCount} {itemCount === 1 ? "item" : "itens"} no carrinho
-                            </p>
                         </div>
                         <div className="w-10 h-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
                             <ShoppingCart className="h-5 w-5 text-psi-primary" />

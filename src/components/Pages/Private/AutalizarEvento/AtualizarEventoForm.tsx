@@ -29,6 +29,8 @@ import { z } from "zod"
 import { cn } from "@/lib/utils"
 import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
 import { useEventFindById } from "@/hooks/Event/useEventFindById"
+import { useEventUpdate } from "@/hooks/Event/useEventUpdate"
+import useEventUpdateImage from "@/hooks/Event/useEventUpdateImage"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
@@ -187,6 +189,9 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     const { data: eventData, isLoading: isEventLoading } = useEventFindById(eventId)
     const { data: eventCategoriesData, isLoading: isEventCategoriesLoading } = useEventCategoryFind()
 
+    const { mutateAsync: updateEvent, isPending: isUpdating } = useEventUpdate(eventId)
+    const { mutateAsync: updateEventImage, isPending: isUpdatingImage } = useEventUpdateImage(eventId)
+
     const eventCategories = useMemo(() => {
         if (eventCategoriesData?.data && Array.isArray(eventCategoriesData.data)) {
             return eventCategoriesData.data
@@ -228,8 +233,11 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                 }
             ],
             recurrence: null,
-            isClientTaxed: false
-        }
+            isClientTaxed: false,
+            isFree: false,
+            buyTicketsLimit: 10,
+            maxInstallments: 1
+        } as any
     })
 
     const { fields: dateFields, append: appendDate, remove: removeDate } = useFieldArray({
@@ -554,7 +562,10 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                 batches: batchesData,
                 dates: datesData,
                 recurrence: recurrenceData,
-                isClientTaxed: !!event.isClientTaxed
+                isClientTaxed: !!event.isClientTaxed,
+                isFree: !!event.isFree,
+                buyTicketsLimit: event.buyTicketsLimit ?? null,
+                maxInstallments: event.maxInstallments ?? null
             }
 
             form.reset(initialFormData)
@@ -573,20 +584,21 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
         try {
             const hasBatches = data.batches && data.batches.length > 0
             const hasTicketTypes = data.ticketTypes && data.ticketTypes.length > 0
-            
-            const batchesWithTicketTypes = hasBatches && data.batches 
+
+            const batchesWithTicketTypes = hasBatches && data.batches
                 ? data.batches.some(batch => batch.ticketTypes && batch.ticketTypes.length > 0)
                 : false
-            
+
             if (batchesWithTicketTypes && !hasTicketTypes) {
                 console.error("Erro: Há batches com ticketTypes mas não há ticketTypes no nível do evento")
                 return
             }
-            
+
             const submitData: TEventUpdate = {
                 name: data.name,
                 description: data.description,
                 categories: data.categories.map((category) => category),
+                // image will be sent separately if it's a new File
                 image: data.image,
                 location: data.location,
                 tickets: undefined,
@@ -612,9 +624,30 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                 isClientTaxed: data.isClientTaxed || false,
                 form: transformFormFieldsToJSON(formFields),
                 isFormForEachTicket: isFormForEachTicket || false
+                ,
+                isFree: data.isFree || false,
+                buyTicketsLimit: data.buyTicketsLimit || null,
+                maxInstallments: data.maxInstallments || null
             }
 
-            console.log("Event update data:", submitData)
+            // Detect if image is a new File (uploaded). If so, we'll send it via the PATCH image route.
+            let imageFile: File | undefined = undefined
+            if (data.image && typeof (data.image as any) === "object" && (data.image as any).name) {
+                imageFile = data.image as unknown as File
+                // don't include the file in the main update payload to avoid duplicate handling
+                // (EventService.updateImage will be used)
+                ;(submitData as any).image = undefined
+            }
+
+            // Call update for the main data
+            await updateEvent(submitData as any)
+
+            // If there is a new image file, call the image route
+            if (imageFile) {
+                await updateEventImage(imageFile)
+            }
+
+            // Optionally you can redirect or show a success toast here
         } catch (error) {
             console.error("Erro ao atualizar evento:", error)
         }
@@ -1034,13 +1067,104 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                     />
                                                 </div>
                                                 <p className="text-xs text-psi-dark/60 mt-1">
-                                                    Quando ativado, a taxa de serviço é adicionada ao valor pago pelo comprador.
+                                                    Quando ativado, a taxa de serviço é adicionada ao valor pago pelo comprador. Obs: As taxas de cartão de crédito já são repassadas ao comprador por padrão.
                                                 </p>
                                             </div>
                                         </div>
                                     )}
                                 />
                                 <FieldError message={form.formState.errors.isClientTaxed?.message || ""} />
+
+                                <Controller
+                                    name="isFree"
+                                    control={form.control}
+                                    render={({ field }) => (
+                                        <div className="flex items-center gap-3 rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4">
+                                            <Checkbox
+                                                id="is-free"
+                                                checked={field.value || false}
+                                                onCheckedChange={(checked) => field.onChange(checked === true)}
+                                            />
+                                            <div className="flex-1">
+                                                <label htmlFor="is-free" className="text-sm font-medium text-psi-dark cursor-pointer">
+                                                    Evento gratuito
+                                                </label>
+                                                <p className="text-xs text-psi-dark/60 mt-1">
+                                                    Quando ativado, os ingressos serão gratuitos e não haverá cobrança ao comprador.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                />
+                                <FieldError message={form.formState.errors.isFree?.message || ""} />
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                            Limitar quantidade de ingressos por pessoa
+                                        </label>
+                                        <Controller
+                                            name="buyTicketsLimit"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <Input
+                                                    {...field}
+                                                    type="number"
+                                                    placeholder="10"
+                                                    min={1}
+                                                    max={100}
+                                                    className="w-full max-w-[200px]"
+                                                    value={field.value || ""}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value
+                                                        if (value === "") {
+                                                            field.onChange(null)
+                                                        } else {
+                                                            const numValue = parseInt(value, 10)
+                                                            if (!isNaN(numValue) && numValue >= 1 && numValue <= 100) {
+                                                                field.onChange(numValue)
+                                                            }
+                                                        }
+                                                    }}
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.buyTicketsLimit?.message || ""} />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                            Máximo de parcelas
+                                        </label>
+                                        <Controller
+                                            name="maxInstallments"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <Input
+                                                    {...field}
+                                                    type="number"
+                                                    placeholder="1"
+                                                    min={1}
+                                                    max={12}
+                                                    className="w-full max-w-[200px]"
+                                                    value={field.value || ""}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value
+                                                        if (value === "") {
+                                                            field.onChange(null)
+                                                        } else {
+                                                            const numValue = parseInt(value, 10)
+                                                            if (!isNaN(numValue) && numValue >= 1 && numValue <= 12) {
+                                                                field.onChange(numValue)
+                                                            }
+                                                        }
+                                                    }}
+                                                />
+                                            )}
+                                        />
+                                        <FieldError message={form.formState.errors.maxInstallments?.message || ""} />
+                                    </div>
+                                </div>
 
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">

@@ -15,6 +15,8 @@ import { InputCurrency } from "@/components/Input/InputCurrency"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { TicketFeeUtils } from "@/utils/Helpers/FeeUtils/TicketFeeUtils"
 import { Info, TrendingDown, Users, Calculator } from "lucide-react"
+import { SelectInstallment, calculateTotalWithInstallmentFee } from "@/components/SelectInstallment/SelectInstallment"
+import { INSTALLMENT_FEES } from "@/components/SelectInstallment/SelectInstallment"
 
 const TAX_FIXED_CLIENT = Number(process.env.NEXT_PUBLIC_TAX_FEE_FIXED_CLIENT_CENTS ?? 0)
 const TAX_PERCENTAGE = Number(process.env.NEXT_PUBLIC_TAX_FEE_PERCENTAGE ?? 0)
@@ -36,6 +38,7 @@ const DialogTaxes = ({
 }: TDialogTaxesProps) => {
   const [examplePrice, setExamplePrice] = useState(5000)
   const [isClientTaxed, setIsClientTaxed] = useState(true)
+  const [installments, setInstallments] = useState(1)
 
   const clientFee = TAX_FIXED_CLIENT
   
@@ -185,7 +188,15 @@ const DialogTaxes = ({
                     className="w-full"
                   />
                 </div>
-                
+                <div>
+                  <div className="max-w-xs">
+                    <SelectInstallment
+                      value={installments}
+                      totalValue={totalClientPaid}
+                      onChange={setInstallments}
+                    />
+                  </div>
+                </div>
                 <div className="flex items-center gap-3 rounded-lg border border-psi-primary/20 bg-psi-primary/5 p-3">
                   <Checkbox
                     id="simulate-client-taxed"
@@ -224,13 +235,25 @@ const DialogTaxes = ({
                 
                 <div className="p-3 rounded-lg bg-psi-primary/10 border border-psi-primary/20">
                   <p className="text-xs text-psi-dark/60 mb-1">Total pago pelo cliente</p>
-                  <p className="text-xl font-bold text-psi-primary">
-                    {ValueUtils.centsToCurrency(totalClientPaid)}
-                  </p>
-                  <p className="text-xs text-psi-dark/60 mt-1">
-                    {ValueUtils.centsToCurrency(examplePrice)} (ingresso) + {ValueUtils.centsToCurrency(clientFee)} (taxa cliente)
-                    {isClientTaxed && ` + ${ValueUtils.centsToCurrency(organizerFee)} (taxa organizador)`}
-                  </p>
+                  {
+                    (() => {
+                      // total considering installments/card fees (applied over the full amount the client pays)
+                      const totalWithInstallments = calculateTotalWithInstallmentFee(totalClientPaid, installments)
+                      const perInstallment = Math.round(totalWithInstallments / installments)
+
+                      return (
+                        <>
+                          <p className="text-xl font-bold text-psi-primary">
+                            {ValueUtils.centsToCurrency(totalClientPaid)} {installments > 1 ? ` | ${installments}x ${ValueUtils.centsToCurrency(perInstallment)} (total ${ValueUtils.centsToCurrency(totalWithInstallments)})` : ""}
+                          </p>
+                          <p className="text-xs text-psi-dark/60 mt-1">
+                            {ValueUtils.centsToCurrency(examplePrice)} (ingresso) + {ValueUtils.centsToCurrency(clientFee)} (taxa cliente)
+                            {isClientTaxed && ` + ${ValueUtils.centsToCurrency(organizerFee)} (taxa organizador)`}
+                          </p>
+                        </>
+                      )
+                    })()
+                  }
                 </div>
                 
                 {!isClientTaxed && (
@@ -246,6 +269,36 @@ const DialogTaxes = ({
                 )}
               </div>
             </div>
+
+            <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-4">
+              <p className="text-sm mb-3">Lista de taxas por parcela:</p>
+
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="bg-psi-primary/10 text-psi-primary">
+                      <th className="text-left p-2 rounded-l-lg">Parcelas</th>
+                      <th className="text-left p-2 rounded-r-lg">Taxa</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {Object.entries(INSTALLMENT_FEES).map(([key, data]) => (
+                      <tr
+                        key={key}
+                        className="border-b border-psi-primary/10 last:border-none hover:bg-psi-primary/5"
+                      >
+                        <td className="p-2 font-semibold">{key}x</td>
+                        <td className="p-2">
+                          {data.percentage}% + {ValueUtils.centsToCurrency(data.fixed)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
 
             <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-4">
               <p className="text-xs text-psi-dark/70 leading-relaxed">

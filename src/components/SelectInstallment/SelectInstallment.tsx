@@ -10,11 +10,19 @@ import {
 } from "@/components/ui/select"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 
-const INSTALLMENT_FEES = {
+const INSTALLMENT_FEES: Record<number, { percentage: number; fixed: number }> = {
     1: { percentage: 0, fixed: 0 },
     2: { percentage: 3.49, fixed: 49 },
-    7: { percentage: 3.99, fixed: 49 },
-    13: { percentage: 4.29, fixed: 49 },
+    3: { percentage: 4.49, fixed: 149 },
+    4: { percentage: 5.79, fixed: 149 },
+    5: { percentage: 6.89, fixed: 149 },
+    6: { percentage: 7.99, fixed: 149 },
+    7: { percentage: 8.09, fixed: 149 },
+    8: { percentage: 9.19, fixed: 149 },
+    9: { percentage: 10.29, fixed: 149 },
+    10: { percentage: 11.39, fixed: 149 },
+    11: { percentage: 14.49, fixed: 149 },
+    12: { percentage: 16.59, fixed: 149 }
 }
 
 const MIN_VALUE_FOR_INSTALLMENT = 1000
@@ -23,19 +31,23 @@ type TSelectInstallmentProps = {
     value: number
     totalValue: number
     onChange: (installments: number) => void
+    /** optional limit coming from the event (maxInstallments). If null/undefined, component keeps default behavior */
+    maxInstallmentsFromEvent?: number | null
 }
 
 const SelectInstallment = ({
     value,
     totalValue,
-    onChange
+    onChange,
+    maxInstallmentsFromEvent
 }: TSelectInstallmentProps) => {
     const maxInstallments = useMemo(() => {
-        if (totalValue < MIN_VALUE_FOR_INSTALLMENT) {
-            return 1
+        const computedMax = totalValue < MIN_VALUE_FOR_INSTALLMENT ? 1 : 12
+        if (typeof maxInstallmentsFromEvent === "number" && maxInstallmentsFromEvent > 0) {
+            return Math.min(computedMax, maxInstallmentsFromEvent)
         }
-        return 12
-    }, [totalValue])
+        return computedMax
+    }, [totalValue, maxInstallmentsFromEvent])
 
     const availableInstallments = useMemo(() => {
         const installments: number[] = []
@@ -46,21 +58,15 @@ const SelectInstallment = ({
     }, [maxInstallments])
 
     const getInstallmentFee = (installments: number) => {
-        if (installments === 1) {
-            return INSTALLMENT_FEES[1]
-        } else if (installments >= 2 && installments <= 6) {
-            return INSTALLMENT_FEES[2]
-        } else if (installments >= 7 && installments <= 12) {
-            return INSTALLMENT_FEES[7]
-        } else {
-            return INSTALLMENT_FEES[13]
+        if (INSTALLMENT_FEES[installments]) {
+            return INSTALLMENT_FEES[installments]
         }
     }
 
     const calculateTotalWithFee = (installments: number) => {
         const fee = getInstallmentFee(installments)
-        const percentageFee = Math.round(totalValue * (fee.percentage / 100))
-        return totalValue + percentageFee + fee.fixed
+        const percentageFee = Math.round(totalValue * (fee!.percentage / 100))
+        return totalValue + percentageFee + fee!.fixed
     }
     
     const calculateInstallmentValue = (installments: number) => {
@@ -80,7 +86,7 @@ const SelectInstallment = ({
     return (
         <div className="space-y-2">
             <label className="block text-sm font-medium text-psi-dark mb-2">
-                Parcelas *
+                Parcelas
             </label>
             <Select
                 value={value.toString()}
@@ -128,19 +134,19 @@ export {
 }
 
 export const getInstallmentFee = (installments: number) => {
-    if (installments === 1) {
-        return INSTALLMENT_FEES[1]
-    } else if (installments >= 2 && installments <= 6) {
-        return INSTALLMENT_FEES[2]
-    } else if (installments >= 7 && installments <= 12) {
-        return INSTALLMENT_FEES[7]
-    } else {
-        return INSTALLMENT_FEES[13]
+    if (INSTALLMENT_FEES[installments]) {
+        return INSTALLMENT_FEES[installments]
     }
 }
 
 export const calculateTotalWithInstallmentFee = (totalValue: number, installments: number) => {
     const fee = getInstallmentFee(installments)
-    const percentageFee = Math.round(totalValue * (fee.percentage / 100))
-    return totalValue + percentageFee + fee.fixed
+    console.log(totalValue)
+    const percentageFee = ValueUtils.getPercentageValue(totalValue, fee!.percentage)
+    console.log(percentageFee)
+    return totalValue + percentageFee + fee!.fixed
+}
+
+export {
+    INSTALLMENT_FEES
 }

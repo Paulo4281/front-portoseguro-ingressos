@@ -6,6 +6,7 @@ import type { TEventBatch } from "@/types/Event/TEventBatch"
 import { TicketFeeUtils } from "@/utils/Helpers/FeeUtils/TicketFeeUtils"
 import { CheckoutUtils } from "@/utils/Helpers/CheckoutUtils/CheckoutUtils"
 import { StoreManager } from "@/stores"
+import { useRouter } from "next/navigation"
 
 type TCartItemTicketType = {
     ticketTypeId: string
@@ -25,6 +26,7 @@ type TCartItem = {
     quantity: number
     ticketTypes?: TCartItemTicketType[]
     isClientTaxed: boolean
+    isFree: boolean
 }
 
 type TCartContextType = {
@@ -52,6 +54,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     const addItem = useCallback((item: Omit<TCartItem, "quantity">, quantity: number) => {
         setItems((prev) => {
+            // Se há itens de um evento diferente, limpar o carrinho
+            const hasItemsFromDifferentEvent = prev.some(i => i.eventId !== item.eventId)
+            if (hasItemsFromDifferentEvent) {
+                return [{ ...item, quantity }]
+            }
+
             const existingIndex = prev.findIndex(
                 (i) => {
                     return i.eventId === item.eventId && i.batchId === item.batchId
@@ -117,6 +125,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
             return [...prev, { ...item, quantity }]
         })
+        window.location.href = "/checkout"
     }, [])
 
     const removeItem = useCallback((eventId: string, batchId?: string) => {

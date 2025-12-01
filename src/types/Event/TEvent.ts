@@ -10,6 +10,8 @@ import type { z } from "zod"
 
 type TEventCreate = z.infer<typeof EventCreateValidator>
 
+type TEventUpdate = Partial<TEventCreate>
+
 type TEvent = {
     id: string
     name: string
@@ -20,7 +22,9 @@ type TEvent = {
     tickets: number | null
     userId: string
     organizerId: string
+    isFree: boolean
     isClientTaxed: boolean
+    maxInstallments: number
     isActive: boolean
     isDeleted: boolean
     isCancelled: boolean
@@ -104,5 +108,6 @@ export type {
     TOrganizer,
     TEventCreate,
     TEventSalesReport,
-    TEventDetailedStats
+    TEventDetailedStats,
+    TEventUpdate
 }

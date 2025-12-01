@@ -244,12 +244,21 @@ const CheckoutInfo = () => {
         return getCardBrand(cardData.number)
     }, [cardData.number])
     
-    const uniqueEventIds = useMemo(() => {
-        return [...new Set(items.map(item => item.eventId))]
+    const eventId = useMemo(() => {
+        return items.length > 0 ? items[0].eventId : null
     }, [items])
+    
+    const uniqueEventIds = useMemo(() => {
+        return eventId ? [eventId] : []
+    }, [eventId])
     
     const { data: eventsData } = useEventFindByIds(uniqueEventIds)
     
+    const currentEvent = useMemo(() => {
+        if (!eventsData || !Array.isArray(eventsData) || eventsData.length === 0) return null
+        return eventsData[0]
+    }, [eventsData])
+
     const eventsWithForms = useMemo(() => {
         return eventsData.filter(event => {
             if (!event?.form) return false
@@ -275,51 +284,40 @@ const CheckoutInfo = () => {
     const allFormFields = useMemo(() => {
         if (!hasForms) return []
         
-        const fieldsByEvent: Record<string, Array<{ eventId: string, eventName: string, type: string, field: any, order: number }>> = {}
+        const currentEvent = eventsWithForms[0]
+        if (!currentEvent?.form) return []
         
-        eventsWithForms.forEach(event => {
-            if (!event?.form) return
-            
-            let parsedForm = event.form
-            
-            if (typeof event.form === 'string') {
-                try {
-                    parsedForm = JSON.parse(event.form)
-                } catch (e) {
-                    return
-                }
+        let parsedForm = currentEvent.form
+        
+        if (typeof currentEvent.form === 'string') {
+            try {
+                parsedForm = JSON.parse(currentEvent.form)
+            } catch (e) {
+                return []
             }
-            
-            if (typeof parsedForm !== 'object' || parsedForm === null) return
-            
-            if (!fieldsByEvent[event.id]) {
-                fieldsByEvent[event.id] = []
-            }
-            
-            const formTypes = ['text', 'email', 'textArea', 'select', 'multiSelect']
-            
-            formTypes.forEach(type => {
-                if (Array.isArray(parsedForm[type])) {
-                    parsedForm[type].forEach((field: any) => {
-                        fieldsByEvent[event.id].push({
-                            eventId: event.id,
-                            eventName: event.name,
-                            type,
-                            field,
-                            order: field.order !== undefined ? field.order : 999
-                        })
-                    })
-                }
-            })
-            
-            fieldsByEvent[event.id].sort((a, b) => a.order - b.order)
-        })
+        }
+        
+        if (typeof parsedForm !== 'object' || parsedForm === null) return []
         
         const allFields: Array<{ eventId: string, eventName: string, type: string, field: any, order: number }> = []
         
-        Object.values(fieldsByEvent).forEach(eventFields => {
-            allFields.push(...eventFields)
+        const formTypes = ['text', 'email', 'textArea', 'select', 'multiSelect']
+        
+        formTypes.forEach(type => {
+            if (Array.isArray(parsedForm[type])) {
+                parsedForm[type].forEach((field: any) => {
+                    allFields.push({
+                        eventId: currentEvent.id,
+                        eventName: currentEvent.name,
+                        type,
+                        field,
+                        order: field.order !== undefined ? field.order : 999
+                    })
+                })
+            }
         })
+        
+        allFields.sort((a, b) => a.order - b.order)
         
         return allFields
     }, [eventsWithForms, hasForms])
@@ -327,110 +325,74 @@ const CheckoutInfo = () => {
     const formFieldsByEvent = useMemo(() => {
         const grouped: Record<string, Array<{ eventId: string, eventName: string, type: string, field: any, order: number }>> = {}
         
-        allFormFields.forEach(field => {
-            if (!grouped[field.eventId]) {
-                grouped[field.eventId] = []
-            }
-            grouped[field.eventId].push(field)
-        })
+        if (allFormFields.length > 0) {
+            const eventId = allFormFields[0].eventId
+            grouped[eventId] = allFormFields
+        }
         
         return grouped
     }, [allFormFields])
     
-    const getEventTicketQuantity = useMemo(() => {
-        const quantities: Record<string, number> = {}
-        
-        items.forEach(item => {
-            if (!quantities[item.eventId]) {
-                quantities[item.eventId] = 0
-            }
-            
-            if (item.ticketTypes && item.ticketTypes.length > 0) {
-                const total = item.ticketTypes.reduce((sum, tt) => sum + tt.quantity, 0)
-                quantities[item.eventId] += total
-            } else {
-                quantities[item.eventId] += item.quantity
-            }
-        })
-        
-        return quantities
+    const ticketQuantity = useMemo(() => {
+        if (items.length === 0) return 0
+        const item = items[0]
+        if (item.ticketTypes && item.ticketTypes.length > 0) {
+            return item.ticketTypes.reduce((sum, tt) => sum + tt.quantity, 0)
+        }
+        return item.quantity
     }, [items])
     
-    const getTicketTypeNameByIndex = useMemo(() => {
-        const mapping: Record<string, string[]> = {}
+    const ticketTypeNames = useMemo(() => {
+        const names: string[] = []
+        if (items.length === 0) return names
         
-        items.forEach(item => {
-            if (!mapping[item.eventId]) {
-                mapping[item.eventId] = []
-            }
-            
-            if (item.ticketTypes && item.ticketTypes.length > 0) {
-                item.ticketTypes.forEach(tt => {
-                    for (let i = 0; i < tt.quantity; i++) {
-                        mapping[item.eventId].push(tt.ticketTypeName)
-                    }
-                })
-            } else {
-                for (let i = 0; i < item.quantity; i++) {
-                    mapping[item.eventId].push("Ingresso")
+        const item = items[0]
+        if (item.ticketTypes && item.ticketTypes.length > 0) {
+            item.ticketTypes.forEach(tt => {
+                for (let i = 0; i < tt.quantity; i++) {
+                    names.push(tt.ticketTypeName)
                 }
+            })
+        } else {
+            for (let i = 0; i < item.quantity; i++) {
+                names.push("Ingresso")
             }
-        })
+        }
         
-        return mapping
+        return names
     }, [items])
     
-    const getTicketTypeDescriptionByIndex = useMemo(() => {
-        const mapping: Record<string, string[]> = {}
+    const ticketTypeDescriptions = useMemo(() => {
+        const descriptions: string[] = []
+        if (items.length === 0) return descriptions
         
-        items.forEach(item => {
-            if (!mapping[item.eventId]) {
-                mapping[item.eventId] = []
-            }
-            
-            const event = eventsData.find(e => e?.id === item.eventId)
-            
-            if (item.ticketTypes && item.ticketTypes.length > 0) {
-                item.ticketTypes.forEach(tt => {
-                    const ticketType = event?.TicketTypes?.find(t => t.id === tt.ticketTypeId)
-                    const description = ticketType?.description || ""
-                    
-                    for (let i = 0; i < tt.quantity; i++) {
-                        mapping[item.eventId].push(description)
-                    }
-                })
-            } else {
-                for (let i = 0; i < item.quantity; i++) {
-                    mapping[item.eventId].push("")
+        const item = items[0]
+        const event = eventsData.find(e => e?.id === item.eventId)
+        
+        if (item.ticketTypes && item.ticketTypes.length > 0) {
+            item.ticketTypes.forEach(tt => {
+                const ticketType = event?.TicketTypes?.find(t => t.id === tt.ticketTypeId)
+                const description = ticketType?.description || ""
+                
+                for (let i = 0; i < tt.quantity; i++) {
+                    descriptions.push(description)
                 }
+            })
+        } else {
+            for (let i = 0; i < item.quantity; i++) {
+                descriptions.push("")
             }
-        })
+        }
         
-        return mapping
+        return descriptions
     }, [items, eventsData])
     
     const maxStep = hasForms ? 4 : 3
     
-    const getEventTotal = useCallback((eventId: string) => {
-        const eventItems = items.filter(item => item.eventId === eventId)
-        return eventItems.reduce((sum, item) => {
-            const event = eventsData.find(e => e?.id === item.eventId)
-            return sum + CheckoutUtils.calculateItemTotal(item, event || null)
-        }, 0)
-    }, [items, eventsData])
-    
-    const getEventDiscount = useCallback((eventId: string) => {
-        const coupon = appliedCoupons[eventId]
-        if (!coupon) return 0
-        
-        const eventTotal = getEventTotal(eventId)
-        
-        if (coupon.discountType === "PERCENTAGE") {
-            return Math.round(eventTotal * (coupon.discountValue / 100))
-        } else {
-            return Math.min(coupon.discountValue, eventTotal)
-        }
-    }, [appliedCoupons, getEventTotal])
+    const currentEventCoupon = useMemo(() => {
+        if (!eventId || !appliedCoupons[eventId]) return null
+        return appliedCoupons[eventId]
+    }, [appliedCoupons, eventId])
     
     const subtotalBeforeDiscount = useMemo(() => {
         return items.reduce((sum, item) => {
@@ -440,10 +402,15 @@ const CheckoutInfo = () => {
     }, [items, eventsData])
     
     const totalDiscount = useMemo(() => {
-        return Object.keys(appliedCoupons).reduce((sum, eventId) => {
-            return sum + getEventDiscount(eventId)
-        }, 0)
-    }, [appliedCoupons, getEventDiscount])
+        if (!eventId || !currentEventCoupon) return 0
+        
+        const coupon = currentEventCoupon
+        if (coupon.discountType === "PERCENTAGE") {
+            return Math.round(subtotalBeforeDiscount * (coupon.discountValue / 100))
+        } else {
+            return Math.min(coupon.discountValue, subtotalBeforeDiscount)
+        }
+    }, [eventId, currentEventCoupon, subtotalBeforeDiscount])
     
     const subtotal = useMemo(() => {
         return subtotalBeforeDiscount - totalDiscount
@@ -461,6 +428,17 @@ const CheckoutInfo = () => {
             setInstallments(1)
         }
     }, [paymentMethod])
+
+    // Ensure selected installments do not exceed event's maxInstallments (if provided)
+    useEffect(() => {
+        const EVENT_MAX = currentEvent?.maxInstallments || 1
+        const computedMax = subtotal < 1000 ? 1 : 12
+        const finalAllowed = EVENT_MAX ? Math.min(computedMax, EVENT_MAX) : computedMax
+
+        if (installments > finalAllowed) {
+            setInstallments(finalAllowed)
+        }
+    }, [(currentEvent as any)?.maxInstallments, subtotal, installments])
     
 
     const handleCouponChange = useCallback((eventId: string, value: string) => {
@@ -569,7 +547,6 @@ const CheckoutInfo = () => {
             
             for (const event of eventsWithFormForEachTicket) {
                 if (!event) continue
-                const ticketQuantity = getEventTicketQuantity[event.id] || 0
                 const eventFields = formFieldsByEvent[event.id] || []
                 
                 for (let ticketIndex = 0; ticketIndex < ticketQuantity; ticketIndex++) {
@@ -1386,7 +1363,8 @@ const CheckoutInfo = () => {
                                                                                                 batchName: item.batchName,
                                                                                                 price: newTotalPrice || 0,
                                                                                                 ticketTypes: updatedTicketTypes,
-                                                                                                isClientTaxed: item.isClientTaxed
+                                                                                                isClientTaxed: item.isClientTaxed,
+                                                                                                isFree: item.isFree
                                                                                             }, newTotalQuantity)
                                                                                             return
                                                                                         }
@@ -1420,7 +1398,8 @@ const CheckoutInfo = () => {
                                                                                                     batchName: item.batchName,
                                                                                                     price: newTotalPrice || 0,
                                                                                                     ticketTypes: updatedTicketTypes,
-                                                                                                    isClientTaxed: item.isClientTaxed
+                                                                                                    isClientTaxed: item.isClientTaxed,
+                                                                                                    isFree: item.isFree
                                                                                                 }, newTotalQuantity)
                                                                                             }
                                                                                             return
@@ -1536,11 +1515,11 @@ const CheckoutInfo = () => {
                                                                         </span>
                                                                     </div>
                                                                 )}
-                                                                {appliedCoupons[event.id] && (
+                                                                {currentEventCoupon && (
                                                                     <div className="flex items-center justify-between text-sm">
                                                                         <span className="text-emerald-600 font-medium">Desconto:</span>
                                                                         <span className="text-emerald-600 font-medium">
-                                                                            -{ValueUtils.centsToCurrency(getEventDiscount(event.id))}
+                                                                            -{ValueUtils.centsToCurrency(totalDiscount)}
                                                                         </span>
                                                                     </div>
                                                                 )}
@@ -1549,7 +1528,7 @@ const CheckoutInfo = () => {
                                                                     <p className="text-lg font-semibold text-psi-primary">
                                                                         {ValueUtils.centsToCurrency(
                                                                             CheckoutUtils.calculateItemTotal(item, event) - 
-                                                                            (appliedCoupons[event.id] ? getEventDiscount(event.id) : 0)
+                                                                            (currentEventCoupon ? totalDiscount : 0)
                                                                         )}
                                                                     </p>
                                                                 </div>
@@ -1581,14 +1560,14 @@ const CheckoutInfo = () => {
                                         const event = eventsData.find(e => e?.id === eventId)
                                         const eventName = fields[0]?.eventName || "Evento"
                                         const isForEachTicket = event?.isFormForEachTicket === true
-                                        const ticketQuantity = isForEachTicket ? (getEventTicketQuantity[eventId] || 0) : 1
+                                        const currentTicketQuantity = isForEachTicket ? ticketQuantity : 1
                                         
                                         return (
                                             <div key={eventId} className="space-y-6">
-                                                {Array.from({ length: ticketQuantity }).map((_, ticketIndex) => {
+                                                {Array.from({ length: currentTicketQuantity }).map((_, ticketIndex) => {
                                                     const ticketNumber = ticketIndex + 1
-                                                    const ticketTypeName = getTicketTypeNameByIndex[eventId]?.[ticketIndex] || "Ingresso"
-                                                    const ticketTypeDescription = getTicketTypeDescriptionByIndex[eventId]?.[ticketIndex] || ""
+                                                    const currentTicketTypeName = ticketTypeNames?.[ticketIndex] || "Ingresso"
+                                                    const currentTicketTypeDescription = ticketTypeDescriptions?.[ticketIndex] || ""
                                                     return (
                                                         <div key={`${eventId}-${ticketIndex}`} className="rounded-2xl border border-[#E4E6F0] bg-white p-6
                                                         sm:p-8 shadow-sm">
@@ -1596,10 +1575,10 @@ const CheckoutInfo = () => {
                                                                 <h2 className="text-xl font-semibold text-psi-dark mb-1">{eventName}</h2>
                                                                 {isForEachTicket && (
                                                                     <div className="space-y-1">
-                                                                        <p className="text-sm font-medium text-psi-primary">Ingresso {ticketNumber} de {ticketQuantity}</p>
-                                                                        <p className="text-sm font-semibold text-psi-dark">{ticketTypeName !== "Ingresso" ? ticketTypeName : ""}</p>
-                                                                        {ticketTypeDescription && (
-                                                                            <p className="text-xs text-psi-dark/60 mt-1">{ticketTypeDescription}</p>
+                                                                        <p className="text-sm font-medium text-psi-primary">Ingresso {ticketNumber} de {currentTicketQuantity}</p>
+                                                                        <p className="text-sm font-semibold text-psi-dark">{currentTicketTypeName !== "Ingresso" ? currentTicketTypeName : ""}</p>
+                                                                        {currentTicketTypeDescription && (
+                                                                            <p className="text-xs text-psi-dark/60 mt-1">{currentTicketTypeDescription}</p>
                                                                         )}
                                                                     </div>
                                                                 )}
@@ -1726,159 +1705,180 @@ const CheckoutInfo = () => {
                                         </div>
                                         <h2 className="text-2xl font-semibold text-psi-dark">Finalizar Compra</h2>
                                         <p className="text-psi-dark/60">
-                                            Revise todas as informações e escolha a forma de pagamento
+                                            {
+                                                items?.[0]?.isFree
+                                                ?
+                                                (
+                                                    <span>Esta compra é gratuita!</span>
+                                                )
+                                                :
+                                                (
+                                                    <span>Revise todas as informações e escolha a forma de pagamento</span>
+                                                )
+                                            }
                                         </p>
                                     </div>
                                     
                                     <div className="space-y-6">
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-psi-dark mb-4">Forma de Pagamento</h3>
-                                            
-                                            <div className="space-y-4 mb-6">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setPaymentMethod("pix")}
-                                                    className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                                                        paymentMethod === "pix"
-                                                            ? "border-psi-primary bg-psi-primary/5"
-                                                            : "border-psi-dark/10 hover:border-psi-primary/30"
-                                                    }`}
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`size-4 rounded-full border-2 ${
-                                                            paymentMethod === "pix"
-                                                                ? "border-psi-primary bg-psi-primary"
-                                                                : "border-psi-dark/30"
-                                                        }`}>
-                                                            {paymentMethod === "pix" && (
-                                                                <div className="size-full rounded-full bg-white scale-50" />
-                                                            )}
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                        <img
-                                                            src="/icons/payment/pix.png"
-                                                            width={25}
-                                                        />
-                                                        <span className="font-semibold text-psi-dark">PIX</span>
-                                                        </div>
-                                                    </div>
-                                                </button>
+                                        {
+                                            items?.[0]?.isFree
+                                            ?
+                                            (
+                                                <></>
+                                            )
+                                            :
+                                            (
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-psi-dark mb-4">Forma de Pagamento</h3>
                                                 
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setPaymentMethod("credit")}
-                                                    className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                                                        paymentMethod === "credit"
-                                                            ? "border-psi-primary bg-psi-primary/5"
-                                                            : "border-psi-dark/10 hover:border-psi-primary/30"
-                                                    }`}
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`size-4 rounded-full border-2 ${
-                                                            paymentMethod === "credit"
-                                                                ? "border-psi-primary bg-psi-primary"
-                                                                : "border-psi-dark/30"
-                                                        }`}>
-                                                            {paymentMethod === "credit" && (
-                                                                <div className="size-full rounded-full bg-white scale-50" />
-                                                            )}
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                        <img
-                                                            src="/icons/payment/credit-card.png"
-                                                            width={25}
-                                                        />
-                                                        <span className="font-semibold text-psi-dark">Cartão de Crédito</span>
-                                                        </div>
-                                                    </div>
-                                                </button>
-                                            </div>
-                                            
-                                            {paymentMethod === "credit" && (
-                                                <div className="space-y-4 pt-6 border-t border-psi-dark/10">
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                            Número do Cartão *
-                                                        </label>
-                                                        <div className="relative">
-                                                            <InputMask
-                                                                mask="0000 0000 0000 0000"
-                                                                value={cardData.number}
-                                                                onAccept={(value) => setCardData({ ...cardData, number: value as string })}
-                                                                placeholder="0000 0000 0000 0000"
-                                                                icon={CreditCard}
+                                                <div className="space-y-4 mb-6">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPaymentMethod("pix")}
+                                                        className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                                                            paymentMethod === "pix"
+                                                                ? "border-psi-primary bg-psi-primary/5"
+                                                                : "border-psi-dark/10 hover:border-psi-primary/30"
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`size-4 rounded-full border-2 ${
+                                                                paymentMethod === "pix"
+                                                                    ? "border-psi-primary bg-psi-primary"
+                                                                    : "border-psi-dark/30"
+                                                            }`}>
+                                                                {paymentMethod === "pix" && (
+                                                                    <div className="size-full rounded-full bg-white scale-50" />
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                            <img
+                                                                src="/icons/payment/pix.png"
+                                                                width={25}
                                                             />
-                                                            {cardBrand && (
-                                                                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                                                    <div className={`size-10 rounded flex items-center justify-center text-xs font-bold ${
-                                                                        cardBrand === "visa" ? "bg-[#1434CB] text-white" :
-                                                                        cardBrand === "mastercard" ? "bg-[#EB001B] text-white" :
-                                                                        cardBrand === "amex" ? "bg-[#006FCF] text-white" :
-                                                                        cardBrand === "elo" ? "bg-[#FFCB05] text-[#231F20]" :
-                                                                        cardBrand === "hipercard" ? "bg-[#DF0F50] text-white" :
-                                                                        "bg-gray-600 text-white"
-                                                                    }`}>
-                                                                        {cardBrand === "visa" ? "VISA" :
-                                                                         cardBrand === "mastercard" ? "MC" :
-                                                                         cardBrand === "amex" ? "AMEX" :
-                                                                         cardBrand === "elo" ? "ELO" :
-                                                                         cardBrand === "hipercard" ? "HIPER" :
-                                                                         cardBrand.toUpperCase().substring(0, 4)}
-                                                                    </div>
-                                                                </div>
-                                                            )}
+                                                            <span className="font-semibold text-psi-dark">PIX</span>
+                                                            </div>
                                                         </div>
-                                                    </div>
+                                                    </button>
                                                     
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                            Nome no Cartão *
-                                                        </label>
-                                                        <Input
-                                                            value={cardData.name}
-                                                            onChange={(e) => setCardData({ ...cardData, name: e.target.value.toUpperCase() })}
-                                                            placeholder="NOME COMO ESTÁ NO CARTÃO"
-                                                            required
-                                                        />
-                                                    </div>
-                                                    
-                                                    <div className="grid gap-4
-                                                    sm:grid-cols-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPaymentMethod("credit")}
+                                                        className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
+                                                            paymentMethod === "credit"
+                                                                ? "border-psi-primary bg-psi-primary/5"
+                                                                : "border-psi-dark/10 hover:border-psi-primary/30"
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`size-4 rounded-full border-2 ${
+                                                                paymentMethod === "credit"
+                                                                    ? "border-psi-primary bg-psi-primary"
+                                                                    : "border-psi-dark/30"
+                                                            }`}>
+                                                                {paymentMethod === "credit" && (
+                                                                    <div className="size-full rounded-full bg-white scale-50" />
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                            <img
+                                                                src="/icons/payment/credit-card.png"
+                                                                width={25}
+                                                            />
+                                                            <span className="font-semibold text-psi-dark">Cartão de Crédito</span>
+                                                            </div>
+                                                        </div>
+                                                    </button>
+                                                </div>
+                                                
+                                                {paymentMethod === "credit" && (
+                                                    <div className="space-y-4 pt-6 border-t border-psi-dark/10">
                                                         <div>
                                                             <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                                Validade *
+                                                                Número do Cartão *
                                                             </label>
-                                                            <InputMask
-                                                                mask="00/00"
-                                                                value={cardData.expiry}
-                                                                onAccept={(value) => setCardData({ ...cardData, expiry: value as string })}
-                                                                placeholder="MM/AA"
-                                                            />
+                                                            <div className="relative">
+                                                                <InputMask
+                                                                    mask="0000 0000 0000 0000"
+                                                                    value={cardData.number}
+                                                                    onAccept={(value) => setCardData({ ...cardData, number: value as string })}
+                                                                    placeholder="0000 0000 0000 0000"
+                                                                    icon={CreditCard}
+                                                                />
+                                                                {cardBrand && (
+                                                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                                                        <div className={`size-10 rounded flex items-center justify-center text-xs font-bold ${
+                                                                            cardBrand === "visa" ? "bg-[#1434CB] text-white" :
+                                                                            cardBrand === "mastercard" ? "bg-[#EB001B] text-white" :
+                                                                            cardBrand === "amex" ? "bg-[#006FCF] text-white" :
+                                                                            cardBrand === "elo" ? "bg-[#FFCB05] text-[#231F20]" :
+                                                                            cardBrand === "hipercard" ? "bg-[#DF0F50] text-white" :
+                                                                            "bg-gray-600 text-white"
+                                                                        }`}>
+                                                                            {cardBrand === "visa" ? "VISA" :
+                                                                            cardBrand === "mastercard" ? "MC" :
+                                                                            cardBrand === "amex" ? "AMEX" :
+                                                                            cardBrand === "elo" ? "ELO" :
+                                                                            cardBrand === "hipercard" ? "HIPER" :
+                                                                            cardBrand.toUpperCase().substring(0, 4)}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                         
                                                         <div>
                                                             <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                                CVV *
+                                                                Nome no Cartão *
                                                             </label>
-                                                            <InputMask
-                                                                mask="000"
-                                                                value={cardData.cvv}
-                                                                onAccept={(value) => setCardData({ ...cardData, cvv: value as string })}
-                                                                placeholder="000"
+                                                            <Input
+                                                                value={cardData.name}
+                                                                onChange={(e) => setCardData({ ...cardData, name: e.target.value.toUpperCase() })}
+                                                                placeholder="NOME COMO ESTÁ NO CARTÃO"
+                                                                required
+                                                            />
+                                                        </div>
+                                                        
+                                                        <div className="grid gap-4
+                                                        sm:grid-cols-2">
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                                    Validade *
+                                                                </label>
+                                                                <InputMask
+                                                                    mask="00/00"
+                                                                    value={cardData.expiry}
+                                                                    onAccept={(value) => setCardData({ ...cardData, expiry: value as string })}
+                                                                    placeholder="MM/AA"
+                                                                />
+                                                            </div>
+                                                            
+                                                            <div>
+                                                                <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                                    CVV *
+                                                                </label>
+                                                                <InputMask
+                                                                    mask="000"
+                                                                    value={cardData.cvv}
+                                                                    onAccept={(value) => setCardData({ ...cardData, cvv: value as string })}
+                                                                    placeholder="000"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div className="pt-4 border-t border-psi-dark/10">
+                                                            <SelectInstallment
+                                                                value={installments}
+                                                                totalValue={subtotal}
+                                                                onChange={setInstallments}
+                                                                maxInstallmentsFromEvent={(currentEvent as any)?.maxInstallments ?? null}
                                                             />
                                                         </div>
                                                     </div>
-                                                    
-                                                    <div className="pt-4 border-t border-psi-dark/10">
-                                                        <SelectInstallment
-                                                            value={installments}
-                                                            totalValue={subtotal}
-                                                            onChange={setInstallments}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
+                                                )}
+                                            </div>
+                                            )
+                                        }
                                         
                                         <div className="p-4 rounded-xl bg-psi-dark/5">
                                             <h3 className="font-semibold text-psi-dark mb-2">Resumo</h3>
@@ -1897,10 +1897,30 @@ const CheckoutInfo = () => {
                                                 )}
                                                 <div className="flex items-center justify-between font-semibold text-psi-dark pt-2 border-t border-psi-dark/10">
                                                     <span>Total:</span>
-                                                    <span>{ValueUtils.centsToCurrency(total)}</span>
+                                                    {
+                                                        items?.[0]?.isFree
+                                                        ?
+                                                        (
+                                                        <span>Gratuito</span>
+                                                        )
+                                                        :
+                                                        (
+                                                        <span>{ValueUtils.centsToCurrency(total)}</span>
+                                                        )
+                                                    }
                                                 </div>
                                                 <p className="text-psi-dark/70"><strong>Itens:</strong> {items.reduce((sum, item) => sum + item.quantity, 0)} ingresso(s)</p>
-                                                <p className="text-psi-dark/70"><strong>Pagamento:</strong> {paymentMethod === "pix" ? "PIX" : "Cartão de Crédito"}</p>
+                                                {
+                                                    items?.[0]?.isFree
+                                                    ?
+                                                    (
+                                                    <></>
+                                                    )
+                                                    :
+                                                    (
+                                                    <p className="text-psi-dark/70"><strong>Pagamento:</strong> {paymentMethod === "pix" ? "PIX" : "Cartão de Crédito"}</p>
+                                                    )
+                                                }
                                             </div>
                                         </div>
                                         

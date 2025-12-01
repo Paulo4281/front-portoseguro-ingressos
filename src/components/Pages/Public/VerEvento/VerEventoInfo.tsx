@@ -28,6 +28,7 @@ import type { TEventClickCreate } from "@/types/Event/TEventClick"
 import { EventCategoryIconHandler } from "@/utils/Helpers/EventCategoryIconHandler/EventCategoryIconHandler"
 import { DialogTaxes } from "@/components/Dialog/DialogTaxes/DialogTaxes"
 import { useAuthStore } from "@/stores/Auth/AuthStore"
+import { LoadingButton } from "@/components/Loading/LoadingButton"
 
 type TVerEventoInfoProps = {
     eventId: string
@@ -82,6 +83,7 @@ const VerEventoInfo = (
     const [totalAnimationKey, setTotalAnimationKey] = useState(0)
     const previousTotalRef = useRef<number>(0)
     const eventClickRegisteredRef = useRef<string | null>(null)
+    const [isLoadingCheckoutPage, setIsLoadingCheckoutPage] = useState<boolean>(false)
 
     const formatDate = (dateString?: string | null) => {
         return formatEventDate(dateString, "DD [de] MMMM [de] YYYY")
@@ -395,6 +397,8 @@ const VerEventoInfo = (
     const handleAddToCart = () => {
         if (!event) return
 
+        setIsLoadingCheckoutPage(true)
+
         const batchId = selectedBatch?.id
         const batchName = selectedBatch?.name
 
@@ -435,7 +439,8 @@ const VerEventoInfo = (
                 batchName,
                 price: currentPrice,
                 ticketTypes,
-                isClientTaxed: event.isClientTaxed
+                isClientTaxed: event.isClientTaxed,
+                isFree: event.isFree
             }, totalQuantity || 0)
         } else if (batchHasTicketTypes && selectedBatch?.EventBatchTicketTypes) {
             const ticketTypes: any[] = []
@@ -489,7 +494,8 @@ const VerEventoInfo = (
                 batchName,
                 price: currentPrice,
                 ticketTypes,
-                isClientTaxed: event.isClientTaxed
+                isClientTaxed: event.isClientTaxed,
+                isFree: event.isFree
             }, totalQuantity || 0)
         } else if (hasMultipleDaysWithSpecificPrices && selectedDaysWithoutTicketTypes.length > 0) {
             const ticketTypes = selectedDaysWithoutTicketTypes.map(eventDateId => {
@@ -516,7 +522,8 @@ const VerEventoInfo = (
                 batchName,
                 price: currentPrice,
                 ticketTypes,
-                isClientTaxed: event.isClientTaxed
+                isClientTaxed: event.isClientTaxed,
+                isFree: event.isFree
             }, totalQuantity || 0)
         } else {
             addItem({
@@ -526,9 +533,12 @@ const VerEventoInfo = (
                 batchId,
                 batchName,
                 price: currentPrice,
-                isClientTaxed: event.isClientTaxed
+                isClientTaxed: event.isClientTaxed,
+                isFree: event.isFree
             }, quantity)
         }
+
+        setIsLoadingCheckoutPage(false)
     }
 
     useEffect(() => {
@@ -1454,7 +1464,8 @@ const VerEventoInfo = (
                                                                 batchId: selectedBatchId,
                                                                 batchName: selectedBatch?.name,
                                                                 price: currentPrice,
-                                                                isClientTaxed: event.isClientTaxed
+                                                                isClientTaxed: event.isClientTaxed,
+                                                                isFree: event.isFree
                                                             }, newQuantity)
                                                         }
                                                     }}
@@ -1484,10 +1495,19 @@ const VerEventoInfo = (
                                         disabled={
                                             (batchHasTicketTypes && totalQuantity === 0) || 
                                             (hasMultipleDaysWithSpecificPrices && totalQuantity === 0) ||
-                                            (hasMultipleDaysWithTicketTypePrices && totalQuantity === 0)
+                                            (hasMultipleDaysWithTicketTypePrices && totalQuantity === 0) ||
+                                            isLoadingCheckoutPage
                                         }
                                     >
-                                        {cartItem ? "Atualizar Carrinho" : "Adicionar ao Carrinho"}
+                                        {
+                                            isLoadingCheckoutPage ? (
+                                                <LoadingButton />
+                                            ) : (
+                                                <>
+                                                <span>Comprar</span>
+                                                </>
+                                            )
+                                        }
                                     </Button>
                                 </div>
                             </div>
