@@ -167,30 +167,6 @@ const VerEventosPannel = () => {
         )
     }
 
-    if (isError || !events || events.length === 0) {
-        return (
-            <Background variant="light">
-                <div className="min-h-screen pt-32 pb-16 px-4
-                sm:px-6
-                lg:px-8">
-                    <div className="max-w-7xl mx-auto">
-                        <div className="text-center py-16">
-                            <p className="text-lg text-psi-dark/60">Nenhum evento encontrado</p>
-                            {hasActiveFilters && (
-                                <Button
-                                    variant="outline"
-                                    onClick={clearFilters}
-                                    className="mt-4"
-                                >
-                                    Limpar filtros
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </Background>
-        )
-    }
 
     return (
         <Background variant="hero">
@@ -281,10 +257,15 @@ const VerEventosPannel = () => {
                         )}
                     </div>
 
-                    <div className="grid grid-cols-1
-                    md:grid-cols-2
-                    lg:grid-cols-3 gap-6">
-                        {events.map((event) => {
+                    {isError || !events || events.length === 0 ? (
+                        <div className="text-center py-16">
+                            <p className="text-lg text-psi-dark/60">Nenhum evento encontrado</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1
+                        md:grid-cols-2
+                        lg:grid-cols-3 gap-6">
+                            {events.map((event) => {
                             const activeBatch = getActiveBatch(event.EventBatches)
                             
                             return (
@@ -389,9 +370,10 @@ const VerEventosPannel = () => {
                                 </Link>
                             )
                         })}
-                    </div>
+                        </div>
+                    )}
                     
-                    {totalPages > 1 && (
+                    {totalPages > 1 && events && events.length > 0 && (
                         <div className="mt-8">
                             <Pagination
                                 currentPage={currentPage}

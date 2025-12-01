@@ -1,8 +1,11 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Ticket, QrCode, Copy, Download, Share2, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck } from "lucide-react"
+import { Calendar, Clock, MapPin, Ticket, QrCode, Copy, Download, Share2, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, Eye, EyeOff, FileText, Loader2 } from "lucide-react"
+import { QRCodeSVG } from "qrcode.react"
+import { TicketService } from "@/services/Ticket/TicketService"
+import { Toast } from "@/components/Toast/Toast"
 import { Background } from "@/components/Background/Background"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -26,7 +29,7 @@ const statusConfig: Record<TTicket["status"], TStatusConfig> = {
         description: "Assim que o pagamento for confirmado enviaremos o QR Code definitivo.",
         badgeClass: "border border-psi-tertiary/90 bg-psi-tertiary/60 text-psi-dark"
     },
-    PAID: {
+    CONFIRMED: {
         label: "Confirmado",
         description: "Ingresso confirmado. Apresente o QR Code no dia do evento.",
         badgeClass: "border border-emerald-200 bg-emerald-50 text-emerald-600"
@@ -36,6 +39,16 @@ const statusConfig: Record<TTicket["status"], TStatusConfig> = {
         description: "Esse ingresso foi cancelado e não pode ser utilizado.",
         badgeClass: "border border-rose-200 bg-rose-50 text-rose-600"
     },
+    REFUNDED: {
+        label: "Estornado",
+        description: "Este ingresso foi estornado e o valor foi devolvido.",
+        badgeClass: "border border-amber-200 bg-amber-50 text-amber-600"
+    },
+    OVERDUE: {
+        label: "Vencido",
+        description: "Ingresso não utilizado e já vencido.",
+        badgeClass: "border border-psi-dark/20 bg-psi-dark/10 text-psi-dark/60"
+    },
     USED: {
         label: "Utilizado",
         description: "Ingresso já validado no acesso ao evento.",
@@ -43,7 +56,7 @@ const statusConfig: Record<TTicket["status"], TStatusConfig> = {
     },
     EXPIRED: {
         label: "Expirado",
-        description: "Evento já ocorreu e o ingresso expirou.",
+        description: "A compra não foi paga e venceu.",
         badgeClass: "border border-psi-dark/10 bg-psi-dark/5 text-psi-dark/70"
     }
 }
@@ -108,6 +121,9 @@ const MeusIngressosPannel = () => {
     const { user, isAuthenticated } = useAuthStore()
     const userId = user?.id || ""
     const { data, isLoading, isError } = useTicketFindByUserId(userId)
+    const [visibleQRCodes, setVisibleQRCodes] = useState<Record<string, boolean>>({})
+    const [qrCodeData, setQrCodeData] = useState<Record<string, string>>({})
+    const [loadingQRCodes, setLoadingQRCodes] = useState<Record<string, boolean>>({})
 
     const tickets = (data?.data ?? []) as TTicket[]
 
@@ -117,7 +133,7 @@ const MeusIngressosPannel = () => {
 
     const stats = useMemo(() => {
         const total = tickets.length
-        const confirmed = tickets.filter((ticket) => ticket.status === "PAID" || ticket.status === "USED").length
+        const confirmed = tickets.filter((ticket) => ticket.status === "CONFIRMED" || ticket.status === "USED").length
         const pending = tickets.filter((ticket) => ticket.status === "PENDING").length
         const uniqueEvents = new Set(tickets.map((ticket) => ticket.eventId)).size
 
@@ -128,6 +144,55 @@ const MeusIngressosPannel = () => {
             uniqueEvents
         }
     }, [tickets])
+
+    const toggleQRCode = async (ticketId: string) => {
+        const isCurrentlyVisible = visibleQRCodes[ticketId]
+        
+        if (isCurrentlyVisible) {
+            setVisibleQRCodes(prev => ({
+                ...prev,
+                [ticketId]: false
+            }))
+            return
+        }
+
+        if (!qrCodeData[ticketId]) {
+            setLoadingQRCodes(prev => ({
+                ...prev,
+                [ticketId]: true
+            }))
+
+            try {
+                const response = await TicketService.getTicketQRCode(ticketId)
+                if (response?.success && response?.data) {
+                    const qrCodeJson = JSON.stringify(response.data)
+                    setQrCodeData(prev => ({
+                        ...prev,
+                        [ticketId]: qrCodeJson
+                    }))
+                    setVisibleQRCodes(prev => ({
+                        ...prev,
+                        [ticketId]: true
+                    }))
+                } else {
+                    Toast.error("Erro ao carregar QR Code")
+                }
+            } catch (error) {
+                console.error("Erro ao buscar QR Code:", error)
+                Toast.error("Erro ao carregar QR Code")
+            } finally {
+                setLoadingQRCodes(prev => ({
+                    ...prev,
+                    [ticketId]: false
+                }))
+            }
+        } else {
+            setVisibleQRCodes(prev => ({
+                ...prev,
+                [ticketId]: true
+            }))
+        }
+    }
 
     const handleShareTicket = (ticket: TTicket) => {
         const eventUrl = `${window.location.origin}/ver-evento?id=${ticket.eventId}`
@@ -337,7 +402,16 @@ const MeusIngressosPannel = () => {
                                 const schedule = getEventSchedule(ticket)
                                 const status = statusConfig[ticket.status]
                                 const isPendingPayment = ticket.status === "PENDING"
-                                const canDownloadTicket = ticket.status === "PAID"
+                                const canDownloadTicket = ticket.status === "CONFIRMED" || ticket.status === "USED"
+                                const canShowQRCode = ticket.status === "CONFIRMED" || ticket.status === "USED"
+                                const isQRCodeVisible = visibleQRCodes[ticket.id] || false
+                                const hasForm = ticket.form && (
+                                    (ticket.form.text && ticket.form.text.length > 0) ||
+                                    (ticket.form.email && ticket.form.email.length > 0) ||
+                                    (ticket.form.textArea && ticket.form.textArea.length > 0) ||
+                                    (ticket.form.select && ticket.form.select.length > 0) ||
+                                    (ticket.form.multiSelect && ticket.form.multiSelect.length > 0)
+                                )
 
                                 return (
                                     <div
@@ -357,7 +431,8 @@ const MeusIngressosPannel = () => {
                                                 lg:w-80
                                                 lg:shrink-0">
                                                     <img
-                                                        src={ImageUtils.getEventImageUrl(ticket.event.image)}
+                                                        // src={ImageUtils.getEventImageUrl(ticket.event.image)}
+                                                        src={ticket.event.image}
                                                         alt={ticket.event.name}
                                                         className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
                                                     />
@@ -418,6 +493,11 @@ const MeusIngressosPannel = () => {
                                                             <p className="text-sm font-semibold text-psi-dark">
                                                                 {ticket.eventBatch?.name || "Ingresso único"}
                                                             </p>
+                                                            {ticket.TicketType && (
+                                                                <p className="text-xs text-psi-primary font-medium mt-1">
+                                                                    {ticket.TicketType.name}
+                                                                </p>
+                                                            )}
                                                             {ticket.eventBatch && (
                                                                 <p className="text-xs text-psi-dark/60">
                                                                     Até {ticket.eventBatch.endDate ? DateUtils.formatDate(ticket.eventBatch.endDate, "DD/MM/YYYY") : "data indefinida"}
@@ -445,9 +525,106 @@ const MeusIngressosPannel = () => {
                                                                     <Copy className="h-4 w-4" />
                                                                 </Button>
                                                             </div>
+                                                            {canShowQRCode && (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="w-full"
+                                                                    onClick={() => toggleQRCode(ticket.id)}
+                                                                    disabled={loadingQRCodes[ticket.id]}
+                                                                >
+                                                                    {loadingQRCodes[ticket.id] ? (
+                                                                        <>
+                                                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                                            Carregando...
+                                                                        </>
+                                                                    ) : isQRCodeVisible ? (
+                                                                        <>
+                                                                            <EyeOff className="h-4 w-4 mr-2" />
+                                                                            Ocultar QR Code
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <Eye className="h-4 w-4 mr-2" />
+                                                                            Mostrar QR Code
+                                                                        </>
+                                                                    )}
+                                                                </Button>
+                                                            )}
+                                                            {isQRCodeVisible && canShowQRCode && qrCodeData[ticket.id] && (
+                                                                <div className="flex justify-center p-4 bg-psi-light rounded-lg">
+                                                                    <QRCodeSVG
+                                                                        value={qrCodeData[ticket.id]}
+                                                                        size={200}
+                                                                        level="H"
+                                                                        includeMargin={true}
+                                                                    />
+                                                                </div>
+                                                            )}
                                                             <p className="text-xs text-psi-dark/60">{status.description}</p>
                                                         </div>
                                                     </div>
+
+                                                    {hasForm && (
+                                                        <div className="rounded-2xl border border-psi-primary/20 bg-white/80 p-4 shadow-sm space-y-4">
+                                                            <div className="flex items-center gap-2 text-sm font-semibold text-psi-dark">
+                                                                <FileText className="h-4 w-4 text-psi-primary" />
+                                                                Respostas do Formulário
+                                                            </div>
+                                                            <div className="space-y-3">
+                                                                {ticket.form?.text && ticket.form.text.length > 0 && (
+                                                                    <div className="space-y-2">
+                                                                        {ticket.form.text.map((item, index) => (
+                                                                            <div key={index} className="text-sm">
+                                                                                <p className="font-medium text-psi-dark/70">{item.label}</p>
+                                                                                <p className="text-psi-dark">{item.answer || "-"}</p>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                                {ticket.form?.email && ticket.form.email.length > 0 && (
+                                                                    <div className="space-y-2">
+                                                                        {ticket.form.email.map((item, index) => (
+                                                                            <div key={index} className="text-sm">
+                                                                                <p className="font-medium text-psi-dark/70">{item.label}</p>
+                                                                                <p className="text-psi-dark">{item.answer || "-"}</p>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                                {ticket.form?.textArea && ticket.form.textArea.length > 0 && (
+                                                                    <div className="space-y-2">
+                                                                        {ticket.form.textArea.map((item, index) => (
+                                                                            <div key={index} className="text-sm">
+                                                                                <p className="font-medium text-psi-dark/70">{item.label}</p>
+                                                                                <p className="text-psi-dark whitespace-pre-wrap">{item.answer || "-"}</p>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                                {ticket.form?.select && ticket.form.select.length > 0 && (
+                                                                    <div className="space-y-2">
+                                                                        {ticket.form.select.map((item, index) => (
+                                                                            <div key={index} className="text-sm">
+                                                                                <p className="font-medium text-psi-dark/70">{item.label}</p>
+                                                                                <p className="text-psi-dark">{item.answer || "-"}</p>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                                {ticket.form?.multiSelect && ticket.form.multiSelect.length > 0 && (
+                                                                    <div className="space-y-2">
+                                                                        {ticket.form.multiSelect.map((item, index) => (
+                                                                            <div key={index} className="text-sm">
+                                                                                <p className="font-medium text-psi-dark/70">{item.label}</p>
+                                                                                <p className="text-psi-dark">{item.answer || "-"}</p>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
 
                                                     <div className="flex flex-col gap-3
                                                     lg:flex-row

@@ -1,18 +1,52 @@
 import type { TEvent } from "@/types/Event/TEvent"
 import type { TEventBatch } from "@/types/Event/TEventBatch"
 
+type TTicketForm = {
+    text?: {
+        label: string
+        answer: string | null
+    }[] | null
+    email?: {
+        label: string
+        answer: string | null
+    }[] | null
+    textArea?: {
+        label: string
+        answer: string | null
+    }[] | null
+    select?: {
+        label: string
+        answer: string | null
+    }[] | null
+    multiSelect?: {
+        label: string
+        answer: string | null
+    }[] | null
+}
+
 type TTicket = {
     id: string
-    status: "PENDING" | "PAID" | "CANCELLED" | "USED" | "EXPIRED"
+    token: string
+    status: "PENDING" | "CONFIRMED" | "USED" | "CANCELLED" | "REFUNDED" | "OVERDUE" | "EXPIRED"
     eventId: string
-    eventBatchId: string | null
+    eventBatchId: string
+    eventDateId: string
+    ticketTypeId: string | null
     userId: string
+    paymentId: string | null
+    form: TTicketForm | null
+    usedAt: string | null
     price: number
     createdAt: string
     updatedAt: string | null
 
     event: TEvent
-    eventBatch: TEventBatch | null
+    eventBatch: TEventBatch
+    TicketType?: {
+        id: string
+        name: string
+        description: string | null
+    } | null
 }
 
 type TTicketScanResponse = {
@@ -111,6 +145,10 @@ type TTicketBuyResponse = {
     isConfirmed: boolean
 }
 
+type TTicketQRCodeResponse = {
+    t: string
+}
+
 export type {
     TTicket,
     TTicketBuy,
@@ -119,5 +157,7 @@ export type {
     TTicketScanLinkGenerateResponse,
     TTicketScanLink,
     TTicketScanLinkCreate,
-    TTicketScanLinkDelete
+    TTicketScanLinkDelete,
+    TTicketQRCodeResponse,
+    TTicketForm
 }
