@@ -195,6 +195,14 @@ class EventServiceClass {
         return response
     }
 
+    async findByIdUser(id: string): Promise<AxiosResponse["data"]> {
+        const response = (await API.GET({
+            prefix: "/event",
+            url: `/user/${id}`
+        }))?.data
+        return response
+    }
+
     async findSimilar(params: { categories: string; excludeEventId?: string }): Promise<AxiosResponse["data"]> {
         const queryParams: Record<string, string> = {
             categories: params.categories
@@ -222,71 +230,17 @@ class EventServiceClass {
     }
 
     async update(eventId: string, data: TEventUpdate): Promise<AxiosResponse["data"]> {
-        const formData = new FormData()
-        
-        formData.append("name", data.name!)
-        formData.append("description", data.description!)
-        if (data.location) {
-            formData.append("location", data.location)
-        }
-        formData.append("isClientTaxed", String(data.isClientTaxed || false))
-        
-        if (data.image) {
-            formData.append("image", data.image)
-        }
-
-        if (data.form) {
-            formData.append("form", JSON.stringify(data.form))
-        }
-
-        if (data.isFormForEachTicket) {
-            formData.append("isFormForEachTicket", String(data.isFormForEachTicket))
-        }
-        if (data.isFree !== undefined && data.isFree !== null) {
-            formData.append("isFree", String(data.isFree))
-        }
-        if (data.maxInstallments !== undefined && data.maxInstallments !== null) {
-            formData.append("maxInstallments", String(data.maxInstallments))
-        }
-        
-        if (data.categories && data.categories.length > 0) {
-            data.categories.forEach((categoryId: string, index: number) => {
-                formData.append(`categories[${index}]`, categoryId)
-            })
-        }
-        
-        if (data.ticketTypes && data.ticketTypes.length > 0) {
-            formData.append("ticketTypes", JSON.stringify(data.ticketTypes))
-        }
-        
-        if (data.batches && data.batches.length > 0) {
-            formData.append("batches", JSON.stringify(data.batches))
-        } else {
-            if (data.tickets !== undefined) {
-                formData.append("tickets", String(data.tickets))
-            }
-            if (data.ticketPrice !== undefined) {
-                formData.append("ticketPrice", String(data.ticketPrice))
-            }
-        }
-        
-        if (data.recurrence) {
-            formData.append("recurrence", JSON.stringify(data.recurrence))
-        } else if (data.dates && data.dates.length > 0) {
-            formData.append("dates", JSON.stringify(data.dates))
-        }
-        
-        const response = (await API.PUT_FILE({
+        const response = (await API.PUT({
             prefix: "/event",
             url: `/${eventId}`,
-            formData: formData
+            data: data
         }))?.data
         return response
     }
 
     async updateImage(eventId: string, file: File): Promise<AxiosResponse["data"]> {
         const formData = new FormData()
-        formData.append("file", file)
+        formData.append("image", file)
         
         const response = (await API.PATCH_FILE({
             prefix: "/event",

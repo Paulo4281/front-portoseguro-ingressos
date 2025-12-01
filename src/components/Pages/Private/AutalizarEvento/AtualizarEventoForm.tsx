@@ -28,7 +28,7 @@ import {
 import { z } from "zod"
 import { cn } from "@/lib/utils"
 import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
-import { useEventFindById } from "@/hooks/Event/useEventFindById"
+import { useEventFindByIdUser } from "@/hooks/Event/useEventFindByIdUser"
 import { useEventUpdate } from "@/hooks/Event/useEventUpdate"
 import useEventUpdateImage from "@/hooks/Event/useEventUpdateImage"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -37,6 +37,7 @@ import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 import { DialogTaxes } from "@/components/Dialog/DialogTaxes/DialogTaxes"
 import { FormBuilder, type TFormField } from "@/components/FormBuilder/FormBuilder"
 import { DialogEditWarning, type TChangeItem } from "@/components/Dialog/DialogEditWarning/DialogEditWarning"
+import { Toast } from "@/components/Toast/Toast"
 
 type TEventUpdate = z.infer<typeof EventUpdateValidator>
 
@@ -186,10 +187,10 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     const [originalData, setOriginalData] = useState<any>(null)
     const [isWarningOpen, setIsWarningOpen] = useState(true)
 
-    const { data: eventData, isLoading: isEventLoading } = useEventFindById(eventId)
+    const { data: eventData, isLoading: isEventLoading } = useEventFindByIdUser(eventId)
     const { data: eventCategoriesData, isLoading: isEventCategoriesLoading } = useEventCategoryFind()
 
-    const { mutateAsync: updateEvent, isPending: isUpdating } = useEventUpdate(eventId)
+    const { mutateAsync: updateEvent, isPending: isUpdatingEvent } = useEventUpdate(eventId)
     const { mutateAsync: updateEventImage, isPending: isUpdatingImage } = useEventUpdateImage(eventId)
 
     const eventCategories = useMemo(() => {
@@ -640,11 +641,18 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
             }
 
             // Call update for the main data
-            await updateEvent(submitData as any)
+            const response = await updateEvent(submitData as any)
 
             // If there is a new image file, call the image route
             if (imageFile) {
-                await updateEventImage(imageFile)
+                const response = await updateEventImage(imageFile)
+                if (response?.success) {
+                    Toast.success("Imagem do evento atualizada com sucesso!")
+                }
+            }
+
+            if (response?.success) {
+                Toast.success("Evento atualizado com sucesso!")
             }
 
             // Optionally you can redirect or show a success toast here
@@ -915,6 +923,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                 value={field.value || ImageUtils.getEventImageUrl(eventData?.data?.image!)}
                                                 onChange={field.onChange}
                                                 error={form.formState.errors.image?.message}
+                                                showButtons={false}
                                             />
                                         )}
                                     />
@@ -2030,9 +2039,9 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                             <Button
                                 type="submit"
                                 variant="primary"
-                                disabled={form.formState.isSubmitting}
+                                disabled={isUpdatingEvent}
                             >
-                                {form.formState.isSubmitting ? (
+                                {isUpdatingEvent ? (
                                     <LoadingButton message="Atualizando evento..." />
                                 ) : (
                                     "Atualizar Evento"

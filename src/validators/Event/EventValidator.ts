@@ -319,6 +319,11 @@ const EventUpdateValidator = EventUpdateValidatorBase.superRefine((data, ctx) =>
             const hasTicketTypes = batch.ticketTypes && batch.ticketTypes.length > 0
             const hasPrice = batch.price !== null && batch.price !== undefined
             const hasQuantity = batch.quantity !== null && batch.quantity !== undefined && batch.quantity > 0
+            const isFreeEvent = data.isFree === true
+
+            if (isFreeEvent) {
+                return
+            }
 
             if (!hasTicketTypes && !hasPrice) {
                 ctx.addIssue({

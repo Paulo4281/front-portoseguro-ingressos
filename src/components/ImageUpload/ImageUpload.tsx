@@ -18,6 +18,7 @@ type TImageUploadProps = {
     className?: string
     error?: string
     variant?: "default" | "document"
+    showButtons?: boolean
 }
 
 const ImageUpload = (
@@ -26,7 +27,8 @@ const ImageUpload = (
         onChange,
         className,
         error,
-        variant = "default"
+        variant = "default",
+        showButtons = true
     }: TImageUploadProps
 ) => {
     const [preview, setPreview] = useState<string | null>(
@@ -208,29 +210,35 @@ const ImageUpload = (
                                     : "h-[280px] object-cover lg:h-[600px]"
                             )}
                         />
-                        <div className="absolute top-6 right-6 flex gap-2">
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleEdit}
-                                className="bg-white/90 hover:bg-white shadow-lg"
-                            >
-                                <RotateCw className="h-4 w-4" />
-                            </Button>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleRemove()
-                                }}
-                                className="bg-white/90 hover:bg-white shadow-lg"
-                            >
-                                <X className="h-4 w-4" />
-                            </Button>
-                        </div>
+                        {
+                            showButtons && (
+                                <>
+                                <div className="absolute top-6 right-6 flex gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleEdit}
+                                        className="bg-white/90 hover:bg-white shadow-lg"
+                                    >
+                                        <RotateCw className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            handleRemove()
+                                        }}
+                                        className="bg-white/90 hover:bg-white shadow-lg"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                </>
+                            )
+                        }
                     </div>
                 ) : (
                     <div className="flex flex-col items-center justify-center p-8 text-center">
