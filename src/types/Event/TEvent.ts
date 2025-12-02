@@ -95,6 +95,13 @@ type TEventSalesReport = {
     peakSalesHour: string
 }
 
+type TEventVerifyLastTicketsResponse = {
+    eventId: string
+    eventDateId: string
+    ticketTypeId: string | null
+    isLastTickets: boolean
+}
+
 type TEventDetailedStats = {
 
 }
@@ -109,5 +116,6 @@ export type {
     TEventCreate,
     TEventSalesReport,
     TEventDetailedStats,
-    TEventUpdate
+    TEventUpdate,
+    TEventVerifyLastTicketsResponse
 }

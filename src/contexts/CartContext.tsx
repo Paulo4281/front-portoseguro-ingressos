@@ -125,7 +125,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
             return [...prev, { ...item, quantity }]
         })
-        window.location.href = "/checkout"
+        if (location.pathname !== "/checkout") {
+            window.location.href = "/checkout"
+        }
     }, [])
 
     const removeItem = useCallback((eventId: string, batchId?: string) => {

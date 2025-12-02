@@ -22,13 +22,14 @@ import { useCart } from "@/contexts/CartContext"
 import { Carousel } from "@/components/Carousel/Carousel"
 import { CardEvent } from "@/components/Card/CardEvent/CardEvent"
 import ReactMarkdown from "react-markdown"
-import type { TEvent, TRecurrenceDay } from "@/types/Event/TEvent"
+import { TEventVerifyLastTicketsResponse, type TEvent, type TRecurrenceDay } from "@/types/Event/TEvent"
 import type { TEventBatch } from "@/types/Event/TEventBatch"
 import type { TEventClickCreate } from "@/types/Event/TEventClick"
 import { EventCategoryIconHandler } from "@/utils/Helpers/EventCategoryIconHandler/EventCategoryIconHandler"
 import { DialogTaxes } from "@/components/Dialog/DialogTaxes/DialogTaxes"
 import { useAuthStore } from "@/stores/Auth/AuthStore"
 import { LoadingButton } from "@/components/Loading/LoadingButton"
+import { useEventVerifyLastTicket } from "@/hooks/Event/useEventVerifyLastTicket"
 
 type TVerEventoInfoProps = {
     eventId: string
@@ -43,6 +44,17 @@ const VerEventoInfo = (
     const { data: eventCategoriesData } = useEventCategoryFind()
     const { mutateAsync: registerEventClick } = useEventClickCreate()
     const { user } = useAuthStore()
+
+    const { data: eventVerifyLastTicketsData, isLoading: isLoadingEventVerifyLastTickets, isFetching: isFetchingEventVerifyLastTickets } = useEventVerifyLastTicket(eventId)
+
+    const [isLastTicketsData, setIsLastTicketsData] = useState<TEventVerifyLastTicketsResponse[]>([])
+
+    useEffect(() => {
+        if (eventVerifyLastTicketsData?.data && Array.isArray(eventVerifyLastTicketsData.data)) {
+            console.log(eventVerifyLastTicketsData.data)
+            setIsLastTicketsData(eventVerifyLastTicketsData.data)
+        }
+    }, [eventVerifyLastTicketsData])
     
     const event = useMemo(() => {
         return eventData?.data
@@ -1216,8 +1228,6 @@ const VerEventoInfo = (
                                                 const qty = ticketTypeQuantities[ebt.ticketTypeId] || 0
                                                 const selectedDaysForType = selectedDays[ebt.ticketTypeId] || []
 
-                                                console.log(selectedDays)
-                                                
                                                 const getPriceForTicketTypeLocal = (eventDateId: string) => {
                                                     return CheckoutUtils.getPriceForTicketType(ebt, eventDateId, event)
                                                 }

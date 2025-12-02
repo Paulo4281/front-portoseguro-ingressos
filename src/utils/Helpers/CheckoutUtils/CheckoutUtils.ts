@@ -375,7 +375,7 @@ class CheckoutUtilsClass {
         return daysWithTicketTypePrices.length > 1
     }
 
-    getTicketTypeIdentifier(tt: TCartItemTicketType): string {
+    getTicketTypeIdentifier(tt: TCartItemTicketType, underlineReturn?: boolean): string {
         const isDayBasedWithoutTicketTypes = this.isDayBasedWithoutTicketTypes([tt])
         const isMultipleDaysWithTicketTypes = this.isMultipleDaysWithTicketTypes([tt])
         
@@ -383,6 +383,9 @@ class CheckoutUtilsClass {
             return tt.days[0]
         }
         if (isMultipleDaysWithTicketTypes && tt.days) {
+            if (underlineReturn) {
+                return `${tt.ticketTypeId}_${tt.days[0]}`
+            }
             return `${tt.ticketTypeId}-${tt.days[0]}`
         }
         return tt.ticketTypeId

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useCallback, useEffect } from "react"
+import { useState, useMemo, useCallback, useEffect, useRef } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useCart } from "@/contexts/CartContext"
@@ -34,14 +34,14 @@ import { CheckoutUtils } from "@/utils/Helpers/CheckoutUtils/CheckoutUtils"
 import { formatEventDate, formatEventTime } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import { getCardBrand } from "@/utils/Helpers/CardUtils/CardUtils"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
-import { 
-    User, 
-    Mail, 
-    Phone, 
-    FileText, 
-    MapPin, 
-    CreditCard, 
-    CheckCircle2, 
+import {
+    User,
+    Mail,
+    Phone,
+    FileText,
+    MapPin,
+    CreditCard,
+    CheckCircle2,
     Trash2,
     ChevronRight,
     ChevronLeft,
@@ -83,8 +83,20 @@ import { getStates, getCitiesByState } from "@/utils/Helpers/IBGECitiesAndStates
 import { getCountries, getCountriesSync } from "@/utils/Helpers/Countries/Countries"
 import { SelectInstallment, calculateTotalWithInstallmentFee } from "@/components/SelectInstallment/SelectInstallment"
 import { useTicketBuy } from "@/hooks/Ticket/useTicketBuy"
+import { CheckoutTimer } from "@/components/CheckoutTimer/CheckoutTimer"
+import { useTicketHoldCreate } from "@/hooks/TicketHold/useTicketHoldCreate"
+import { useTicketHoldUpdateQuantity } from "@/hooks/TicketHold/useTicketHoldUpdateQuantity"
+import { TTicketHoldCreate, TTicketHoldCreateResponse } from "@/types/TicketHold/TTicketHold"
+import { id } from "zod/v4/locales"
 
 type TPaymentMethod = "pix" | "credit"
+
+export type THandleUpdateQuantityParams = {
+    eventId: string
+    batchId: string
+    qty: number
+    ticketHoldId: string
+}
 
 const CheckoutInfo = () => {
     const { items, updateQuantity, updateTicketTypeQuantity, addItem, removeItem, getTotal } = useCart()
@@ -92,7 +104,35 @@ const CheckoutInfo = () => {
     const router = useRouter()
     const [currentStep, setCurrentStep] = useState(1)
     const [paymentMethod, setPaymentMethod] = useState<TPaymentMethod>("pix")
-    
+
+    const { mutateAsync: updateTicketHold, isPending: isUpdatingTicketHold } = useTicketHoldUpdateQuantity()
+
+    const handleUpdateQuantity = async (params: THandleUpdateQuantityParams, updateQuantityCartContext: boolean = true) => {
+        const { eventId, batchId, qty, ticketHoldId } = params
+
+        if (updateQuantityCartContext) {
+            updateQuantity(eventId, batchId, qty)
+        }
+
+        const response = await updateTicketHold({
+            id: ticketHoldId,
+            quantity: qty
+        })
+
+        if (response?.success) { }
+    }
+
+    const handleFindTicketHoldId = (eventId: string, batchId: string, eventDateId: string | null, ticketTypeId: string | null) => {
+        const ticketHold = ticketHoldData?.find((th) => th.eventDateId === eventDateId && th.ticketTypeId === ticketTypeId)
+        console.log(ticketHold)
+        if (ticketHold) {
+            return ticketHold.id
+        }
+        return ""
+    }
+
+    const { mutateAsync: createTicketHold, isPending: isCreatingTicketHold } = useTicketHoldCreate()
+
     const [buyerData, setBuyerData] = useState({
         firstName: user?.firstName || "",
         lastName: user?.lastName || "",
@@ -208,16 +248,16 @@ const CheckoutInfo = () => {
         }
         loadCountries()
     }, [])
-    
+
     const [cardData, setCardData] = useState({
         number: "",
         name: "",
         expiry: "",
         cvv: "",
     })
-    
+
     const [installments, setInstallments] = useState(1)
-    
+
     const [formAnswers, setFormAnswers] = useState<Record<string, any>>({})
     const [couponCodes, setCouponCodes] = useState<Record<string, string>>({})
     const [couponLoading, setCouponLoading] = useState<Record<string, boolean>>({})
@@ -239,32 +279,99 @@ const CheckoutInfo = () => {
                 return 0
         }
     }, [])
-    
+
     const cardBrand = useMemo(() => {
         return getCardBrand(cardData.number)
     }, [cardData.number])
-    
+
     const eventId = useMemo(() => {
         return items.length > 0 ? items[0].eventId : null
     }, [items])
-    
+
     const uniqueEventIds = useMemo(() => {
         return eventId ? [eventId] : []
     }, [eventId])
-    
+
     const { data: eventsData } = useEventFindByIds(uniqueEventIds)
-    
+
     const currentEvent = useMemo(() => {
         if (!eventsData || !Array.isArray(eventsData) || eventsData.length === 0) return null
         return eventsData[0]
     }, [eventsData])
 
+    const [ticketHoldData, setTicketHoldData] = useState<TTicketHoldCreateResponse[] | null>(null)
+    const hasRun = useRef(false)
+
+    useEffect(() => {
+        console.log(ticketHoldData)
+    }, [ticketHoldData])
+
+    useEffect(() => {
+        if (items.length > 0 && currentEvent && eventId) {
+            if (hasRun.current) return
+            hasRun.current = true
+
+            const createTicketHoldFunc = async () => {
+                const ticketHolds: TTicketHoldCreate[] = []
+                for (const item of items) {
+
+                    let hasTicketTypes = false
+                    let hasMultipleDaysWithTicketTypes = false
+
+                    if (item.ticketTypes && item.ticketTypes.length > 0) {
+                        for (const ticketType of item.ticketTypes) {
+                            ticketHolds.push({
+                                eventId: eventId || "",
+                                eventBatchId: item.batchId || "",
+                                eventDateId: ticketType.days?.[0] || null,
+                                ticketTypeId: ticketType.ticketTypeId || null,
+                                quantity: ticketType.quantity
+                            })
+                        }
+                        hasTicketTypes = true
+                    }
+
+                    if (item.ticketTypes && item.ticketTypes.some((ticketType) => ticketType.days && ticketType.days.length > 0)) {
+                        for (const ticketType of item.ticketTypes) {
+                            ticketHolds.push({
+                                eventId: eventId || "",
+                                eventBatchId: item.batchId || "",
+                                eventDateId: ticketType.days?.[0] || null,
+                                ticketTypeId: ticketType.ticketTypeId || null,
+                                quantity: item.quantity
+                            })
+                        }
+                        hasMultipleDaysWithTicketTypes = true
+                    }
+
+                    if (!hasTicketTypes && !hasMultipleDaysWithTicketTypes) {
+                        ticketHolds.push({
+                            eventId: eventId || "",
+                            eventBatchId: item.batchId || "",
+                            eventDateId: null,
+                            ticketTypeId: null,
+                            quantity: item.quantity
+                        })
+                    }
+                }
+
+                const response = await createTicketHold(ticketHolds)
+
+                if (response?.success && response?.data) {
+                    setTicketHoldData(response.data)
+                }
+            }
+
+            createTicketHoldFunc()
+        }
+    }, [items, currentEvent, eventId])
+
     const eventsWithForms = useMemo(() => {
         return eventsData.filter(event => {
             if (!event?.form) return false
-            
+
             let parsedForm = event.form
-            
+
             if (typeof event.form === 'string') {
                 try {
                     parsedForm = JSON.parse(event.form)
@@ -272,23 +379,23 @@ const CheckoutInfo = () => {
                     return false
                 }
             }
-            
+
             if (typeof parsedForm !== 'object' || parsedForm === null) return false
-            
+
             return Object.keys(parsedForm).length > 0
         })
     }, [eventsData])
-    
+
     const hasForms = eventsWithForms.length > 0
-    
+
     const allFormFields = useMemo(() => {
         if (!hasForms) return []
-        
+
         const currentEvent = eventsWithForms[0]
         if (!currentEvent?.form) return []
-        
+
         let parsedForm = currentEvent.form
-        
+
         if (typeof currentEvent.form === 'string') {
             try {
                 parsedForm = JSON.parse(currentEvent.form)
@@ -296,13 +403,13 @@ const CheckoutInfo = () => {
                 return []
             }
         }
-        
+
         if (typeof parsedForm !== 'object' || parsedForm === null) return []
-        
+
         const allFields: Array<{ eventId: string, eventName: string, type: string, field: any, order: number }> = []
-        
+
         const formTypes = ['text', 'email', 'textArea', 'select', 'multiSelect']
-        
+
         formTypes.forEach(type => {
             if (Array.isArray(parsedForm[type])) {
                 parsedForm[type].forEach((field: any) => {
@@ -316,23 +423,23 @@ const CheckoutInfo = () => {
                 })
             }
         })
-        
+
         allFields.sort((a, b) => a.order - b.order)
-        
+
         return allFields
     }, [eventsWithForms, hasForms])
-    
+
     const formFieldsByEvent = useMemo(() => {
         const grouped: Record<string, Array<{ eventId: string, eventName: string, type: string, field: any, order: number }>> = {}
-        
+
         if (allFormFields.length > 0) {
             const eventId = allFormFields[0].eventId
             grouped[eventId] = allFormFields
         }
-        
+
         return grouped
     }, [allFormFields])
-    
+
     const ticketQuantity = useMemo(() => {
         if (items.length === 0) return 0
         const item = items[0]
@@ -341,11 +448,11 @@ const CheckoutInfo = () => {
         }
         return item.quantity
     }, [items])
-    
+
     const ticketTypeNames = useMemo(() => {
         const names: string[] = []
         if (items.length === 0) return names
-        
+
         const item = items[0]
         if (item.ticketTypes && item.ticketTypes.length > 0) {
             item.ticketTypes.forEach(tt => {
@@ -358,22 +465,22 @@ const CheckoutInfo = () => {
                 names.push("Ingresso")
             }
         }
-        
+
         return names
     }, [items])
-    
+
     const ticketTypeDescriptions = useMemo(() => {
         const descriptions: string[] = []
         if (items.length === 0) return descriptions
-        
+
         const item = items[0]
         const event = eventsData.find(e => e?.id === item.eventId)
-        
+
         if (item.ticketTypes && item.ticketTypes.length > 0) {
             item.ticketTypes.forEach(tt => {
                 const ticketType = event?.TicketTypes?.find(t => t.id === tt.ticketTypeId)
                 const description = ticketType?.description || ""
-                
+
                 for (let i = 0; i < tt.quantity; i++) {
                     descriptions.push(description)
                 }
@@ -383,27 +490,27 @@ const CheckoutInfo = () => {
                 descriptions.push("")
             }
         }
-        
+
         return descriptions
     }, [items, eventsData])
-    
+
     const maxStep = hasForms ? 4 : 3
-    
+
     const currentEventCoupon = useMemo(() => {
         if (!eventId || !appliedCoupons[eventId]) return null
         return appliedCoupons[eventId]
     }, [appliedCoupons, eventId])
-    
+
     const subtotalBeforeDiscount = useMemo(() => {
         return items.reduce((sum, item) => {
             const event = eventsData.find(e => e?.id === item.eventId)
             return sum + CheckoutUtils.calculateItemTotal(item, event || null)
         }, 0)
     }, [items, eventsData])
-    
+
     const totalDiscount = useMemo(() => {
         if (!eventId || !currentEventCoupon) return 0
-        
+
         const coupon = currentEventCoupon
         if (coupon.discountType === "PERCENTAGE") {
             return Math.round(subtotalBeforeDiscount * (coupon.discountValue / 100))
@@ -411,18 +518,18 @@ const CheckoutInfo = () => {
             return Math.min(coupon.discountValue, subtotalBeforeDiscount)
         }
     }, [eventId, currentEventCoupon, subtotalBeforeDiscount])
-    
+
     const subtotal = useMemo(() => {
         return subtotalBeforeDiscount - totalDiscount
     }, [subtotalBeforeDiscount, totalDiscount])
-    
+
     const total = useMemo(() => {
         if (paymentMethod === "credit") {
             return calculateTotalWithInstallmentFee(subtotal, installments)
         }
         return subtotal
     }, [subtotal, paymentMethod, installments])
-    
+
     useEffect(() => {
         if (paymentMethod === "pix") {
             setInstallments(1)
@@ -439,7 +546,7 @@ const CheckoutInfo = () => {
             setInstallments(finalAllowed)
         }
     }, [(currentEvent as any)?.maxInstallments, subtotal, installments])
-    
+
 
     const handleCouponChange = useCallback((eventId: string, value: string) => {
         setCouponCodes((prev) => ({
@@ -489,7 +596,7 @@ const CheckoutInfo = () => {
             }))
         }
     }, [checkCoupon, couponCodes])
-    
+
     const handleNext = () => {
         if (currentStep === 1) {
             if (!isAuthenticated) {
@@ -544,41 +651,41 @@ const CheckoutInfo = () => {
 
         if (currentStep === 3 && hasForms) {
             const eventsWithFormForEachTicket = eventsWithForms.filter(event => event && event.isFormForEachTicket === true)
-            
+
             for (const event of eventsWithFormForEachTicket) {
                 if (!event) continue
                 const eventFields = formFieldsByEvent[event.id] || []
-                
+
                 for (let ticketIndex = 0; ticketIndex < ticketQuantity; ticketIndex++) {
                     const requiredFields = eventFields.filter(f => f.field.required)
                     const missingFields = requiredFields.filter(f => {
                         const key = `${f.eventId}_${ticketIndex}-${f.type}-${f.field.order}`
                         const answer = formAnswers[key]
-                        
+
                         if (!answer) return true
                         if (Array.isArray(answer) && answer.length === 0) return true
                         if (typeof answer === 'string') {
                             const trimmed = answer.trim()
                             if (trimmed === '') return true
-                            
+
                             if (f.type === 'text' && f.field.mask) {
                                 const minLength = getInputMaskMin(f.field.mask)
                                 if (trimmed.length < minLength) return true
                             }
                         }
-                        
+
                         return false
                     })
-                    
+
                     if (missingFields.length > 0) {
                         Toast.info(`Por favor, preencha todos os campos obrigatórios do formulário para o ingresso ${ticketIndex + 1} do evento "${event.name}".`)
                         return
                     }
                 }
             }
-            
+
             const eventsWithFormOnce = eventsWithForms.filter(event => event && event.isFormForEachTicket !== true)
-            
+
             for (const event of eventsWithFormOnce) {
                 if (!event) continue
                 const eventFields = formFieldsByEvent[event.id] || []
@@ -586,40 +693,40 @@ const CheckoutInfo = () => {
                 const missingFields = requiredFields.filter(f => {
                     const key = `${f.eventId}-${f.type}-${f.field.order}`
                     const answer = formAnswers[key]
-                    
+
                     if (!answer) return true
                     if (Array.isArray(answer) && answer.length === 0) return true
                     if (typeof answer === 'string') {
                         const trimmed = answer.trim()
                         if (trimmed === '') return true
-                        
+
                         if (f.type === 'text' && f.field.mask) {
                             const minLength = getInputMaskMin(f.field.mask)
                             if (trimmed.length < minLength) return true
                         }
                     }
-                    
+
                     return false
                 })
-                
+
                 if (missingFields.length > 0) {
                     Toast.info(`Por favor, preencha todos os campos obrigatórios do formulário do evento "${event.name}".`)
                     return
                 }
             }
         }
-        
+
         if (currentStep < maxStep) {
             setCurrentStep(currentStep + 1)
         }
     }
-    
+
     const handlePrevious = () => {
         if (currentStep > 1) {
             setCurrentStep(currentStep - 1)
         }
     }
-    
+
     const handleFinalize = async () => {
         const data: TTicketBuy = {
             eventIds: uniqueEventIds,
@@ -638,32 +745,32 @@ const CheckoutInfo = () => {
 
         if (hasMultipleDays) {
             data["eventDatesIds"] = items.reduce((acc, item) => {
-              let eventGroup = acc.find((e) => e.eventId === item.eventId)
-          
-              if (!eventGroup) {
-                eventGroup = { eventId: item.eventId, eventDates: [] }
-                acc.push(eventGroup)
-              }
-          
-              item.ticketTypes?.forEach((ticketType) => {
-                const eventDateId = ticketType.days?.[0] || ""
-                const amount = ticketType.quantity || 0
-          
-                const existingDate = eventGroup.eventDates.find(
-                  (d) => d.eventDateId === eventDateId
-                )
-          
-                if (existingDate) {
-                  existingDate.amount += amount
-                } else {
-                  eventGroup.eventDates.push({ eventDateId, amount })
+                let eventGroup = acc.find((e) => e.eventId === item.eventId)
+
+                if (!eventGroup) {
+                    eventGroup = { eventId: item.eventId, eventDates: [] }
+                    acc.push(eventGroup)
                 }
-              })
-          
-              return acc
+
+                item.ticketTypes?.forEach((ticketType) => {
+                    const eventDateId = ticketType.days?.[0] || ""
+                    const amount = ticketType.quantity || 0
+
+                    const existingDate = eventGroup.eventDates.find(
+                        (d) => d.eventDateId === eventDateId
+                    )
+
+                    if (existingDate) {
+                        existingDate.amount += amount
+                    } else {
+                        eventGroup.eventDates.push({ eventDateId, amount })
+                    }
+                })
+
+                return acc
             }, [] as { eventId: string; eventDates: { eventDateId: string; amount: number }[] }[])
         }
-        
+
         if (hasNotMultipleDays) {
             data["eventTicketAmount"] = items.map((item) => ({
                 eventId: item.eventId,
@@ -686,12 +793,12 @@ const CheckoutInfo = () => {
         const ticketTypeMap: Record<string, string> = {}
 
         items.forEach(item => {
-        let counter = 0
+            let counter = 0
 
-        item.ticketTypes?.forEach(tt => {
-            for (let i = 0; i < tt.quantity; i++) {
-                ticketTypeMap[`${item.eventId}_${counter}`] = tt.ticketTypeId
-                counter++
+            item.ticketTypes?.forEach(tt => {
+                for (let i = 0; i < tt.quantity; i++) {
+                    ticketTypeMap[`${item.eventId}_${counter}`] = tt.ticketTypeId
+                    counter++
                 }
             })
         })
@@ -699,82 +806,82 @@ const CheckoutInfo = () => {
         data["eventForms"] = Object.entries(formAnswers).reduce((acc, [key, value]) => {
             const [eventId, rest] = key.split("_")
             const [ticketNumber, type, order] = (rest || "").split("-")
-          
+
             // pega (ou cria) o form do eventId
             let form = acc.find((f) => f.eventId === eventId)
             if (!form) {
-              form = { eventId, answers: [] as any[] }
-              acc.push(form)
+                form = { eventId, answers: [] as any[] }
+                acc.push(form)
             }
-          
+
             // pega (ou cria) o answer para aquele ticketNumber
             let answer = form.answers.find((a) => a.ticketNumber === ticketNumber)
             if (!answer) {
-            
-              const item = items.find((it) => it.eventId === eventId)
-            
-              // aplica o único ticketTypeId do evento
-              const ticketTypeId = ticketTypeMap[`${eventId}_${ticketNumber}`] ?? null
-            
-              answer = {
-                ticketNumber,
-                ticketTypeId,
-                text: null,
-                email: null,
-                textArea: null,
-                select: null,
-                multiSelect: null
-              }
-            
-              form.answers.push(answer)
+
+                const item = items.find((it) => it.eventId === eventId)
+
+                // aplica o único ticketTypeId do evento
+                const ticketTypeId = ticketTypeMap[`${eventId}_${ticketNumber}`] ?? null
+
+                answer = {
+                    ticketNumber,
+                    ticketTypeId,
+                    text: null,
+                    email: null,
+                    textArea: null,
+                    select: null,
+                    multiSelect: null
+                }
+
+                form.answers.push(answer)
             }
-            
-          
+
+
             // prepara o par label/answer
-            const entry = { 
+            const entry = {
                 label: value?.label || null,   // <-- aqui vem o label real da pergunta
                 answer: value?.answer ?? null  // <-- aqui vem a resposta
-              }
-              
-          
+            }
+
+
             // insere no campo correto (cria array se necessário)
             switch (type) {
-              case "text":
-                answer.text = answer.text || []
-                answer.text.push(entry)
-                break
-              case "email":
-                answer.email = answer.email || []
-                answer.email.push(entry)
-                break
-              case "textArea":
-                answer.textArea = answer.textArea || []
-                answer.textArea.push(entry)
-                break
-              case "select":
-                answer.select = answer.select || []
-                answer.select.push(entry)
-                break
-              case "multiSelect":
-                answer.multiSelect = answer.multiSelect || []
-                answer.multiSelect.push(entry)
-                break
-              default:
-                // se tiver tipos extras, trate aqui ou ignore
-                break
+                case "text":
+                    answer.text = answer.text || []
+                    answer.text.push(entry)
+                    break
+                case "email":
+                    answer.email = answer.email || []
+                    answer.email.push(entry)
+                    break
+                case "textArea":
+                    answer.textArea = answer.textArea || []
+                    answer.textArea.push(entry)
+                    break
+                case "select":
+                    answer.select = answer.select || []
+                    answer.select.push(entry)
+                    break
+                case "multiSelect":
+                    answer.multiSelect = answer.multiSelect || []
+                    answer.multiSelect.push(entry)
+                    break
+                default:
+                    // se tiver tipos extras, trate aqui ou ignore
+                    break
             }
-          
+
             return acc
-          }, [] as {
+        }, [] as {
             eventId: string
             answers: {
-              ticketNumber: string
-              ticketTypeId: string | null
-              text: { label: string; answer: string | null }[] | null
-              email: { label: string; answer: string | null }[] | null
-              textArea: { label: string; answer: string | null }[] | null
-              select: { label: string; answer: string | null }[] | null
-              multiSelect: { label: string; answer: string | null }[] | null
+                ticketNumber: string
+                ticketTypeId: string | null
+                text: { label: string; answer: string | null }[] | null
+                email: { label: string; answer: string | null }[] | null
+                textArea: { label: string; answer: string | null }[] | null
+                select: { label: string; answer: string | null }[] | null
+                multiSelect: { label: string; answer: string | null }[] | null
             }[]
         }[])
 
@@ -782,7 +889,7 @@ const CheckoutInfo = () => {
             eventId: eventId,
             couponCode: couponCode
         })) || null
-          
+
         if (data.paymentMethod === "CREDIT_CARD") {
             if (!cardData.number || !cardData.name || !cardData.expiry || !cardData.cvv) {
                 Toast.error("Por favor, preencha todos os campos do cartão de crédito.")
@@ -909,7 +1016,7 @@ const CheckoutInfo = () => {
             Toast.error("Erro ao reenviar código. Tente novamente.")
         }
     }
-    
+
     if (items.length === 0) {
         return (
             <Background variant="light" className="min-h-screen">
@@ -925,7 +1032,7 @@ const CheckoutInfo = () => {
             </Background>
         )
     }
-    
+
     return (
         <Background variant="light" className="min-h-screen">
             <div className="container py-8 mt-[100px]
@@ -939,8 +1046,11 @@ const CheckoutInfo = () => {
                         <p className="text-psi-dark/60">
                             Finalize sua compra de ingressos
                         </p>
+                        <div className="mt-4">
+                            <CheckoutTimer expiresAt={new Date(new Date().getTime() + 1000 * 60 * 60 * 24).toISOString()} onExpire={() => { }} />
+                        </div>
                     </div>
-                    
+
                     <div className="mb-8">
                         <div className="flex items-center justify-between">
                             {[
@@ -952,17 +1062,16 @@ const CheckoutInfo = () => {
                                 const isActive = currentStep === step.number
                                 const isCompleted = currentStep > step.number
                                 const StepIcon = step.icon
-                                
+
                                 return (
                                     <div key={step.number} className="flex items-center flex-1">
                                         <div className="flex flex-col items-center flex-1">
-                                            <div className={`flex items-center justify-center size-10 rounded-full border-2 transition-all ${
-                                                isActive
+                                            <div className={`flex items-center justify-center size-10 rounded-full border-2 transition-all ${isActive
                                                     ? "border-psi-primary bg-psi-primary text-white"
                                                     : isCompleted
-                                                    ? "border-psi-primary bg-psi-primary text-white"
-                                                    : "border-psi-dark/20 bg-white text-psi-dark/40"
-                                            }`}>
+                                                        ? "border-psi-primary bg-psi-primary text-white"
+                                                        : "border-psi-dark/20 bg-white text-psi-dark/40"
+                                                }`}>
                                                 {isCompleted ? (
                                                     <Check className="size-5" />
                                                 ) : (
@@ -970,29 +1079,27 @@ const CheckoutInfo = () => {
                                                 )}
                                             </div>
                                             <span className={`mt-2 text-xs font-medium text-center
-                                            sm:text-sm ${
-                                                isActive
+                                            sm:text-sm ${isActive
                                                     ? "text-psi-primary"
                                                     : isCompleted
-                                                    ? "text-psi-primary"
-                                                    : "text-psi-dark/40"
-                                            }`}>
+                                                        ? "text-psi-primary"
+                                                        : "text-psi-dark/40"
+                                                }`}>
                                                 {step.label}
                                             </span>
                                         </div>
                                         {index < (hasForms ? 3 : 2) && (
-                                            <div className={`flex-1 h-0.5 mx-2 transition-all ${
-                                                isCompleted
+                                            <div className={`flex-1 h-0.5 mx-2 transition-all ${isCompleted
                                                     ? "bg-psi-primary"
                                                     : "bg-psi-dark/20"
-                                            }`} />
+                                                }`} />
                                         )}
                                     </div>
                                 )
                             })}
                         </div>
                     </div>
-                    
+
                     <div className="grid gap-8
                     lg:grid-cols-[1fr_400px]">
                         <div className="space-y-6">
@@ -1000,7 +1107,7 @@ const CheckoutInfo = () => {
                                 <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
                                 sm:p-8 shadow-sm">
                                     <h2 className="text-xl font-semibold text-psi-dark mb-6">Dados do Comprador</h2>
-                                    
+
                                     {isAuthenticated ? (
                                         <div className="space-y-4">
                                             <div className="grid gap-4
@@ -1016,7 +1123,7 @@ const CheckoutInfo = () => {
                                                         required
                                                     />
                                                 </div>
-                                                
+
                                                 <div>
                                                     <label className="block text-sm font-medium text-psi-dark mb-2">
                                                         Sobrenome *
@@ -1029,7 +1136,7 @@ const CheckoutInfo = () => {
                                                     />
                                                 </div>
                                             </div>
-                                            
+
                                             <div>
                                                 <label className="block text-sm font-medium text-psi-dark mb-2">
                                                     E-mail *
@@ -1042,7 +1149,7 @@ const CheckoutInfo = () => {
                                                     required
                                                 />
                                             </div>
-                                            
+
                                             <div>
                                                 <label className="block text-sm font-medium text-psi-dark mb-2">
                                                     Telefone *
@@ -1055,7 +1162,7 @@ const CheckoutInfo = () => {
                                                     icon={Phone}
                                                 />
                                             </div>
-                                            
+
                                             <div>
                                                 <label className="block text-sm font-medium text-psi-dark mb-2">
                                                     CPF *
@@ -1068,10 +1175,10 @@ const CheckoutInfo = () => {
                                                     icon={FileText}
                                                 />
                                             </div>
-                                            
+
                                             <div className="pt-4 border-t border-psi-dark/10">
                                                 <h3 className="text-lg font-semibold text-psi-dark mb-4">Endereço</h3>
-                                                
+
                                                 <div>
                                                     <label className="block text-sm font-medium text-psi-dark mb-2">
                                                         CEP *
@@ -1084,7 +1191,7 @@ const CheckoutInfo = () => {
                                                         icon={MapPin}
                                                     />
                                                 </div>
-                                                
+
                                                 <div className="grid gap-4
                                                 sm:grid-cols-2 mt-4">
                                                     <div>
@@ -1098,7 +1205,7 @@ const CheckoutInfo = () => {
                                                             required
                                                         />
                                                     </div>
-                                                    
+
                                                     <div>
                                                         <label className="block text-sm font-medium text-psi-dark mb-2">
                                                             Número (opcional)
@@ -1109,7 +1216,7 @@ const CheckoutInfo = () => {
                                                         />
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div className="mt-4">
                                                     <label className="block text-sm font-medium text-psi-dark mb-2">
                                                         Complemento (opcional)
@@ -1119,7 +1226,7 @@ const CheckoutInfo = () => {
                                                         onChange={(e) => setBuyerData({ ...buyerData, complement: e.target.value })}
                                                     />
                                                 </div>
-                                                
+
                                                 <div className="mt-4">
                                                     <label className="block text-sm font-medium text-psi-dark mb-2">
                                                         Bairro *
@@ -1130,7 +1237,7 @@ const CheckoutInfo = () => {
                                                         required
                                                     />
                                                 </div>
-                                                
+
                                                 <div className="grid gap-4
                                                 sm:grid-cols-3 mt-4">
                                                     <div>
@@ -1140,8 +1247,8 @@ const CheckoutInfo = () => {
                                                         <Select
                                                             value={buyerData.state || undefined}
                                                             onValueChange={(value) => {
-                                                                setBuyerData({ 
-                                                                    ...buyerData, 
+                                                                setBuyerData({
+                                                                    ...buyerData,
                                                                     state: value,
                                                                     city: ""
                                                                 })
@@ -1159,7 +1266,7 @@ const CheckoutInfo = () => {
                                                             </SelectContent>
                                                         </Select>
                                                     </div>
-                                                    
+
                                                     <div>
                                                         <label className="block text-sm font-medium text-psi-dark mb-2">
                                                             Cidade *
@@ -1184,7 +1291,7 @@ const CheckoutInfo = () => {
                                                             </SelectContent>
                                                         </Select>
                                                     </div>
-                                                    
+
                                                     <div>
                                                         <label className="block text-sm font-medium text-psi-dark mb-2">
                                                             País *
@@ -1226,7 +1333,7 @@ const CheckoutInfo = () => {
                                                     Digite seu e-mail para fazer login ou criar uma conta rapidamente
                                                 </p>
                                             </div>
-                                            
+
                                             <Button
                                                 type="button"
                                                 variant="primary"
@@ -1248,17 +1355,17 @@ const CheckoutInfo = () => {
                                     )}
                                 </div>
                             )}
-                            
+
                             {currentStep === 2 && (
                                 <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6 grid grid-cols-1
                                 sm:p-8 shadow-sm">
                                     <h2 className="text-xl font-semibold text-psi-dark mb-6">Resumo da Compra</h2>
-                                    
+
                                     <div className="space-y-4">
                                         {items.map((item) => {
                                             const event = eventsData.find(e => e?.id === item.eventId)
                                             if (!event) return null
-                                            
+
                                             return (
                                                 <div key={`${item.eventId}-${item.batchId}`} className="border border-psi-dark/10 rounded-xl p-4">
                                                     <div className="flex flex-col lg:flex-row gap-4">
@@ -1269,7 +1376,7 @@ const CheckoutInfo = () => {
                                                                 className="object-cover w-full h-full"
                                                             />
                                                         </div>
-                                                        
+
                                                         <div className="flex-1 space-y-2">
                                                             <div className="flex items-center justify-between">
                                                                 <h3 className="font-semibold text-psi-dark">{event.name}</h3>
@@ -1282,11 +1389,11 @@ const CheckoutInfo = () => {
                                                                     <Trash2 className="size-4" />
                                                                 </button>
                                                             </div>
-                                                            
+
                                                             {item.batchName && (
                                                                 <p className="text-sm text-psi-dark/60">Lote: {item.batchName}</p>
                                                             )}
-                                                            
+
                                                             {event.EventDates && event.EventDates.length > 0 && (
                                                                 <div className="flex items-center gap-2 text-sm text-psi-dark/70">
                                                                     <Calendar className="size-4" aria-label="Datas e horários do evento" />
@@ -1304,7 +1411,7 @@ const CheckoutInfo = () => {
                                                                     </span>
                                                                 </div>
                                                             )}
-                                                            
+
                                                             {item.ticketTypes && item.ticketTypes.length > 0 ? (
                                                                 <div className="space-y-3 pt-2">
                                                                     <p className="text-sm font-medium text-psi-dark/70">Tipos de ingressos:</p>
@@ -1312,85 +1419,55 @@ const CheckoutInfo = () => {
                                                                         const isMultipleDaysWithTicketTypes = tt.days && tt.days.length > 0 && tt.ticketTypeId && tt.ticketTypeId !== ""
                                                                         const uniqueKey = tt.days && tt.days.length > 0 ? tt.days[0] : `${tt.ticketTypeId}-${ttIndex}`
                                                                         return (
-                                                                        <div key={uniqueKey} className="flex items-center justify-between p-2 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
-                                                                            <div className="flex-1">
-                                                                                <p className="text-sm font-medium text-psi-dark">{tt.ticketTypeName}</p>
-                                                                                {tt.days && tt.days.length > 0 && (
-                                                                                    <p className="text-xs text-psi-dark/60 mt-1">
-                                                                                        {isMultipleDaysWithTicketTypes && tt.days && tt.days.length > 0
-                                                                                            ? event && 'EventDates' in event && (event as any).EventDates?.find((ed: any) => ed.id === tt.days?.[0]) 
-                                                                                                ? formatEventDate((event as any).EventDates.find((ed: any) => ed.id === tt.days?.[0])?.date, "DD [de] MMMM [de] YYYY")
-                                                                                                : "Dia selecionado"
-                                                                                            : tt.days && tt.days.length === 1 ? "1 dia selecionado" : tt.days ? `${tt.days.length} dias selecionados` : ""}
-                                                                                    </p>
-                                                                                )}
-                                                                            </div>
-                                                                            <div className="flex items-center gap-3">
-                                                                                <QuantitySelector
-                                                                                    value={tt.quantity}
-                                                                                    onChange={(qty) => {
-                                                                                        const isDayBasedWithoutTicketTypes = CheckoutUtils.isDayBasedWithoutTicketTypes([tt])
-                                                                                        const isMultipleDaysWithTicketTypes = CheckoutUtils.isMultipleDaysWithTicketTypes([tt])
-                                                                                        const identifier = CheckoutUtils.getTicketTypeIdentifier(tt)
-                                                                                        
-                                                                                        if (qty === 0 && item.ticketTypes && item.ticketTypes.length > 1) {
-                                                                                            const updatedTicketTypes = CheckoutUtils.filterTicketTypesByIdentifier(
-                                                                                                item.ticketTypes,
-                                                                                                identifier,
-                                                                                                isDayBasedWithoutTicketTypes,
-                                                                                                isMultipleDaysWithTicketTypes
-                                                                                            )
-                                                                                            if (updatedTicketTypes.length === 0) {
-                                                                                                removeItem(item.eventId, item.batchId)
-                                                                                                return
-                                                                                            }
-                                                                                            const newTotalQuantity = updatedTicketTypes.reduce((sum, t) => sum + t.quantity, 0)
-                                                                                            
-                                                                                            const batch = event.EventBatches?.find(b => b.id === item.batchId)
-                                                                                            const hasEventBatchTicketTypes = batch?.EventBatchTicketTypes && batch.EventBatchTicketTypes.length > 0
-                                                                                            
-                                                                                            const newTotalPrice = CheckoutUtils.calculateBasePriceForTicketTypes(
-                                                                                                updatedTicketTypes,
-                                                                                                event,
-                                                                                                batch || null,
-                                                                                                hasEventBatchTicketTypes
-                                                                                            )
-                                                                                            
-                                                                                            addItem({
-                                                                                                eventId: item.eventId,
-                                                                                                eventName: item.eventName,
-                                                                                                batchId: item.batchId,
-                                                                                                batchName: item.batchName,
-                                                                                                price: newTotalPrice || 0,
-                                                                                                ticketTypes: updatedTicketTypes,
-                                                                                                isClientTaxed: item.isClientTaxed,
-                                                                                                isFree: item.isFree
-                                                                                            }, newTotalQuantity)
-                                                                                            return
-                                                                                        }
-                                                                                        
-                                                                                        if (tt.days && tt.days.length > 0 && event) {
-                                                                                            const batch = event.EventBatches?.find(b => b.id === item.batchId)
-                                                                                            const hasEventBatchTicketTypes = batch?.EventBatchTicketTypes && batch.EventBatchTicketTypes.length > 0
-                                                                                            
-                                                                                            const updatedTicketTypes = CheckoutUtils.updateTicketTypeQuantityByIdentifier(
-                                                                                                item.ticketTypes || [],
-                                                                                                identifier,
-                                                                                                qty,
-                                                                                                isDayBasedWithoutTicketTypes,
-                                                                                                isMultipleDaysWithTicketTypes
-                                                                                            )
-                                                                                            
-                                                                                            const newTotalPrice = CheckoutUtils.calculateBasePriceForTicketTypes(
-                                                                                                updatedTicketTypes || [],
-                                                                                                event,
-                                                                                                batch || null,
-                                                                                                hasEventBatchTicketTypes
-                                                                                            )
-                                                                                            
-                                                                                            const newTotalQuantity = updatedTicketTypes?.reduce((sum, t) => sum + t.quantity, 0) || 0
-                                                                                            
-                                                                                            if (updatedTicketTypes && updatedTicketTypes.length > 0 && newTotalQuantity > 0) {
+                                                                            <div key={uniqueKey} className="flex items-center justify-between p-2 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
+                                                                                <div className="flex-1">
+                                                                                    <p className="text-sm font-medium text-psi-dark">{tt.ticketTypeName}</p>
+                                                                                    {tt.days && tt.days.length > 0 && (
+                                                                                        <p className="text-xs text-psi-dark/60 mt-1">
+                                                                                            {isMultipleDaysWithTicketTypes && tt.days && tt.days.length > 0
+                                                                                                ? event && 'EventDates' in event && (event as any).EventDates?.find((ed: any) => ed.id === tt.days?.[0])
+                                                                                                    ? formatEventDate((event as any).EventDates.find((ed: any) => ed.id === tt.days?.[0])?.date, "DD [de] MMMM [de] YYYY")
+                                                                                                    : "Dia selecionado"
+                                                                                                : tt.days && tt.days.length === 1 ? "1 dia selecionado" : tt.days ? `${tt.days.length} dias selecionados` : ""}
+                                                                                        </p>
+                                                                                    )}
+                                                                                </div>
+                                                                                <div className="flex items-center gap-3">
+                                                                                    <QuantitySelector
+                                                                                        value={tt.quantity}
+                                                                                        onChange={(qty) => {
+                                                                                            const isDayBasedWithoutTicketTypes = CheckoutUtils.isDayBasedWithoutTicketTypes([tt])
+                                                                                            const isMultipleDaysWithTicketTypes = CheckoutUtils.isMultipleDaysWithTicketTypes([tt])
+                                                                                            const identifier = CheckoutUtils.getTicketTypeIdentifier(tt)
+                                                                                            const underlineIdentifier = CheckoutUtils.getTicketTypeIdentifier(tt, true)
+
+
+                                                                                            console.log(isMultipleDaysWithTicketTypes)
+
+                                                                                            if (qty === 0 && item.ticketTypes && item.ticketTypes.length > 1) {
+                                                                                                console.log("A")
+                                                                                                const updatedTicketTypes = CheckoutUtils.filterTicketTypesByIdentifier(
+                                                                                                    item.ticketTypes,
+                                                                                                    identifier,
+                                                                                                    isDayBasedWithoutTicketTypes,
+                                                                                                    isMultipleDaysWithTicketTypes
+                                                                                                )
+                                                                                                if (updatedTicketTypes.length === 0) {
+                                                                                                    removeItem(item.eventId, item.batchId)
+                                                                                                    return
+                                                                                                }
+                                                                                                const newTotalQuantity = updatedTicketTypes.reduce((sum, t) => sum + t.quantity, 0)
+
+                                                                                                const batch = event.EventBatches?.find(b => b.id === item.batchId)
+                                                                                                const hasEventBatchTicketTypes = batch?.EventBatchTicketTypes && batch.EventBatchTicketTypes.length > 0
+
+                                                                                                const newTotalPrice = CheckoutUtils.calculateBasePriceForTicketTypes(
+                                                                                                    updatedTicketTypes,
+                                                                                                    event,
+                                                                                                    batch || null,
+                                                                                                    hasEventBatchTicketTypes
+                                                                                                )
+
                                                                                                 addItem({
                                                                                                     eventId: item.eventId,
                                                                                                     eventName: item.eventName,
@@ -1401,31 +1478,89 @@ const CheckoutInfo = () => {
                                                                                                     isClientTaxed: item.isClientTaxed,
                                                                                                     isFree: item.isFree
                                                                                                 }, newTotalQuantity)
+                                                                                                return
                                                                                             }
-                                                                                            return
-                                                                                        }
-                                                                                        
-                                                                                        updateTicketTypeQuantity(item.eventId, item.batchId, tt.ticketTypeId, qty)
-                                                                                    }}
-                                                                                    min={1}
-                                                                                    max={event?.buyTicketsLimit || 10}
-                                                                                />
+
+                                                                                            if (tt.days && tt.days.length > 0 && event) {
+                                                                                                const batch = event.EventBatches?.find(b => b.id === item.batchId)
+                                                                                                const hasEventBatchTicketTypes = batch?.EventBatchTicketTypes && batch.EventBatchTicketTypes.length > 0
+
+                                                                                                console.log(underlineIdentifier)
+
+                                                                                                const updatedTicketTypes = CheckoutUtils.updateTicketTypeQuantityByIdentifier(
+                                                                                                    item.ticketTypes || [],
+                                                                                                    identifier,
+                                                                                                    qty,
+                                                                                                    isDayBasedWithoutTicketTypes,
+                                                                                                    isMultipleDaysWithTicketTypes
+                                                                                                )
+
+                                                                                                const newTotalPrice = CheckoutUtils.calculateBasePriceForTicketTypes(
+                                                                                                    updatedTicketTypes || [],
+                                                                                                    event,
+                                                                                                    batch || null,
+                                                                                                    hasEventBatchTicketTypes
+                                                                                                )
+
+                                                                                                const newTotalQuantity = updatedTicketTypes?.reduce((sum, t) => sum + t.quantity, 0) || 0
+
+                                                                                                console.log(updatedTicketTypes)
+
+                                                                                                if (updatedTicketTypes && updatedTicketTypes.length > 0 && newTotalQuantity > 0) {
+                                                                                                    handleUpdateQuantity({
+                                                                                                        eventId: item.eventId,
+                                                                                                        batchId: item.batchId || "",
+                                                                                                        qty: qty,
+                                                                                                        ticketHoldId: ticketHoldData?.find((th) => th.eventDateId === (isMultipleDaysWithTicketTypes ? underlineIdentifier?.split("_")[1] : identifier))?.id || ""
+                                                                                                    }, false)
+
+                                                                                                    addItem({
+                                                                                                        eventId: item.eventId,
+                                                                                                        eventName: item.eventName,
+                                                                                                        batchId: item.batchId,
+                                                                                                        batchName: item.batchName,
+                                                                                                        price: newTotalPrice || 0,
+                                                                                                        ticketTypes: updatedTicketTypes,
+                                                                                                        isClientTaxed: item.isClientTaxed,
+                                                                                                        isFree: item.isFree
+                                                                                                    }, newTotalQuantity)
+                                                                                                }
+
+                                                                                                return
+                                                                                            }
+
+                                                                                            updateTicketTypeQuantity(item.eventId, item.batchId, tt.ticketTypeId, qty)
+                                                                                            handleUpdateQuantity({
+                                                                                                eventId: item.eventId,
+                                                                                                batchId: item.batchId || "",
+                                                                                                qty: qty,
+                                                                                                ticketHoldId: ticketHoldData?.find((th) => th.ticketTypeId === tt.ticketTypeId)?.id || ticketHoldData?.find((th) => th.eventDateId === item.ticketTypes?.[0]?.days?.[0] || null)?.id || ""
+                                                                                            }, false)
+                                                                                        }}
+                                                                                        min={1}
+                                                                                        max={event?.buyTicketsLimit || 10}
+                                                                                    />
+                                                                                </div>
                                                                             </div>
-                                                                        </div>
                                                                         )
                                                                     })}
                                                                 </div>
                                                             ) : (
-                                                            <div className="flex items-center justify-between pt-2">
-                                                                <div className="flex items-center gap-3">
-                                                                    <span className="text-sm text-psi-dark/60">Quantidade:</span>
-                                                                    <QuantitySelector
-                                                                        value={item.quantity}
-                                                                        onChange={(qty) => updateQuantity(item.eventId, item.batchId, qty)}
-                                                                        min={1}
-                                                                        max={event?.buyTicketsLimit || 10}
-                                                                    />
-                                                                </div>
+                                                                <div className="flex items-center justify-between pt-2">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <span className="text-sm text-psi-dark/60">Quantidade:</span>
+                                                                        <QuantitySelector
+                                                                            value={item.quantity}
+                                                                            onChange={(qty) => handleUpdateQuantity({
+                                                                                eventId: item.eventId,
+                                                                                batchId: item.batchId || "",
+                                                                                qty: qty,
+                                                                                ticketHoldId: handleFindTicketHoldId(item.eventId, item.batchId || "", item.ticketTypes?.[0]?.days?.[0] || null, item.ticketTypes?.[0]?.ticketTypeId || null)
+                                                                            })}
+                                                                            min={1}
+                                                                            max={event?.buyTicketsLimit || 10}
+                                                                        />
+                                                                    </div>
                                                                 </div>
                                                             )}
 
@@ -1443,7 +1578,7 @@ const CheckoutInfo = () => {
                                                                                         Cupom {couponCodes[event.id]} aplicado
                                                                                     </p>
                                                                                     <p className="text-xs text-emerald-700">
-                                                                                        Desconto: {appliedCoupons[event.id].discountType === "PERCENTAGE" 
+                                                                                        Desconto: {appliedCoupons[event.id].discountType === "PERCENTAGE"
                                                                                             ? `${appliedCoupons[event.id].discountValue}%`
                                                                                             : ValueUtils.centsToCurrency(appliedCoupons[event.id].discountValue)}
                                                                                     </p>
@@ -1505,7 +1640,7 @@ const CheckoutInfo = () => {
                                                                     </>
                                                                 )}
                                                             </div>
-                                                            
+
                                                             <div className="pt-2 border-t border-psi-dark/10 space-y-2">
                                                                 {appliedCoupons[event.id] && (
                                                                     <div className="flex items-center justify-between text-sm">
@@ -1527,7 +1662,7 @@ const CheckoutInfo = () => {
                                                                     <span className="text-sm font-medium text-psi-dark">Total:</span>
                                                                     <p className="text-lg font-semibold text-psi-primary">
                                                                         {ValueUtils.centsToCurrency(
-                                                                            CheckoutUtils.calculateItemTotal(item, event) - 
+                                                                            CheckoutUtils.calculateItemTotal(item, event) -
                                                                             (currentEventCoupon ? totalDiscount : 0)
                                                                         )}
                                                                     </p>
@@ -1539,7 +1674,7 @@ const CheckoutInfo = () => {
                                             )
                                         })}
                                     </div>
-                                    
+
                                     <div className="mt-6 p-4 rounded-xl bg-psi-primary/5 border border-psi-primary/20">
                                         <div className="flex items-start gap-3">
                                             <Receipt className="size-5 text-psi-primary shrink-0 mt-0.5" />
@@ -1553,7 +1688,7 @@ const CheckoutInfo = () => {
                                     </div>
                                 </div>
                             )}
-                            
+
                             {currentStep === 3 && hasForms && (
                                 <div className="space-y-6">
                                     {Object.entries(formFieldsByEvent).map(([eventId, fields]) => {
@@ -1561,7 +1696,7 @@ const CheckoutInfo = () => {
                                         const eventName = fields[0]?.eventName || "Evento"
                                         const isForEachTicket = event?.isFormForEachTicket === true
                                         const currentTicketQuantity = isForEachTicket ? ticketQuantity : 1
-                                        
+
                                         return (
                                             <div key={eventId} className="space-y-6">
                                                 {Array.from({ length: currentTicketQuantity }).map((_, ticketIndex) => {
@@ -1584,21 +1719,21 @@ const CheckoutInfo = () => {
                                                                 )}
                                                                 <p className="text-sm text-psi-dark/60 mt-1">Formulário Personalizado</p>
                                                             </div>
-                                                            
+
                                                             <div className="space-y-6">
                                                                 {fields.map((formField) => {
-                                                                    const key = isForEachTicket 
+                                                                    const key = isForEachTicket
                                                                         ? `${formField.eventId}_${ticketIndex}-${formField.type}-${formField.field.order}`
                                                                         : `${formField.eventId}_${formField.type}-${formField.field.order}`
                                                                     const currentValue = formAnswers[key] || (formField.type === 'multiSelect' ? [] : '')
-                                                                    
+
                                                                     return (
                                                                         <div key={key} className="space-y-2">
                                                                             <label className="block text-sm font-medium text-psi-dark">
                                                                                 {formField.field.label}
                                                                                 {formField.field.required && <span className="text-destructive ml-1">*</span>}
                                                                             </label>
-                                                                            
+
                                                                             {formField.type === 'text' && (
                                                                                 formField.field.mask ? (
                                                                                     <InputMask
@@ -1617,7 +1752,7 @@ const CheckoutInfo = () => {
                                                                                     />
                                                                                 )
                                                                             )}
-                                                                            
+
                                                                             {formField.type === 'email' && (
                                                                                 <Input
                                                                                     type="email"
@@ -1627,7 +1762,7 @@ const CheckoutInfo = () => {
                                                                                     required={formField.field.required}
                                                                                 />
                                                                             )}
-                                                                            
+
                                                                             {formField.type === 'textArea' && (
                                                                                 <Textarea
                                                                                     value={currentValue?.answer || ""}
@@ -1637,7 +1772,7 @@ const CheckoutInfo = () => {
                                                                                     className="min-h-[100px]"
                                                                                 />
                                                                             )}
-                                                                            
+
                                                                             {formField.type === 'select' && (
                                                                                 <Select
                                                                                     value={currentValue?.answer || ""}
@@ -1656,7 +1791,7 @@ const CheckoutInfo = () => {
                                                                                     </SelectContent>
                                                                                 </Select>
                                                                             )}
-                                                                            
+
                                                                             {formField.type === 'multiSelect' && (
                                                                                 <div className="space-y-2">
                                                                                     {formField.field.options?.map((option: string, optIndex: number) => {
@@ -1695,7 +1830,7 @@ const CheckoutInfo = () => {
                                     })}
                                 </div>
                             )}
-                            
+
                             {currentStep === (hasForms ? 4 : 3) && (
                                 <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
                                 sm:p-8 shadow-sm">
@@ -1707,179 +1842,174 @@ const CheckoutInfo = () => {
                                         <p className="text-psi-dark/60">
                                             {
                                                 items?.[0]?.isFree
-                                                ?
-                                                (
-                                                    <span>Esta compra é gratuita!</span>
-                                                )
-                                                :
-                                                (
-                                                    <span>Revise todas as informações e escolha a forma de pagamento</span>
-                                                )
+                                                    ?
+                                                    (
+                                                        <span>Esta compra é gratuita!</span>
+                                                    )
+                                                    :
+                                                    (
+                                                        <span>Revise todas as informações e escolha a forma de pagamento</span>
+                                                    )
                                             }
                                         </p>
                                     </div>
-                                    
+
                                     <div className="space-y-6">
                                         {
                                             items?.[0]?.isFree
-                                            ?
-                                            (
-                                                <></>
-                                            )
-                                            :
-                                            (
-                                            <div>
-                                                <h3 className="text-lg font-semibold text-psi-dark mb-4">Forma de Pagamento</h3>
-                                                
-                                                <div className="space-y-4 mb-6">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setPaymentMethod("pix")}
-                                                        className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                                                            paymentMethod === "pix"
-                                                                ? "border-psi-primary bg-psi-primary/5"
-                                                                : "border-psi-dark/10 hover:border-psi-primary/30"
-                                                        }`}
-                                                    >
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`size-4 rounded-full border-2 ${
-                                                                paymentMethod === "pix"
-                                                                    ? "border-psi-primary bg-psi-primary"
-                                                                    : "border-psi-dark/30"
-                                                            }`}>
-                                                                {paymentMethod === "pix" && (
-                                                                    <div className="size-full rounded-full bg-white scale-50" />
-                                                                )}
-                                                            </div>
-                                                            <div className="flex items-center gap-2">
-                                                            <img
-                                                                src="/icons/payment/pix.png"
-                                                                width={25}
-                                                            />
-                                                            <span className="font-semibold text-psi-dark">PIX</span>
-                                                            </div>
-                                                        </div>
-                                                    </button>
-                                                    
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setPaymentMethod("credit")}
-                                                        className={`w-full p-4 rounded-xl border-2 transition-all text-left ${
-                                                            paymentMethod === "credit"
-                                                                ? "border-psi-primary bg-psi-primary/5"
-                                                                : "border-psi-dark/10 hover:border-psi-primary/30"
-                                                        }`}
-                                                    >
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`size-4 rounded-full border-2 ${
-                                                                paymentMethod === "credit"
-                                                                    ? "border-psi-primary bg-psi-primary"
-                                                                    : "border-psi-dark/30"
-                                                            }`}>
-                                                                {paymentMethod === "credit" && (
-                                                                    <div className="size-full rounded-full bg-white scale-50" />
-                                                                )}
-                                                            </div>
-                                                            <div className="flex items-center gap-2">
-                                                            <img
-                                                                src="/icons/payment/credit-card.png"
-                                                                width={25}
-                                                            />
-                                                            <span className="font-semibold text-psi-dark">Cartão de Crédito</span>
-                                                            </div>
-                                                        </div>
-                                                    </button>
-                                                </div>
-                                                
-                                                {paymentMethod === "credit" && (
-                                                    <div className="space-y-4 pt-6 border-t border-psi-dark/10">
-                                                        <div>
-                                                            <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                                Número do Cartão *
-                                                            </label>
-                                                            <div className="relative">
-                                                                <InputMask
-                                                                    mask="0000 0000 0000 0000"
-                                                                    value={cardData.number}
-                                                                    onAccept={(value) => setCardData({ ...cardData, number: value as string })}
-                                                                    placeholder="0000 0000 0000 0000"
-                                                                    icon={CreditCard}
-                                                                />
-                                                                {cardBrand && (
-                                                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                                                        <div className={`size-10 rounded flex items-center justify-center text-xs font-bold ${
-                                                                            cardBrand === "visa" ? "bg-[#1434CB] text-white" :
-                                                                            cardBrand === "mastercard" ? "bg-[#EB001B] text-white" :
-                                                                            cardBrand === "amex" ? "bg-[#006FCF] text-white" :
-                                                                            cardBrand === "elo" ? "bg-[#FFCB05] text-[#231F20]" :
-                                                                            cardBrand === "hipercard" ? "bg-[#DF0F50] text-white" :
-                                                                            "bg-gray-600 text-white"
+                                                ?
+                                                (
+                                                    <></>
+                                                )
+                                                :
+                                                (
+                                                    <div>
+                                                        <h3 className="text-lg font-semibold text-psi-dark mb-4">Forma de Pagamento</h3>
+
+                                                        <div className="space-y-4 mb-6">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setPaymentMethod("pix")}
+                                                                className={`w-full p-4 rounded-xl border-2 transition-all text-left ${paymentMethod === "pix"
+                                                                        ? "border-psi-primary bg-psi-primary/5"
+                                                                        : "border-psi-dark/10 hover:border-psi-primary/30"
+                                                                    }`}
+                                                            >
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className={`size-4 rounded-full border-2 ${paymentMethod === "pix"
+                                                                            ? "border-psi-primary bg-psi-primary"
+                                                                            : "border-psi-dark/30"
                                                                         }`}>
-                                                                            {cardBrand === "visa" ? "VISA" :
-                                                                            cardBrand === "mastercard" ? "MC" :
-                                                                            cardBrand === "amex" ? "AMEX" :
-                                                                            cardBrand === "elo" ? "ELO" :
-                                                                            cardBrand === "hipercard" ? "HIPER" :
-                                                                            cardBrand.toUpperCase().substring(0, 4)}
-                                                                        </div>
+                                                                        {paymentMethod === "pix" && (
+                                                                            <div className="size-full rounded-full bg-white scale-50" />
+                                                                        )}
                                                                     </div>
-                                                                )}
-                                                            </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <img
+                                                                            src="/icons/payment/pix.png"
+                                                                            width={25}
+                                                                        />
+                                                                        <span className="font-semibold text-psi-dark">PIX</span>
+                                                                    </div>
+                                                                </div>
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setPaymentMethod("credit")}
+                                                                className={`w-full p-4 rounded-xl border-2 transition-all text-left ${paymentMethod === "credit"
+                                                                        ? "border-psi-primary bg-psi-primary/5"
+                                                                        : "border-psi-dark/10 hover:border-psi-primary/30"
+                                                                    }`}
+                                                            >
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className={`size-4 rounded-full border-2 ${paymentMethod === "credit"
+                                                                            ? "border-psi-primary bg-psi-primary"
+                                                                            : "border-psi-dark/30"
+                                                                        }`}>
+                                                                        {paymentMethod === "credit" && (
+                                                                            <div className="size-full rounded-full bg-white scale-50" />
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <img
+                                                                            src="/icons/payment/credit-card.png"
+                                                                            width={25}
+                                                                        />
+                                                                        <span className="font-semibold text-psi-dark">Cartão de Crédito</span>
+                                                                    </div>
+                                                                </div>
+                                                            </button>
                                                         </div>
-                                                        
-                                                        <div>
-                                                            <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                                Nome no Cartão *
-                                                            </label>
-                                                            <Input
-                                                                value={cardData.name}
-                                                                onChange={(e) => setCardData({ ...cardData, name: e.target.value.toUpperCase() })}
-                                                                placeholder="NOME COMO ESTÁ NO CARTÃO"
-                                                                required
-                                                            />
-                                                        </div>
-                                                        
-                                                        <div className="grid gap-4
+
+                                                        {paymentMethod === "credit" && (
+                                                            <div className="space-y-4 pt-6 border-t border-psi-dark/10">
+                                                                <div>
+                                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                                        Número do Cartão *
+                                                                    </label>
+                                                                    <div className="relative">
+                                                                        <InputMask
+                                                                            mask="0000 0000 0000 0000"
+                                                                            value={cardData.number}
+                                                                            onAccept={(value) => setCardData({ ...cardData, number: value as string })}
+                                                                            placeholder="0000 0000 0000 0000"
+                                                                            icon={CreditCard}
+                                                                        />
+                                                                        {cardBrand && (
+                                                                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                                                                <div className={`size-10 rounded flex items-center justify-center text-xs font-bold ${cardBrand === "visa" ? "bg-[#1434CB] text-white" :
+                                                                                        cardBrand === "mastercard" ? "bg-[#EB001B] text-white" :
+                                                                                            cardBrand === "amex" ? "bg-[#006FCF] text-white" :
+                                                                                                cardBrand === "elo" ? "bg-[#FFCB05] text-[#231F20]" :
+                                                                                                    cardBrand === "hipercard" ? "bg-[#DF0F50] text-white" :
+                                                                                                        "bg-gray-600 text-white"
+                                                                                    }`}>
+                                                                                    {cardBrand === "visa" ? "VISA" :
+                                                                                        cardBrand === "mastercard" ? "MC" :
+                                                                                            cardBrand === "amex" ? "AMEX" :
+                                                                                                cardBrand === "elo" ? "ELO" :
+                                                                                                    cardBrand === "hipercard" ? "HIPER" :
+                                                                                                        cardBrand.toUpperCase().substring(0, 4)}
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+
+                                                                <div>
+                                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                                        Nome no Cartão *
+                                                                    </label>
+                                                                    <Input
+                                                                        value={cardData.name}
+                                                                        onChange={(e) => setCardData({ ...cardData, name: e.target.value.toUpperCase() })}
+                                                                        placeholder="NOME COMO ESTÁ NO CARTÃO"
+                                                                        required
+                                                                    />
+                                                                </div>
+
+                                                                <div className="grid gap-4
                                                         sm:grid-cols-2">
-                                                            <div>
-                                                                <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                                    Validade *
-                                                                </label>
-                                                                <InputMask
-                                                                    mask="00/00"
-                                                                    value={cardData.expiry}
-                                                                    onAccept={(value) => setCardData({ ...cardData, expiry: value as string })}
-                                                                    placeholder="MM/AA"
-                                                                />
+                                                                    <div>
+                                                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                                            Validade *
+                                                                        </label>
+                                                                        <InputMask
+                                                                            mask="00/00"
+                                                                            value={cardData.expiry}
+                                                                            onAccept={(value) => setCardData({ ...cardData, expiry: value as string })}
+                                                                            placeholder="MM/AA"
+                                                                        />
+                                                                    </div>
+
+                                                                    <div>
+                                                                        <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                                            CVV *
+                                                                        </label>
+                                                                        <InputMask
+                                                                            mask="000"
+                                                                            value={cardData.cvv}
+                                                                            onAccept={(value) => setCardData({ ...cardData, cvv: value as string })}
+                                                                            placeholder="000"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="pt-4 border-t border-psi-dark/10">
+                                                                    <SelectInstallment
+                                                                        value={installments}
+                                                                        totalValue={subtotal}
+                                                                        onChange={setInstallments}
+                                                                        maxInstallmentsFromEvent={(currentEvent as any)?.maxInstallments ?? null}
+                                                                    />
+                                                                </div>
                                                             </div>
-                                                            
-                                                            <div>
-                                                                <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                                    CVV *
-                                                                </label>
-                                                                <InputMask
-                                                                    mask="000"
-                                                                    value={cardData.cvv}
-                                                                    onAccept={(value) => setCardData({ ...cardData, cvv: value as string })}
-                                                                    placeholder="000"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                        
-                                                        <div className="pt-4 border-t border-psi-dark/10">
-                                                            <SelectInstallment
-                                                                value={installments}
-                                                                totalValue={subtotal}
-                                                                onChange={setInstallments}
-                                                                maxInstallmentsFromEvent={(currentEvent as any)?.maxInstallments ?? null}
-                                                            />
-                                                        </div>
+                                                        )}
                                                     </div>
-                                                )}
-                                            </div>
-                                            )
+                                                )
                                         }
-                                        
+
                                         <div className="p-4 rounded-xl bg-psi-dark/5">
                                             <h3 className="font-semibold text-psi-dark mb-2">Resumo</h3>
                                             <div className="space-y-2 text-sm">
@@ -1899,31 +2029,31 @@ const CheckoutInfo = () => {
                                                     <span>Total:</span>
                                                     {
                                                         items?.[0]?.isFree
-                                                        ?
-                                                        (
-                                                        <span>Gratuito</span>
-                                                        )
-                                                        :
-                                                        (
-                                                        <span>{ValueUtils.centsToCurrency(total)}</span>
-                                                        )
+                                                            ?
+                                                            (
+                                                                <span>Gratuito</span>
+                                                            )
+                                                            :
+                                                            (
+                                                                <span>{ValueUtils.centsToCurrency(total)}</span>
+                                                            )
                                                     }
                                                 </div>
                                                 <p className="text-psi-dark/70"><strong>Itens:</strong> {items.reduce((sum, item) => sum + item.quantity, 0)} ingresso(s)</p>
                                                 {
                                                     items?.[0]?.isFree
-                                                    ?
-                                                    (
-                                                    <></>
-                                                    )
-                                                    :
-                                                    (
-                                                    <p className="text-psi-dark/70"><strong>Pagamento:</strong> {paymentMethod === "pix" ? "PIX" : "Cartão de Crédito"}</p>
-                                                    )
+                                                        ?
+                                                        (
+                                                            <></>
+                                                        )
+                                                        :
+                                                        (
+                                                            <p className="text-psi-dark/70"><strong>Pagamento:</strong> {paymentMethod === "pix" ? "PIX" : "Cartão de Crédito"}</p>
+                                                        )
                                                 }
                                             </div>
                                         </div>
-                                        
+
                                         <div className="flex justify-center">
                                             <Button
                                                 type="button"
@@ -1944,7 +2074,7 @@ const CheckoutInfo = () => {
                                     </div>
                                 </div>
                             )}
-                            
+
                             <div className="flex items-center justify-between pt-6">
                                 {currentStep > 1 && (
                                     <Button
@@ -1956,7 +2086,7 @@ const CheckoutInfo = () => {
                                         Voltar
                                     </Button>
                                 )}
-                                
+
                                 {currentStep < maxStep && (
                                     <Button
                                         type="button"
@@ -1970,35 +2100,35 @@ const CheckoutInfo = () => {
                                 )}
                             </div>
                         </div>
-                        
+
                         <div className="lg:sticky lg:top-[100px] lg:h-fit">
                             <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6 shadow-sm">
                                 <h3 className="font-semibold text-psi-dark mb-4">Resumo do Pedido</h3>
-                                
+
                                 <div className="space-y-3 mb-4">
                                     {items.flatMap((item) => {
                                         const event = eventsData.find(e => e?.id === item.eventId)
-                                        
+
                                         if (item.ticketTypes && item.ticketTypes.length > 0) {
                                             return item.ticketTypes.map((tt, ttIndex) => {
                                                 const eventDate = tt.days && tt.days.length > 0 && event?.EventDates
                                                     ? event.EventDates.find(ed => ed.id === tt.days?.[0])
                                                     : null
-                                                
-                                                const dayLabel = eventDate 
+
+                                                const dayLabel = eventDate
                                                     ? formatEventDate(eventDate.date, "DD [de] MMMM")
                                                     : null
-                                                
-                                                const ticketTypeLabel = dayLabel 
+
+                                                const ticketTypeLabel = dayLabel
                                                     ? `${tt.ticketTypeName} - ${dayLabel}`
                                                     : tt.ticketTypeName
-                                                
+
                                                 const itemForThisTicketType: any = {
                                                     ...item,
                                                     ticketTypes: [tt],
                                                     quantity: tt.quantity
                                                 }
-                                                
+
                                                 return (
                                                     <div key={`${item.eventId}-${item.batchId}-${ttIndex}`} className="flex items-center justify-between text-sm">
                                                         <span className="text-psi-dark/70">
@@ -2011,20 +2141,20 @@ const CheckoutInfo = () => {
                                                 )
                                             })
                                         }
-                                        
+
                                         return (
-                                        <div key={`${item.eventId}-${item.batchId}`} className="flex items-center justify-between text-sm">
-                                            <span className="text-psi-dark/70">
-                                                {item.eventName} x{item.quantity}
-                                            </span>
-                                            <span className="font-semibold text-psi-dark">
+                                            <div key={`${item.eventId}-${item.batchId}`} className="flex items-center justify-between text-sm">
+                                                <span className="text-psi-dark/70">
+                                                    {item.eventName} x{item.quantity}
+                                                </span>
+                                                <span className="font-semibold text-psi-dark">
                                                     {ValueUtils.centsToCurrency(CheckoutUtils.calculateItemTotal(item, event || null))}
-                                            </span>
-                                        </div>
+                                                </span>
+                                            </div>
                                         )
                                     })}
                                 </div>
-                                
+
                                 <div className="pt-4 border-t border-psi-dark/10 space-y-2">
                                     {totalDiscount > 0 && (
                                         <>
@@ -2066,11 +2196,11 @@ const CheckoutInfo = () => {
                                             À vista com taxa de {ValueUtils.centsToCurrency(total - subtotal)}
                                         </p>
                                     )}
-                                                {paymentMethod === "credit" && installments === 1 && (
-                                                    <p className="text-psi-dark/70 text-xs">
-                                                        À vista com taxa de {ValueUtils.centsToCurrency(total - subtotal)}
-                                                    </p>
-                                                )}
+                                    {paymentMethod === "credit" && installments === 1 && (
+                                        <p className="text-psi-dark/70 text-xs">
+                                            À vista com taxa de {ValueUtils.centsToCurrency(total - subtotal)}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>

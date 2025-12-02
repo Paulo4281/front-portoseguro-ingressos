@@ -13,7 +13,8 @@ type Prefixes =
     "/organizer" |
     "/bank" |
     "/event-click" |
-    "/ticket"
+    "/ticket" |
+    "/ticket-hold"
 
 type TAPIParams = {
     prefix: Prefixes
