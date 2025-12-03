@@ -55,5 +55,6 @@ export type {
 }
 
 export {
-    UserRoles
+    UserRoles,
+    UserGenres
 }

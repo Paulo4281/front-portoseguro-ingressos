@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Share2, Download, Ban, Search, Copy } from "lucide-react"
+import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Share2, Download, Ban, Search, Copy, TicketIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/Input/Input"
 import {
@@ -25,6 +25,7 @@ import { DialogExportBuyersList } from "@/components/Dialog/DialogExportBuyersLi
 import { Pagination } from "@/components/Pagination/Pagination"
 import { EventSalesReport } from "@/components/Report/EventSalesReport"
 import { useEventClickCount } from "@/hooks/EventClick/useEventClickCount"
+import { SheetTicketsToOrganizer } from "@/components/Sheet/SheetTicketsToOrganizer/SheetTicketsToOrganizer"
 
 type TEventWithStats = TEvent & {
     isActive: boolean
@@ -118,6 +119,7 @@ const MeusEventosPannel = () => {
     const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
     const [salesReportOpen, setSalesReportOpen] = useState(false)
     const [exportBuyersListOpen, setExportBuyersListOpen] = useState(false)
+    const [ticketsSheetOpen, setTicketsSheetOpen] = useState(false)
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
     const [selectedEventName, setSelectedEventName] = useState<string | null>(null)
     
@@ -169,6 +171,11 @@ const MeusEventosPannel = () => {
     const handleOpenCancelDialog = (eventId: string) => {
         setSelectedEventId(eventId)
         setCancelDialogOpen(true)
+    }
+
+    const handleOpenTicketsSheet = (eventId: string) => {
+        setSelectedEventId(eventId)
+        setTicketsSheetOpen(true)
     }
 
     if (isLoading) {
@@ -269,6 +276,7 @@ const MeusEventosPannel = () => {
                                 onExportBuyers={handleOpenExportBuyersList}
                                 onSalesReport={handleOpenSalesReport}
                                 onCancel={handleOpenCancelDialog}
+                                onTickets={handleOpenTicketsSheet}
                             />
                         ))}
                     </div>
@@ -321,6 +329,14 @@ const MeusEventosPannel = () => {
                     console.log("Formato selecionado:", format, "Evento:", selectedEventId)
                 }}
             />
+
+            {selectedEventId && (
+                <SheetTicketsToOrganizer
+                    open={ticketsSheetOpen}
+                    onOpenChange={setTicketsSheetOpen}
+                    eventId={selectedEventId}
+                />
+            )}
         </Background>
     )
 }
@@ -335,6 +351,7 @@ type TEventCardProps = {
     onExportBuyers: (eventId: string) => void
     onSalesReport: (eventId: string, eventName: string) => void
     onCancel: (eventId: string) => void
+    onTickets: (eventId: string) => void
 }
 
 const EventCard = ({
@@ -342,7 +359,8 @@ const EventCard = ({
     onEdit,
     onExportBuyers,
     onSalesReport,
-    onCancel
+    onCancel,
+    onTickets
 }: TEventCardProps) => {
     const {
         data: clickCountData,
@@ -389,6 +407,13 @@ const EventCard = ({
                             >
                                 <FileSpreadsheet className="h-4 w-4 mr-2 text-psi-primary" />
                                 Gerar lista de compradores
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer"
+                                onClick={() => onTickets(event.id)}
+                            >
+                                <TicketIcon className="h-4 w-4 mr-2 text-psi-primary" />
+                                Ingressos
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                                 className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer"

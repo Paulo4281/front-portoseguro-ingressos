@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import Image from "next/image"
 import { Calendar, Clock, Gift, Laptop, MapPin, Repeat, Tag } from "lucide-react"
@@ -6,6 +8,8 @@ import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Hel
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 import type { TEvent, TRecurrenceDay } from "@/types/Event/TEvent"
 import type { TEventBatch } from "@/types/Event/TEventBatch"
+import { useEventVerifyLastTicket } from "@/hooks/Event/useEventVerifyLastTicket"
+import { useMemo } from "react"
 
 type TCardEventProps = {
     event: TEvent
@@ -16,6 +20,13 @@ const CardEvent = (
         event
     }: TCardEventProps
 ) => {
+    const { data: eventVerifyLastTicketsData, isLoading: isLoadingEventVerifyLastTickets, isFetching: isFetchingEventVerifyLastTickets } = useEventVerifyLastTicket(event.id)
+
+    const isLastTickets = useMemo(() => {
+        if (!eventVerifyLastTicketsData?.data || !Array.isArray(eventVerifyLastTicketsData.data)) return false
+        return eventVerifyLastTicketsData.data.some(ticket => ticket.isLastTickets)
+    }, [eventVerifyLastTicketsData])
+    
     const getDateRange = (dates: TEvent["EventDates"]) => {
         if (!dates || !Array.isArray(dates) || dates.length === 0) return null
 
@@ -154,6 +165,13 @@ const CardEvent = (
                 </div>
                 
                 <div className="p-5 flex flex-col flex-1">
+                    {isLastTickets && (
+                        <div className="inline-flex mb-2 animate-pulse items-center gap-1.5 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full border border-psi-primary/20 shadow-sm">
+                            <Tag className="h-3 w-3 text-psi-primary" />
+                            <span className="text-xs font-semibold text-psi-dark">Últimos ingressos!</span>
+                        </div>
+                    )}
+
                     <h3 className="text-lg font-bold text-psi-dark mb-3 line-clamp-2 leading-tight group-hover:text-psi-primary transition-colors">
                         {event.name} {onlineBadge} {freeBadge}
                     </h3>

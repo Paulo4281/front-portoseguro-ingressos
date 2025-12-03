@@ -51,10 +51,39 @@ const VerEventoInfo = (
 
     useEffect(() => {
         if (eventVerifyLastTicketsData?.data && Array.isArray(eventVerifyLastTicketsData.data)) {
-            console.log(eventVerifyLastTicketsData.data)
             setIsLastTicketsData(eventVerifyLastTicketsData.data)
         }
     }, [eventVerifyLastTicketsData])
+
+    const isLastTicketsForDayAndType = useCallback((eventDateId: string, ticketTypeId: string | null) => {
+        return isLastTicketsData.some(
+            item => item.eventDateId === eventDateId && 
+            item.ticketTypeId === ticketTypeId && 
+            item.isLastTickets
+        )
+    }, [isLastTicketsData])
+
+    const isLastTicketsForDay = useCallback((eventDateId: string) => {
+        return isLastTicketsData.some(
+            item => item.eventDateId === eventDateId && 
+            item.ticketTypeId === null && 
+            item.isLastTickets
+        )
+    }, [isLastTicketsData])
+
+    const isLastTicketsForTicketType = useCallback((ticketTypeId: string) => {
+        return isLastTicketsData.some(
+            item => item.ticketTypeId === ticketTypeId && 
+            item.isLastTickets
+        )
+    }, [isLastTicketsData])
+
+    const isLastTicketsForEvent = useCallback(() => {
+        return isLastTicketsData.some(
+            item => item.ticketTypeId === null && 
+            item.isLastTickets
+        )
+    }, [isLastTicketsData])
     
     const event = useMemo(() => {
         return eventData?.data
@@ -980,9 +1009,16 @@ const VerEventoInfo = (
                                                                             const displayPrice = getPriceForDisplay()
                                                                             const typeFeeCents = displayPrice ? TicketFeeUtils.calculateFeeInCents(displayPrice, event.isClientTaxed) : 0
                                                                             
+                                                                            const isLastTickets = isLastTicketsForTicketType(ebt.ticketTypeId) || 
+                                                                                (event?.EventDates?.some(eventDate => 
+                                                                                    isLastTicketsForDayAndType(eventDate.id, ebt.ticketTypeId)
+                                                                                ) || false)
+                                                                            
                                                                             return (
                                                                                 <div key={ebt.ticketTypeId} className="text-sm">
-                                                                                    <p className="font-medium text-psi-dark">{ticketTypeName}</p>
+                                                                                    <div className="flex items-center gap-2 mb-1">
+                                                                                        <p className="font-medium text-psi-dark">{ticketTypeName}</p>
+                                                                                    </div>
                                                                                     <p className="text-psi-primary font-semibold">
                                                                                         {hasPricePerDay ? "Preço por dia" : (displayPrice !== null && displayPrice !== undefined ? ValueUtils.formatPrice(displayPrice) : "Preço não definido")}
                                                                                     </p>
@@ -998,38 +1034,40 @@ const VerEventoInfo = (
                                                                 </div>
                                                             ) : (
                                                                 <>
-                                                                    <p className="text-3xl font-bold text-psi-primary mt-2">
-                                                                        {(() => {
-                                                                            if (hasMultipleDaysWithSpecificPrices && event.EventDates) {
-                                                                                const daysWithTicketTypePrices = event.EventDates.filter(
-                                                                                    ed => ed.hasSpecificPrice && Array.isArray(ed.EventDateTicketTypePrices) && ed.EventDateTicketTypePrices.length > 0
-                                                                                )
+                                                                    <div className="flex items-center gap-2 mt-2">
+                                                                        <p className="text-3xl font-bold text-psi-primary">
+                                                                            {(() => {
+                                                                                if (hasMultipleDaysWithSpecificPrices && event.EventDates) {
+                                                                                    const daysWithTicketTypePrices = event.EventDates.filter(
+                                                                                        ed => ed.hasSpecificPrice && Array.isArray(ed.EventDateTicketTypePrices) && ed.EventDateTicketTypePrices.length > 0
+                                                                                    )
 
-                                                                                if (daysWithTicketTypePrices.length > 0) {
-                                                                                    let min = Infinity
-                                                                                    daysWithTicketTypePrices.forEach((ed) => {
-                                                                                        ed.EventDateTicketTypePrices?.forEach((edttp) => {
-                                                                                            if (typeof edttp.price === 'number' && edttp.price < min) min = edttp.price
+                                                                                    if (daysWithTicketTypePrices.length > 0) {
+                                                                                        let min = Infinity
+                                                                                        daysWithTicketTypePrices.forEach((ed) => {
+                                                                                            ed.EventDateTicketTypePrices?.forEach((edttp) => {
+                                                                                                if (typeof edttp.price === 'number' && edttp.price < min) min = edttp.price
+                                                                                            })
                                                                                         })
-                                                                                    })
-                                                                                    if (isFinite(min)) {
-                                                                                        const roundedMin = Math.round(min)
-                                                                                        return event.isFree ? "Gratuito" : `A partir de ${ValueUtils.centsToCurrency(roundedMin)}`
+                                                                                        if (isFinite(min)) {
+                                                                                            const roundedMin = Math.round(min)
+                                                                                            return event.isFree ? "Gratuito" : `A partir de ${ValueUtils.centsToCurrency(roundedMin)}`
+                                                                                        }
+                                                                                    }
+
+                                                                                    const daysWithSpecificOnly = event.EventDates.filter(
+                                                                                        ed => ed.hasSpecificPrice && typeof ed.price === 'number'
+                                                                                    )
+                                                                                    if (daysWithSpecificOnly.length > 0) {
+                                                                                        const minPrice = Math.round(Math.min(...daysWithSpecificOnly.map(ed => ed.price!)))
+                                                                                        return event.isFree ? "Gratuito" : `A partir de ${ValueUtils.centsToCurrency(minPrice)}`
                                                                                     }
                                                                                 }
-
-                                                                                const daysWithSpecificOnly = event.EventDates.filter(
-                                                                                    ed => ed.hasSpecificPrice && typeof ed.price === 'number'
-                                                                                )
-                                                                                if (daysWithSpecificOnly.length > 0) {
-                                                                                    const minPrice = Math.round(Math.min(...daysWithSpecificOnly.map(ed => ed.price!)))
-                                                                                    return event.isFree ? "Gratuito" : `A partir de ${ValueUtils.centsToCurrency(minPrice)}`
-                                                                                }
-                                                                            }
-                                                                            const batchPrice = Math.round(getBatchPrice(batch))
-                                                                            return ValueUtils.formatPrice(batchPrice)
-                                                                        })()}
-                                                                    </p>
+                                                                                const batchPrice = Math.round(getBatchPrice(batch))
+                                                                                return ValueUtils.formatPrice(batchPrice)
+                                                                            })()}
+                                                                        </p>
+                                                                    </div>
                                                                     {(() => {
                                                                         if (event.isFree) {
                                                                             return null
@@ -1122,11 +1160,21 @@ const VerEventoInfo = (
                                             ? eventDateWithSpecificPrice.price
                                             : event.price
                                         const feeCents = displayPrice ? TicketFeeUtils.calculateFeeInCents(Math.round(displayPrice), event.isClientTaxed) : 0
+                                        const hasLastTickets = eventDateWithSpecificPrice 
+                                            ? isLastTicketsForDay(eventDateWithSpecificPrice.id)
+                                            : isLastTicketsForEvent()
                                         return (
                                             <>
-                                                <p className="text-3xl font-bold text-psi-primary">
-                                                    {event.isFree ? "Gratuito" : (displayPrice !== null && displayPrice !== undefined ? ValueUtils.formatPrice(Math.round(displayPrice)) : "Preço não definido")}
-                                                </p>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-3xl font-bold text-psi-primary">
+                                                        {event.isFree ? "Gratuito" : (displayPrice !== null && displayPrice !== undefined ? ValueUtils.formatPrice(Math.round(displayPrice)) : "Preço não definido")}
+                                                    </p>
+                                                    {hasLastTickets && (
+                                                        <span className="px-2 py-0.5 animate-pulse bg-psi-dark/90 text-psi-light text-xs font-semibold rounded-full">
+                                                            Últimos ingressos
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <p className="text-sm text-psi-dark/60">Ingresso único</p>
                                                 {!event.isFree && displayPrice && displayPrice > 0 && (
                                                     <p className="text-xs text-psi-dark/60">
@@ -1155,8 +1203,17 @@ const VerEventoInfo = (
                                                 <div key={eventDate.id} className="rounded-lg border border-psi-primary/20 bg-psi-primary/5 p-4 space-y-3">
                                                     <div className="flex items-start justify-between">
                                                         <div className="flex-1">
-                                                            <div className="text-sm font-semibold text-psi-dark mb-2">
-                                                                {formatDate(eventDate.date)}
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <div className="text-sm font-semibold text-psi-dark">
+                                                                    {formatDate(eventDate.date)}
+                                                                </div>
+                                                                {eventDate.EventDateTicketTypePrices?.some((edttp: any) => 
+                                                                    isLastTicketsForDayAndType(eventDate.id, edttp.ticketTypeId)
+                                                                ) && (
+                                                                    <span className="px-2 py-0.5 animate-pulse bg-psi-dark/90 text-psi-light text-xs font-semibold rounded-full">
+                                                                        Últimos ingressos
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                             {eventDate.hourStart && (
                                                                 <div className="text-xs text-psi-dark/60 mb-3">
@@ -1168,12 +1225,20 @@ const VerEventoInfo = (
                                                                     const ticketType = event.TicketTypes?.find(tt => tt.id === edttp.ticketTypeId)
                                                                     const qty = dayTypes[edttp.ticketTypeId] || 0
                                                                     const feeCents = TicketFeeUtils.calculateFeeInCents(edttp.price, event.isClientTaxed)
+                                                                    const isLastTickets = isLastTicketsForDayAndType(eventDate.id, edttp.ticketTypeId)
                                                                     
                                                                     return (
                                                                         <div key={edttp.ticketTypeId} className="rounded-lg border border-psi-primary/20 bg-white p-3 space-y-2">
                                                                             <div className="flex items-center justify-between">
                                                                                 <div className="flex-1">
-                                                                                    <p className="text-sm font-medium text-psi-dark">{ticketType?.name || "Tipo desconhecido"}</p>
+                                                                                    <div className="flex items-center gap-2 mb-1">
+                                                                                        <p className="text-sm font-medium text-psi-dark">{ticketType?.name || "Tipo desconhecido"}</p>
+                                                                                        {isLastTickets && (
+                                                                                            <span className="px-2 py-0.5 animate-pulse bg-psi-dark/90 text-psi-light text-xs font-semibold rounded-full">
+                                                                                                Últimos ingressos
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
                                                                                     <p className="text-xs text-psi-primary font-semibold mt-1">
                                                                                         {event.isFree ? "Gratuito" : `${ValueUtils.formatPrice(edttp.price)} por ingresso`}
                                                                                     </p>
@@ -1269,7 +1334,36 @@ const VerEventoInfo = (
                                                     <div key={ebt.ticketTypeId} className="rounded-lg border border-psi-primary/20 bg-psi-primary/5 p-4 space-y-3">
                                                         <div className="flex items-start justify-between">
                                                             <div className="flex-1">
-                                                                <h4 className="font-semibold text-psi-dark">{ticketTypeName}</h4>
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <h4 className="font-semibold text-psi-dark">{ticketTypeName}</h4>
+                                                                    {(() => {
+                                                                        if (selectedDaysForType.length > 0) {
+                                                                            const hasLastTickets = selectedDaysForType.some(dayId => 
+                                                                                isLastTicketsForDayAndType(dayId, ebt.ticketTypeId)
+                                                                            )
+                                                                            if (hasLastTickets) {
+                                                                                return (
+                                                                                    <span className="px-2 py-0.5 animate-pulse bg-psi-dark/90 text-psi-light text-xs font-semibold rounded-full">
+                                                                                        Últimos ingressos
+                                                                                    </span>
+                                                                                )
+                                                                            }
+                                                                        } else {
+                                                                            const hasLastTicketsInAnyDay = event?.EventDates?.some(eventDate => 
+                                                                                isLastTicketsForDayAndType(eventDate.id, ebt.ticketTypeId)
+                                                                            )
+                                                                            const hasLastTicketsForType = isLastTicketsForTicketType(ebt.ticketTypeId)
+                                                                            if (hasLastTicketsInAnyDay || hasLastTicketsForType) {
+                                                                                return (
+                                                                                    <span className="px-2 py-0.5 animate-pulse bg-psi-dark/90 text-psi-light text-xs font-semibold rounded-full">
+                                                                                        Últimos ingressos
+                                                                                    </span>
+                                                                                )
+                                                                            }
+                                                                        }
+                                                                        return null
+                                                                    })()}
+                                                                </div>
                                                                 {ticketTypeDescription && (
                                                                     <p className="text-xs text-psi-dark/60 mt-1">{ticketTypeDescription}</p>
                                                                 )}
@@ -1345,8 +1439,15 @@ const VerEventoInfo = (
                                                                                         }}
                                                                                     />
                                                                                     <div className="flex-1">
-                                                                                        <div className="text-sm font-medium text-psi-dark">
-                                                                                            {formatDate(eventDate.date)}
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            <div className="text-sm font-medium text-psi-dark">
+                                                                                                {formatDate(eventDate.date)}
+                                                                                            </div>
+                                                                                            {isLastTicketsForDayAndType(eventDate.id, ebt.ticketTypeId) && (
+                                                                                                <span className="px-2 py-0.5 animate-pulse bg-psi-dark/90 text-psi-light text-xs font-semibold rounded-full">
+                                                                                                    Últimos ingressos
+                                                                                                </span>
+                                                                                            )}
                                                                                         </div>
                                                                                         {eventDate.hourStart && (
                                                                                             <div className="text-xs text-psi-dark/60">
@@ -1429,8 +1530,15 @@ const VerEventoInfo = (
                                                                             }}
                                                                         />
                                                                         <div className="flex-1">
-                                                                            <div className="text-sm font-medium text-psi-dark">
-                                                                                {formatDate(eventDate.date)}
+                                                                            <div className="flex items-center gap-2">
+                                                                                <div className="text-sm font-medium text-psi-dark">
+                                                                                    {formatDate(eventDate.date)}
+                                                                                </div>
+                                                                                {isLastTicketsForDay(eventDate.id) && (
+                                                                                    <span className="px-2 py-0.5 animate-pulse bg-psi-dark/90 text-psi-light text-xs font-semibold rounded-full">
+                                                                                        Últimos ingressos
+                                                                                    </span>
+                                                                                )}
                                                                             </div>
                                                                             {eventDate.hourStart && (
                                                                                 <div className="text-xs text-psi-dark/60">
@@ -1478,7 +1586,14 @@ const VerEventoInfo = (
                                         ) : (
                                             <div className="space-y-4">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-sm font-medium text-psi-dark">Quantidade</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm font-medium text-psi-dark">Quantidade</span>
+                                                        {isLastTicketsForEvent() && (
+                                                            <span className="px-2 py-0.5 animate-pulse bg-psi-dark/90 text-psi-light text-xs font-semibold rounded-full">
+                                                                Últimos ingressos
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                     <span className="text-xs text-psi-dark/60">Máximo {buyTicketsLimit} por pessoa</span>
                                                 </div>
                                                 <QuantitySelector

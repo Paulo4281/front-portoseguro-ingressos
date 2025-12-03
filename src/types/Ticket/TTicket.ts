@@ -1,5 +1,16 @@
 import type { TEvent } from "@/types/Event/TEvent"
 import type { TEventBatch } from "@/types/Event/TEventBatch"
+import { UserGenres } from "../User/TUser"
+
+const TicketStatuses = [
+    "PENDING",
+    "CONFIRMED",
+    "CANCELLED",
+    "REFUNDED",
+    "OVERDUE",
+    "USED",
+    "EXPIRED"
+] as const
 
 type TTicketForm = {
     text?: {
@@ -27,7 +38,7 @@ type TTicketForm = {
 type TTicket = {
     id: string
     token: string
-    status: "PENDING" | "CONFIRMED" | "USED" | "CANCELLED" | "REFUNDED" | "OVERDUE" | "EXPIRED"
+    status: typeof TicketStatuses[number]
     eventId: string
     eventBatchId: string
     eventDateId: string
@@ -141,6 +152,30 @@ type TTicketBuy = {
     vfc: number | null
 }
 
+type TTicketToOrganizer = {
+    id: string
+    customer: {
+        id: string
+        name: string
+        email: string
+        phone: string | null
+        document: string | null
+        nationality: string | null
+        gender: typeof UserGenres[number] | null
+        birth: string | null
+        image: string | null
+    }
+    status: typeof TicketStatuses[number]
+    ticketType: {
+        id: string
+        name: string
+        description: string | null
+    }
+    price: number
+    form: TTicketForm | null
+    createdAt: string
+}
+
 type TTicketBuyResponse = {
     pixQrCode: string | null
     isConfirmed: boolean
@@ -160,5 +195,6 @@ export type {
     TTicketScanLinkCreate,
     TTicketScanLinkDelete,
     TTicketQRCodeResponse,
-    TTicketForm
+    TTicketForm,
+    TTicketToOrganizer
 }
