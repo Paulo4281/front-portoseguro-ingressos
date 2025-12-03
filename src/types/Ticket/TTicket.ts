@@ -137,6 +137,7 @@ type TTicketBuy = {
         eventId: string
         couponCode: string
     }[] | null
+    removeTicketHoldIds: string[] | null
     vfc: number | null
 }
 

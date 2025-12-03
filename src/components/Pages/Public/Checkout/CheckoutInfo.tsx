@@ -88,7 +88,7 @@ import { CheckoutTimer } from "@/components/CheckoutTimer/CheckoutTimer"
 import { useTicketHoldCreate } from "@/hooks/TicketHold/useTicketHoldCreate"
 import { useTicketHoldUpdateQuantity } from "@/hooks/TicketHold/useTicketHoldUpdateQuantity"
 import { TTicketHoldCreate, TTicketHoldCreateResponse } from "@/types/TicketHold/TTicketHold"
-import { id } from "zod/v4/locales"
+import { Badge } from "@/components/ui/badge"
 
 type TPaymentMethod = "pix" | "credit"
 
@@ -111,16 +111,17 @@ const CheckoutInfo = () => {
     const handleUpdateQuantity = async (params: THandleUpdateQuantityParams, updateQuantityCartContext: boolean = true) => {
         const { eventId, batchId, qty, ticketHoldId } = params
 
-        if (updateQuantityCartContext) {
-            updateQuantity(eventId, batchId, qty)
-        }
-
         const response = await updateTicketHold({
             id: ticketHoldId,
             quantity: qty
         })
 
-        if (response?.success) { }
+        if (response?.success) {
+            if (updateQuantityCartContext) {
+                updateQuantity(eventId, batchId, qty)
+            }
+        }
+
     }
 
     const handleFindTicketHoldId = (eventId: string, batchId: string, eventDateId: string | null, ticketTypeId: string | null) => {
@@ -740,6 +741,7 @@ const CheckoutInfo = () => {
             paymentMethod: paymentMethod === "pix" ? "PIX" : "CREDIT_CARD",
             ccInfo: null,
             couponCodes: null,
+            removeTicketHoldIds: null,
             vfc: total
         }
 
@@ -908,6 +910,9 @@ const CheckoutInfo = () => {
                 cardId: null
             }
         }
+
+
+        data["removeTicketHoldIds"] = ticketHoldData?.map((th) => th.id) || null
 
         console.log(data)
 
@@ -1397,6 +1402,10 @@ const CheckoutInfo = () => {
                                                                 </button>
                                                             </div>
 
+                                                            <div className="animate-pulse transition-opacity duration-700">
+                                                                <Badge variant="default" className="text-xs font-medium">Últimos ingressos!</Badge>
+                                                            </div>
+
                                                             {item.batchName && (
                                                                 <p className="text-sm text-psi-dark/60">Lote: {item.batchName}</p>
                                                             )}
@@ -1564,6 +1573,7 @@ const CheckoutInfo = () => {
                                                                                 qty: qty,
                                                                                 ticketHoldId: handleFindTicketHoldId(item.eventId, item.batchId || "", item.ticketTypes?.[0]?.days?.[0] || null, item.ticketTypes?.[0]?.ticketTypeId || null)
                                                                             })}
+                                                                            disabled={isUpdatingTicketHold}
                                                                             min={1}
                                                                             max={event?.buyTicketsLimit || 10}
                                                                         />
