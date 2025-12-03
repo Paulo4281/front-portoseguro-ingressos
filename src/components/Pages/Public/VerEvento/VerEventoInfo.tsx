@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Repeat, Tag, ShieldCheck, Lock, CreditCard, ArrowRight, TrendingDown, Users, QrCode, Headphones, Zap, CheckCircle2, Share2, MessageCircle, Star, TrendingUp, Gift, Instagram, Facebook, Mail, Phone, Building2, ExternalLink } from "lucide-react"
+import { Calendar, Clock, MapPin, Repeat, Tag, ShieldCheck, Lock, CreditCard, ArrowRight, TrendingDown, Users, QrCode, Headphones, Zap, CheckCircle2, Share2, MessageCircle, Star, TrendingUp, Gift, Instagram, Facebook, Mail, Phone, Building2, ExternalLink, Laptop } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useEventFindById } from "@/hooks/Event/useEventFindById"
 import { useEventFindSimilar } from "@/hooks/Event/useEventFindSimilar"
@@ -702,6 +702,22 @@ const VerEventoInfo = (
                                                 </div>
                                             )
                                         })}
+                                        {
+                                            event.isOnline && (
+                                                <div className="flex items-center gap-2">
+                                                    <Laptop className="h-4 w-4 text-psi-primary shrink-0" />
+                                                    <span className="font-medium">Online</span>
+                                                </div>
+                                            )
+                                        }
+                                        {
+                                            event.isFree && (
+                                                <div className="flex items-center gap-2">
+                                                    <Gift className="h-4 w-4 text-psi-primary shrink-0" />
+                                                    <span className="font-medium">Gratuito</span>
+                                                </div>
+                                            )
+                                        }
                                     </div>
                                 )}
 
@@ -1578,7 +1594,6 @@ const VerEventoInfo = (
                                                     }
                                                 />
                                             </div>
-                                            <p className="text-xs text-psi-dark/60">Apenas 1% acima de R$ 39,90 ou R$ 1 fixo</p>
                                         </div>
                                     </div>
 

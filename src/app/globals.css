@@ -5,7 +5,7 @@
 
 @theme {
   --breakpoint-xs: 420px;
-  --breakpoint-3xl: 120rem;
+  --breakpoint-3xl: 116rem;
 
   --color-psi-primary: #6C4BFF;
   --color-psi-secondary: #FF6F91;
@@ -123,14 +123,14 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-@media screen and (min-width: 1921px) and (max-width: 2560px) {
+@media screen and (min-width: 1910px) and (max-width: 2560px) {
   .container {
     max-width: 2560px !important;
     padding: 30px 200px 30px 200px;
   }
 }
 
-@media screen and (min-width: 1537px) and (max-width: 1920px) {
+@media screen and (min-width: 1537px) and (max-width: 1909px) {
   .container {
     max-width: 1920px !important;
     padding: 30px 200px 30px 200px;
@@ -141,7 +141,7 @@
 @media screen and (min-width: 1280px) and (max-width: 1536px) {
   .container {
     max-width: 1536px !important;
-    padding: 30px 200px 30px 200px;
+    padding: 30px 100px 30px 100px;
   }
 
 }

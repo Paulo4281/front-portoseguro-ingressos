@@ -71,6 +71,7 @@ const EventCreateValidator = z.object({
     dates: z.array(EventDateValidator).optional(),
     recurrence: RecurrenceValidator,
     isFree: z.boolean().optional(),
+    isOnline: z.boolean().optional(),
     isClientTaxed: z.boolean().optional(),
     form: z.any().optional(),
     isFormForEachTicket: z.boolean().optional(),
@@ -228,6 +229,7 @@ const EventUpdateValidatorBase = z.object({
     form: z.any().optional(),
     isFormForEachTicket: z.boolean().optional(),
     isFree: z.boolean().optional(),
+    isOnline: z.boolean().optional(),
     buyTicketsLimit: z.number().int().min(1, { error: "O limite deve ser no mínimo 1" }).max(100, { error: "O limite deve ser no máximo 100" }).nullable().optional(),
     maxInstallments: z.number().int().min(1, { error: "Parcelamento mínimo é 1x" }).max(12, { error: "Parcelamento máximo é 12x" }).nullable().optional()
 })

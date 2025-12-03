@@ -565,6 +565,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                 recurrence: recurrenceData,
                 isClientTaxed: !!event.isClientTaxed,
                 isFree: !!event.isFree,
+                isOnline: !!event.isOnline,
                 buyTicketsLimit: event.buyTicketsLimit ?? null,
                 maxInstallments: event.maxInstallments ?? null
             }
@@ -627,6 +628,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                 isFormForEachTicket: isFormForEachTicket || false
                 ,
                 isFree: data.isFree || false,
+                isOnline: data.isOnline || false,
                 buyTicketsLimit: data.buyTicketsLimit || null,
                 maxInstallments: data.maxInstallments || null
             }
@@ -1100,6 +1102,29 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                 </label>
                                                 <p className="text-xs text-psi-dark/60 mt-1">
                                                     Quando ativado, os ingressos serão gratuitos e não haverá cobrança ao comprador.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                />
+                                <FieldError message={form.formState.errors.isFree?.message || ""} />
+
+                                <Controller
+                                    name="isOnline"
+                                    control={form.control}
+                                    render={({ field }) => (
+                                        <div className="flex items-center gap-3 rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4">
+                                            <Checkbox
+                                                id="is-online"
+                                                checked={field.value || false}
+                                                onCheckedChange={(checked) => field.onChange(checked === true)}
+                                            />
+                                            <div className="flex-1">
+                                                <label htmlFor="is-online" className="text-sm font-medium text-psi-dark cursor-pointer">
+                                                    Evento online
+                                                </label>
+                                                <p className="text-xs text-psi-dark/60 mt-1">
+                                                    Eventos online são eventos que ocorrem de forma virtual, como conferências, webinars, etc.
                                                 </p>
                                             </div>
                                         </div>

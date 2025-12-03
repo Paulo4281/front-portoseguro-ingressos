@@ -17,11 +17,11 @@ import { cn } from "@/lib/utils"
 type TDialogExportBuyersListProps = {
     open: boolean
     onOpenChange: (open: boolean) => void
-    onFormatSelect?: (format: "xlsx" | "csv" | "json") => void
+    onFormatSelect?: (format: "pdf" | "xlsx" | "csv" | "json") => void
 }
 
 const DialogExportBuyersList = ({ open, onOpenChange, onFormatSelect }: TDialogExportBuyersListProps) => {
-    const handleFormatSelect = (format: "xlsx" | "csv" | "json") => {
+    const handleFormatSelect = (format: "pdf" | "xlsx" | "csv" | "json") => {
         if (onFormatSelect) {
             onFormatSelect(format)
         }
@@ -43,23 +43,46 @@ const DialogExportBuyersList = ({ open, onOpenChange, onFormatSelect }: TDialogE
                 
                 <div className="space-y-3 py-4">
                     <button
-                        onClick={() => handleFormatSelect("xlsx")}
+                        onClick={() => handleFormatSelect("pdf")}
                         className={cn(
                             "w-full p-4 rounded-xl border-2 border-[#E4E6F0] bg-white hover:border-psi-primary hover:bg-psi-primary/5 transition-all duration-200 text-left",
-                            "focus:outline-none focus:ring-2 focus:ring-psi-primary focus:ring-offset-2"
                         )}
                     >
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="w-12 h-12 rounded-lg bg-psi-primary/10 flex items-center justify-center">
-                                    <FileSpreadsheet className="h-6 w-6 text-psi-primary" />
+                                    <FileText className="h-6 w-6 text-psi-primary" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-sm font-semibold text-psi-dark">PDF</p>
+                                        <Badge variant="secondary" className="bg-psi-primary/10 text-psi-primary border-psi-primary/20">
+                                            Mais utilizado
+                                        </Badge>
+                                    </div>
+                                    <p className="text-xs text-psi-dark/60 mt-1">
+                                        Performance ideal para impressão e compartilhamento
+                                    </p>
+                                </div>
+                            </div>
+                            <Download className="h-5 w-5 text-psi-dark/40" />
+                        </div>
+                    </button>
+
+                    <button
+                        onClick={() => handleFormatSelect("xlsx")}
+                        className={cn(
+                            "w-full p-4 rounded-xl border-2 border-[#E4E6F0] bg-white hover:border-psi-primary hover:bg-psi-primary/5 transition-all duration-200 text-left",
+                        )}
+                    >
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-lg bg-psi-primary/10 flex items-center justify-center">
+                                    <FileSpreadsheet className="h-6 w-6 text-psi-primary/80" />
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <p className="text-sm font-semibold text-psi-dark">Excel (xlsx)</p>
-                                        <Badge variant="secondary" className="bg-psi-primary/10 text-psi-primary border-psi-primary/20">
-                                            Mais utilizado
-                                        </Badge>
                                     </div>
                                     <p className="text-xs text-psi-dark/60 mt-1">
                                         Formato ideal para análise e edição

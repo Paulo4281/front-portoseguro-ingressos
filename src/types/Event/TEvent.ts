@@ -23,6 +23,7 @@ type TEvent = {
     userId: string
     organizerId: string
     isFree: boolean
+    isOnline: boolean
     isClientTaxed: boolean
     maxInstallments: number
     isActive: boolean

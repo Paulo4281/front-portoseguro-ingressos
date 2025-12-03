@@ -98,6 +98,9 @@ class EventServiceClass {
         if (data.isFree !== undefined && data.isFree !== null) {
             formData.append("isFree", String(data.isFree))
         }
+        if (data.isOnline !== undefined && data.isOnline !== null) {
+            formData.append("isOnline", String(data.isOnline))
+        }
         if (data.maxInstallments !== undefined && data.maxInstallments !== null) {
             formData.append("maxInstallments", String(data.maxInstallments))
         }

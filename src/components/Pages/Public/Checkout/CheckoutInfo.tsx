@@ -56,7 +56,8 @@ import {
     EyeOff,
     LogIn,
     UserCircle,
-    ArrowRight
+    ArrowRight,
+    MailCheck
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { CTAButton } from "@/components/CTAButton/CTAButton"
@@ -309,7 +310,6 @@ const CheckoutInfo = () => {
     useEffect(() => {
         if (items.length > 0 && currentEvent && eventId) {
             if (hasRun.current) return
-            hasRun.current = true
 
             const createTicketHoldFunc = async () => {
                 const ticketHolds: TTicketHoldCreate[] = []
@@ -355,16 +355,19 @@ const CheckoutInfo = () => {
                     }
                 }
 
-                const response = await createTicketHold(ticketHolds)
-
-                if (response?.success && response?.data) {
-                    setTicketHoldData(response.data)
+                if (isAuthenticated) {
+                    const response = await createTicketHold(ticketHolds)
+    
+                    if (response?.success && response?.data) {
+                        setTicketHoldData(response.data)
+                        hasRun.current = true
+                    }
                 }
             }
 
             createTicketHoldFunc()
         }
-    }, [items, currentEvent, eventId])
+    }, [items, currentEvent, eventId, isAuthenticated])
 
     const eventsWithForms = useMemo(() => {
         return eventsData.filter(event => {
@@ -1046,9 +1049,13 @@ const CheckoutInfo = () => {
                         <p className="text-psi-dark/60">
                             Finalize sua compra de ingressos
                         </p>
-                        <div className="mt-4">
-                            <CheckoutTimer expiresAt={new Date(new Date().getTime() + 1000 * 60 * 60 * 24).toISOString()} onExpire={() => { }} />
-                        </div>
+                        {
+                            isAuthenticated && (
+                                <div className="mt-4">
+                                    <CheckoutTimer expiresAt={new Date(new Date().getTime() + 1000 * 60 * 60 * 24).toISOString()} onExpire={() => { }} />
+                                </div>
+                            )
+                        }
                     </div>
 
                     <div className="mb-8">
@@ -1641,7 +1648,7 @@ const CheckoutInfo = () => {
                                                                 )}
                                                             </div>
 
-                                                            <div className="pt-2 border-t border-psi-dark/10 space-y-2">
+                                                            {/* <div className="pt-2 border-t border-psi-dark/10 space-y-2">
                                                                 {appliedCoupons[event.id] && (
                                                                     <div className="flex items-center justify-between text-sm">
                                                                         <span className="text-psi-dark/70">Subtotal:</span>
@@ -1667,7 +1674,7 @@ const CheckoutInfo = () => {
                                                                         )}
                                                                     </p>
                                                                 </div>
-                                                            </div>
+                                                            </div> */}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1677,7 +1684,7 @@ const CheckoutInfo = () => {
 
                                     <div className="mt-6 p-4 rounded-xl bg-psi-primary/5 border border-psi-primary/20">
                                         <div className="flex items-start gap-3">
-                                            <Receipt className="size-5 text-psi-primary shrink-0 mt-0.5" />
+                                            <MailCheck className="size-5 text-psi-primary shrink-0 mt-0.5" />
                                             <div className="space-y-1">
                                                 <p className="font-semibold text-psi-dark">Importante</p>
                                                 <p className="text-sm text-psi-dark/70">

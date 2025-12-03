@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Calendar, Clock, MapPin, Repeat, Tag } from "lucide-react"
+import { Calendar, Clock, Gift, Laptop, MapPin, Repeat, Tag } from "lucide-react"
 import { Card } from "@/components/Card/Card"
 import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
@@ -113,6 +113,20 @@ const CardEvent = (
         return activeBatch || null
     }
 
+    const onlineBadge = event.isOnline ? (
+        <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full border border-psi-primary/20 shadow-sm">
+            <Laptop className="h-3 w-3 text-psi-primary" />
+            <span className="text-xs font-semibold text-psi-dark">Online</span>
+        </div>
+    ) : null
+
+    const freeBadge = event.isFree ? (
+        <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full border border-psi-primary/20 shadow-sm">
+            <Gift className="h-3 w-3 text-psi-primary" />
+            <span className="text-xs font-semibold text-psi-dark">Gratuito</span>
+        </div>
+    ) : null
+
     const activeBatch = getActiveBatch(event.EventBatches)
     const recurrenceInfo = formatRecurrenceInfo(event.Recurrence)
     const isRecurrent = event.Recurrence && event.Recurrence.type !== "NONE"
@@ -141,7 +155,7 @@ const CardEvent = (
                 
                 <div className="p-5 flex flex-col flex-1">
                     <h3 className="text-lg font-bold text-psi-dark mb-3 line-clamp-2 leading-tight group-hover:text-psi-primary transition-colors">
-                        {event.name}
+                        {event.name} {onlineBadge} {freeBadge}
                     </h3>
 
                     <div className="space-y-2.5 flex-1">

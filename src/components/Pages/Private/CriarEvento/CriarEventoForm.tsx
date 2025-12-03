@@ -743,6 +743,29 @@ const CriarEventoForm = () => {
                                 />
                                 <FieldError message={form.formState.errors.isFree?.message || ""} />
 
+                                <Controller
+                                    name="isOnline"
+                                    control={form.control}
+                                    render={({ field }) => (
+                                        <div className="flex items-center gap-3 rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4">
+                                            <Checkbox
+                                                id="is-online"
+                                                checked={field.value || false}
+                                                onCheckedChange={(checked) => field.onChange(checked === true)}
+                                            />
+                                            <div className="flex-1">
+                                                <label htmlFor="is-online" className="text-sm font-medium text-psi-dark cursor-pointer">
+                                                    Evento online
+                                                </label>
+                                                <p className="text-xs text-psi-dark/60 mt-1">
+                                                    Eventos online são eventos que ocorrem de forma virtual, como conferências, webinars, etc.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                />
+                                <FieldError message={form.formState.errors.isFree?.message || ""} />
+
                                 <div>
                                     <label className="block text-sm font-medium text-psi-dark/70 mb-2">
                                         Limitar quantidade de ingressos por pessoa

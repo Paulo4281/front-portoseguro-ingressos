@@ -241,12 +241,12 @@ const HomeHero = () => {
 
                                 <div className="absolute left-[40vw] bottom-[-35px] w-[180px] h-auto z-10 pointer-events-none
                                 sm:w-[250px] sm:left-[400px] sm:bottom-[-60px]
-                                lg:w-[260px] lg:left-[365px] lg:bottom-[-30px]
-                                3xl:w-[330px] 3xl:left-[490px] 3xl:bottom-[-75px]
+                                lg:w-[260px] lg:left-[465px] lg:bottom-[-30px]
+                                3xl:w-[320px] 3xl:left-[500px] 3xl:bottom-[-75px]
                                 ">
                                     <Image
                                         src="/images/porto-seguro-ingressos-cabral.png"
-                                        alt="Pedro Álvares Cabral apontando"
+                                        alt="Pedro Álvares Cabral apontando para as taxas da plataforma"
                                         width={350}
                                         height={437}
                                         className="object-contain w-full h-auto -scale-x-100 lg:scale-x-100"
@@ -446,7 +446,7 @@ const HomeHero = () => {
                                 ">
                                     <Image
                                         src="/images/porto-seguro-ingressos-forte.png"
-                                        alt="Pedro Álvares Cabral apontando"
+                                        alt=""
                                         width={350}
                                         height={437}
                                         className="object-contain w-full h-auto -scale-x-100 lg:scale-x-100"

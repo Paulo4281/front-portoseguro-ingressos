@@ -69,7 +69,7 @@ const CheckoutTimer = ({ expiresAt, onExpire }: TCheckoutTimerProps) => {
                     Seus ingressos estão reservados
                 </p>
                 <p className="text-sm text-psi-dark/70">
-                    Tempo restante: <Timer seconds={secondsLeft} variant="highlight" size="sm" />
+                    Tempo restante: <Timer seconds={secondsLeft} variant="highlight" size="lg" />
                 </p>
             </div>
         </div>
