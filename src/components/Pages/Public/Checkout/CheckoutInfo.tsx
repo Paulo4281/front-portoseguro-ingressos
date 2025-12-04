@@ -108,7 +108,7 @@ const CheckoutInfo = () => {
 
     const { mutateAsync: updateTicketHold, isPending: isUpdatingTicketHold } = useTicketHoldUpdateQuantity()
 
-    const handleUpdateQuantity = async (params: THandleUpdateQuantityParams, updateQuantityCartContext: boolean = true) => {
+    const handleUpdateQuantity = async (params: THandleUpdateQuantityParams, updateQuantityCartContext: boolean = true): Promise<boolean> => {
         const { eventId, batchId, qty, ticketHoldId } = params
 
         const response = await updateTicketHold({
@@ -120,7 +120,10 @@ const CheckoutInfo = () => {
             if (updateQuantityCartContext) {
                 updateQuantity(eventId, batchId, qty)
             }
+            return true
         }
+
+        return false
 
     }
 
@@ -319,7 +322,20 @@ const CheckoutInfo = () => {
                     let hasTicketTypes = false
                     let hasMultipleDaysWithTicketTypes = false
 
-                    if (item.ticketTypes && item.ticketTypes.length > 0) {
+                    if (item.ticketTypes && item.ticketTypes.some((ticketType) => ticketType.days && ticketType.days.length > 0)) {
+                        for (const ticketType of item.ticketTypes) {
+                            ticketHolds.push({
+                                eventId: eventId || "",
+                                eventBatchId: item.batchId || "",
+                                eventDateId: ticketType.days?.[0] || null,
+                                ticketTypeId: ticketType.ticketTypeId || null,
+                                quantity: ticketType.quantity
+                            })
+                        }
+                        hasMultipleDaysWithTicketTypes = true
+                    }
+
+                    if (item.ticketTypes && item.ticketTypes.length > 0 && !hasMultipleDaysWithTicketTypes) {
                         for (const ticketType of item.ticketTypes) {
                             ticketHolds.push({
                                 eventId: eventId || "",
@@ -330,19 +346,6 @@ const CheckoutInfo = () => {
                             })
                         }
                         hasTicketTypes = true
-                    }
-
-                    if (item.ticketTypes && item.ticketTypes.some((ticketType) => ticketType.days && ticketType.days.length > 0)) {
-                        for (const ticketType of item.ticketTypes) {
-                            ticketHolds.push({
-                                eventId: eventId || "",
-                                eventBatchId: item.batchId || "",
-                                eventDateId: ticketType.days?.[0] || null,
-                                ticketTypeId: ticketType.ticketTypeId || null,
-                                quantity: item.quantity
-                            })
-                        }
-                        hasMultipleDaysWithTicketTypes = true
                     }
 
                     if (!hasTicketTypes && !hasMultipleDaysWithTicketTypes) {
@@ -1451,17 +1454,13 @@ const CheckoutInfo = () => {
                                                                                 <div className="flex items-center gap-3">
                                                                                     <QuantitySelector
                                                                                         value={tt.quantity}
-                                                                                        onChange={(qty) => {
+                                                                                        onChange={async (qty) => {
                                                                                             const isDayBasedWithoutTicketTypes = CheckoutUtils.isDayBasedWithoutTicketTypes([tt])
                                                                                             const isMultipleDaysWithTicketTypes = CheckoutUtils.isMultipleDaysWithTicketTypes([tt])
                                                                                             const identifier = CheckoutUtils.getTicketTypeIdentifier(tt)
                                                                                             const underlineIdentifier = CheckoutUtils.getTicketTypeIdentifier(tt, true)
 
-
-                                                                                            console.log(isMultipleDaysWithTicketTypes)
-
                                                                                             if (qty === 0 && item.ticketTypes && item.ticketTypes.length > 1) {
-                                                                                                console.log("A")
                                                                                                 const updatedTicketTypes = CheckoutUtils.filterTicketTypesByIdentifier(
                                                                                                     item.ticketTypes,
                                                                                                     identifier,
@@ -1523,35 +1522,46 @@ const CheckoutInfo = () => {
                                                                                                 console.log(updatedTicketTypes)
 
                                                                                                 if (updatedTicketTypes && updatedTicketTypes.length > 0 && newTotalQuantity > 0) {
-                                                                                                    handleUpdateQuantity({
+                                                                                                    let ticketHoldId = ticketHoldData?.find((th) => th.eventDateId === (isMultipleDaysWithTicketTypes ? underlineIdentifier?.split("_")[1] : identifier) && th.ticketTypeId === (isMultipleDaysWithTicketTypes ? underlineIdentifier?.split("_")[0] : identifier))?.id || ""
+
+                                                                                                    if (!ticketHoldId) {
+                                                                                                        ticketHoldId = ticketHoldData?.find((th) => th.eventDateId === (isMultipleDaysWithTicketTypes ? underlineIdentifier?.split("_")[1] : identifier))?.id || ""
+                                                                                                    }
+
+                                                                                                    const success = await handleUpdateQuantity({
                                                                                                         eventId: item.eventId,
                                                                                                         batchId: item.batchId || "",
                                                                                                         qty: qty,
-                                                                                                        ticketHoldId: ticketHoldData?.find((th) => th.eventDateId === (isMultipleDaysWithTicketTypes ? underlineIdentifier?.split("_")[1] : identifier))?.id || ""
+                                                                                                        ticketHoldId: ticketHoldId
                                                                                                     }, false)
 
-                                                                                                    addItem({
-                                                                                                        eventId: item.eventId,
-                                                                                                        eventName: item.eventName,
-                                                                                                        batchId: item.batchId,
-                                                                                                        batchName: item.batchName,
-                                                                                                        price: newTotalPrice || 0,
-                                                                                                        ticketTypes: updatedTicketTypes,
-                                                                                                        isClientTaxed: item.isClientTaxed,
-                                                                                                        isFree: item.isFree
-                                                                                                    }, newTotalQuantity)
+                                                                                                    if (success) {
+                                                                                                        addItem({
+                                                                                                            eventId: item.eventId,
+                                                                                                            eventName: item.eventName,
+                                                                                                            batchId: item.batchId,
+                                                                                                            batchName: item.batchName,
+                                                                                                            price: newTotalPrice || 0,
+                                                                                                            ticketTypes: updatedTicketTypes,
+                                                                                                            isClientTaxed: item.isClientTaxed,
+                                                                                                            isFree: item.isFree
+                                                                                                        }, newTotalQuantity)
+                                                                                                    }
+
                                                                                                 }
 
                                                                                                 return
                                                                                             }
-
-                                                                                            updateTicketTypeQuantity(item.eventId, item.batchId, tt.ticketTypeId, qty)
-                                                                                            handleUpdateQuantity({
+                                                                                            const success = await handleUpdateQuantity({
                                                                                                 eventId: item.eventId,
                                                                                                 batchId: item.batchId || "",
                                                                                                 qty: qty,
                                                                                                 ticketHoldId: ticketHoldData?.find((th) => th.ticketTypeId === tt.ticketTypeId)?.id || ticketHoldData?.find((th) => th.eventDateId === item.ticketTypes?.[0]?.days?.[0] || null)?.id || ""
                                                                                             }, false)
+
+                                                                                            if (success) {
+                                                                                                updateTicketTypeQuantity(item.eventId, item.batchId, tt.ticketTypeId, qty)
+                                                                                            }
                                                                                         }}
                                                                                         min={1}
                                                                                         max={event?.buyTicketsLimit || 10}

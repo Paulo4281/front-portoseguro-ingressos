@@ -13,10 +13,10 @@ export const APIErrorHandler: Record<number, string> = {
     11: "Este cupom já expirou",
     12: "Este cupom já atingiu o limite de uso",
     13: "Documento já cadastrado",
-    14: "Ingresso não disponível para este dia do evento",
-    15: "Ingresso não disponível para este tipo de ingresso",
-    16: "Ingresso não disponível para este dia do evento e tipo de ingresso",
-    17: "Ingresso não disponível para este evento",
+    14: "Quantidade não disponível para este dia do evento",
+    15: "Quantidade não disponível para este tipo de ingresso",
+    16: "Quantidade não disponível para este dia do evento e tipo de ingresso",
+    17: "Quantidade não disponível para este evento",
 
     // EXTERNAL
     900: "Erro ao escrever a descrição do evento com IA",

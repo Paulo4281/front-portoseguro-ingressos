@@ -98,9 +98,11 @@ type TEventSalesReport = {
 
 type TEventVerifyLastTicketsResponse = {
     eventId: string
-    eventDateId: string
+    eventDateId: string | null
     ticketTypeId: string | null
     isLastTickets: boolean
+    available: boolean
+    ticketsAmount: number | null
 }
 
 type TEventDetailedStats = {
