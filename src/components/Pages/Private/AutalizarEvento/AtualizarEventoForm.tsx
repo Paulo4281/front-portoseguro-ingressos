@@ -455,7 +455,8 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
 
             const ticketTypesData = hasTicketTypes ? event.TicketTypes.map(tt => ({
                 name: tt.name,
-                description: tt.description
+                description: tt.description,
+                id: tt.id
             })) : undefined
 
             const sortedEventBatch = hasBatches
@@ -473,13 +474,17 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                         const ebt = batchTicketTypes.find(ebt => ebt.ticketTypeId === tt.id)
                         return {
                             ticketTypeId: typeIdx.toString(),
+                            id: tt.id,
                             price: ebt ? (ebt.price ? ebt.price / 100 : 0) : 0,
                             amount: ebt ? ebt.amount : 0
                         }
                     })
                     : []
 
+                console.log(ticketTypesInBatch)
+
                 return {
+                    id: batch.id,
                     name: batch.name,
                     price: batch.price ? batch.price / 100 : undefined,
                     quantity: batch.tickets,
@@ -490,6 +495,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                     ticketTypes: ticketTypesInBatch.length > 0 ? ticketTypesInBatch : undefined
                 }
             }) : [{
+                id: "",
                 name: "",
                 price: event.price ? event.price / 100 : undefined,
                 quantity: event.tickets ?? undefined,
@@ -611,6 +617,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                     price: batch.price ? Math.round(batch.price * 100) : null,
                     ticketTypes: batch.ticketTypes ? batch.ticketTypes.map(type => ({
                         ...type,
+                        id: type.id || undefined,
                         price: type.price ? Math.round(type.price * 100) : null
                     })) : undefined
                 })) : undefined,
@@ -632,6 +639,8 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                 buyTicketsLimit: data.buyTicketsLimit || null,
                 maxInstallments: data.maxInstallments || null
             }
+
+            console.log(submitData)
 
             // Detect if image is a new File (uploaded). If so, we'll send it via the PATCH image route.
             let imageFile: File | undefined = undefined
@@ -684,6 +693,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
             : []
         
         appendBatch({
+            id: "",
             name: "",
             price: undefined,
             quantity: undefined,

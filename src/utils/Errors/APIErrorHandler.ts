@@ -17,6 +17,7 @@ export const APIErrorHandler: Record<number, string> = {
     15: "Quantidade não disponível para este tipo de ingresso",
     16: "Quantidade não disponível para este dia do evento e tipo de ingresso",
     17: "Quantidade não disponível para este evento",
+    18: "Você está tentando diminuir a quantidade de ingressos de um lote que já vendeu mais ingressos do que a quantidade que você está tentando remover",
 
     // EXTERNAL
     900: "Erro ao escrever a descrição do evento com IA",

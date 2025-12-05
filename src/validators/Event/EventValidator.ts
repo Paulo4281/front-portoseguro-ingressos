@@ -30,6 +30,7 @@ const RecurrenceValidator = z.object({
 }).nullable().optional()
 
 const TicketTypeValidator = z.object({
+    id: z.string().nullable().optional(),
     name: z.string({ error: DefaultFormErrors.required }).min(1, { error: "Nome do tipo é obrigatório" }),
     description: z.string().nullable().optional()
 })
@@ -41,11 +42,13 @@ const EventBatchTicketTypeDayValidator = z.object({
 
 const EventBatchTicketTypeValidator = z.object({
     ticketTypeId: z.string({ error: DefaultFormErrors.required }),
+    id: z.string().nullable().optional(),
     price: z.number().min(0, { error: "Preço não pode ser negativo" }).nullable().optional(),
     amount: z.number({ error: DefaultFormErrors.required }).min(1, { error: "Quantidade deve ser maior que 0" })
 })
 
 const BatchValidator = z.object({
+    id: z.string().nullable().optional(),
     name: z.string({ error: DefaultFormErrors.required }),
     price: z.number().min(0, { error: "Preço não pode ser negativo" }).nullable().optional(),
     quantity: z.number().min(1, { error: "Quantidade deve ser maior que 0" }).nullable().optional(),
@@ -321,13 +324,14 @@ const EventUpdateValidator = EventUpdateValidatorBase.superRefine((data, ctx) =>
             const hasTicketTypes = batch.ticketTypes && batch.ticketTypes.length > 0
             const hasPrice = batch.price !== null && batch.price !== undefined
             const hasQuantity = batch.quantity !== null && batch.quantity !== undefined && batch.quantity > 0
+            const hasSpecificPriceInDates = data.dates && data.dates.length > 0 && data.dates.some(date => date.hasSpecificPrice && date.price !== null && date.price !== undefined)
             const isFreeEvent = data.isFree === true
 
             if (isFreeEvent) {
                 return
             }
 
-            if (!hasTicketTypes && !hasPrice) {
+            if (!hasTicketTypes && !hasPrice && !hasSpecificPriceInDates) {
                 ctx.addIssue({
                     code: "custom",
                     path: ["batches", batchIndex, "price"],
