@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { useForm, Controller, useFieldArray, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
@@ -31,6 +31,8 @@ import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind
 import { useEventFindByIdUser } from "@/hooks/Event/useEventFindByIdUser"
 import { useEventUpdate } from "@/hooks/Event/useEventUpdate"
 import useEventUpdateImage from "@/hooks/Event/useEventUpdateImage"
+import { useEventVerifySold } from "@/hooks/Event/useEventVerifySold"
+import type { TEventVerifySoldResponse } from "@/types/Event/TEvent"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
@@ -186,9 +188,11 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     const [isFormForEachTicket, setIsFormForEachTicket] = useState(false)
     const [originalData, setOriginalData] = useState<any>(null)
     const [isWarningOpen, setIsWarningOpen] = useState(true)
+    const [soldTicketsData, setSoldTicketsData] = useState<TEventVerifySoldResponse[]>([])
 
     const { data: eventData, isLoading: isEventLoading } = useEventFindByIdUser(eventId)
     const { data: eventCategoriesData, isLoading: isEventCategoriesLoading } = useEventCategoryFind()
+    const { data: eventVerifySoldData } = useEventVerifySold(eventId)
 
     const { mutateAsync: updateEvent, isPending: isUpdatingEvent } = useEventUpdate(eventId)
     const { mutateAsync: updateEventImage, isPending: isUpdatingImage } = useEventUpdateImage(eventId)
@@ -421,6 +425,58 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     const { changes, riskScore } = detectChanges
 
     useEffect(() => {
+        if (eventVerifySoldData?.data && Array.isArray(eventVerifySoldData.data)) {
+            setSoldTicketsData(eventVerifySoldData.data)
+        }
+    }, [eventVerifySoldData])
+
+    const getSoldQuantity = useCallback((
+        eventBatchId: string,
+        eventDateId: string | null = null,
+        ticketTypeId: string | null = null
+    ): number => {
+        const soldItem = soldTicketsData.find(item => 
+            item.eventBatchId === eventBatchId &&
+            (eventDateId === null ? item.eventDateId === null : item.eventDateId === eventDateId) &&
+            (ticketTypeId === null ? item.ticketTypeId === null : item.ticketTypeId === ticketTypeId)
+        )
+        return soldItem?.sold || 0
+    }, [soldTicketsData])
+
+    const getSoldQuantityForDate = useCallback((
+        eventDateId: string | null,
+        ticketTypeId: string | null = null
+    ): number => {
+        if (!eventDateId) return 0
+        return soldTicketsData
+            .filter(item => 
+                item.eventDateId === eventDateId &&
+                (ticketTypeId === null ? item.ticketTypeId === null : item.ticketTypeId === ticketTypeId)
+            )
+            .reduce((sum, item) => sum + item.sold, 0)
+    }, [soldTicketsData])
+
+    const getBatchId = useCallback((batchIndex: number): string | null => {
+        const batch = eventData?.data?.EventBatches?.find((b, i, arr) => {
+            const sortedEventBatch = [...arr].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+            return sortedEventBatch[batchIndex]?.id === b.id
+        })
+        return batch?.id || null
+    }, [eventData])
+
+    const getTicketTypeId = useCallback((typeIndex: number): string | null => {
+        const ticketType = eventData?.data?.TicketTypes?.[typeIndex]
+        return ticketType?.id || null
+    }, [eventData])
+
+    const getEventDateId = useCallback((dateIndex: number): string | null => {
+        const eventDates = eventData?.data?.EventDates
+        if (!eventDates || eventDates.length === 0) return null
+        if (dateIndex >= eventDates.length) return null
+        return eventDates[dateIndex]?.id || null
+    }, [eventData])
+
+    useEffect(() => {
         if (ticketTypes.length > 0) {
             const currentBatches = form.getValues("batches") || []
             currentBatches.forEach((batch, batchIndex) => {
@@ -519,6 +575,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                     : null
 
                 return {
+                    id: eventDate.id,
                     date: formatDateOnly(eventDate.date),
                     hourStart: eventDate.hourStart || "",
                     hourEnd: eventDate.hourEnd,
@@ -528,6 +585,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                 }
             }) : [
                 {
+                    id: null,
                     date: "",
                     hourStart: "",
                     hourEnd: null,
@@ -1323,23 +1381,54 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                             </div>
 
                                                             <div>
-                                                                <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                                    Quantidade *
-                                                                </label>
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <label className="block text-sm font-medium text-psi-dark/70">
+                                                                        Quantidade *
+                                                                    </label>
+                                                                    {(() => {
+                                                                        const batchId = getBatchId(index)
+                                                                        if (batchId) {
+                                                                            const sold = getSoldQuantity(batchId, null, null)
+                                                                            if (sold > 0) {
+                                                                                return (
+                                                                                    <span className="text-xs text-psi-dark/60">
+                                                                                        Vendidos: <span className="font-semibold text-psi-primary">{sold}</span>
+                                                                                    </span>
+                                                                                )
+                                                                            }
+                                                                        }
+                                                                        return null
+                                                                    })()}
+                                                                </div>
                                                                 <Controller
                                                                     name={`batches.${index}.quantity`}
                                                                     control={form.control}
-                                                                    render={({ field }) => (
-                                                                        <Input
-                                                                            {...field}
-                                                                            type="number"
-                                                                            placeholder="100"
-                                                                            required
-                                                                            className="w-full"
-                                                                            value={field.value || ""}
-                                                                            onChange={(e) => field.onChange(parseInt(e.target.value) || undefined)}
-                                                                        />
-                                                                    )}
+                                                                    render={({ field }) => {
+                                                                        const batchId = getBatchId(index)
+                                                                        const sold = batchId ? getSoldQuantity(batchId, null, null) : 0
+                                                                        const currentValue = field.value || 0
+                                                                        
+                                                                        return (
+                                                                            <Input
+                                                                                {...field}
+                                                                                type="number"
+                                                                                placeholder="100"
+                                                                                required
+                                                                                className="w-full"
+                                                                                value={field.value || ""}
+                                                                                onChange={(e) => {
+                                                                                    const newValue = parseInt(e.target.value) || undefined
+                                                                                    if (newValue !== undefined && batchId && newValue < sold) {
+                                                                                        Toast.error(`O número de ingressos não pode ser inferior à quantidade que já foi vendida (${sold}).`)
+                                                                                        field.onChange(currentValue)
+                                                                                    } else {
+                                                                                        field.onChange(newValue)
+                                                                                    }
+                                                                                }}
+                                                                                min={sold > 0 ? sold : undefined}
+                                                                            />
+                                                                        )
+                                                                    }}
                                                                 />
                                                                 <FieldError message={form.formState.errors.batches?.[index]?.quantity?.message || ""} />
                                                             </div>
@@ -1402,21 +1491,54 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                             </div>
 
                                                                             <div>
-                                                                                <label className="block text-xs text-psi-dark/60 mb-1">Quantidade *</label>
+                                                                                <div className="flex items-center justify-between mb-1">
+                                                                                    <label className="block text-xs text-psi-dark/60">Quantidade *</label>
+                                                                                    {(() => {
+                                                                                        const batchId = getBatchId(index)
+                                                                                        const ticketTypeId = getTicketTypeId(typeIdx)
+                                                                                        if (batchId && ticketTypeId) {
+                                                                                            const sold = getSoldQuantity(batchId, null, ticketTypeId)
+                                                                                            if (sold > 0) {
+                                                                                                return (
+                                                                                                    <span className="text-xs text-psi-dark/60">
+                                                                                                        Vendidos: <span className="font-semibold text-psi-primary">{sold}</span>
+                                                                                                    </span>
+                                                                                                )
+                                                                                            }
+                                                                                        }
+                                                                                        return null
+                                                                                    })()}
+                                                                                </div>
                                                                                 <Controller
                                                                                     name={`batches.${index}.ticketTypes.${ticketTypeIndex}.amount`}
                                                                                     control={form.control}
-                                                                                    render={({ field }) => (
-                                                                                        <Input
-                                                                                            {...field}
-                                                                                            type="number"
-                                                                                            placeholder="100"
-                                                                                            required
-                                                                                            className="w-full"
-                                                                                            value={field.value || ""}
-                                                                                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                                                                                        />
-                                                                                    )}
+                                                                                    render={({ field }) => {
+                                                                                        const batchId = getBatchId(index)
+                                                                                        const ticketTypeId = getTicketTypeId(typeIdx)
+                                                                                        const sold = (batchId && ticketTypeId) ? getSoldQuantity(batchId, null, ticketTypeId) : 0
+                                                                                        const currentValue = field.value || 0
+                                                                                        
+                                                                                        return (
+                                                                                            <Input
+                                                                                                {...field}
+                                                                                                type="number"
+                                                                                                placeholder="100"
+                                                                                                required
+                                                                                                className="w-full"
+                                                                                                value={field.value || ""}
+                                                                                                onChange={(e) => {
+                                                                                                    const newValue = parseInt(e.target.value) || 0
+                                                                                                    if (batchId && ticketTypeId && newValue < sold) {
+                                                                                                        Toast.error(`O número de ingressos não pode ser inferior à quantidade que já foi vendida (${sold}).`)
+                                                                                                        field.onChange(currentValue)
+                                                                                                    } else {
+                                                                                                        field.onChange(newValue)
+                                                                                                    }
+                                                                                                }}
+                                                                                                min={sold > 0 ? sold : undefined}
+                                                                                            />
+                                                                                        )
+                                                                                    }}
                                                                                 />
                                                                                 <FieldError message={form.formState.errors.batches?.[index]?.ticketTypes?.[ticketTypeIndex]?.amount?.message || ""} />
                                                                             </div>
@@ -1941,7 +2063,23 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                 <div className="space-y-3 rounded-lg border border-[#E4E6F0] bg-white p-3">
                                                     {ticketTypes.length === 0 ? (
                                                         <div>
-                                                            <label className="block text-xs text-psi-dark/60 mb-1">Preço para este dia *</label>
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <label className="block text-xs text-psi-dark/60">Preço para este dia *</label>
+                                                                {(() => {
+                                                                    const eventDateId = getEventDateId(index)
+                                                                    if (eventDateId) {
+                                                                        const sold = getSoldQuantityForDate(eventDateId, null)
+                                                                        if (sold > 0) {
+                                                                            return (
+                                                                                <span className="text-xs text-psi-dark/60">
+                                                                                    Vendidos: <span className="font-semibold text-psi-primary">{sold}</span>
+                                                                                </span>
+                                                                            )
+                                                                        }
+                                                                    }
+                                                                    return null
+                                                                })()}
+                                                            </div>
                                                             <Controller
                                                                 name={`dates.${index}.price`}
                                                                 control={form.control}
@@ -1983,9 +2121,26 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                 return (
                                                                     <div key={typeIdx} className="flex items-center gap-3">
                                                                         <div className="flex-1">
-                                                                            <label className="block text-xs text-psi-dark/60 mb-1">{ticketType.name}{ticketType.description && (
-                                                                                <span className="text-xs text-psi-dark/60 ml-2">| {ticketType.description}</span>
-                                                                            )}</label>
+                                                                            <div className="flex items-center justify-between mb-1">
+                                                                                <label className="block text-xs text-psi-dark/60">{ticketType.name}{ticketType.description && (
+                                                                                    <span className="text-xs text-psi-dark/60 ml-2">| {ticketType.description}</span>
+                                                                                )}</label>
+                                                                                {(() => {
+                                                                                    const eventDateId = getEventDateId(index)
+                                                                                    const ticketTypeId = getTicketTypeId(typeIdx)
+                                                                                    if (eventDateId && ticketTypeId) {
+                                                                                        const sold = getSoldQuantityForDate(eventDateId, ticketTypeId)
+                                                                                        if (sold > 0) {
+                                                                                            return (
+                                                                                                <span className="text-xs text-psi-dark/60">
+                                                                                                    Vendidos: <span className="font-semibold text-psi-primary">{sold}</span>
+                                                                                                </span>
+                                                                                            )
+                                                                                        }
+                                                                                    }
+                                                                                    return null
+                                                                                })()}
+                                                                            </div>
                                                                             {priceIndex >= 0 && (
                                                                                 <Controller
                                                                                     name={`dates.${index}.ticketTypePrices.${priceIndex}.price`}

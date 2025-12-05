@@ -4,6 +4,7 @@ import { useMemo } from "react"
 import { useAuthStore } from "@/stores/Auth/AuthStore"
 import { Background } from "@/components/Background/Background"
 import { Clock, XCircle, AlertCircle, TrendingDown, Zap, Shield, Users, Star, Sparkles } from "lucide-react"
+import { Skeleton } from "../ui/skeleton"
 
 type TVerificationStatusGuardProps = {
     children: React.ReactNode
@@ -252,27 +253,19 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
         )
     }
 
+    // coloque um loading aqui
     if (!verificationStatus) {
         return (
-            <Background variant="light" className="min-h-screen">
-                <div className="container py-8 mt-[100px]
-                sm:py-12">
-                    <div className="max-w-2xl mx-auto px-4
-                    sm:px-6
-                    lg:px-8">
-                        <div className="rounded-2xl border-2 border-amber-200 bg-amber-50 p-8 flex flex-col items-center text-center space-y-4">
-                            <div className="h-16 w-16 rounded-full bg-amber-100 flex items-center justify-center">
-                                <AlertCircle className="h-8 w-8 text-amber-600" />
-                            </div>
-                            <div className="space-y-2">
-                                <h2 className="text-2xl font-semibold text-amber-900">
-                                    Verificação pendente
-                                </h2>
-                                <p className="text-amber-800">
-                                    Complete seu cadastro na página de perfil para iniciar a verificação da sua conta.
-                                </p>
-                            </div>
-                        </div>
+            <Background variant="light" className="min-h-screen flex items-center justify-center">
+                <div className="w-full flex flex-col items-center justify-center py-24">
+                    <div
+                        aria-label="Carregando"
+                        className="flex flex-col items-center"
+                    >
+                        <div className="animate-spin rounded-full border-4 border-psi-primary border-t-transparent h-14 w-14 mb-6" />
+                        <span className="text-base font-medium text-psi-primary mb-1">
+                            Carregando...
+                        </span>
                     </div>
                 </div>
             </Background>

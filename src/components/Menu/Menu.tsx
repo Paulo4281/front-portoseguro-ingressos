@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent, Wallet, QrCode } from "lucide-react"
+import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent, Wallet, QrCode, HeartPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Logo from "@/components/Logo/Logo"
 import { Avatar } from "@/components/Avatar/Avatar"
@@ -108,6 +108,24 @@ const menuLinks: TMenuLink[] = [
         roles: ["ORGANIZER"]
     },
     {
+        href: "/meu-perfil",
+        label: "Meu Perfil",
+        icon: User,
+        roles: ["CUSTOMER", "ORGANIZER"]
+    },
+    {
+        href: "/suporte",
+        label: "Suporte",
+        icon: HeartPlus,
+        roles: ["ORGANIZER"]
+    },
+    {
+        href: "/configuracoes",
+        label: "Configurações",
+        icon: Settings,
+        roles: ["ORGANIZER"]
+    },
+    {
         href: "/redefinir-senha-log",
         label: "Redefinir Senha",
         icon: Lock,
@@ -119,18 +137,6 @@ const menuLinks: TMenuLink[] = [
         icon: Users,
         roles: ["ADMIN"]
     },
-    {
-        href: "/meu-perfil",
-        label: "Meu Perfil",
-        icon: User,
-        roles: ["CUSTOMER", "ORGANIZER"]
-    },
-    {
-        href: "/configuracoes",
-        label: "Configurações",
-        icon: Settings,
-        roles: ["ORGANIZER"]
-    }
 ]
 
 const Menu = () => {

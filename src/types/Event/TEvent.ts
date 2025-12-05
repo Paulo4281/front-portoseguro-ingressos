@@ -105,6 +105,14 @@ type TEventVerifyLastTicketsResponse = {
     ticketsAmount: number | null
 }
 
+type TEventVerifySoldResponse = {
+    eventId: string
+    eventBatchId: string
+    eventDateId: string | null
+    ticketTypeId: string | null
+    sold: number
+}
+
 type TEventDetailedStats = {
 
 }
@@ -120,5 +128,6 @@ export type {
     TEventSalesReport,
     TEventDetailedStats,
     TEventUpdate,
-    TEventVerifyLastTicketsResponse
+    TEventVerifyLastTicketsResponse,
+    TEventVerifySoldResponse
 }

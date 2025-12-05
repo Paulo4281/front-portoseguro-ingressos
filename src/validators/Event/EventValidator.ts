@@ -7,6 +7,7 @@ const EventDateTicketTypePriceValidator = z.object({
 })
 
 const EventDateValidator = z.object({
+    id: z.string().nullable().optional(),
     date: z.string({ error: DefaultFormErrors.required }),
     hourStart: z.string({ error: DefaultFormErrors.required }),
     hourEnd: z.string().nullable().optional(),

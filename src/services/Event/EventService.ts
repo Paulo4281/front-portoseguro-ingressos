@@ -232,6 +232,14 @@ class EventServiceClass {
         return response
     }
 
+    async verifySold(eventId: string): Promise<AxiosResponse["data"]> {
+        const response = (await API.GET({
+            prefix: "/event",
+            url: `/verify-sold/${eventId}`
+        }))?.data
+        return response
+    }
+
     async verifyLastTickets(eventId: string): Promise<AxiosResponse["data"]> {
         const response = (await API.GET({
             prefix: "/event",

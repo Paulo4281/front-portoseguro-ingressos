@@ -26,6 +26,13 @@ class ImageUtilsClass {
         const bucketUrl = process.env.NEXT_PUBLIC_BUCKET_URL || ""
         return `${bucketUrl}/organizers-documents/${documentHash}`
     }
+
+    getSupportImageUrl(imageHash: string | null | undefined): string {
+        if (!imageHash) return ""
+
+        const bucketUrl = process.env.NEXT_PUBLIC_BUCKET_URL || ""
+        return `${bucketUrl}/support/${imageHash}`
+    }
 }
 
 export const ImageUtils = new ImageUtilsClass()

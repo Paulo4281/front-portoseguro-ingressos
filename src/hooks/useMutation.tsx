@@ -1,16 +1,19 @@
 import { useMutation } from "@tanstack/react-query"
 
-type TUseMutationProps = {
-    mutationFn: any
+type TUseMutationProps<T, R> = {
+    mutationFn: (variables: T) => Promise<R>
+    onSuccess?: (data: R, variables: T) => void
 }
 
 function useMutationHook<T, R>(
     {
         mutationFn,
-    }: TUseMutationProps
+        onSuccess,
+    }: TUseMutationProps<T, R>
 ) {
     return useMutation<R, unknown, T>({
-        mutationFn: mutationFn
+        mutationFn: mutationFn,
+        onSuccess: onSuccess
     })
 }
 
