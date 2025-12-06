@@ -10,6 +10,7 @@ type TTimePickerProps = {
     className?: string
     required?: boolean
     icon?: boolean
+    disabled?: boolean
 }
 
 const TimePicker = (
@@ -18,7 +19,8 @@ const TimePicker = (
         onChange,
         className,
         required = false,
-        icon = true
+        icon = true,
+        disabled = false
     }: TTimePickerProps
 ) => {
     const [isOpen, setIsOpen] = useState(false)
@@ -93,6 +95,7 @@ const TimePicker = (
             <button
                 type="button"
                 onClick={() => {
+                    if (disabled) return
                     if (!isOpen) {
                         setIsAnimating(true)
                         setIsOpen(true)
@@ -101,12 +104,14 @@ const TimePicker = (
                         setTimeout(() => setIsOpen(false), 200)
                     }
                 }}
+                disabled={disabled}
                 className={cn(
                     "w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-all outline-none",
                     "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
                     "hover:border-psi-primary/50",
                     icon && "pl-10",
-                    !value && "text-muted-foreground"
+                    !value && "text-muted-foreground",
+                    disabled && "opacity-50 cursor-not-allowed hover:border-input"
                 )}
             >
                 {icon && (

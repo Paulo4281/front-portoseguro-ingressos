@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from "react"
 import { useForm, Controller, useFieldArray, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
-import { ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, FileText, Repeat, Tag, Sparkles, Check, CheckCircle } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, FileText, Repeat, Tag, Sparkles, Check, CheckCircle, Info } from "lucide-react"
 import { EventUpdateValidator } from "@/validators/Event/EventValidator"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -205,7 +205,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     }, [eventCategoriesData])
 
     const form = useForm<TEventUpdate>({
-        resolver: zodResolver(EventUpdateValidator),
+        // resolver: zodResolver(EventUpdateValidator),
         defaultValues: {
             name: "",
             description: "",
@@ -537,8 +537,6 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                     })
                     : []
 
-                console.log(ticketTypesInBatch)
-
                 return {
                     id: batch.id,
                     name: batch.name,
@@ -598,10 +596,12 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
             const categoryIds = event.EventCategoryEvents?.map(ece => ece.categoryId) || []
 
             const recurrenceData = event.Recurrence ? {
+                id: event.Recurrence.id,
                 type: event.Recurrence.type,
                 hourStart: event.Recurrence.hourStart || undefined,
                 hourEnd: event.Recurrence.hourEnd || undefined,
                 daysOfWeek: event.Recurrence.RecurrenceDays?.map(rd => ({
+                    id: rd.id,
                     day: rd.day,
                     hourStart: rd.hourStart,
                     hourEnd: rd.hourEnd || undefined
@@ -1312,7 +1312,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                             {isActiveBatch && (
                                                                 <span className="ml-2 inline-flex items-center gap-1 text-xs font-semibold text-psi-primary">
                                                                     <CheckCircle className="h-3 w-3" />
-                                                                    Lote atual
+                                                                    Lote ativo
                                                                 </span>
                                                             )}
                                                         </span>
@@ -1720,6 +1720,15 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
 
                                 {recurrenceEnabled && (
                                     <div className="rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4 space-y-4">
+                                        <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 flex items-start gap-3">
+                                            <div className="shrink-0 w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center mt-0.5">
+                                                <Info className="w-3.5 h-3.5 text-amber-600" />
+                                            </div>
+                                            <p className="text-sm text-psi-dark/80 leading-relaxed">
+                                                Eventos recorrentes não podem ter suas configurações alteradas. Apenas a <strong>data de término</strong> pode ser modificada.
+                                            </p>
+                                        </div>
+
                                         <div>
                                             <label className="block text-sm font-medium text-psi-dark/70 mb-2">
                                                 Tipo de Recorrência *
@@ -1731,6 +1740,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                     <Select
                                                         value={field.value}
                                                         onValueChange={field.onChange}
+                                                        disabled={true}
                                                     >
                                                         <SelectTrigger className="w-full">
                                                             <SelectValue placeholder="Selecione o tipo..." />
@@ -1762,6 +1772,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                 }
                                                             }}
                                                             required
+                                                            disabled={true}
                                                         />
                                                     </div>
                                                     <div>
@@ -1774,6 +1785,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                     form.setValue("recurrence.hourEnd", value, { shouldValidate: true })
                                                                 }
                                                             }}
+                                                            disabled={true}
                                                         />
                                                     </div>
                                                 </div>
@@ -1796,6 +1808,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                     variant={isSelected ? "primary" : "outline"}
                                                                     size="sm"
                                                                     onClick={() => toggleDayOfWeek(day.value)}
+                                                                    disabled={true}
                                                                 >
                                                                     {day.label}
                                                                 </Button>
@@ -1824,6 +1837,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                                 onChange={(value) => updateDayTime(dayData.day, value || "", null)}
                                                                                 required
                                                                                 icon={false}
+                                                                                disabled={true}
                                                                             />
                                                                         </div>
                                                                         <div>
@@ -1835,6 +1849,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                                     updateDayTime(dayData.day, current.hourStart, value)
                                                                                 }}
                                                                                 icon={false}
+                                                                                disabled={true}
                                                                             />
                                                                         </div>
                                                                     </div>
@@ -1863,6 +1878,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                     size="sm"
                                                                     onClick={() => toggleMonthDay(day)}
                                                                     className="min-w-[40px]"
+                                                                    disabled={true}
                                                                 >
                                                                     {day}
                                                                 </Button>
@@ -1890,6 +1906,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                                 onChange={(value) => updateDayTime(dayData.day, value || "", null)}
                                                                                 required
                                                                                 icon={false}
+                                                                                disabled={true}
                                                                             />
                                                                         </div>
                                                                         <div>
@@ -1901,6 +1918,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                                     updateDayTime(dayData.day, current.hourStart, value)
                                                                                 }}
                                                                                 icon={false}
+                                                                                disabled={true}
                                                                             />
                                                                         </div>
                                                                     </div>

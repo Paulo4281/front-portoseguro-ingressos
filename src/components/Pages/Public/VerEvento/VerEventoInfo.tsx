@@ -971,7 +971,9 @@ const VerEventoInfo = (
                     <div className="space-y-6">
                         {event.EventBatches && event.EventBatches?.length > 0 ? (
                             <div className="space-y-6">
-                                {activeBatches?.length > 0 && (
+                                {activeBatches?.length > 0
+                                ?
+                                (
                                     <div className="space-y-4">
                                         <h2 className="text-xl font-semibold text-psi-dark">Lotes Disponíveis</h2>
                                         <div className="space-y-3">
@@ -1143,7 +1145,15 @@ const VerEventoInfo = (
                                             })}
                                         </div>
                                     </div>
-                                )}
+                                )
+                                :
+                                (
+                                    <div className="space-y-1">
+                                        <h2 className="text-xl text-psi-primary/90 font-bold">As vendas começarão em breve</h2>
+                                        <p className="text-sm text-psi-dark/70">Fique atento, os ingressos serão disponibilizados em breve nesta página.</p>
+                                    </div>
+                                )
+                                }
 
                                 {endedBatches?.length > 0 && (
                                     <div className="space-y-4">

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Share2, Download, Ban, Search, Copy, TicketIcon } from "lucide-react"
+import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Share2, Download, Ban, Search, Copy, TicketIcon, Sparkle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/Input/Input"
 import {
@@ -26,6 +26,7 @@ import { Pagination } from "@/components/Pagination/Pagination"
 import { EventSalesReport } from "@/components/Report/EventSalesReport"
 import { useEventClickCount } from "@/hooks/EventClick/useEventClickCount"
 import { SheetTicketsToOrganizer } from "@/components/Sheet/SheetTicketsToOrganizer/SheetTicketsToOrganizer"
+import { useEventVerifySold } from "@/hooks/Event/useEventVerifySold"
 
 type TEventWithStats = TEvent & {
     isActive: boolean
@@ -97,16 +98,7 @@ const getDateRange = (dates: TEvent["EventDates"]) => {
 const getActiveBatch = (batches: TEvent["EventBatches"]): TEventBatch | null => {
     if (!batches || batches.length === 0) return null
 
-    const now = new Date()
-    const activeBatch = batches.find(batch => {
-        const startDate = new Date(batch.startDate)
-        const endDate = batch.endDate ? new Date(batch.endDate) : null
-
-        const isAfterStart = now >= startDate
-        const isBeforeEnd = !endDate || now <= endDate
-
-        return batch.isActive && isAfterStart && isBeforeEnd
-    })
+    const activeBatch = batches.find(batch => batch.isActive)
 
     return activeBatch || null
 }
@@ -134,7 +126,7 @@ const MeusEventosPannel = () => {
         offset,
         name: searchQuery || undefined
     })
-    
+
     const events = useMemo(() => {
         if (!eventsData?.data) return []
         const nestedData = (eventsData.data as any)?.data
@@ -209,8 +201,17 @@ const MeusEventosPannel = () => {
                 sm:px-6
                 lg:px-8">
                     <div className="max-w-7xl mx-auto">
-                        <div className="text-center py-16">
-                            <p className="text-lg text-psi-dark/60">Nenhum evento encontrado</p>
+                        <div className="flex flex-col items-center justify-start py-20">
+                            <div className="mb-6">
+                                <Sparkle className="h-12 w-12 text-psi-primary/40" />
+                            </div>
+                            <h2 className="text-2xl text-center font-bold text-psi-primary mb-2">
+                                Nenhum evento cadastrado ainda
+                            </h2>
+                            <p className="text-base text-center text-psi-dark/60 max-w-md">
+                                Você ainda não possui eventos registrados na plataforma.
+                                Quando cadastrar um evento, ele aparecerá aqui para que você possa acompanhar cada detalhe com facilidade e controle total.
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -496,18 +497,18 @@ const EventCard = ({
                         if (!activeBatch) return null
                         
                         return (
-                            <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-3 mt-2">
-                                <div className="flex items-center gap-2 mb-2">
+                            <div className="rounded-xl border flex items-center border-psi-primary/20 bg-psi-primary/5 p-3">
+                                <div className="flex items-center gap-2 ">
                                     <Tag className="h-4 w-4 text-psi-primary shrink-0" />
                                     <span className="text-sm font-semibold text-psi-dark">
                                         Lote Atual: {activeBatch.name}
                                     </span>
                                 </div>
-                                <div className="flex items-center justify-between text-xs">
+                                {/* <div className="flex items-center justify-between text-xs">
                                     <span className="text-psi-dark/70">
                                         Disponível: <span className="font-semibold text-psi-dark">{activeBatch.tickets}</span>
                                     </span>
-                                </div>
+                                </div> */}
                             </div>
                         )
                     })()}

@@ -17,12 +17,14 @@ const EventDateValidator = z.object({
 })
 
 const RecurrenceDayValidator = z.object({
+    id: z.string().nullable().optional(),
     day: z.number(),
     hourStart: z.string({ error: DefaultFormErrors.required }),
     hourEnd: z.string().nullable().optional()
 })
 
 const RecurrenceValidator = z.object({
+    id: z.string().nullable().optional(),
     type: z.enum(["NONE", "DAILY", "WEEKLY", "MONTHLY"], { error: DefaultFormErrors.required }),
     hourStart: z.string().optional(),
     hourEnd: z.string().nullable().optional(),

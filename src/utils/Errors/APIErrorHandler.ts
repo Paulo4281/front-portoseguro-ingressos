@@ -18,8 +18,16 @@ export const APIErrorHandler: Record<number, string> = {
     16: "Quantidade não disponível para este dia do evento e tipo de ingresso",
     17: "Quantidade não disponível para este evento",
     18: "Você está tentando diminuir a quantidade de ingressos de um lote que já vendeu mais ingressos do que a quantidade que você está tentando remover",
-    19: "Não é possível alterar datas do evento que já possuem ingressos vendidos. FALE COM O SUPORTE",
-    20: "Não é possível alterar datas do evento que começarão em menos de 72 horas e já possuem ingressos vendidos. FALE COM O SUPORTE",
+
+    700: "Não é possível alterar datas do evento que já possuem ingressos vendidos. FALE COM O SUPORTE",
+    701: "Não é possível alterar datas do evento que começarão em menos de 72 horas e já possuem ingressos vendidos. FALE COM O SUPORTE",
+    702: "O tipo de recorrência não pode ser alterado.",
+    703: "Não é possível alterar o horário de início da recorrência.",
+    704: "Não é possível alterar o horário de término da recorrência.",
+    705: "Não é possível alterar o dia da semana da recorrência.",
+    706: "Não é possível alterar a data de início da recorrência.",
+    707: "Não é possível alterar horários de início e término da recorrência.",
+    708: "Não é possível alterar a data de início de vendas de um lote que já possui ingressos vendidos.",
 
     // EXTERNAL
     900: "Erro ao escrever a descrição do evento com IA",
