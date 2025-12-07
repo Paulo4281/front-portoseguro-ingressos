@@ -253,7 +253,6 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
         )
     }
 
-    // coloque um loading aqui
     if (!verificationStatus) {
         return (
             <Background variant="light" className="min-h-screen flex items-center justify-center">

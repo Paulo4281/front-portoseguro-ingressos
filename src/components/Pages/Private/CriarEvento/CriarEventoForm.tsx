@@ -33,6 +33,7 @@ import { useEventCreate } from "@/hooks/Event/useEventCreate"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { DialogTaxes } from "@/components/Dialog/DialogTaxes/DialogTaxes"
 import { FormBuilder, type TFormField } from "@/components/FormBuilder/FormBuilder"
+import { DialogEventSummary } from "@/components/Dialog/DialogEventSummary/DialogEventSummary"
 
 type TEventCreate = z.infer<typeof EventCreateValidator>
 
@@ -128,6 +129,8 @@ const CriarEventoForm = () => {
     const [recurrenceEnabled, setRecurrenceEnabled] = useState(false)
     const [formFields, setFormFields] = useState<TFormField[]>([])
     const [isFormForEachTicket, setIsFormForEachTicket] = useState(false)
+    const [isSummaryDialogOpen, setIsSummaryDialogOpen] = useState(false)
+    const [eventDataToSubmit, setEventDataToSubmit] = useState<TEventCreate | null>(null)
     const router = useRouter()
 
     const { data: eventCategoriesData, isLoading: isEventCategoriesLoading } = useEventCategoryFind()
@@ -271,16 +274,30 @@ const CriarEventoForm = () => {
                 return
             }
             
+            setEventDataToSubmit(data)
+            setIsSummaryDialogOpen(true)
+        } catch (error) {
+            console.error("Erro ao validar evento:", error)
+        }
+    }
+
+    const handleConfirmPublish = async () => {
+        if (!eventDataToSubmit) return
+
+        try {
+            const hasBatches = eventDataToSubmit.batches && eventDataToSubmit.batches.length > 0
+            const hasTicketTypes = eventDataToSubmit.ticketTypes && eventDataToSubmit.ticketTypes.length > 0
+            
             const submitData: TEventCreate = {
-                name: data.name,
-                description: data.description,
-                categories: data.categories.map((category) => category),
-                image: data.image,
-                location: data.location,
+                name: eventDataToSubmit.name,
+                description: eventDataToSubmit.description,
+                categories: eventDataToSubmit.categories.map((category) => category),
+                image: eventDataToSubmit.image,
+                location: eventDataToSubmit.location,
                 tickets: undefined,
                 ticketPrice: undefined,
-                ticketTypes: hasTicketTypes ? data.ticketTypes : undefined,
-                batches: hasBatches && data.batches ? data.batches.map(batch => ({
+                ticketTypes: hasTicketTypes ? eventDataToSubmit.ticketTypes : undefined,
+                batches: hasBatches && eventDataToSubmit.batches ? eventDataToSubmit.batches.map(batch => ({
                     ...batch,
                     price: batch.price ? Math.round(batch.price * 100) : null,
                     ticketTypes: batch.ticketTypes ? batch.ticketTypes.map(type => ({
@@ -288,7 +305,7 @@ const CriarEventoForm = () => {
                         price: type.price ? Math.round(type.price * 100) : null
                     })) : undefined
                 })) : undefined,
-                dates: data.recurrence ? undefined : (data.dates ? data.dates.map(date => ({
+                dates: eventDataToSubmit.recurrence ? undefined : (eventDataToSubmit.dates ? eventDataToSubmit.dates.map(date => ({
                     ...date,
                     price: date.hasSpecificPrice && date.price ? Math.round(date.price * 100) : null,
                     ticketTypePrices: date.hasSpecificPrice && date.ticketTypePrices ? date.ticketTypePrices.map(ttp => ({
@@ -296,29 +313,18 @@ const CriarEventoForm = () => {
                         price: Math.round(ttp.price * 100)
                     })) : null
                 })) : undefined),
-                recurrence: data.recurrence || null,
-                isClientTaxed: data.isClientTaxed || false,
-                isFree: data.isFree || false,
+                recurrence: eventDataToSubmit.recurrence || null,
+                isClientTaxed: eventDataToSubmit.isClientTaxed || false,
+                isFree: eventDataToSubmit.isFree || false,
                 form: transformFormFieldsToJSON(formFields),
                 isFormForEachTicket: isFormForEachTicket || false,
-                buyTicketsLimit: data.buyTicketsLimit || null,
-                maxInstallments: data.maxInstallments || null
+                buyTicketsLimit: eventDataToSubmit.buyTicketsLimit || null,
+                maxInstallments: eventDataToSubmit.maxInstallments || null
             }
-
-            if (batchesWithTicketTypes && !submitData.ticketTypes) {
-                console.error("Erro: ticketTypes não está sendo enviado mesmo com batches que usam ticketTypes")
-                console.log("data.ticketTypes:", data.ticketTypes)
-                console.log("submitData:", submitData)
-                return
-            }
-
-            console.log(submitData)
-
-            // console.log("Dados enviados:", JSON.stringify(submitData, null, 2))
-            // console.log("ticketTypes no nível do evento:", submitData.ticketTypes)
 
             await createEvent(submitData)
-            // router.push("/meus-eventos")
+            setIsSummaryDialogOpen(false)
+            setEventDataToSubmit(null)
         } catch (error) {
             console.error("Erro ao criar evento:", error)
         }
@@ -1711,6 +1717,17 @@ const CriarEventoForm = () => {
                     </form>
                 </div>
             </div>
+
+            {eventDataToSubmit && (
+                <DialogEventSummary
+                    open={isSummaryDialogOpen}
+                    onOpenChange={setIsSummaryDialogOpen}
+                    eventData={eventDataToSubmit}
+                    eventCategories={eventCategories}
+                    onConfirm={handleConfirmPublish}
+                    isLoading={isCreating}
+                />
+            )}
         </Background>
     )
 }

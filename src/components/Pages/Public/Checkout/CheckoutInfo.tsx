@@ -1395,18 +1395,10 @@ const CheckoutInfo = () => {
                                                         <div className="flex-1 space-y-2">
                                                             <div className="flex items-center justify-between">
                                                                 <h3 className="font-semibold text-psi-dark">{event.name}</h3>
-
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => removeItem(item.eventId, item.batchId)}
-                                                                    className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                                                                >
-                                                                    <Trash2 className="size-4" />
-                                                                </button>
                                                             </div>
 
                                                             <div className="animate-pulse transition-opacity duration-700">
-                                                                <Badge variant="default" className="text-xs font-medium">Últimos ingressos!</Badge>
+                                                                <Badge variant="default" className="text-xs font-medium">Oferta única!</Badge>
                                                             </div>
 
                                                             {item.batchName && (

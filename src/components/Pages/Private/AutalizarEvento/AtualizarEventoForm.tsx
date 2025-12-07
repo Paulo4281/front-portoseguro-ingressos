@@ -660,11 +660,17 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                 return
             }
 
+            const validTicketTypeIndices = new Set<string>()
+            if (hasTicketTypes && data.ticketTypes) {
+                data.ticketTypes.forEach((_, index) => {
+                    validTicketTypeIndices.add(index.toString())
+                })
+            }
+
             const submitData: TEventUpdate = {
                 name: data.name,
                 description: data.description,
                 categories: data.categories.map((category) => category),
-                // image will be sent separately if it's a new File
                 image: data.image,
                 location: data.location,
                 tickets: undefined,
@@ -673,19 +679,23 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                 batches: hasBatches && data.batches ? data.batches.map(batch => ({
                     ...batch,
                     price: batch.price ? Math.round(batch.price * 100) : null,
-                    ticketTypes: batch.ticketTypes ? batch.ticketTypes.map(type => ({
-                        ...type,
-                        id: type.id || undefined,
-                        price: type.price ? Math.round(type.price * 100) : null
-                    })) : undefined
+                    ticketTypes: batch.ticketTypes ? batch.ticketTypes
+                        .filter(type => validTicketTypeIndices.has(type.ticketTypeId))
+                        .map(type => ({
+                            ...type,
+                            id: type.id || undefined,
+                            price: type.price ? Math.round(type.price * 100) : null
+                        })) : undefined
                 })) : undefined,
                 dates: data.recurrence ? undefined : (data.dates ? data.dates.map(date => ({
                     ...date,
                     price: date.hasSpecificPrice && date.price ? Math.round(date.price * 100) : null,
-                    ticketTypePrices: date.hasSpecificPrice && date.ticketTypePrices ? date.ticketTypePrices.map(ttp => ({
-                        ...ttp,
-                        price: Math.round(ttp.price * 100)
-                    })) : null
+                    ticketTypePrices: date.hasSpecificPrice && date.ticketTypePrices ? date.ticketTypePrices
+                        .filter(ttp => validTicketTypeIndices.has(ttp.ticketTypeId))
+                        .map(ttp => ({
+                            ...ttp,
+                            price: Math.round(ttp.price * 100)
+                        })) : null
                 })) : undefined),
                 recurrence: data.recurrence || null,
                 isClientTaxed: data.isClientTaxed || false,
@@ -1216,7 +1226,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                     min={1}
                                                     max={100}
                                                     className="w-full max-w-[200px]"
-                                                    value={field.value || ""}
+                                                    value={field.value || 10}
                                                     onChange={(e) => {
                                                         const value = e.target.value
                                                         if (value === "") {
