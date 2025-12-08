@@ -12,6 +12,7 @@ type TDatePickerProps = {
     icon?: boolean
     minDate?: string
     maxDate?: string
+    disabled?: boolean
 }
 
 const monthNames = [
@@ -29,7 +30,8 @@ const DatePicker = (
         required = false,
         icon = true,
         minDate,
-        maxDate
+        maxDate,
+        disabled = false
     }: TDatePickerProps
 ) => {
     const [isOpen, setIsOpen] = useState(false)
@@ -113,7 +115,7 @@ const DatePicker = (
     }
 
     const handleDateSelect = (day: number) => {
-        if (isDateDisabled(day)) return
+        if (disabled || isDateDisabled(day)) return
 
         const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day)
         const dateString = date.toISOString().split("T")[0]
@@ -178,15 +180,18 @@ const DatePicker = (
             <button
                 type="button"
                 onClick={() => {
+                    if (disabled) return
                     setIsOpen(!isOpen)
                     setViewMode("date")
                 }}
+                disabled={disabled}
                 className={cn(
                     "w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-all outline-none",
                     "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
                     "hover:border-psi-primary/50",
                     icon && "pl-10",
-                    !value && "text-muted-foreground"
+                    !value && "text-muted-foreground",
+                    disabled && "opacity-50 cursor-not-allowed"
                 )}
             >
                 {icon && (

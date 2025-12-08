@@ -57,7 +57,9 @@ const HomeHero = () => {
         return heroCategories.map((category) => (
             <div key={category.id} className="w-[180px]
             sm:w-[200px]">
-                <Category icon={EventCategoryIconHandler(category.name)} title={category.name} />
+                <Link href={`/ver-eventos?categoryId=${category.id}`}>
+                    <Category icon={EventCategoryIconHandler(category.name)} title={category.name} />
+                </Link>
             </div>
         ))
     }, [heroCategories])

@@ -1,10 +1,18 @@
 import "./globals.css"
 import "@/styles/KeyFrames.css"
 import "react-toastify/dist/ReactToastify.css"
+import { Poppins } from "next/font/google"
 import { ToastContainer } from "react-toastify"
 import { Providers } from "@/providers"
 import { Menu } from "@/components/Menu/Menu"
 import { Footer } from "@/components/Footer/Footer"
+
+const systemFont = Poppins({
+  subsets: ["latin"],
+  variable: "--font-poppins",
+  display: "swap",
+  weight: "400",
+})
 
 export default function RootLayout({
   children,
@@ -14,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body
-        className={`antialiased overflow-x-hidden`}
+        className="font-sans antialiased overflow-x-hidden"
       >
         <Providers>
           <ToastContainer

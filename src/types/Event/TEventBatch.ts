@@ -10,6 +10,7 @@ type TEventBatch = {
     autoActivateNext: boolean
     accumulateUnsold: boolean
     isActive: boolean
+    isFinished: boolean
     eventId: string
     createdAt: string
     updatedAt: string | null

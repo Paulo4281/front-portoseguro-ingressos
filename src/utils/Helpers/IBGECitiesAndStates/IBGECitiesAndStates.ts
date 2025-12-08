@@ -427,7 +427,6 @@ const cidades = [
 {nome: "Jucuruçu", uf: "BA"},
 {nome: "Jussara", uf: "BA"},
 {nome: "Jussari", uf: "BA"},
-{nome: "Jussari", uf: "BA"},
 {nome: "Jussiape", uf: "BA"},
 {nome: "Lafaiete Coutinho", uf: "BA"},
 {nome: "Lagoa Real", uf: "BA"},

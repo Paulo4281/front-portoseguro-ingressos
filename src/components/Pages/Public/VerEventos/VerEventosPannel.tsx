@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { Calendar, Clock, MapPin, Repeat, Tag, Search, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,7 @@ import type { TEventDate } from "@/types/Event/TEventDate"
 import { Pagination } from "@/components/Pagination/Pagination"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { useSearchParamsHook } from "@/hooks/useSearchParams"
 
 const VerEventosPannel = () => {
     const [currentPage, setCurrentPage] = useState(1)
@@ -30,6 +31,16 @@ const VerEventosPannel = () => {
         setSearchQuery(searchName)
         setCurrentPage(1)
     }
+
+    const searchParams = useSearchParamsHook<{ categoryId: string }>(["categoryId"])
+
+    useEffect(() => {
+        if (searchParams.categoryId) {
+            setSelectedCategoryId(searchParams.categoryId)
+        } else {
+            setSelectedCategoryId(null)
+        }
+    }, [searchParams.categoryId])
 
     const handleCategorySelect = (categoryId: string | null) => {
         setSelectedCategoryId(categoryId)

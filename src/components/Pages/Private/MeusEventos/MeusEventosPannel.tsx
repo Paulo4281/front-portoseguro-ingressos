@@ -27,6 +27,7 @@ import { EventSalesReport } from "@/components/Report/EventSalesReport"
 import { useEventClickCount } from "@/hooks/EventClick/useEventClickCount"
 import { SheetTicketsToOrganizer } from "@/components/Sheet/SheetTicketsToOrganizer/SheetTicketsToOrganizer"
 import { useEventVerifySold } from "@/hooks/Event/useEventVerifySold"
+import { useRouter } from "next/navigation"
 
 type TEventWithStats = TEvent & {
     isActive: boolean
@@ -114,6 +115,8 @@ const MeusEventosPannel = () => {
     const [ticketsSheetOpen, setTicketsSheetOpen] = useState(false)
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
     const [selectedEventName, setSelectedEventName] = useState<string | null>(null)
+
+    const router = useRouter()
     
     const handleSearch = () => {
         setSearchQuery(searchName)
@@ -203,15 +206,23 @@ const MeusEventosPannel = () => {
                     <div className="max-w-7xl mx-auto">
                         <div className="flex flex-col items-center justify-start py-20">
                             <div className="mb-6">
-                                <Sparkle className="h-12 w-12 text-psi-primary/40" />
+                                <Sparkle className="h-12 w-12 text-psi-primary/40" aria-label="Sem eventos" />
                             </div>
                             <h2 className="text-2xl text-center font-bold text-psi-primary mb-2">
                                 Nenhum evento cadastrado ainda
                             </h2>
-                            <p className="text-base text-center text-psi-dark/60 max-w-md">
+                            <p className="text-base text-center text-psi-dark/60 max-w-md mb-6">
                                 Você ainda não possui eventos registrados na plataforma.
                                 Quando cadastrar um evento, ele aparecerá aqui para que você possa acompanhar cada detalhe com facilidade e controle total.
                             </p>
+                            <Button
+                                variant="primary"
+                                onClick={() => router.push("/eventos/criar")}
+                                aria-label="Criar meu primeiro evento"
+                                type="button"
+                            >
+                                Criar meu primeiro evento
+                            </Button>
                         </div>
                     </div>
                 </div>

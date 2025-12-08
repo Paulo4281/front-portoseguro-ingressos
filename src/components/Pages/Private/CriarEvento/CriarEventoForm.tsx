@@ -5,7 +5,7 @@ import { useForm, Controller, useFieldArray, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, FileText, Repeat, Tag, Sparkles, Rocket } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, FileText, Repeat, Tag, Sparkles, Rocket, HelpCircle } from "lucide-react"
 import { EventCreateValidator } from "@/validators/Event/EventValidator"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -34,6 +34,7 @@ import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { DialogTaxes } from "@/components/Dialog/DialogTaxes/DialogTaxes"
 import { FormBuilder, type TFormField } from "@/components/FormBuilder/FormBuilder"
 import { DialogEventSummary } from "@/components/Dialog/DialogEventSummary/DialogEventSummary"
+import { DialogMarkdownInstructions } from "@/components/Dialog/DialogMarkdownInstructions/DialogMarkdownInstructions"
 
 type TEventCreate = z.infer<typeof EventCreateValidator>
 
@@ -131,6 +132,7 @@ const CriarEventoForm = () => {
     const [isFormForEachTicket, setIsFormForEachTicket] = useState(false)
     const [isSummaryDialogOpen, setIsSummaryDialogOpen] = useState(false)
     const [eventDataToSubmit, setEventDataToSubmit] = useState<TEventCreate | null>(null)
+    const [isMarkdownDialogOpen, setMarkdownDialogOpen] = useState(false)
     const router = useRouter()
 
     const { data: eventCategoriesData, isLoading: isEventCategoriesLoading } = useEventCategoryFind()
@@ -495,9 +497,20 @@ const CriarEventoForm = () => {
 
                                 <div>
                                     <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                                        <label htmlFor="description" className="block text-sm font-medium text-psi-dark">
-                                            Descrição *
-                                        </label>
+                                        <div className="flex items-center gap-2">
+                                            <label htmlFor="description" className="block text-sm font-medium text-psi-dark">
+                                                Descrição *
+                                            </label>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-5 w-5 p-0"
+                                                onClick={() => setMarkdownDialogOpen(true)}
+                                            >
+                                                <HelpCircle className="h-4 w-4 text-psi-primary" />
+                                            </Button>
+                                        </div>
                                         <div className="flex items-center gap-2">
                                             <span className="text-xs text-psi-dark/60">
                                                 {descriptionLength}/{DESCRIPTION_MAX_LENGTH}
@@ -1717,6 +1730,11 @@ const CriarEventoForm = () => {
                     </form>
                 </div>
             </div>
+
+            <DialogMarkdownInstructions
+                open={isMarkdownDialogOpen}
+                onOpenChange={setMarkdownDialogOpen}
+            />
 
             {eventDataToSubmit && (
                 <DialogEventSummary

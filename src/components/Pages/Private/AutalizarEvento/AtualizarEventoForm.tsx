@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from "react"
 import { useForm, Controller, useFieldArray, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
-import { ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, FileText, Repeat, Tag, Sparkles, Check, CheckCircle, Info } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, FileText, Repeat, Tag, Sparkles, Check, CheckCircle, Info, HelpCircle } from "lucide-react"
 import { EventUpdateValidator } from "@/validators/Event/EventValidator"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -40,6 +40,7 @@ import { DialogTaxes } from "@/components/Dialog/DialogTaxes/DialogTaxes"
 import { FormBuilder, type TFormField } from "@/components/FormBuilder/FormBuilder"
 import { DialogEditWarning, type TChangeItem } from "@/components/Dialog/DialogEditWarning/DialogEditWarning"
 import { Toast } from "@/components/Toast/Toast"
+import { DialogMarkdownInstructions } from "@/components/Dialog/DialogMarkdownInstructions/DialogMarkdownInstructions"
 
 type TEventUpdate = z.infer<typeof EventUpdateValidator>
 
@@ -189,6 +190,8 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     const [originalData, setOriginalData] = useState<any>(null)
     const [isWarningOpen, setIsWarningOpen] = useState(true)
     const [soldTicketsData, setSoldTicketsData] = useState<TEventVerifySoldResponse[]>([])
+    const [wasOriginallyRecurring, setWasOriginallyRecurring] = useState(false)
+    const [isMarkdownDialogOpen, setMarkdownDialogOpen] = useState(false)
 
     const { data: eventData, isLoading: isEventLoading } = useEventFindByIdUser(eventId)
     const { data: eventCategoriesData, isLoading: isEventCategoriesLoading } = useEventCategoryFind()
@@ -507,7 +510,9 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
             
             const hasBatches = !!(event.EventBatches && event.EventBatches.length > 0)
             const hasTicketTypes = !!(event.TicketTypes && event.TicketTypes.length > 0)
-            setRecurrenceEnabled(!!event.Recurrence)
+            const hasRecurrence = !!(event.Recurrence)
+            setRecurrenceEnabled(hasRecurrence)
+            setWasOriginallyRecurring(hasRecurrence)
 
             const ticketTypesData = hasTicketTypes ? event.TicketTypes.map(tt => ({
                 name: tt.name,
@@ -946,9 +951,20 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
 
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
-                                        <label htmlFor="description" className="block text-sm font-medium text-psi-dark">
-                                            Descrição *
-                                        </label>
+                                        <div className="flex items-center gap-2">
+                                            <label htmlFor="description" className="block text-sm font-medium text-psi-dark">
+                                                Descrição *
+                                            </label>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-5 w-5 p-0"
+                                                onClick={() => setMarkdownDialogOpen(true)}
+                                            >
+                                                <HelpCircle className="h-4 w-4 text-psi-primary" />
+                                            </Button>
+                                        </div>
                                         <span className="text-xs text-psi-dark/60">
                                             {descriptionLength}/{DESCRIPTION_MAX_LENGTH}
                                         </span>
@@ -1306,27 +1322,37 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                 return sortedEventBatch[index]?.id === b.id
                                             })
                                             const isActiveBatch = batch?.isActive
+                                            const isFinishedBatch = batch?.isFinished
+                                            const isBatchDisabled = isFinishedBatch
                                             return (
                                                 <div
                                                     key={field.id}
                                                     className={cn(
                                                         "rounded-xl border p-4 space-y-4",
-                                                        isActiveBatch
+                                                        isActiveBatch && !isFinishedBatch
                                                             ? "border-psi-primary bg-psi-primary/5 shadow-inner shadow-psi-primary/20"
+                                                            : isFinishedBatch
+                                                            ? "border-psi-dark/20 bg-psi-dark/5 opacity-75"
                                                             : "border-[#E4E6F0] bg-[#F3F4FB]"
                                                     )}
                                                 >
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-sm font-semibold text-psi-dark">
                                                             Lote {index + 1}
-                                                            {isActiveBatch && (
+                                                            {isActiveBatch && !isFinishedBatch && (
                                                                 <span className="ml-2 inline-flex items-center gap-1 text-xs font-semibold text-psi-primary">
                                                                     <CheckCircle className="h-3 w-3" />
                                                                     Lote ativo
                                                                 </span>
                                                             )}
+                                                            {isFinishedBatch && (
+                                                                <span className="ml-2 inline-flex items-center gap-1 text-xs font-semibold text-psi-dark/60">
+                                                                    <Info className="h-3 w-3" />
+                                                                    Lote finalizado
+                                                                </span>
+                                                            )}
                                                         </span>
-                                                        {batchFields.length > 1 ? (
+                                                        {!isBatchDisabled && batchFields.length > 1 ? (
                                                             <Button
                                                                 type="button"
                                                                 variant="ghost"
@@ -1338,10 +1364,21 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                             </Button>
                                                         ) : (
                                                             <span className="text-xs text-psi-dark/60">
-                                                                Mínimo de 1 lote
+                                                                {isBatchDisabled ? "Lote finalizado" : "Mínimo de 1 lote"}
                                                             </span>
                                                         )}
                                                     </div>
+
+                                                    {isFinishedBatch && (
+                                                        <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 flex items-start gap-3">
+                                                            <div className="shrink-0 w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center mt-0.5">
+                                                                <Info className="w-3.5 h-3.5 text-amber-600" />
+                                                            </div>
+                                                            <p className="text-sm text-psi-dark/80 leading-relaxed">
+                                                                Este lote já foi finalizado e não pode ser alterado.
+                                                            </p>
+                                                        </div>
+                                                    )}
 
                                                     <div>
                                                         <label className="block text-sm font-medium text-psi-dark/70 mb-2">
@@ -1356,6 +1393,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                     placeholder="Ex: 1º Lote"
                                                                     required
                                                                     className="w-full"
+                                                                    disabled={isBatchDisabled}
                                                                 />
                                                             )}
                                                         />
@@ -1375,6 +1413,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                         <InputCurrency
                                                                             value={field.value || 0}
                                                                             onChangeValue={(value) => {
+                                                                                if (isBatchDisabled) return
                                                                                 if (!value || value === "") {
                                                                                     field.onChange(undefined)
                                                                                 } else {
@@ -1384,6 +1423,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                             }}
                                                                             required
                                                                             className="w-full"
+                                                                            disabled={isBatchDisabled}
                                                                         />
                                                                     )}
                                                                 />
@@ -1426,7 +1466,9 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                                 required
                                                                                 className="w-full"
                                                                                 value={field.value || ""}
+                                                                                disabled={isBatchDisabled}
                                                                                 onChange={(e) => {
+                                                                                    if (isBatchDisabled) return
                                                                                     const newValue = parseInt(e.target.value) || undefined
                                                                                     if (newValue !== undefined && batchId && newValue < sold) {
                                                                                         Toast.error(`O número de ingressos não pode ser inferior à quantidade que já foi vendida (${sold}).`)
@@ -1485,6 +1527,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                                         <InputCurrency
                                                                                             value={field.value || 0}
                                                                                             onChangeValue={(value) => {
+                                                                                                if (isBatchDisabled) return
                                                                                                 if (!value || value === "") {
                                                                                                     field.onChange(0)
                                                                                                 } else {
@@ -1494,6 +1537,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                                             }}
                                                                                             required
                                                                                             className="w-full"
+                                                                                            disabled={isBatchDisabled}
                                                                                         />
                                                                                     )}
                                                                                 />
@@ -1536,7 +1580,9 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                                                 required
                                                                                                 className="w-full"
                                                                                                 value={field.value || ""}
+                                                                                                disabled={isBatchDisabled}
                                                                                                 onChange={(e) => {
+                                                                                                    if (isBatchDisabled) return
                                                                                                     const newValue = parseInt(e.target.value) || 0
                                                                                                     if (batchId && ticketTypeId && newValue < sold) {
                                                                                                         Toast.error(`O número de ingressos não pode ser inferior à quantidade que já foi vendida (${sold}).`)
@@ -1595,6 +1641,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                                 required
                                                                                 minDate={new Date().toISOString().split("T")[0]}
                                                                                 maxDate={maxDate}
+                                                                                disabled={isBatchDisabled || isActiveBatch}
                                                                             />
                                                                             {maxDate && field.value && new Date(field.value) > new Date(maxDate) && (
                                                                                 <p className="text-xs text-destructive mt-1">
@@ -1645,6 +1692,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                                 onChange={(value) => field.onChange(value)}
                                                                                 minDate={minDate}
                                                                                 maxDate={maxDate}
+                                                                                disabled={isBatchDisabled}
                                                                             />
                                                                             {maxDate && field.value && new Date(field.value) > new Date(maxDate) && (
                                                                                 <p className="text-xs text-destructive mt-1">
@@ -1667,10 +1715,18 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                     id={`auto-activate-${index}`}
                                                                     checked={form.watch(`batches.${index}.autoActivateNext`) || false}
                                                                     onCheckedChange={(checked) => {
+                                                                        if (isBatchDisabled) return
                                                                         form.setValue(`batches.${index}.autoActivateNext`, checked === true)
                                                                     }}
+                                                                    disabled={isBatchDisabled}
                                                                 />
-                                                                <label htmlFor={`auto-activate-${index}`} className="text-sm font-medium text-psi-dark cursor-pointer">
+                                                                <label 
+                                                                    htmlFor={`auto-activate-${index}`} 
+                                                                    className={cn(
+                                                                        "text-sm font-medium text-psi-dark",
+                                                                        isBatchDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+                                                                    )}
+                                                                >
                                                                     Ativar próximo lote automaticamente quando todos os ingressos deste lote forem vendidos
                                                                 </label>
                                                             </div>
@@ -1679,10 +1735,18 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                     id={`accumulate-${index}`}
                                                                     checked={form.watch(`batches.${index}.accumulateUnsold`) || false}
                                                                     onCheckedChange={(checked) => {
+                                                                        if (isBatchDisabled) return
                                                                         form.setValue(`batches.${index}.accumulateUnsold`, checked === true)
                                                                     }}
+                                                                    disabled={isBatchDisabled}
                                                                 />
-                                                                <label htmlFor={`accumulate-${index}`} className="text-sm font-medium text-psi-dark cursor-pointer">
+                                                                <label 
+                                                                    htmlFor={`accumulate-${index}`} 
+                                                                    className={cn(
+                                                                        "text-sm font-medium text-psi-dark",
+                                                                        isBatchDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+                                                                    )}
+                                                                >
                                                                     Acumular ingressos não vendidos para o próximo lote
                                                                 </label>
                                                             </div>
@@ -1709,6 +1773,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                         id="recurrence-enabled"
                                         checked={recurrenceEnabled}
                                         onCheckedChange={(checked) => {
+                                            if (!wasOriginallyRecurring) return
                                             const isChecked = checked === true
                                             setRecurrenceEnabled(isChecked)
                                             if (!isChecked) {
@@ -1722,11 +1787,26 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                 })
                                             }
                                         }}
+                                        disabled={!wasOriginallyRecurring}
                                     />
-                                    <label htmlFor="recurrence-enabled" className="text-sm font-medium text-psi-dark cursor-pointer">
+                                    <label 
+                                        htmlFor="recurrence-enabled" 
+                                        className={cn(
+                                            "text-sm font-medium text-psi-dark",
+                                            !wasOriginallyRecurring && "cursor-not-allowed opacity-60",
+                                            wasOriginallyRecurring && "cursor-pointer"
+                                        )}
+                                    >
                                         Este evento é recorrente
                                     </label>
                                 </div>
+                                {!wasOriginallyRecurring && (
+                                    <div className="rounded-lg border border-psi-dark/10 bg-psi-dark/5 p-3">
+                                        <p className="text-xs text-psi-dark/70">
+                                            Eventos não recorrentes não podem ser convertidos em recorrentes após a criação.
+                                        </p>
+                                    </div>
+                                )}
 
                                 {recurrenceEnabled && (
                                     <div className="rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4 space-y-4">
@@ -2269,6 +2349,11 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                     </form>
                 </div>
             </div>
+
+            <DialogMarkdownInstructions
+                open={isMarkdownDialogOpen}
+                onOpenChange={setMarkdownDialogOpen}
+            />
 
             <DialogEditWarning
                 changes={changes}

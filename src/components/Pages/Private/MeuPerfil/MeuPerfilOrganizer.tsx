@@ -390,7 +390,7 @@ const MeuPerfilOrganizer = () => {
                                                 <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
                                                     <User className="h-5 w-5 text-psi-primary" />
                                                 </div>
-                                                <div>
+                                                <div className="text-start">
                                                     <h2 className="text-lg font-semibold text-psi-dark">Dados Pessoais</h2>
                                                     <p className="text-sm text-psi-dark/60">Informações básicas do organizador</p>
                                                 </div>
@@ -499,8 +499,11 @@ const MeuPerfilOrganizer = () => {
                                             control={form.control}
                                             render={({ field }) => (
                                                 <Select
+                                                    { ...field }
                                                     value={field.value || undefined}
-                                                    onValueChange={(value) => field.onChange(value || null)}
+                                                    onValueChange={(value) => {
+                                                        field.onChange(value || null)
+                                                    }}
                                                 >
                                                     <SelectTrigger className="w-full">
                                                         <div className="flex items-center gap-2">
@@ -509,7 +512,7 @@ const MeuPerfilOrganizer = () => {
                                                         </div>
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        {countries.map((country) => (
+                                                        {[...new Map(countries.map((country) => [country.label, country])).values()].map((country) => (
                                                             <SelectItem key={country.value} value={country.value}>
                                                                 {country.label}
                                                             </SelectItem>
@@ -530,8 +533,11 @@ const MeuPerfilOrganizer = () => {
                                             control={form.control}
                                             render={({ field }) => (
                                                 <Select
+                                                    { ...field }
                                                     value={field.value || undefined}
-                                                    onValueChange={(value) => field.onChange(value || null)}
+                                                    onValueChange={(value) => {
+                                                        field.onChange(value || null)
+                                                    }}
                                                 >
                                                     <SelectTrigger className="w-full">
                                                         <SelectValue placeholder="Selecione..." />
@@ -784,7 +790,7 @@ const MeuPerfilOrganizer = () => {
                                                             <SelectValue placeholder="Selecione..." />
                                                         </SelectTrigger>
                                                         <SelectContent>
-                                                            {countries.map((country) => (
+                                                            {[...new Map(countries.map((country) => [country.value, country])).values()].map((country) => (
                                                                 <SelectItem key={country.value} value={country.value}>
                                                                     {country.label}
                                                                 </SelectItem>
@@ -813,7 +819,7 @@ const MeuPerfilOrganizer = () => {
                                                 <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
                                                     <Building2 className="h-5 w-5 text-psi-primary" />
                                                 </div>
-                                                <div>
+                                                <div className="text-start">
                                                     <h2 className="text-lg font-semibold text-psi-dark">Informações da Empresa</h2>
                                                     <p className="text-sm text-psi-dark/60">Opcional - Preencha se for pessoa jurídica</p>
                                                 </div>
@@ -906,7 +912,7 @@ const MeuPerfilOrganizer = () => {
                                                 <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
                                                     <ImageIcon className="h-5 w-5 text-psi-primary" />
                                                 </div>
-                                                <div>
+                                                <div className="text-start">
                                                     <h2 className="text-lg font-semibold text-psi-dark">Logo e Descrição</h2>
                                                     <p className="text-sm text-amber-700 font-medium">Altamente recomendado</p>
                                                 </div>
@@ -995,9 +1001,10 @@ const MeuPerfilOrganizer = () => {
                                                 <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
                                                     <CreditCard className="h-5 w-5 text-psi-primary" />
                                                 </div>
-                                                <div>
+                                                <div className="text-start">
                                                     <h2 className="text-lg font-semibold text-psi-dark">Conta Bancária</h2>
                                                     <p className="text-sm text-psi-dark/60">Opcional - Se preencher, todos os campos marcados com * são obrigatórios</p>
+                                                    <p className="text-xs text-psi-dark/50 mt-1">Taxa de transferência: R$ 5,00</p>
                                                 </div>
                                             </div>
                                             {openSections.bankAccount ? (
@@ -1260,9 +1267,10 @@ const MeuPerfilOrganizer = () => {
                                                 <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
                                                     <Wallet className="h-5 w-5 text-psi-primary" />
                                                 </div>
-                                                <div>
+                                                <div className="text-start">
                                                     <h2 className="text-lg font-semibold text-psi-dark">Chave PIX</h2>
                                                     <p className="text-sm text-psi-dark/60">Opcional - Se preencher, todos os campos marcados com * são obrigatórios</p>
+                                                    <p className="text-xs text-psi-dark/50 mt-1">Taxa de transferência: R$ 2,00</p>
                                                 </div>
                                             </div>
                                             {openSections.pix ? (
@@ -1469,7 +1477,7 @@ const MeuPerfilOrganizer = () => {
                                                 <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
                                                     <Instagram className="h-5 w-5 text-psi-primary" />
                                                 </div>
-                                                <div>
+                                                <div className="text-start">
                                                     <h2 className="text-lg font-semibold text-psi-dark">Redes Sociais</h2>
                                                     <p className="text-sm text-psi-dark/60">Opcional - Links para suas redes sociais</p>
                                                 </div>
@@ -1538,7 +1546,7 @@ const MeuPerfilOrganizer = () => {
                                                 <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center">
                                                     <Mail className="h-5 w-5 text-amber-600" />
                                                 </div>
-                                                <div>
+                                                <div className="text-start">
                                                     <h2 className="text-lg font-semibold text-psi-dark">Contato de Suporte</h2>
                                                     <p className="text-sm text-amber-700 font-medium">Obrigatório - Preencha pelo menos um dos campos marcados com *</p>
                                                 </div>

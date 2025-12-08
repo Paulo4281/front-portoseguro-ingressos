@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent, Wallet, QrCode, HeartPlus } from "lucide-react"
+import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent, Wallet, QrCode, HeartPlus, Info, HouseHeart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Logo from "@/components/Logo/Logo"
 import { Avatar } from "@/components/Avatar/Avatar"
@@ -275,6 +275,17 @@ const Menu = () => {
                                     <Link href="/ver-eventos">
                                         <Calendar className="h-4 w-4" />
                                         Eventos
+                                    </Link>
+                                </Button>
+                                <Button
+                                    asChild
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-psi-dark/70 hover:text-psi-dark"
+                                >
+                                    <Link href="/conheca">
+                                        <HouseHeart className="h-4 w-4" />
+                                        Conheça
                                     </Link>
                                 </Button>
                                 {
