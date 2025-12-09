@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
+import React from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { MessageSquare, Send, FileText, CheckCircle2, Clock, Image as ImageIcon } from "lucide-react"
+import { MessageSquare, Send, FileText, CheckCircle2, Clock, Image as ImageIcon, XCircle, AlertCircle, Info } from "lucide-react"
 import { Background } from "@/components/Background/Background"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/Input/Input"
@@ -24,22 +25,27 @@ import {
     SheetTitle,
     SheetDescription,
 } from "@/components/ui/sheet"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { LoadingButton } from "@/components/Loading/LoadingButton"
 import { useSupportCreate } from "@/hooks/Support/useSupportCreate"
 import { useSupportFind } from "@/hooks/Support/useSupportFind"
+import { useEventCache } from "@/hooks/Event/useEventCache"
 import { Toast } from "@/components/Toast/Toast"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatEventDate } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
-import type { TSupportSubject } from "@/types/Support/TSupport"
+import type { TSupportSubject, TSupport } from "@/types/Support/TSupport"
+import type { TEvent } from "@/types/Event/TEvent"
 
-const SupportCreateValidator = z.object({
+const baseSupportCreateValidator = z.object({
     subject: z.enum([
         "ACCOUNT_ISSUES",
         "PAYMENT_ISSUES",
         "EVENT_MANAGEMENT",
+        "EVENT_POSTPONEMENT",
+        "EVENT_CANCELLATION",
         "TICKET_SALES",
-        "TECHNICAL_PROBLEMS",
+        "TECHNICAL_ISSUES",
         "FEATURE_REQUEST",
         "OTHER"
     ], {
@@ -51,14 +57,93 @@ const SupportCreateValidator = z.object({
     image: z.custom<File | null>().optional()
 })
 
-type TSupportCreateForm = z.infer<typeof SupportCreateValidator>
+type TSupportCreateFormBase = z.infer<typeof baseSupportCreateValidator>
+
+type TAdditionalFieldConfig = {
+    fieldName: string
+    label: string
+    type: "select" | "input" | "textarea"
+    required?: boolean
+    options?: { value: string; label: string }[]
+    placeholder?: string
+    getOptions?: () => { value: string; label: string }[]
+    infoMessages?: string[]
+    warningMessages?: string[]
+}
+
+type TSubjectAdditionalFields = {
+    [key in TSupportSubject]?: {
+        fields: TAdditionalFieldConfig[]
+        descriptionInfo?: string[]
+        descriptionWarning?: string[]
+    }
+}
+
+const getSubjectAdditionalFieldsConfig = (events: { value: string; label: string }[]): TSubjectAdditionalFields => ({
+    EVENT_POSTPONEMENT: {
+        fields: [
+            {
+                fieldName: "eventId",
+                label: "Selecione um evento *",
+                type: "select",
+                required: true,
+                getOptions: () => events
+            }
+        ],
+        descriptionInfo: [
+            "Por favor, descreva no campo 'Descrição *' qual dia do evento você deseja alterar, para qual nova data e horário, e todos os detalhes necessários para o adiamento."
+        ],
+        descriptionWarning: [
+            "Importante: Caso o adiamento seja aprovado, os compradores poderão solicitar reembolso dos ingressos adquiridos."
+        ]
+    }
+})
+
+    const getSupportCreateValidator = (subject?: TSupportSubject, config?: TSubjectAdditionalFields): z.ZodObject<any> => {
+    if (!subject || !config || !config[subject as keyof typeof config]) {
+        return baseSupportCreateValidator
+    }
+
+    const subjectConfig = config[subject as keyof typeof config]
+    let validator: z.ZodObject<any> = baseSupportCreateValidator
+
+    if (subjectConfig?.fields) {
+        const additionalFields: Record<string, z.ZodTypeAny> = {}
+        
+        subjectConfig.fields.forEach((field: TAdditionalFieldConfig) => {
+            if (field.type === "select") {
+                additionalFields[field.fieldName] = field.required
+                    ? z.string().min(1, { error: `${field.label} é obrigatório` })
+                    : z.string().optional()
+            } else if (field.type === "input") {
+                additionalFields[field.fieldName] = field.required
+                    ? z.string().min(1, { error: `${field.label} é obrigatório` })
+                    : z.string().optional()
+            } else if (field.type === "textarea") {
+                additionalFields[field.fieldName] = field.required
+                    ? z.string().min(1, { error: `${field.label} é obrigatório` })
+                    : z.string().optional()
+            }
+        })
+
+        validator = baseSupportCreateValidator.extend(additionalFields) as z.ZodObject<any>
+    }
+
+    return validator
+}
+
+type TSupportCreateForm = TSupportCreateFormBase & {
+    eventId?: string
+}
 
 const subjectLabels: Record<TSupportSubject, string> = {
     ACCOUNT_ISSUES: "Problemas com a conta",
     PAYMENT_ISSUES: "Problemas com pagamentos",
     EVENT_MANAGEMENT: "Gerenciamento de eventos",
+    EVENT_POSTPONEMENT: "Postergação de eventos",
+    EVENT_CANCELLATION: "Cancelamento de eventos",
     TICKET_SALES: "Vendas de ingressos",
-    TECHNICAL_PROBLEMS: "Problemas técnicos",
+    TECHNICAL_ISSUES: "Problemas técnicos",
     FEATURE_REQUEST: "Solicitação de funcionalidade",
     OTHER: "Outro"
 }
@@ -67,24 +152,74 @@ const SuportePannel = () => {
     const [isSheetOpen, setIsSheetOpen] = useState(false)
     const { mutateAsync: createSupport, isPending: isCreating } = useSupportCreate()
     const { data: supportData, isLoading: isLoadingSupport } = useSupportFind()
+    const { data: eventsData, isLoading: isLoadingEvents } = useEventCache()
 
+    const [selectedSubject, setSelectedSubject] = useState<TSupportSubject | undefined>(undefined)
+    
+    const events = useMemo(() => {
+        if (!eventsData?.data || !Array.isArray(eventsData.data)) return []
+        return eventsData.data.map((event: TEvent) => ({
+            value: event.id,
+            label: event.name
+        }))
+    }, [eventsData])
+
+    const subjectAdditionalFieldsConfig = useMemo(() => getSubjectAdditionalFieldsConfig(events), [events])
+    
+    const currentValidator = useMemo(() => getSupportCreateValidator(selectedSubject, subjectAdditionalFieldsConfig), [selectedSubject, subjectAdditionalFieldsConfig])
+    
     const form = useForm<TSupportCreateForm>({
-        resolver: zodResolver(SupportCreateValidator),
+        resolver: zodResolver(currentValidator as any),
         defaultValues: {
             subject: undefined,
             description: "",
-            image: null
+            image: null,
+            eventId: undefined
         }
     })
 
+    const watchedSubject = form.watch("subject")
+    
+    React.useEffect(() => {
+        if (watchedSubject && watchedSubject !== selectedSubject) {
+            setSelectedSubject(watchedSubject)
+        }
+    }, [watchedSubject, selectedSubject])
+
+    const currentSubjectConfig = useMemo(() => {
+        if (!selectedSubject) return null
+        return subjectAdditionalFieldsConfig[selectedSubject as keyof typeof subjectAdditionalFieldsConfig]
+    }, [selectedSubject, subjectAdditionalFieldsConfig])
+
     const descriptionLength = form.watch("description")?.length || 0
+
+    const handleSubjectChange = (subject: TSupportSubject) => {
+        form.setValue("subject", subject)
+        if (currentSubjectConfig) {
+            currentSubjectConfig.fields.forEach(field => {
+                form.setValue(field.fieldName as any, undefined)
+            })
+        }
+    }
 
     const handleSubmit = async (data: TSupportCreateForm) => {
         try {
+            const additionalInfo: Record<string, any> = {}
+            
+            if (currentSubjectConfig?.fields) {
+                currentSubjectConfig.fields.forEach((field: TAdditionalFieldConfig) => {
+                    const value = data[field.fieldName as keyof TSupportCreateForm]
+                    if (value !== undefined && value !== null && value !== "") {
+                        additionalInfo[field.fieldName] = value
+                    }
+                })
+            }
+
             const response = await createSupport({
                 subject: data.subject,
                 description: data.description,
-                image: data.image || null
+                image: data.image || null,
+                additionalInfo: Object.keys(additionalInfo).length > 0 ? additionalInfo : undefined
             })
 
             if (response?.success) {
@@ -135,7 +270,9 @@ const SuportePannel = () => {
                                         render={({ field }) => (
                                             <Select
                                                 value={field.value}
-                                                onValueChange={field.onChange}
+                                                onValueChange={(value) => {
+                                                    handleSubjectChange(value as TSupportSubject)
+                                                }}
                                             >
                                                 <SelectTrigger className="w-full">
                                                     <SelectValue placeholder="Selecione o assunto..." />
@@ -152,6 +289,100 @@ const SuportePannel = () => {
                                     />
                                     <FieldError message={form.formState.errors.subject?.message || ""} />
                                 </div>
+
+                                {currentSubjectConfig?.fields && currentSubjectConfig.fields.map((field: TAdditionalFieldConfig) => {
+                                    const fieldOptions = field.getOptions ? field.getOptions() : (field.options || [])
+                                    const isEventSelect = field.fieldName === "eventId"
+                                    const options = isEventSelect ? events : fieldOptions
+
+                                    return (
+                                        <div key={field.fieldName}>
+                                            <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                                {field.label}
+                                            </label>
+                                            {field.type === "select" ? (
+                                                <>
+                                                    <Controller
+                                                        name={field.fieldName as any}
+                                                        control={form.control}
+                                                        render={({ field: formField }) => (
+                                                            <Select
+                                                                value={formField.value || ""}
+                                                                onValueChange={formField.onChange}
+                                                                disabled={isEventSelect && isLoadingEvents}
+                                                            >
+                                                                <SelectTrigger className="w-full">
+                                                                    <SelectValue placeholder={field.placeholder || `Selecione ${field.label.toLowerCase()}...`} />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {options.map((option: { value: string; label: string }) => (
+                                                                        <SelectItem key={option.value} value={option.value}>
+                                                                            {option.label}
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        )}
+                                                    />
+                                                    <FieldError message={form.formState.errors[field.fieldName as keyof typeof form.formState.errors]?.message as string || ""} />
+                                                </>
+                                            ) : field.type === "input" ? (
+                                                <>
+                                                    <Controller
+                                                        name={field.fieldName as any}
+                                                        control={form.control}
+                                                        render={({ field: formField }) => (
+                                                            <Input
+                                                                {...formField}
+                                                                placeholder={field.placeholder}
+                                                                required={field.required}
+                                                            />
+                                                        )}
+                                                    />
+                                                    <FieldError message={form.formState.errors[field.fieldName as keyof typeof form.formState.errors]?.message as string || ""} />
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Controller
+                                                        name={field.fieldName as any}
+                                                        control={form.control}
+                                                        render={({ field: formField }) => (
+                                                            <textarea
+                                                                {...formField}
+                                                                placeholder={field.placeholder}
+                                                                className="w-full min-h-[100px] px-4 py-3 rounded-lg border border-psi-primary/20 bg-white text-psi-dark placeholder:text-psi-dark/40 focus:outline-none focus:ring-2 focus:ring-psi-primary/50 focus:border-psi-primary/50 resize-none"
+                                                                required={field.required}
+                                                            />
+                                                        )}
+                                                    />
+                                                    <FieldError message={form.formState.errors[field.fieldName as keyof typeof form.formState.errors]?.message as string || ""} />
+                                                </>
+                                            )}
+                                        </div>
+                                    )
+                                })}
+
+                                {currentSubjectConfig?.descriptionInfo && currentSubjectConfig.descriptionInfo.length > 0 && (
+                                    <Alert variant="info" className="flex items-start gap-3">
+                                        <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                                        <AlertDescription variant="info">
+                                            {currentSubjectConfig.descriptionInfo.map((msg: string, index: number) => (
+                                                <p key={index} className={index > 0 ? "mt-2" : ""}>{msg}</p>
+                                            ))}
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
+
+                                {currentSubjectConfig?.descriptionWarning && currentSubjectConfig.descriptionWarning.length > 0 && (
+                                    <Alert variant="warning" className="flex items-start gap-3">
+                                        <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                                        <AlertDescription variant="warning">
+                                            {currentSubjectConfig.descriptionWarning.map((msg: string, index: number) => (
+                                                <p key={index} className={index > 0 ? "mt-2" : ""}>{msg}</p>
+                                            ))}
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
 
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
@@ -255,7 +486,7 @@ const SuportePannel = () => {
                                 <p className="text-psi-dark/60">Nenhum chamado encontrado</p>
                             </div>
                         ) : (
-                            supports.map((support) => (
+                            supports.map((support: TSupport) => (
                                 <div
                                     key={support.id}
                                     className="rounded-xl border border-psi-primary/20 bg-white p-4 space-y-3"
@@ -266,10 +497,15 @@ const SuportePannel = () => {
                                                 <h3 className="font-semibold text-psi-dark">
                                                     {subjectLabels[support.subject]}
                                                 </h3>
-                                                {support.status === "ANSWERED" ? (
+                                                {support.status === "SOLVED" ? (
                                                     <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full flex items-center gap-1">
                                                         <CheckCircle2 className="h-3 w-3" />
-                                                        Respondido
+                                                        Resolvido
+                                                    </span>
+                                                ) : support.status === "NOT_SOLVED" ? (
+                                                    <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-semibold rounded-full flex items-center gap-1">
+                                                        <XCircle className="h-3 w-3" />
+                                                        Não Resolvido
                                                     </span>
                                                 ) : (
                                                     <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full flex items-center gap-1">

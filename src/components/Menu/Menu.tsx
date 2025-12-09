@@ -120,6 +120,18 @@ const menuLinks: TMenuLink[] = [
         roles: ["ORGANIZER"]
     },
     {
+        href: "/adm-organizadores",
+        label: "Organizadores",
+        icon: Users,
+        roles: ["ADMIN"]
+    },
+    {
+        href: "/suporte-admin",
+        label: "Suporte",
+        icon: HeartPlus,
+        roles: ["ADMIN"]
+    },
+    {
         href: "/configuracoes",
         label: "Configurações",
         icon: Settings,
@@ -130,12 +142,6 @@ const menuLinks: TMenuLink[] = [
         label: "Redefinir Senha",
         icon: Lock,
         roles: ["CUSTOMER", "ORGANIZER", "ADMIN"]
-    },
-    {
-        href: "/adm-organizadores",
-        label: "Organizadores",
-        icon: Users,
-        roles: ["ADMIN"]
     },
 ]
 

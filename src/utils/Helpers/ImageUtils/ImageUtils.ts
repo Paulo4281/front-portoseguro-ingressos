@@ -31,7 +31,7 @@ class ImageUtilsClass {
         if (!imageHash) return ""
 
         const bucketUrl = process.env.NEXT_PUBLIC_BUCKET_URL || ""
-        return `${bucketUrl}/support/${imageHash}`
+        return `${bucketUrl}/supports/${imageHash}`
     }
 }
 
