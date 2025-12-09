@@ -386,7 +386,7 @@ const EventCard = ({
             className="group rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-black/10"
         >
             <div className="relative h-60 w-full overflow-hidden">
-                <Link href={`/ver-evento?id=${event.id}`} target="_blank">
+                <Link href={`/ver-evento/${event.slug}`} target="_blank">
                     <img
                         src={ImageUtils.getEventImageUrl(event.image)}
                         alt={event.name}

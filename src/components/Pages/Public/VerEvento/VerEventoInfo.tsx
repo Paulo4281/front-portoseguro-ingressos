@@ -5,7 +5,6 @@ import Image from "next/image"
 import Link from "next/link"
 import { Calendar, Clock, MapPin, Repeat, Tag, ShieldCheck, Lock, CreditCard, ArrowRight, TrendingDown, Users, QrCode, Headphones, Zap, CheckCircle2, Share2, MessageCircle, Star, TrendingUp, Gift, Instagram, Facebook, Mail, Phone, Building2, ExternalLink, Laptop } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useEventFindById } from "@/hooks/Event/useEventFindById"
 import { useEventFindSimilar } from "@/hooks/Event/useEventFindSimilar"
 import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
 import { useEventClickCreate } from "@/hooks/EventClick/useEventClickCreate"
@@ -31,27 +30,49 @@ import { useAuthStore } from "@/stores/Auth/AuthStore"
 import { LoadingButton } from "@/components/Loading/LoadingButton"
 import { useEventVerifyLastTicket } from "@/hooks/Event/useEventVerifyLastTicket"
 import { Toast } from "@/components/Toast/Toast"
+import { useEventFindBySlug } from "@/hooks/Event/useEventFindBySlug"
 
 type TVerEventoInfoProps = {
-    eventId: string
+    slug: string
 }
 
 const VerEventoInfo = (
     {
-        eventId
+        slug
     }: TVerEventoInfoProps
 ) => {
-    const { data: eventData, isLoading, isError } = useEventFindById(eventId)
+    const { data: eventData, isLoading, isError } = useEventFindBySlug(slug)
     const { data: eventCategoriesData } = useEventCategoryFind()
     const { mutateAsync: registerEventClick } = useEventClickCreate()
     const { user } = useAuthStore()
 
-    const { data: eventVerifyLastTicketsData, isLoading: isLoadingEventVerifyLastTickets, isFetching: isFetchingEventVerifyLastTickets } = useEventVerifyLastTicket(eventId)
+    const event = useMemo(() => {
+        return eventData?.data
+    }, [eventData])
+
+    const [eventId, setEventId] = useState<string | null>(null)
+
+    const [eventVerifyLastTicketsData, setEventVerifyLastTicketsData] = useState<TEventVerifyLastTicketsResponse[]>([])
+
+
+    const handleVerifyLastTickets = useCallback(async () => {
+        if (event && event.id) {
+            const { data: eventVerifyLastTicketsData, isLoading: isLoadingEventVerifyLastTickets, isFetching: isFetchingEventVerifyLastTickets } = await useEventVerifyLastTicket(eventId!)
+            setEventVerifyLastTicketsData(eventVerifyLastTicketsData?.data as TEventVerifyLastTicketsResponse[] || [])
+        }
+    }, [event])
+    
+    useEffect(() => {
+        if (event && event.id) {
+            setEventId(event.id)
+            handleVerifyLastTickets()
+        }
+    }, [event])
 
     const [isLastTicketsData, setIsLastTicketsData] = useState<TEventVerifyLastTicketsResponse[]>([])
 
     useEffect(() => {
-        if (eventVerifyLastTicketsData?.data && Array.isArray(eventVerifyLastTicketsData.data)) {
+        if (eventVerifyLastTicketsData && Array.isArray(eventVerifyLastTicketsData.data)) {
             console.log(eventVerifyLastTicketsData.data)
             setIsLastTicketsData(eventVerifyLastTicketsData.data)
         }
@@ -121,10 +142,6 @@ const VerEventoInfo = (
             setter(newQuantity)
         }
     }, [])
-    
-    const event = useMemo(() => {
-        return eventData?.data
-    }, [eventData])
 
     const buyTicketsLimit = useMemo(() => {
         return event?.buyTicketsLimit || 10

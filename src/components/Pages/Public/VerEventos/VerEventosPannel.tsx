@@ -276,13 +276,13 @@ const VerEventosPannel = () => {
                         <div className="grid grid-cols-1
                         md:grid-cols-2
                         lg:grid-cols-3 gap-6">
-                            {events.map((event) => {
+                            {events.map((event: TEvent) => {
                             const activeBatch = getActiveBatch(event.EventBatches)
                             
                             return (
                                 <Link
                                     key={event.id}
-                                    href={`/ver-evento?id=${event.id}`}
+                                    href={`/ver-evento/${event.slug}`}
                                     className="group rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-black/10"
                                 >
                                     <div className="relative h-60 w-full overflow-hidden">

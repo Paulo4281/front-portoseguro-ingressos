@@ -144,7 +144,7 @@ const CardEvent = (
     const firstDate = event.EventDates && Array.isArray(event.EventDates) && event.EventDates.length > 0 ? event.EventDates[0] : null
 
     return (
-        <Link href={`/ver-evento?id=${event.id}`} className="block h-full">
+        <Link href={`/ver-evento/${event.slug}`} className="block h-full">
             <Card className="h-full flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-black/10 hover:-translate-y-1 group">
                 <div className="relative w-full h-56 overflow-hidden bg-psi-dark/5">
                     <img

@@ -16,6 +16,7 @@ type TEvent = {
     id: string
     name: string
     description: string | null
+    slug: string
     location: string | null
     image: string
     price: number | null

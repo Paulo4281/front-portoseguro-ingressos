@@ -198,6 +198,14 @@ class EventServiceClass {
         return response
     }
 
+    async findBySlug(slug: string): Promise<AxiosResponse["data"]> {
+        const response = (await API.GET({
+            prefix: "/event",
+            url: `/slug/${slug}`
+        }))?.data
+        return response
+    }
+
     async findByIdUser(id: string): Promise<AxiosResponse["data"]> {
         const response = (await API.GET({
             prefix: "/event",

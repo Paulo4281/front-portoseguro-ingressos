@@ -662,7 +662,7 @@ const MeusIngressosPannel = () => {
                                                             <Share2 className="h-4 w-4" />
                                                             Compartilhar
                                                         </Button>
-                                                        <Link href={`/ver-evento?id=${ticket.eventId}`} className="flex-1 min-w-[200px]">
+                                                        <Link href={`/ver-evento/${ticket.event.slug}`} className="flex-1 min-w-[200px]">
                                                             <Button
                                                                 variant="secondary"
                                                                 size="lg"
