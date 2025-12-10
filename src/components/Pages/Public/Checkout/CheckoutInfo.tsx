@@ -1398,7 +1398,7 @@ const CheckoutInfo = () => {
                                                             </div>
 
                                                             <div className="animate-pulse transition-opacity duration-700">
-                                                                <Badge variant="default" className="text-xs font-medium">Oferta única!</Badge>
+                                                                <Badge variant="default" className="text-xs font-medium">Oferta imperdível!</Badge>
                                                             </div>
 
                                                             {item.batchName && (

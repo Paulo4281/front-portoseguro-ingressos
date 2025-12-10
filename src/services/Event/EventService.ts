@@ -286,6 +286,14 @@ class EventServiceClass {
         return response
     }
 
+    async cancel(eventId: string): Promise<AxiosResponse["data"]> {
+        const response = (await API.PATCH({
+            prefix: "/event",
+            url: `/cancel/${eventId}`
+        }))?.data
+        return response
+    }
+
     async updateImage(eventId: string, file: File): Promise<AxiosResponse["data"]> {
         const formData = new FormData()
         formData.append("image", file)

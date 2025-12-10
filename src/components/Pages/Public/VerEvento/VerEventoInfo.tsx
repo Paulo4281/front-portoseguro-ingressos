@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Repeat, Tag, ShieldCheck, Lock, CreditCard, ArrowRight, TrendingDown, Users, QrCode, Headphones, Zap, CheckCircle2, Share2, MessageCircle, Star, TrendingUp, Gift, Instagram, Facebook, Mail, Phone, Building2, ExternalLink, Laptop } from "lucide-react"
+import { Calendar, Clock, MapPin, Repeat, Tag, ShieldCheck, Lock, CreditCard, ArrowRight, TrendingDown, Users, QrCode, Headphones, Zap, CheckCircle2, Share2, MessageCircle, Star, TrendingUp, Gift, Instagram, Facebook, Mail, Phone, Building2, ExternalLink, Laptop, AlertCircle } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useEventFindSimilar } from "@/hooks/Event/useEventFindSimilar"
 import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
@@ -766,6 +766,14 @@ const VerEventoInfo = (
                                                 </div>
                                             )
                                         })}
+                                        {
+                                            event.isPostponed && (
+                                                <span className="px-3 py-1 flex items-center gap-2 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold">
+                                                    <AlertCircle className="h-4 w-4" />
+                                                    Adiado
+                                                </span>
+                                            )
+                                        }
                                         {
                                             event.isOnline && (
                                                 <div className="flex items-center gap-2">

@@ -34,8 +34,10 @@ import { Toast } from "@/components/Toast/Toast"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatEventDate } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
-import type { TSupportSubject, TSupport } from "@/types/Support/TSupport"
+import type { TSupportSubject, TSupport, TSupportStatus } from "@/types/Support/TSupport"
 import type { TEvent } from "@/types/Event/TEvent"
+import { useEventFindById } from "@/hooks/Event/useEventFindById"
+import Link from "next/link"
 
 const baseSupportCreateValidator = z.object({
     subject: z.enum([
@@ -96,6 +98,23 @@ const getSubjectAdditionalFieldsConfig = (events: { value: string; label: string
         descriptionWarning: [
             "Importante: Caso o adiamento seja aprovado, os compradores poderão solicitar reembolso dos ingressos adquiridos."
         ]
+    },
+    EVENT_CANCELLATION: {
+        fields: [
+            {
+                fieldName: "eventId",
+                label: "Selecione um evento *",
+                type: "select",
+                required: true,
+                getOptions: () => events
+            }
+        ],
+        descriptionInfo: [
+            "Por favor, descreva no campo 'Descrição *' por qual motivo você deseja cancelar o evento."
+        ],
+        descriptionWarning: [
+            "Importante: Caso o cancelamento seja aprovado, os compradores receberão o reembolso automático dos ingressos adquiridos."
+        ]
     }
 })
 
@@ -150,8 +169,14 @@ const subjectLabels: Record<TSupportSubject, string> = {
 
 const SuportePannel = () => {
     const [isSheetOpen, setIsSheetOpen] = useState(false)
+    const [statusFilter, setStatusFilter] = useState<TSupportStatus | "all">("all")
+    const [offset, setOffset] = useState(0)
+    const limit = 30
     const { mutateAsync: createSupport, isPending: isCreating } = useSupportCreate()
-    const { data: supportData, isLoading: isLoadingSupport } = useSupportFind()
+    const { data: supportData, isLoading: isLoadingSupport } = useSupportFind({
+        offset,
+        status: statusFilter !== "all" ? statusFilter : undefined
+    })
     const { data: eventsData, isLoading: isLoadingEvents } = useEventCache()
 
     const [selectedSubject, setSelectedSubject] = useState<TSupportSubject | undefined>(undefined)
@@ -232,6 +257,21 @@ const SuportePannel = () => {
     }
 
     const supports = supportData?.data?.data || []
+    const total = supportData?.data?.total || 0
+    const totalPages = total > 0 ? Math.ceil(total / limit) : 0
+    const currentPage = Math.floor(offset / limit) + 1
+
+    const parseAdditionalInfo = (additionalInfo: any): Record<string, any> | null => {
+        if (!additionalInfo) return null
+        try {
+            if (typeof additionalInfo === "string") {
+                return JSON.parse(additionalInfo)
+            }
+            return additionalInfo
+        } catch {
+            return null
+        }
+    }
 
     return (
         <>
@@ -474,6 +514,25 @@ const SuportePannel = () => {
                     </SheetHeader>
 
                     <div className="my-6 space-y-4 mx-4">
+                        <div className="flex items-center gap-3">
+                            <Select
+                                value={statusFilter}
+                                onValueChange={(value) => {
+                                    setStatusFilter(value as TSupportStatus | "all")
+                                    setOffset(0)
+                                }}
+                            >
+                                <SelectTrigger className="w-full sm:w-[200px]">
+                                    <SelectValue placeholder="Filtrar por status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos os status</SelectItem>
+                                    <SelectItem value="PENDING">Pendente</SelectItem>
+                                    <SelectItem value="NOT_SOLVED">Não Resolvido</SelectItem>
+                                    <SelectItem value="SOLVED">Resolvido</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                         {isLoadingSupport ? (
                             <div className="space-y-4">
                                 {[1, 2, 3].map((i) => (
@@ -486,71 +545,151 @@ const SuportePannel = () => {
                                 <p className="text-psi-dark/60">Nenhum chamado encontrado</p>
                             </div>
                         ) : (
-                            supports.map((support: TSupport) => (
-                                <div
-                                    key={support.id}
-                                    className="rounded-xl border border-psi-primary/20 bg-white p-4 space-y-3"
-                                >
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <h3 className="font-semibold text-psi-dark">
-                                                    {subjectLabels[support.subject]}
-                                                </h3>
-                                                {support.status === "SOLVED" ? (
-                                                    <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full flex items-center gap-1">
-                                                        <CheckCircle2 className="h-3 w-3" />
-                                                        Resolvido
-                                                    </span>
-                                                ) : support.status === "NOT_SOLVED" ? (
-                                                    <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-semibold rounded-full flex items-center gap-1">
-                                                        <XCircle className="h-3 w-3" />
-                                                        Não Resolvido
-                                                    </span>
-                                                ) : (
-                                                    <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full flex items-center gap-1">
-                                                        <Clock className="h-3 w-3" />
-                                                        Pendente
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <p className="text-sm text-psi-dark/70 mb-2">
-                                                {support.description}
-                                            </p>
-                                            {support.image && (
-                                                <div className="mb-2">
-                                                    <img
-                                                        src={ImageUtils.getSupportImageUrl(support.image)}
-                                                        alt="Imagem do chamado"
-                                                        className="max-w-full h-auto rounded-lg border border-psi-primary/20"
-                                                    />
-                                                </div>
-                                            )}
-                                            {support.answer && (
-                                                <div className="mt-3 pt-3 border-t border-psi-primary/10">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                                        <span className="text-sm font-semibold text-psi-dark">
-                                                            Resposta do Suporte
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-sm text-psi-dark/70">
-                                                        {support.answer}
-                                                    </p>
-                                                </div>
-                                            )}
+                            <>
+                                {supports.map((support: TSupport) => {
+                                    const additionalInfo = parseAdditionalInfo(support.additionalInfo)
+                                    const eventId = additionalInfo?.eventId
+
+                                    return (
+                                        <SupportCard
+                                            key={support.id}
+                                            support={support}
+                                            additionalInfo={additionalInfo}
+                                            eventId={eventId}
+                                        />
+                                    )
+                                })}
+                                {totalPages > 1 && (
+                                    <div className="flex items-center justify-between pt-4 border-t border-psi-primary/10">
+                                        <p className="text-sm text-psi-dark/70">
+                                            Mostrando {offset + 1} a {Math.min(offset + limit, total)} de {total} chamados
+                                        </p>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setOffset(Math.max(0, offset - limit))}
+                                                disabled={offset === 0}
+                                            >
+                                                Anterior
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setOffset(Math.min((totalPages - 1) * limit, offset + limit))}
+                                                disabled={currentPage >= totalPages}
+                                            >
+                                                Próxima
+                                            </Button>
                                         </div>
                                     </div>
-                                    <div className="text-xs text-psi-dark/50">
-                                        Criado em {formatEventDate(support.createdAt, "DD [de] MMMM [de] YYYY [às] HH:mm")}
-                                    </div>
-                                </div>
-                            ))
+                                )}
+                            </>
                         )}
                     </div>
                 </SheetContent>
             </Sheet>
         </>
+    )
+}
+
+type TSupportCardProps = {
+    support: TSupport
+    additionalInfo: Record<string, any> | null
+    eventId?: string
+}
+
+const SupportCard = ({ support, additionalInfo, eventId }: TSupportCardProps) => {
+    const { data: eventData } = useEventFindById(eventId || "temp")
+
+    return (
+        <div className="rounded-xl border border-psi-primary/20 bg-white p-4 space-y-3">
+            <div className="flex items-start justify-between">
+                <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-semibold text-psi-dark">
+                            {subjectLabels[support.subject]}
+                        </h3>
+                        {support.status === "SOLVED" ? (
+                            <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full flex items-center gap-1">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Resolvido
+                            </span>
+                        ) : support.status === "NOT_SOLVED" ? (
+                            <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-semibold rounded-full flex items-center gap-1">
+                                <XCircle className="h-3 w-3" />
+                                Não Resolvido
+                            </span>
+                        ) : (
+                            <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                Pendente
+                            </span>
+                        )}
+                    </div>
+                    <p className="text-sm text-psi-dark/70 mb-2">
+                        {support.description}
+                    </p>
+                    {additionalInfo && Object.keys(additionalInfo).length > 0 && (
+                        <div className="mb-2 p-3 rounded-lg border border-psi-primary/20 bg-psi-primary/5">
+                            <h4 className="text-xs font-semibold text-psi-dark mb-2">Informações Adicionais</h4>
+                            <div className="space-y-1">
+                                {eventId && eventId !== "temp" && (
+                                    <div className="text-xs text-psi-dark/70">
+                                        <span className="font-medium">Evento: </span>
+                                        {eventData?.data ? (
+                                            <Link 
+                                                href={`/ver-evento/${eventData.data.slug}`}
+                                                target="_blank"
+                                                className="text-psi-primary hover:underline"
+                                            >
+                                                {eventData.data.name}
+                                            </Link>
+                                        ) : (
+                                            <span className="text-psi-dark/50">Carregando...</span>
+                                        )}
+                                    </div>
+                                )}
+                                {Object.entries(additionalInfo).map(([key, value]) => {
+                                    if (key === "eventId") return null
+                                    return (
+                                        <div key={key} className="text-xs text-psi-dark/70">
+                                            <span className="font-medium">{key}: </span>
+                                            <span>{String(value)}</span>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    )}
+                    {support.image && (
+                        <div className="mb-2">
+                            <img
+                                src={ImageUtils.getSupportImageUrl(support.image)}
+                                alt="Imagem do chamado"
+                                className="max-w-full h-60 rounded-lg border border-psi-primary/20"
+                            />
+                        </div>
+                    )}
+                    {support.answer && (
+                        <div className="mt-3 pt-3 border-t border-psi-primary/10">
+                            <div className="flex items-center gap-2 mb-2">
+                                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                <span className="text-sm font-semibold text-psi-dark">
+                                    Resposta do Suporte
+                                </span>
+                            </div>
+                            <p className="text-sm text-psi-dark/70">
+                                {support.answer}
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </div>
+            <div className="text-xs text-psi-dark/50">
+                Criado em {formatEventDate(support.createdAt, "DD [de] MMMM [de] YYYY [às] HH:mm")}
+            </div>
+        </div>
     )
 }
 

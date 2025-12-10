@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Share2, Download, Ban, Search, Copy, TicketIcon, Sparkle } from "lucide-react"
+import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Share2, Download, Ban, Search, Copy, TicketIcon, Sparkle, AlertCircle, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/Input/Input"
 import {
@@ -322,7 +322,7 @@ const MeusEventosPannel = () => {
                 }}
             />
 
-            <DialogCancelEventWarning
+            {/* <DialogCancelEventWarning
                 open={cancelDialogOpen}
                 onOpenChange={setCancelDialogOpen}
                 onConfirm={() => {
@@ -334,7 +334,7 @@ const MeusEventosPannel = () => {
                     setCancelDialogOpen(false)
                     setPasswordDialogOpen(true)
                 }}
-            />
+            /> */}
 
             <DialogPasswordConfirmation
                 open={passwordDialogOpen}
@@ -464,13 +464,6 @@ const EventCard = ({
                                 Compartilhar evento
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-[#E4E6F0]" />
-                            <DropdownMenuItem 
-                                className="rounded-lg text-sm text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-                                onClick={() => onCancel(event.id)}
-                            >
-                                <Ban className="h-4 w-4 mr-2 text-destructive" />
-                                Cancelar evento
-                            </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
@@ -478,9 +471,23 @@ const EventCard = ({
 
             <div className="p-6 space-y-4">
                 <div>
-                    <h3 className="text-xl font-bold text-psi-dark mb-2 line-clamp-1">
-                        {event.name}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <h3 className="text-xl font-bold text-psi-dark line-clamp-1">
+                            {event.name}
+                        </h3>
+                        {event.isCancelled && (
+                            <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-semibold rounded-full flex items-center gap-1">
+                                <XCircle className="h-3 w-3" />
+                                Cancelado
+                            </span>
+                        )}
+                        {event.isPostponed && !event.isCancelled && (
+                            <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full flex items-center gap-1">
+                                <AlertCircle className="h-3 w-3" />
+                                Adiado
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 <div className="space-y-3">

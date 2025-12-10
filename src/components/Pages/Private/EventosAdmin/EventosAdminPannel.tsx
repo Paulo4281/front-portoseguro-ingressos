@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useCallback } from "react"
 import Link from "next/link"
 import { Calendar, Clock, MapPin, Repeat, Tag, MoreVertical, Search, ChevronDown, ChevronUp, CalendarClock, Ban, Users, Building2, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -13,11 +13,14 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useEventFindAdmin } from "@/hooks/Event/useEventFindAdmint"
+import { useEventCancel } from "@/hooks/Event/useEventCancel"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Background } from "@/components/Background/Background"
 import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 import type { TEvent } from "@/types/Event/TEvent"
+import { Toast } from "@/components/Toast/Toast"
+import { useQueryClient } from "@tanstack/react-query"
 import { DialogAdminChangeDateWarning } from "@/components/Dialog/DialogAdminChangeDateWarning/DialogAdminChangeDateWarning"
 import { DialogAdminCancelEventWarning } from "@/components/Dialog/DialogAdminCancelEventWarning/DialogAdminCancelEventWarning"
 import { DialogPasswordConfirmation } from "@/components/Dialog/DialogPasswordConfirmation/DialogPasswordConfirmation"
@@ -83,8 +86,11 @@ const EventosAdminPannel = () => {
     const [changeDateFormDialogOpen, setChangeDateFormDialogOpen] = useState(false)
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
     const [selectedEvent, setSelectedEvent] = useState<TEvent | null>(null)
-    const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
     const [openCollapses, setOpenCollapses] = useState<Record<string, boolean>>({})
+    const [pendingActionType, setPendingActionType] = useState<"cancel" | "changeDate" | null>(null)
+
+    const queryClient = useQueryClient()
+    const { mutateAsync: cancelEvent } = useEventCancel()
 
     const handleSearch = () => {
         setSearchQuery(searchName)
@@ -133,6 +139,34 @@ const EventosAdminPannel = () => {
             [eventId]: !prev[eventId]
         }))
     }
+
+    const handleCancelEvent = useCallback(async (eventId: string) => {
+        if (!eventId) return
+        
+        try {
+            const response = await cancelEvent(eventId)
+            if (response?.success) {
+                Toast.success("Evento cancelado com sucesso!")
+                queryClient.invalidateQueries({ queryKey: ["events", "admin"] })
+                setCancelDialogOpen(false)
+                setPasswordDialogOpen(false)
+                setSelectedEvent(null)
+                setSelectedEventId(null)
+            }
+        } catch (error: any) {
+            const errorMessage = error?.response?.data?.message || "Erro ao cancelar evento."
+            Toast.error(errorMessage)
+        }
+    }, [cancelEvent, queryClient])
+    
+    const handleConfirmPassword = useCallback(async () => {
+        if (pendingActionType === "cancel" && selectedEventId) {
+            await handleCancelEvent(selectedEventId)
+        } else if (pendingActionType === "changeDate") {
+            setChangeDateFormDialogOpen(true)
+        }
+        setPendingActionType(null)
+    }, [pendingActionType, selectedEventId, handleCancelEvent])
 
     if (isLoading) {
         return (
@@ -247,12 +281,17 @@ const EventosAdminPannel = () => {
 
             <DialogAdminChangeDateWarning
                 open={changeDateDialogOpen}
-                onOpenChange={setChangeDateDialogOpen}
+                onOpenChange={(open) => {
+                    setChangeDateDialogOpen(open)
+                    if (!open) {
+                        setSelectedEvent(null)
+                        setSelectedEventId(null)
+                        setPendingActionType(null)
+                    }
+                }}
                 event={selectedEvent}
                 onConfirm={() => {
-                    setPendingAction(() => () => {
-                        setChangeDateFormDialogOpen(true)
-                    })
+                    setPendingActionType("changeDate")
                     setChangeDateDialogOpen(false)
                     setPasswordDialogOpen(true)
                 }}
@@ -260,14 +299,17 @@ const EventosAdminPannel = () => {
 
             <DialogAdminCancelEventWarning
                 open={cancelDialogOpen}
-                onOpenChange={setCancelDialogOpen}
+                onOpenChange={(open) => {
+                    setCancelDialogOpen(open)
+                    if (!open) {
+                        setSelectedEvent(null)
+                        setSelectedEventId(null)
+                        setPendingActionType(null)
+                    }
+                }}
                 event={selectedEvent}
                 onConfirm={() => {
-                    setPendingAction(() => () => {
-                        if (selectedEventId) {
-                            console.log("Cancelar evento:", selectedEventId)
-                        }
-                    })
+                    setPendingActionType("cancel")
                     setCancelDialogOpen(false)
                     setPasswordDialogOpen(true)
                 }}
@@ -275,13 +317,15 @@ const EventosAdminPannel = () => {
 
             <DialogPasswordConfirmation
                 open={passwordDialogOpen}
-                onOpenChange={setPasswordDialogOpen}
-                onConfirm={async () => {
-                    if (pendingAction) {
-                        pendingAction()
-                        setPendingAction(null)
+                onOpenChange={(open) => {
+                    setPasswordDialogOpen(open)
+                    if (!open) {
+                        setSelectedEvent(null)
+                        setSelectedEventId(null)
+                        setPendingActionType(null)
                     }
                 }}
+                onConfirm={handleConfirmPassword}
                 title="Confirmação de Segurança"
                 description="Por motivos de segurança, digite sua senha para prosseguir com esta ação administrativa."
                 isAdmin

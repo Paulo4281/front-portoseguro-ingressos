@@ -55,6 +55,8 @@ import { Toast } from "@/components/Toast/Toast"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 import { formatEventDate } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import type { TSupportSubject, TSupportStatus } from "@/types/Support/TSupport"
+import { useEventFindById } from "@/hooks/Event/useEventFindById"
+import Link from "next/link"
 
 const SupportReplyValidator = z.object({
     answer: z.string()
@@ -184,6 +186,18 @@ const SupportAdminPannel = () => {
             ...prev,
             [supportId]: !prev[supportId]
         }))
+    }
+
+    const parseAdditionalInfo = (additionalInfo: any): Record<string, any> | null => {
+        if (!additionalInfo) return null
+        try {
+            if (typeof additionalInfo === "string") {
+                return JSON.parse(additionalInfo)
+            }
+            return additionalInfo
+        } catch {
+            return null
+        }
     }
 
     return (
@@ -403,59 +417,11 @@ const SupportAdminPannel = () => {
                                                         {isOpen && (
                                                             <TableRow className="bg-psi-dark/2">
                                                                 <TableCell colSpan={7} className="p-6">
-                                                                    <div className="space-y-4">
-                                                                        <div>
-                                                                            <h4 className="text-sm font-semibold text-psi-dark mb-2">Descrição</h4>
-                                                                            <p className="text-sm text-psi-dark/70 whitespace-pre-wrap">
-                                                                                {support.description}
-                                                                            </p>
-                                                                        </div>
-                                                                        {support.image && (
-                                                                            <div>
-                                                                                <h4 className="text-sm font-semibold text-psi-dark mb-2">Imagem</h4>
-                                                                                <div className="relative inline-block">
-                                                                                    <img
-                                                                                        src={ImageUtils.getSupportImageUrl(support.image)}
-                                                                                        alt="Imagem do chamado"
-                                                                                        className="max-w-xs h-auto rounded-lg border border-psi-primary/20 cursor-pointer hover:opacity-80 transition-opacity"
-                                                                                        onClick={() => setImageModal({
-                                                                                            open: true,
-                                                                                            src: ImageUtils.getSupportImageUrl(support.image!),
-                                                                                            alt: "Imagem do chamado"
-                                                                                        })}
-                                                                                    />
-                                                                                    <Button
-                                                                                        variant="ghost"
-                                                                                        size="icon"
-                                                                                        className="absolute top-2 right-2 h-8 w-8 bg-white/90 hover:bg-white"
-                                                                                        onClick={() => setImageModal({
-                                                                                            open: true,
-                                                                                            src: ImageUtils.getSupportImageUrl(support.image!),
-                                                                                            alt: "Imagem do chamado"
-                                                                                        })}
-                                                                                    >
-                                                                                        <ZoomIn className="h-4 w-4" />
-                                                                                    </Button>
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
-                                                                        {support.answer && (
-                                                                            <div className="pt-4 border-t border-psi-dark/10">
-                                                                                <div className="flex items-center gap-2 mb-2">
-                                                                                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                                                                    <h4 className="text-sm font-semibold text-psi-dark">Resposta do Suporte</h4>
-                                                                                </div>
-                                                                                <p className="text-sm text-psi-dark/70 whitespace-pre-wrap">
-                                                                                    {support.answer}
-                                                                                </p>
-                                                                                {support.answerAt && (
-                                                                                    <p className="text-xs text-psi-dark/50 mt-2">
-                                                                                        Respondido em {formatEventDate(support.answerAt, "DD/MM/YYYY [às] HH:mm")}
-                                                                                    </p>
-                                                                                )}
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
+                                                                    <SupportDetails
+                                                                        support={support}
+                                                                        parseAdditionalInfo={parseAdditionalInfo}
+                                                                        setImageModal={setImageModal}
+                                                                    />
                                                                 </TableCell>
                                                             </TableRow>
                                                         )}
@@ -583,6 +549,106 @@ const SupportAdminPannel = () => {
                 </DialogContent>
             </Dialog>
         </>
+    )
+}
+
+type TSupportDetailsProps = {
+    support: any
+    parseAdditionalInfo: (info: any) => Record<string, any> | null
+    setImageModal: (modal: { open: boolean; src: string; alt: string }) => void
+}
+
+const SupportDetails = ({ support, parseAdditionalInfo, setImageModal }: TSupportDetailsProps) => {
+    const additionalInfo = parseAdditionalInfo(support.additionalInfo)
+    const eventId = additionalInfo?.eventId
+    const { data: eventData } = useEventFindById(eventId || "temp")
+
+    return (
+        <div className="space-y-4">
+            <div>
+                <h4 className="text-sm font-semibold text-psi-dark mb-2">Descrição</h4>
+                <p className="text-sm text-psi-dark/70 whitespace-pre-wrap">
+                    {support.description}
+                </p>
+            </div>
+            {additionalInfo && Object.keys(additionalInfo).length > 0 && (
+                <div className="p-3 rounded-lg border border-psi-primary/20 bg-psi-primary/5">
+                    <h4 className="text-sm font-semibold text-psi-dark mb-2">Informações Adicionais</h4>
+                    <div className="space-y-1">
+                        {eventId && eventId !== "temp" && (
+                            <div className="text-xs text-psi-dark/70">
+                                <span className="font-medium">Evento: </span>
+                                {eventData?.data ? (
+                                    <Link 
+                                        href={`/ver-evento/${eventData.data.slug}`}
+                                        target="_blank"
+                                        className="text-psi-primary hover:underline"
+                                    >
+                                        {eventData.data.name}
+                                    </Link>
+                                ) : (
+                                    <span className="text-psi-dark/50">Carregando...</span>
+                                )}
+                            </div>
+                        )}
+                        {Object.entries(additionalInfo).map(([key, value]) => {
+                            if (key === "eventId") return null
+                            return (
+                                <div key={key} className="text-xs text-psi-dark/70">
+                                    <span className="font-medium">{key}: </span>
+                                    <span>{String(value)}</span>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            )}
+            {support.image && (
+                <div>
+                    <h4 className="text-sm font-semibold text-psi-dark mb-2">Imagem</h4>
+                    <div className="relative inline-block">
+                        <img
+                            src={ImageUtils.getSupportImageUrl(support.image)}
+                            alt="Imagem do chamado"
+                            className="max-w-xs h-auto rounded-lg border border-psi-primary/20 cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => setImageModal({
+                                open: true,
+                                src: ImageUtils.getSupportImageUrl(support.image!),
+                                alt: "Imagem do chamado"
+                            })}
+                        />
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-2 right-2 h-8 w-8 bg-white/90 hover:bg-white"
+                            onClick={() => setImageModal({
+                                open: true,
+                                src: ImageUtils.getSupportImageUrl(support.image!),
+                                alt: "Imagem do chamado"
+                            })}
+                        >
+                            <ZoomIn className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+            )}
+            {support.answer && (
+                <div className="pt-4 border-t border-psi-dark/10">
+                    <div className="flex items-center gap-2 mb-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                        <h4 className="text-sm font-semibold text-psi-dark">Resposta do Suporte</h4>
+                    </div>
+                    <p className="text-sm text-psi-dark/70 whitespace-pre-wrap">
+                        {support.answer}
+                    </p>
+                    {support.answerAt && (
+                        <p className="text-xs text-psi-dark/50 mt-2">
+                            Respondido em {formatEventDate(support.answerAt, "DD/MM/YYYY [às] HH:mm")}
+                        </p>
+                    )}
+                </div>
+            )}
+        </div>
     )
 }
 
