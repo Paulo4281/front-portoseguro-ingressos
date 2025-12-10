@@ -1,14 +1,14 @@
 "use client"
 
-import { LeadsPannel } from "@/components/Pages/Private/Lead/LeadsPannel"
+import { ClientsPannel } from "@/components/Pages/Private/Clients/ClientsPannel"
 import { VerificationStatusGuard } from "@/components/VerificationStatus/VerificationStatusGuard"
 
-const LeadsPage = () => {
+const ClientsPage = () => {
     return (
         <VerificationStatusGuard>
-            <LeadsPannel />
+            <ClientsPannel />
         </VerificationStatusGuard>
     )
 }
 
-export default LeadsPage
+export default ClientsPage

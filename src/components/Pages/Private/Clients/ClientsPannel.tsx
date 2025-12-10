@@ -28,7 +28,7 @@ import {
     Ticket
 } from "lucide-react"
 
-const LeadsPannel = () => {
+const ClientsPannel = () => {
     const { data, isLoading } = useLeadFind()
     
     const leads = useMemo(() => {
@@ -100,7 +100,7 @@ const LeadsPannel = () => {
                     <div className="space-y-3">
                         <h1 className="text-3xl font-semibold text-psi-primary
                         sm:text-4xl">
-                            Leads e clientes
+                            Clientes
                         </h1>
                         <p className="text-psi-dark/70 max-w-3xl">
                             Visualize todos os clientes que já compraram ingressos dos seus eventos e acompanhe o histórico de compras.
@@ -205,7 +205,7 @@ const LeadsPannel = () => {
                                                             <div className="bg-gradient-to-br from-psi-dark/2 to-psi-dark/5 px-8 py-8 space-y-8 border-t border-psi-dark/10">
                                                                 <div className="grid gap-6
                                                                 md:grid-cols-2
-                                                                lg:grid-cols-3">
+                                                                ">
                                                                     {lead.birth && (
                                                                         <div className="rounded-2xl border border-psi-dark/10 bg-white/80 p-4 space-y-2 shadow-sm">
                                                                             <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
@@ -214,19 +214,6 @@ const LeadsPannel = () => {
                                                                             </div>
                                                                             <p className="text-base font-semibold text-psi-dark">
                                                                                 {formatDate(lead.birth)}
-                                                                            </p>
-                                                                        </div>
-                                                                    )}
-                                                                    {lead.device && (
-                                                                        <div className="rounded-2xl border border-psi-dark/10 bg-white/80 p-4 space-y-2 shadow-sm">
-                                                                            <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
-                                                                                <div className="text-psi-primary">
-                                                                                    {getDeviceIcon(lead.device)}
-                                                                                </div>
-                                                                                Dispositivo
-                                                                            </div>
-                                                                            <p className="text-base font-semibold text-psi-dark">
-                                                                                {lead.device === "DESKTOP" ? "Desktop" : lead.device === "MOBILE" ? "Mobile" : "Tablet"}
                                                                             </p>
                                                                         </div>
                                                                     )}
@@ -309,5 +296,5 @@ const LeadsPannel = () => {
 }
 
 export {
-    LeadsPannel
+    ClientsPannel
 }

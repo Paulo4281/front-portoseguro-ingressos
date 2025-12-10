@@ -50,32 +50,13 @@ const VerEventoInfo = (
         return eventData?.data
     }, [eventData])
 
-    const [eventId, setEventId] = useState<string | null>(null)
+    const { data: eventVerifyLastTicketsData } = useEventVerifyLastTicket(event?.id || null, !!event?.id)
 
-    const [eventVerifyLastTicketsData, setEventVerifyLastTicketsData] = useState<TEventVerifyLastTicketsResponse[]>([])
-
-
-    const handleVerifyLastTickets = useCallback(async () => {
-        if (event && event.id) {
-            const { data: eventVerifyLastTicketsData, isLoading: isLoadingEventVerifyLastTickets, isFetching: isFetchingEventVerifyLastTickets } = await useEventVerifyLastTicket(eventId!)
-            setEventVerifyLastTicketsData(eventVerifyLastTicketsData?.data as TEventVerifyLastTicketsResponse[] || [])
+    const isLastTicketsData = useMemo(() => {
+        if (eventVerifyLastTicketsData?.data && Array.isArray(eventVerifyLastTicketsData.data)) {
+            return eventVerifyLastTicketsData.data
         }
-    }, [event])
-    
-    useEffect(() => {
-        if (event && event.id) {
-            setEventId(event.id)
-            handleVerifyLastTickets()
-        }
-    }, [event])
-
-    const [isLastTicketsData, setIsLastTicketsData] = useState<TEventVerifyLastTicketsResponse[]>([])
-
-    useEffect(() => {
-        if (eventVerifyLastTicketsData && Array.isArray(eventVerifyLastTicketsData.data)) {
-            console.log(eventVerifyLastTicketsData.data)
-            setIsLastTicketsData(eventVerifyLastTicketsData.data)
-        }
+        return []
     }, [eventVerifyLastTicketsData])
 
     const isLastTicketsForDayAndType = useCallback((eventDateId: string | null, ticketTypeId: string | null) => {
@@ -464,7 +445,7 @@ const VerEventoInfo = (
             )
         }
         const cartItem = items.find(item => 
-            item.eventId === eventId && 
+            item.eventId === event?.id && 
             item.batchId === selectedBatchId
         )
         const currentQuantity = cartItem?.quantity || quantity
@@ -473,7 +454,7 @@ const VerEventoInfo = (
             currentQuantity,
             event.isClientTaxed
         )
-    }, [hasMultipleDaysWithTicketTypePrices, event, selectedDaysAndTypes, batchHasTicketTypes, selectedBatch, ticketTypeQuantities, selectedDays, hasMultipleDaysWithSpecificPrices, selectedDaysWithoutTicketTypes, dayQuantities, currentPrice, items, eventId, selectedBatchId, quantity])
+    }, [hasMultipleDaysWithTicketTypePrices, event, selectedDaysAndTypes, batchHasTicketTypes, selectedBatch, ticketTypeQuantities, selectedDays, hasMultipleDaysWithSpecificPrices, selectedDaysWithoutTicketTypes, dayQuantities, currentPrice, items, selectedBatchId, quantity])
 
     useEffect(() => {
         if (previousTotalRef.current !== totalValue && previousTotalRef.current > 0) {
@@ -655,10 +636,10 @@ const VerEventoInfo = (
 
     const cartItem = useMemo(() => {
         return items.find(item => 
-            item.eventId === eventId && 
+            item.eventId === event?.id && 
             item.batchId === selectedBatchId
         )
-    }, [items, eventId, selectedBatchId])
+    }, [items, event?.id, selectedBatchId])
 
     const currentQuantity = cartItem?.quantity || quantity
 

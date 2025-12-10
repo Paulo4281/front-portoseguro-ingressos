@@ -28,11 +28,12 @@ const publicRoutes: TPublicRoutes[] = [
     { path: "/recursos", whenAuthenticated: "next" },
     { path: "/checkout", whenAuthenticated: "next" },
     { path: "/ver-eventos", whenAuthenticated: "next" },
+    { path: "/conheca", whenAuthenticated: "next" }
 ]
 
 export default async function proxy(request: NextRequest): Promise<NextResponse> {
     const path = request.nextUrl.pathname
-    const isPublicRoute = publicRoutes.find((route) => route.path === path)
+    const isPublicRoute = publicRoutes.find((route) => path === route.path || path.startsWith(route.path + "/"))
     const authToken = request.cookies.get("psi_token")?.value
 
     try {

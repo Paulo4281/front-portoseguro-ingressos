@@ -1,17 +1,18 @@
 "use client"
 
-import React, { useMemo } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { useWalletCurrent } from "@/hooks/Wallet/useWalletCurrent"
 import { useWalletHistory } from "@/hooks/Wallet/useWalletHistory"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
-import { ArrowUp, ArrowDown } from "lucide-react"
+import { ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react"
 import { Background } from "@/components/Background/Background"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 
 const CarteiraPannel = () => {
     const { data: walletData, isLoading: walletLoading } = useWalletCurrent()
     const { data: historyData, isLoading: historyLoading } = useWalletHistory()
+    const [isBalanceVisible, setIsBalanceVisible] = useState(false)
 
     const balance = useMemo(() => {
         return walletData?.data?.value ?? 0
@@ -24,10 +25,25 @@ const CarteiraPannel = () => {
     return (
         <Background variant="hero" className="min-h-screen">
         <div className="space-y-6 container mt-[80px]">
-                    <div className="space-y-2">
-                        <h1 className="text-3xl font-bold text-psi-primary
-                        sm:text-4xl">Carteira</h1>
-                        <p className="text-sm text-psi-dark/60">Saldo disponível para saque e movimentações</p>
+                    <div className="flex items-start justify-between">
+                        <div className="space-y-2">
+                            <h1 className="text-3xl font-bold text-psi-primary
+                            sm:text-4xl">Carteira</h1>
+                            <p className="text-sm text-psi-dark/60">Saldo disponível para saque e movimentações</p>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setIsBalanceVisible(!isBalanceVisible)}
+                            className="shrink-0"
+                            aria-label={isBalanceVisible ? "Ocultar saldo" : "Mostrar saldo"}
+                        >
+                            {isBalanceVisible ? (
+                                <EyeOff className="h-5 w-5 text-psi-dark/60" />
+                            ) : (
+                                <Eye className="h-5 w-5 text-psi-dark/60" />
+                            )}
+                        </Button>
                     </div>
             <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 p-6 sm:p-8">
                 <div className="
@@ -35,8 +51,8 @@ const CarteiraPannel = () => {
                 ">
                     <div className="text-start">
                         <div className="text-xs text-psi-dark/60">Disponível</div>
-                        <div className="mt-1 text-4xl font-extrabold text-psi-primary">
-                            {walletLoading ? "—" : ValueUtils.centsToCurrency(balance)}
+                        <div className="mt-1 text-4xl lg:text-5xl font-extrabold text-psi-primary">
+                            {walletLoading ? "—" : isBalanceVisible ? ValueUtils.centsToCurrency(balance) : "••••••"}
                         </div>
                         <hr className="my-4" />
                         <div className="mt-4">
@@ -84,7 +100,9 @@ const CarteiraPannel = () => {
                                     </div>
 
                                     <div className="text-right">
-                                        <div className={`text-sm font-semibold ${colorClass}`}>{sign} {ValueUtils.centsToCurrency(item.value)}</div>
+                                        <div className={`text-sm font-semibold ${colorClass}`}>
+                                            {isBalanceVisible ? `${sign} ${ValueUtils.centsToCurrency(item.value)}` : "••••"}
+                                        </div>
                                     </div>
                                 </li>
                             )

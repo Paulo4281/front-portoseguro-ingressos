@@ -91,7 +91,7 @@ const menuLinks: TMenuLink[] = [
     },
     {
         label: "Clientes",
-        href: "/leads",
+        href: "/clientes",
         icon: Users,
         roles: ["ORGANIZER"]
     },
