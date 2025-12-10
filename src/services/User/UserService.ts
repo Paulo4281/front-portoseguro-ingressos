@@ -21,6 +21,24 @@ class UserServiceClass {
         return response
     }
 
+    async checkPassword(password: string): Promise<AxiosResponse["data"]> {
+        const response = (await API.POST({
+            prefix: "/user",
+            url: "/check-password",
+            data: { password }
+        }))?.data
+        return response
+    }
+
+    async checkPasswordAdmin(password: string): Promise<AxiosResponse["data"]> {
+        const response = (await API.POST({
+            prefix: "/user",
+            url: "/check-password-admin",
+            data: { password }
+        }))?.data
+        return response
+    }
+
     async resetPassword(data: TUserResetPassword): Promise<AxiosResponse["data"]> {
         const response = (await API.POST({
             prefix: "/user",

@@ -24,8 +24,11 @@ const CardEvent = (
 
     const isLastTickets = useMemo(() => {
         if (!eventVerifyLastTicketsData?.data || !Array.isArray(eventVerifyLastTicketsData.data)) return false
+        if (event.EventBatches.every((batch) => !batch.isActive)) return false
         return eventVerifyLastTicketsData.data.some(ticket => ticket.isLastTickets)
     }, [eventVerifyLastTicketsData])
+
+    console.log(isLastTickets)
     
     const getDateRange = (dates: TEvent["EventDates"]) => {
         if (!dates || !Array.isArray(dates) || dates.length === 0) return null

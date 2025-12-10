@@ -120,6 +120,12 @@ const menuLinks: TMenuLink[] = [
         roles: ["ORGANIZER"]
     },
     {
+        href: "/eventos-admin",
+        label: "Eventos",
+        icon: Calendar,
+        roles: ["ADMIN"]
+    },
+    {
         href: "/adm-organizadores",
         label: "Organizadores",
         icon: Users,

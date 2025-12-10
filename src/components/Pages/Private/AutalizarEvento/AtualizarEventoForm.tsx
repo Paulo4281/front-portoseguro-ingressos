@@ -41,6 +41,7 @@ import { FormBuilder, type TFormField } from "@/components/FormBuilder/FormBuild
 import { DialogEditWarning, type TChangeItem } from "@/components/Dialog/DialogEditWarning/DialogEditWarning"
 import { Toast } from "@/components/Toast/Toast"
 import { DialogMarkdownInstructions } from "@/components/Dialog/DialogMarkdownInstructions/DialogMarkdownInstructions"
+import { DialogPasswordConfirmation } from "@/components/Dialog/DialogPasswordConfirmation/DialogPasswordConfirmation"
 
 type TEventUpdate = z.infer<typeof EventUpdateValidator>
 
@@ -192,6 +193,8 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     const [soldTicketsData, setSoldTicketsData] = useState<TEventVerifySoldResponse[]>([])
     const [wasOriginallyRecurring, setWasOriginallyRecurring] = useState(false)
     const [isMarkdownDialogOpen, setMarkdownDialogOpen] = useState(false)
+    const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
+    const [pendingSubmitData, setPendingSubmitData] = useState<TEventUpdate | null>(null)
 
     const { data: eventData, isLoading: isEventLoading } = useEventFindByIdUser(eventId)
     const { data: eventCategoriesData, isLoading: isEventCategoriesLoading } = useEventCategoryFind()
@@ -651,7 +654,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
         }
     }, [eventData, isFormInitialized, form, eventCategories])
 
-    const handleSubmit = async (data: TEventUpdate) => {
+    const executeSubmit = async (data: TEventUpdate) => {
         try {
             const hasBatches = data.batches && data.batches.length > 0
             const hasTicketTypes = data.ticketTypes && data.ticketTypes.length > 0
@@ -742,6 +745,18 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
             // Optionally you can redirect or show a success toast here
         } catch (error) {
             console.error("Erro ao atualizar evento:", error)
+        }
+    }
+
+    const handleSubmit = async (data: TEventUpdate) => {
+        setPendingSubmitData(data)
+        setPasswordDialogOpen(true)
+    }
+
+    const handlePasswordConfirm = async () => {
+        if (pendingSubmitData) {
+            await executeSubmit(pendingSubmitData)
+            setPendingSubmitData(null)
         }
     }
 
@@ -2360,6 +2375,14 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                 riskScore={riskScore}
                 isOpen={isWarningOpen && changes.length > 0}
                 onClose={() => setIsWarningOpen(false)}
+            />
+
+            <DialogPasswordConfirmation
+                open={passwordDialogOpen}
+                onOpenChange={setPasswordDialogOpen}
+                onConfirm={handlePasswordConfirm}
+                title="Confirmação de Segurança"
+                description="Por motivos de segurança, digite sua senha para confirmar a atualização do evento."
             />
         </Background>
     )

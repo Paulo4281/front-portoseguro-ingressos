@@ -163,6 +163,25 @@ class EventServiceClass {
         return response
     }
 
+    async findAdmin(params?: { offset?: number; name?: string }): Promise<AxiosResponse["data"]> {
+        const queryParams: Record<string, string | number> = {}
+        
+        if (params?.offset !== undefined) {
+            queryParams.offset = params.offset
+        }
+        
+        if (params?.name) {
+            queryParams.name = params.name
+        }
+        
+        const response = (await API.GET({
+            prefix: "/event",
+            url: "/admin",
+            params: Object.keys(queryParams).length > 0 ? queryParams : undefined
+        }))?.data
+        return response
+    }
+
     async findFeatured(): Promise<AxiosResponse["data"]> {
         const response = (await API.GET({
             prefix: "/event",
@@ -256,10 +275,12 @@ class EventServiceClass {
         return response
     }
 
-    async update(eventId: string, data: TEventUpdate): Promise<AxiosResponse["data"]> {
+    async update(eventId: string, data: TEventUpdate, isAdmin?: boolean): Promise<AxiosResponse["data"]> {
+        const url = isAdmin ? `/admin/${eventId}` : `/${eventId}`
+        
         const response = (await API.PUT({
             prefix: "/event",
-            url: `/${eventId}`,
+            url: url,
             data: data
         }))?.data
         return response
