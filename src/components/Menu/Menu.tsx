@@ -78,7 +78,7 @@ const menuLinks: TMenuLink[] = [
             },
             {
                 href: "/eventos/criar",
-                label: "Adicionar",
+                label: "Publicar",
                 icon: Plus
             },
         ]

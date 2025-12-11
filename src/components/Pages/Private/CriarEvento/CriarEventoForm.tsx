@@ -452,7 +452,7 @@ const CriarEventoForm = () => {
                         </Link>
                         <h1 className="text-4xl
                         sm:text-5xl font-bold text-psi-primary mb-2">
-                            Criar Novo Evento
+                            Publicar Novo Evento
                         </h1>
                         <p className="text-base
                         sm:text-lg text-psi-dark/60">

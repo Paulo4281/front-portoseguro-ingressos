@@ -446,7 +446,7 @@ const MeuPerfilOrganizer = () => {
                                 </div>
 
                                 <div className="grid gap-4
-                                sm:grid-cols-2">
+                                sm:grid-cols-3">
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
                                             Data de Nascimento
@@ -481,11 +481,27 @@ const MeuPerfilOrganizer = () => {
                                                     mask="000.000.000-00"
                                                     placeholder="000.000.000-00"
                                                     icon={FileText}
+                                                    disabled={ field.value ? true : false }
+                                                    className={`${field.value ? "bg-psi-dark/5" : ""}`}
                                                 />
                                             )}
                                         />
                                         <FieldError message={form.formState.errors.document?.message || ""} />
                                     </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                Email
+                                            </label>
+                                                <Input
+                                                    value={user?.email || ""}
+                                                    placeholder="Email"
+                                                    icon={Mail}
+                                                    disabled={ true }
+                                                    className="bg-psi-dark/5"
+                                                />
+                                        </div>
+
                                 </div>
 
                                 <div className="grid gap-4

@@ -332,6 +332,8 @@ const MeuPerfilCustomer = () => {
                                                         mask="000.000.000-00"
                                                         placeholder="000.000.000-00"
                                                         icon={FileText}
+                                                        disabled={ field.value ? true : false }
+                                                        className={`${field.value ? "bg-psi-dark/5" : ""}`}
                                                     />
                                                 )}
                                             />
@@ -437,7 +439,7 @@ const MeuPerfilCustomer = () => {
                                                     <InputMask
                                                         mask="00000-000"
                                                         value={field.value || ""}
-                                                        onAccept={(value) => updateAddressField("zipcode", value as string)}
+                                                        onAccept={(value) => updateAddressField("zipCode", value as string)}
                                                         placeholder="00000-000"
                                                         icon={Hash}
                                                     />

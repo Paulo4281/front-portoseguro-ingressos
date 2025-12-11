@@ -255,10 +255,10 @@ const MeusEventosPannel = () => {
                             <Button
                                 variant="primary"
                                 onClick={() => router.push("/eventos/criar")}
-                                aria-label="Criar meu primeiro evento"
+                                aria-label="Publicar meu primeiro evento"
                                 type="button"
                             >
-                                Criar meu primeiro evento
+                                Publicar meu primeiro evento
                             </Button>
                         </div>
                     </div>
