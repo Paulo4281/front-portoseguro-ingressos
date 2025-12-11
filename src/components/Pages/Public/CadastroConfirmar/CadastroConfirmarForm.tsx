@@ -253,7 +253,7 @@ const CadastroConfirmarForm = () => {
                                     <span className="text-muted-foreground">Reenviar em </span>
                                     <Timer
                                         key={timerKey}
-                                        seconds={10}
+                                        seconds={120}
                                         onFinish={() => setCanResend(true)}
                                         variant="badge"
                                     />

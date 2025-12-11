@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
-import { User, Building2, Mail, Phone, UserCircle, ArrowLeft, Lock, Eye, EyeOff } from "lucide-react"
+import { User, Building2, Mail, Phone, UserCircle, ArrowLeft, Lock, Eye, EyeOff, FileText } from "lucide-react"
 import { UserCreateValidator } from "@/validators/User/UserValidator"
 import { TUserCreate, UserRoles } from "@/types/User/TUser"
 import { Button } from "@/components/ui/button"
@@ -247,6 +247,31 @@ const CadastroForm = () => {
                                 )}
                             />
                             <FieldError message={form.formState.errors.phone?.message || ""} />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label 
+                                htmlFor="document"
+                                className="text-sm
+                                font-medium
+                                text-foreground">
+                                CPF
+                            </label>
+                            <Controller
+                                name="document"
+                                control={form.control}
+                                render={({ field }) => (
+                                    <InputMask
+                                        {...field}
+                                        id="document"
+                                        type="text"
+                                        placeholder="000.000.000-00"
+                                        mask="000.000.000-00"
+                                        icon={FileText}
+                                    />
+                                )}
+                            />
+                            <FieldError message={form.formState.errors.document?.message || ""} />
                         </div>
 
                         <div className="space-y-2">

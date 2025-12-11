@@ -2400,6 +2400,25 @@ const CheckoutInfo = () => {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-psi-dark mb-2">
+                                CPF *
+                            </label>
+                            <Controller
+                                name="document"
+                                control={cadastroForm.control}
+                                render={({ field }) => (
+                                    <InputMask
+                                        {...field}
+                                        mask="000.000.000-00"
+                                        placeholder="000.000.000-00"
+                                        icon={FileText}
+                                        required
+                                    />
+                                )}
+                            />
+                            <FieldError message={cadastroForm.formState.errors.document?.message || ""} />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-psi-dark mb-2">
                                 Senha *
                             </label>
                             <Controller
@@ -2552,7 +2571,7 @@ const CheckoutInfo = () => {
                                         <span className="text-psi-dark/60">Reenviar em </span>
                                         <Timer
                                             key={timerKey}
-                                            seconds={10}
+                                            seconds={120}
                                             onFinish={() => setCanResend(true)}
                                             variant="badge"
                                         />

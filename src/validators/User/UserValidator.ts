@@ -7,6 +7,7 @@ const UserCreateValidator = z.object({
     lastName: z.string({ error: DefaultFormErrors.required }),
     email: z.email({ error: DefaultFormErrors.email }),
     phone: z.string({ error: DefaultFormErrors.required }),
+    document: z.string({ error: DefaultFormErrors.required }),
     password: z.string({ error: DefaultFormErrors.required }),
     role: z.enum(UserRoles, { error: DefaultFormErrors.required }),
 }).superRefine((data, ctx) => {
