@@ -23,6 +23,10 @@ import { DialogUpdateEventWarning } from "@/components/Dialog/DialogUpdateEventW
 import { DialogCancelEventWarning } from "@/components/Dialog/DialogCancelEventWarning/DialogCancelEventWarning"
 import { DialogExportBuyersList } from "@/components/Dialog/DialogExportBuyersList/DialogExportBuyersList"
 import { DialogPasswordConfirmation } from "@/components/Dialog/DialogPasswordConfirmation/DialogPasswordConfirmation"
+import { DialogConfirm } from "@/components/Dialog/DialogConfirm/DialogConfirm"
+import { useEventDelete } from "@/hooks/Event/useEventDelete"
+import { useQueryClient } from "@tanstack/react-query"
+import { Toast } from "@/components/Toast/Toast"
 import { Pagination } from "@/components/Pagination/Pagination"
 import { EventSalesReport } from "@/components/Report/EventSalesReport"
 import { useEventClickCount } from "@/hooks/EventClick/useEventClickCount"
@@ -115,11 +119,14 @@ const MeusEventosPannel = () => {
     const [exportBuyersListOpen, setExportBuyersListOpen] = useState(false)
     const [ticketsSheetOpen, setTicketsSheetOpen] = useState(false)
     const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
     const [selectedEventName, setSelectedEventName] = useState<string | null>(null)
     const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
 
     const router = useRouter()
+    const queryClient = useQueryClient()
+    const { mutateAsync: deleteEvent, isPending: isDeletingEvent } = useEventDelete()
     
     const handleSearch = () => {
         setSearchQuery(searchName)
@@ -174,6 +181,33 @@ const MeusEventosPannel = () => {
     const handleOpenTicketsSheet = (eventId: string) => {
         setSelectedEventId(eventId)
         setTicketsSheetOpen(true)
+    }
+
+    const handleOpenDeleteDialog = (eventId: string, eventName: string) => {
+        setSelectedEventId(eventId)
+        setSelectedEventName(eventName)
+        setDeleteDialogOpen(true)
+    }
+
+    const handleConfirmDelete = async () => {
+        if (!selectedEventId) return
+
+        try {
+            const response = await deleteEvent(selectedEventId)
+            
+            if (response?.success) {
+                Toast.success("Evento excluído com sucesso!")
+                queryClient.invalidateQueries({ queryKey: ["events", "user"] })
+                setDeleteDialogOpen(false)
+                setSelectedEventId(null)
+                setSelectedEventName(null)
+            } else {
+                Toast.error("Erro ao excluir evento. Tente novamente.")
+            }
+        } catch (error: any) {
+            const errorMessage = error?.response?.data?.message || "Erro ao excluir evento. Tente novamente."
+            Toast.error(errorMessage)
+        }
     }
 
     if (isLoading) {
@@ -292,6 +326,7 @@ const MeusEventosPannel = () => {
                                 onSalesReport={handleOpenSalesReport}
                                 onCancel={handleOpenCancelDialog}
                                 onTickets={handleOpenTicketsSheet}
+                                onDelete={handleOpenDeleteDialog}
                             />
                         ))}
                     </div>
@@ -373,6 +408,18 @@ const MeusEventosPannel = () => {
                     eventId={selectedEventId}
                 />
             )}
+
+            <DialogConfirm
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                onConfirm={handleConfirmDelete}
+                title="Excluir Evento"
+                description={`Tem certeza que deseja excluir o evento "${selectedEventName}"? Esta ação é irreversível e não poderá ser desfeita.`}
+                confirmText="Excluir"
+                cancelText="Cancelar"
+                isLoading={isDeletingEvent}
+                variant="destructive"
+            />
         </Background>
     )
 }
@@ -388,6 +435,7 @@ type TEventCardProps = {
     onSalesReport: (eventId: string, eventName: string) => void
     onCancel: (eventId: string) => void
     onTickets: (eventId: string) => void
+    onDelete: (eventId: string, eventName: string) => void
 }
 
 const EventCard = ({
@@ -396,7 +444,8 @@ const EventCard = ({
     onExportBuyers,
     onSalesReport,
     onCancel,
-    onTickets
+    onTickets,
+    onDelete
 }: TEventCardProps) => {
     const {
         data: clickCountData,
@@ -432,6 +481,7 @@ const EventCard = ({
                             <DropdownMenuItem 
                                 className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer"
                                 onClick={() => onEdit(event.id)}
+                                disabled={event.isCancelled}
                             >
                                 <Edit className="h-4 w-4 mr-2 text-psi-primary" />
                                 Editar evento
@@ -440,6 +490,7 @@ const EventCard = ({
                             <DropdownMenuItem 
                                 className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer"
                                 onClick={() => onExportBuyers(event.id)}
+                                disabled={event.isCancelled}
                             >
                                 <FileSpreadsheet className="h-4 w-4 mr-2 text-psi-primary" />
                                 Gerar lista de compradores
@@ -454,16 +505,28 @@ const EventCard = ({
                             <DropdownMenuItem 
                                 className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer"
                                 onClick={() => onSalesReport(event.id, event.name)}
+                                disabled={event.isCancelled}
                             >
                                 <BarChart3 className="h-4 w-4 mr-2 text-psi-primary" />
                                 Relatório de Vendas e Estatísticas
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-[#E4E6F0]" />
-                            <DropdownMenuItem className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer">
+                            <DropdownMenuItem className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer" disabled={event.isCancelled}>
                                 <Share2 className="h-4 w-4 mr-2 text-psi-primary" />
                                 Compartilhar evento
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-[#E4E6F0]" />
+                            {
+                                event.isCancelled && (
+                                    <DropdownMenuItem 
+                                        className="rounded-lg text-sm text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                                        onClick={() => onDelete(event.id, event.name)}
+                                    >
+                                        <Trash2 className="h-4 w-4 mr-2 text-destructive" />
+                                        Excluir evento
+                                    </DropdownMenuItem>
+                                )
+                            }
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>

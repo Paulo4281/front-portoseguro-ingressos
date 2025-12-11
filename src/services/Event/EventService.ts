@@ -286,6 +286,14 @@ class EventServiceClass {
         return response
     }
 
+    async delete(eventId: string): Promise<AxiosResponse["data"]> {
+        const response = (await API.DELETE({
+            prefix: "/event",
+            url: `/${eventId}`
+        }))?.data
+        return response
+    }
+
     async cancel(eventId: string): Promise<AxiosResponse["data"]> {
         const response = (await API.PATCH({
             prefix: "/event",
