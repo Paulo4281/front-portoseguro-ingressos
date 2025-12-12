@@ -177,8 +177,13 @@ type TTicketToOrganizer = {
 }
 
 type TTicketBuyResponse = {
-    pixQrCode: string | null
-    isConfirmed: boolean
+    pixData?: {
+        encodedImage: string
+        payload: string
+        expirationDate: string
+        description: string
+    } | null
+    paymentId?: string | null
 }
 
 type TTicketQRCodeResponse = {

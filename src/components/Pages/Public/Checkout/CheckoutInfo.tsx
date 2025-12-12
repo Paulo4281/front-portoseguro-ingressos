@@ -57,7 +57,11 @@ import {
     LogIn,
     UserCircle,
     ArrowRight,
-    MailCheck
+    MailCheck,
+    QrCode,
+    Copy,
+    RefreshCw,
+    AlertCircle
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { CTAButton } from "@/components/CTAButton/CTAButton"
@@ -89,6 +93,10 @@ import { useTicketHoldCreate } from "@/hooks/TicketHold/useTicketHoldCreate"
 import { useTicketHoldUpdateQuantity } from "@/hooks/TicketHold/useTicketHoldUpdateQuantity"
 import { TTicketHoldCreate, TTicketHoldCreateResponse } from "@/types/TicketHold/TTicketHold"
 import { Badge } from "@/components/ui/badge"
+import { useUserUpdate } from "@/hooks/User/useUserUpdate"
+import { UserProfileUpdateValidator, type TUserProfileUpdate } from "@/validators/User/UserProfileUpdateValidator"
+import { Globe, Building2, Hash } from "lucide-react"
+import { PaymentService } from "@/services/Payment/PaymentService"
 
 type TPaymentMethod = "pix" | "credit"
 
@@ -138,21 +146,8 @@ const CheckoutInfo = () => {
 
     const { mutateAsync: createTicketHold, isPending: isCreatingTicketHold } = useTicketHoldCreate()
 
-    const [buyerData, setBuyerData] = useState({
-        firstName: user?.firstName || "",
-        lastName: user?.lastName || "",
-        email: user?.email || "",
-        phone: user?.phone || "",
-        document: user?.document || "",
-        street: user?.Address?.street || "",
-        number: user?.Address?.number || "",
-        complement: user?.Address?.complement || "",
-        neighborhood: user?.Address?.neighborhood || "",
-        zipCode: user?.Address?.zipCode || "",
-        city: user?.Address?.city || "",
-        state: user?.Address?.state || "",
-        country: user?.Address?.country || "Brasil",
-    })
+    const [showUpdateProfileDialog, setShowUpdateProfileDialog] = useState(false)
+    const [showViewProfileDialog, setShowViewProfileDialog] = useState(false)
 
     const [emailInput, setEmailInput] = useState("")
     const [showLoginDialog, setShowLoginDialog] = useState(false)
@@ -171,8 +166,11 @@ const CheckoutInfo = () => {
     const { mutateAsync: confirmByCode, isPending: isConfirmingByCode } = useUserConfirmationConfirmByCode()
     const { mutateAsync: resendConfirmation, isPending: isResendingConfirmation } = useUserConfirmationResendConfirmation()
     const { mutateAsync: buyTicket, isPending: isBuyingTicket } = useTicketBuy()
+    const { mutateAsync: updateUser, isPending: isUpdatingUser } = useUserUpdate()
 
     const [buyTicketResponse, setBuyTicketResponse] = useState<TTicketBuyResponse | null>(null)
+    const [isCheckingPayment, setIsCheckingPayment] = useState(false)
+    const [paymentVerified, setPaymentVerified] = useState(false)
 
     const loginForm = useForm<TAuth>({
         resolver: zodResolver(AuthValidator),
@@ -194,6 +192,64 @@ const CheckoutInfo = () => {
         }
     })
 
+    const formatBirthForForm = (birth: string | null | undefined): string => {
+        if (!birth) return ""
+        const [year, month, day] = birth.split("-")
+        if (year && month && day) {
+            return `${day}/${month}/${year}`
+        }
+        return birth
+    }
+
+    const updateProfileForm = useForm<TUserProfileUpdate>({
+        resolver: zodResolver(UserProfileUpdateValidator),
+        defaultValues: {
+            firstName: user?.firstName || "",
+            lastName: user?.lastName || "",
+            image: null,
+            phone: user?.phone || "",
+            document: user?.document || "",
+            nationality: user?.nationality || "",
+            gender: user?.gender || null,
+            birth: formatBirthForForm(user?.birth),
+            address: user?.Address ? {
+                street: user.Address.street,
+                number: user.Address.number || "",
+                complement: user.Address.complement || "",
+                neighborhood: user.Address.neighborhood,
+                zipCode: user.Address?.zipCode,
+                city: user.Address.city,
+                state: user.Address.state,
+                country: user.Address.country,
+            } : null
+        }
+    })
+
+    useEffect(() => {
+        if (user && showUpdateProfileDialog) {
+            updateProfileForm.reset({
+                firstName: user.firstName || "",
+                lastName: user.lastName || "",
+                image: null,
+                phone: user.phone || "",
+                document: user.document || "",
+                nationality: user.nationality || "",
+                gender: user.gender || null,
+                birth: formatBirthForForm(user.birth),
+                address: user.Address ? {
+                    street: user.Address.street,
+                    number: user.Address.number || "",
+                    complement: user.Address.complement || "",
+                    neighborhood: user.Address.neighborhood,
+                    zipCode: user.Address?.zipCode,
+                    city: user.Address.city,
+                    state: user.Address.state,
+                    country: user.Address.country,
+                } : null
+            })
+        }
+    }, [user, showUpdateProfileDialog, updateProfileForm])
+
     useEffect(() => {
         cadastroForm.setValue("role", "CUSTOMER")
     }, [cadastroForm])
@@ -208,31 +264,22 @@ const CheckoutInfo = () => {
     const passwordValue = cadastroForm.watch("password")
 
     const states = useMemo(() => getStates(), [])
+    const selectedState = updateProfileForm.watch("address.state")
     const cities = useMemo(() => {
-        return getCitiesByState(buyerData.state || "")
-    }, [buyerData.state])
+        return getCitiesByState(selectedState || "")
+    }, [selectedState])
     const [countries, setCountries] = useState(getCountriesSync())
 
     useEffect(() => {
-        if (isAuthenticated && user) {
-            setBuyerData({
-                firstName: user.firstName || "",
-                lastName: user.lastName || "",
-                email: user.email || "",
-                phone: user.phone || "",
-                document: user.document || "",
-                street: user.Address?.street || "",
-                number: user.Address?.number || "",
-                complement: user.Address?.complement || "",
-                neighborhood: user.Address?.neighborhood || "",
-                zipCode: user.Address?.zipCode || "",
-                city: user.Address?.city || "",
-                state: user.Address?.state || "",
-                country: user.Address?.country || "Brasil",
-            })
-            setEmailInput("")
+        if (selectedState) {
+            const currentCity = updateProfileForm.getValues("address.city")
+            const availableCities = getCitiesByState(selectedState)
+            const cityExists = availableCities.some(city => city.value === currentCity)
+            if (!cityExists && currentCity) {
+                updateProfileForm.setValue("address.city", "")
+            }
         }
-    }, [isAuthenticated, user])
+    }, [selectedState, updateProfileForm])
 
     useEffect(() => {
         if (showLoginDialog && emailInput) {
@@ -253,6 +300,30 @@ const CheckoutInfo = () => {
         }
         loadCountries()
     }, [])
+
+    useEffect(() => {
+        if (!buyTicketResponse?.paymentId || paymentVerified) return
+
+        const interval = setInterval(async () => {
+            try {
+                const response = await PaymentService.verifyPaymentStatus(buyTicketResponse.paymentId!)
+                const status = response?.data?.status
+
+                if (status === "CONFIRMED" || status === "RECEIVED") {
+                    setPaymentVerified(true)
+                    clearInterval(interval)
+                    Toast.success("Pagamento realizado com sucesso! Redirecionando...")
+                    setTimeout(() => {
+                        router.push("/")
+                    }, 1500)
+                }
+            } catch (error) {
+                console.error("Erro ao verificar status do pagamento:", error)
+            }
+        }, 5000)
+
+        return () => clearInterval(interval)
+    }, [buyTicketResponse?.paymentId, paymentVerified, router])
 
     const [cardData, setCardData] = useState({
         number: "",
@@ -611,47 +682,18 @@ const CheckoutInfo = () => {
                 return
             }
 
-            const requiredFields = [
-                { field: buyerData.firstName, name: "Nome" },
-                { field: buyerData.lastName, name: "Sobrenome" },
-                { field: buyerData.email, name: "E-mail" },
-                { field: buyerData.phone, name: "Telefone" },
-                { field: buyerData.document, name: "CPF" },
-                { field: buyerData.zipCode, name: "CEP" },
-                { field: buyerData.street, name: "Rua" },
-                { field: buyerData.neighborhood, name: "Bairro" },
-                { field: buyerData.city, name: "Cidade" },
-                { field: buyerData.state, name: "Estado" },
-                { field: buyerData.country, name: "País" }
-            ]
-
-            const missingFields = requiredFields.filter(({ field }) => !field || field.trim() === "")
-
-            if (missingFields.length > 0) {
-                Toast.info(`Por favor, preencha todos os campos obrigatórios: ${missingFields.map(f => f.name).join(", ")}`)
+            if (!user) {
+                Toast.info("Erro ao carregar dados do usuário. Tente novamente.")
                 return
             }
 
-            if (!buyerData.email.includes("@")) {
-                Toast.info("Por favor, digite um e-mail válido.")
+            if (user.role === "ORGANIZER" && !user.isCompleteInfo) {
+                Toast.info("Por favor, complete seu cadastro no perfil antes de continuar.")
                 return
             }
 
-            const phoneDigits = buyerData.phone.replace(/\D/g, "")
-            if (phoneDigits.length < 10) {
-                Toast.info("Por favor, digite um telefone válido.")
-                return
-            }
-
-            const documentDigits = buyerData.document.replace(/\D/g, "")
-            if (documentDigits.length < 11) {
-                Toast.info("Por favor, digite um CPF válido.")
-                return
-            }
-
-            const zipcodeDigits = buyerData.zipCode.replace(/\D/g, "")
-            if (zipcodeDigits.length < 8) {
-                Toast.info("Por favor, digite um CEP válido.")
+            if (user.role === "CUSTOMER" && !user.isCompleteInfo) {
+                Toast.info("Por favor, complete seus dados antes de continuar.")
                 return
             }
         }
@@ -923,6 +965,11 @@ const CheckoutInfo = () => {
 
         if (response?.success && response?.data) {
             setBuyTicketResponse(response.data)
+            setPaymentVerified(false)
+            if (!response.data.pixData) {
+                Toast.success("Compra realizada com sucesso!")
+                router.push("/meus-ingressos")
+            }
         }
     }
 
@@ -953,21 +1000,6 @@ const CheckoutInfo = () => {
             if (response && response.success && response.data?.user) {
                 const loggedUser = response.data.user
                 setUser(loggedUser)
-                setBuyerData({
-                    firstName: loggedUser.firstName || "",
-                    lastName: loggedUser.lastName || "",
-                    email: loggedUser.email || "",
-                    phone: loggedUser.phone || "",
-                    document: loggedUser.document || "",
-                    street: loggedUser.Address?.street || "",
-                    number: loggedUser.Address?.number || "",
-                    complement: loggedUser.Address?.complement || "",
-                    neighborhood: loggedUser.Address?.neighborhood || "",
-                    zipCode: loggedUser.Address?.zipCode || "",
-                    city: loggedUser.Address?.city || "",
-                    state: loggedUser.Address?.state || "",
-                    country: loggedUser.Address?.country || "Brasil",
-                })
                 setShowLoginDialog(false)
                 loginForm.reset()
                 setEmailInput("")
@@ -1016,6 +1048,40 @@ const CheckoutInfo = () => {
         }
     }
 
+    const handleCopyPayload = () => {
+        if (buyTicketResponse?.pixData?.payload) {
+            navigator.clipboard.writeText(buyTicketResponse.pixData.payload)
+            Toast.success("Código PIX copiado!")
+        }
+    }
+
+    const handleCheckPayment = async () => {
+        if (!buyTicketResponse?.paymentId) {
+            Toast.error("ID do pagamento não encontrado. Tente finalizar a compra novamente.")
+            return
+        }
+
+        setIsCheckingPayment(true)
+        try {
+            const response = await PaymentService.verifyPaymentStatus(buyTicketResponse.paymentId)
+            const status = response?.data?.status
+
+            if (status === "CONFIRMED" || status === "RECEIVED") {
+                setPaymentVerified(true)
+                Toast.success("Pagamento realizado com sucesso! Redirecionando...")
+                setTimeout(() => {
+                    router.push("/")
+                }, 1500)
+            } else {
+                Toast.info("Pagamento ainda não foi processado. Tente novamente em alguns instantes.")
+            }
+        } catch (error: any) {
+            Toast.error(error?.response?.data?.message || "Erro ao verificar pagamento. Tente novamente.")
+        } finally {
+            setIsCheckingPayment(false)
+        }
+    }
+
     const handleResendCode = async () => {
         try {
             await resendConfirmation(cadastroEmail)
@@ -1027,6 +1093,74 @@ const CheckoutInfo = () => {
             Toast.error("Erro ao reenviar código. Tente novamente.")
         }
     }
+
+    const updateAddressField = (field: string, value: string) => {
+        const currentAddress = updateProfileForm.getValues("address") || {}
+        const updatedAddress = {
+            ...currentAddress,
+            [field]: value || ""
+        } as any
+        
+        if (field === "state") {
+            updatedAddress.city = ""
+        }
+        
+        updateProfileForm.setValue("address", updatedAddress)
+    }
+
+    const handleUpdateProfile = async (data: TUserProfileUpdate) => {
+        try {
+            const updateData: any = {}
+
+            if (data.firstName) updateData.firstName = data.firstName
+            if (data.lastName) updateData.lastName = data.lastName
+            if (data.phone) updateData.phone = data.phone
+            if (data.document) updateData.document = data.document
+            
+            if (data.nationality !== undefined) {
+                updateData.nationality = data.nationality || null
+            }
+            
+            if (data.gender !== undefined) {
+                updateData.gender = data.gender || null
+            }
+
+            if (data.birth) {
+                updateData.birth = data.birth
+            }
+
+            if (data.address) {
+                updateData.address = {}
+                
+                if (data.address.street !== undefined) updateData.address.street = data.address.street || null
+                if (data.address.number !== undefined) updateData.address.number = data.address.number || null
+                if (data.address.complement !== undefined) updateData.address.complement = data.address.complement || null
+                if (data.address.neighborhood !== undefined) updateData.address.neighborhood = data.address.neighborhood || null
+                if (data.address.city !== undefined) updateData.address.city = data.address.city || null
+                if (data.address.state !== undefined) updateData.address.state = data.address.state || null
+                if (data.address.country !== undefined) updateData.address.country = data.address.country || null
+                if (data.address.zipCode !== undefined) updateData.address.zipCode = data.address.zipCode || null
+            }
+
+            const response = await updateUser(updateData)
+
+            if (response && response.success && response.data) {
+                setUser(response.data)
+                setShowUpdateProfileDialog(false)
+                Toast.success("Perfil atualizado com sucesso!")
+            } else {
+                Toast.error("Erro ao atualizar perfil. Tente novamente.")
+            }
+        } catch (error: any) {
+            Toast.error(error?.response?.data?.message || "Erro ao atualizar perfil. Tente novamente.")
+        }
+    }
+
+    const genres = [
+        { value: "MALE", label: "Masculino" },
+        { value: "FEMALE", label: "Feminino" },
+        { value: "PREFER_NOT_TO_SAY", label: "Prefiro não informar" },
+    ]
 
     if (items.length === 0) {
         return (
@@ -1124,211 +1258,103 @@ const CheckoutInfo = () => {
                                     <h2 className="text-xl font-semibold text-psi-dark mb-6">Dados do Comprador</h2>
 
                                     {isAuthenticated ? (
-                                        <div className="space-y-4">
-                                            <div className="grid gap-4
-                                            sm:grid-cols-2">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                        Nome *
-                                                    </label>
-                                                    <Input
-                                                        value={buyerData.firstName}
-                                                        onChange={(e) => setBuyerData({ ...buyerData, firstName: e.target.value })}
-                                                        icon={User}
-                                                        required
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                        Sobrenome *
-                                                    </label>
-                                                    <Input
-                                                        value={buyerData.lastName}
-                                                        onChange={(e) => setBuyerData({ ...buyerData, lastName: e.target.value })}
-                                                        icon={User}
-                                                        required
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    E-mail *
-                                                </label>
-                                                <Input
-                                                    type="email"
-                                                    value={buyerData.email}
-                                                    onChange={(e) => setBuyerData({ ...buyerData, email: e.target.value })}
-                                                    icon={Mail}
-                                                    required
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    Telefone *
-                                                </label>
-                                                <InputMask
-                                                    mask="(00) 00000-0000"
-                                                    value={buyerData.phone}
-                                                    onAccept={(value) => setBuyerData({ ...buyerData, phone: value as string })}
-                                                    placeholder="(00) 00000-0000"
-                                                    icon={Phone}
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    CPF *
-                                                </label>
-                                                <InputMask
-                                                    mask="000.000.000-00"
-                                                    value={buyerData.document}
-                                                    onAccept={(value) => setBuyerData({ ...buyerData, document: value as string })}
-                                                    placeholder="000.000.000-00"
-                                                    icon={FileText}
-                                                />
-                                            </div>
-
-                                            <div className="pt-4 border-t border-psi-dark/10">
-                                                <h3 className="text-lg font-semibold text-psi-dark mb-4">Endereço</h3>
-
-                                                <div>
-                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                        CEP *
-                                                    </label>
-                                                    <InputMask
-                                                        mask="00000-000"
-                                                        value={buyerData.zipCode}
-                                                        onAccept={(value) => setBuyerData({ ...buyerData, zipCode: value as string })}
-                                                        placeholder="00000-000"
-                                                        icon={MapPin}
-                                                    />
-                                                </div>
-
-                                                <div className="grid gap-4
-                                                sm:grid-cols-2 mt-4">
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                            Rua *
-                                                        </label>
-                                                        <Input
-                                                            value={buyerData.street}
-                                                            onChange={(e) => setBuyerData({ ...buyerData, street: e.target.value })}
-                                                            icon={MapPin}
-                                                            required
-                                                        />
-                                                    </div>
-
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                            Número (opcional)
-                                                        </label>
-                                                        <Input
-                                                            value={buyerData.number}
-                                                            onChange={(e) => setBuyerData({ ...buyerData, number: e.target.value })}
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                <div className="mt-4">
-                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                        Complemento (opcional)
-                                                    </label>
-                                                    <Input
-                                                        value={buyerData.complement}
-                                                        onChange={(e) => setBuyerData({ ...buyerData, complement: e.target.value })}
-                                                    />
-                                                </div>
-
-                                                <div className="mt-4">
-                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                        Bairro *
-                                                    </label>
-                                                    <Input
-                                                        value={buyerData.neighborhood}
-                                                        onChange={(e) => setBuyerData({ ...buyerData, neighborhood: e.target.value })}
-                                                        required
-                                                    />
-                                                </div>
-
-                                                <div className="grid gap-4
-                                                sm:grid-cols-3 mt-4">
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                            Estado *
-                                                        </label>
-                                                        <Select
-                                                            value={buyerData.state || undefined}
-                                                            onValueChange={(value) => {
-                                                                setBuyerData({
-                                                                    ...buyerData,
-                                                                    state: value,
-                                                                    city: ""
-                                                                })
-                                                            }}
+                                        <div className="space-y-6">
+                                            {user?.role === "CUSTOMER" ? (
+                                                user.isCompleteInfo ? (
+                                                    <div className="space-y-4">
+                                                        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+                                                            <div className="flex items-start gap-3">
+                                                                <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                                                                <div>
+                                                                    <p className="text-sm font-semibold text-emerald-900 mb-1">
+                                                                        Dados completos
+                                                                    </p>
+                                                                    <p className="text-sm text-emerald-700">
+                                                                        Seus dados estão completos e prontos para a compra.
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            className="w-full"
+                                                            onClick={() => setShowViewProfileDialog(true)}
                                                         >
-                                                            <SelectTrigger className="w-full">
-                                                                <SelectValue placeholder="Selecione..." />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {states.map((state) => (
-                                                                    <SelectItem key={state.value} value={state.value}>
-                                                                        {state.label}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
+                                                            <UserCircle className="h-4 w-4 mr-2" />
+                                                            Conferir meus dados
+                                                        </Button>
                                                     </div>
-
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                            Cidade *
-                                                        </label>
-                                                        <Select
-                                                            value={buyerData.city || undefined}
-                                                            onValueChange={(value) => setBuyerData({ ...buyerData, city: value })}
-                                                            disabled={!buyerData.state}
+                                                ) : (
+                                                    <div className="space-y-4">
+                                                        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
+                                                            <div className="flex items-start gap-3">
+                                                                <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                                                                <div>
+                                                                    <p className="text-sm font-semibold text-amber-900 mb-1">
+                                                                        Dados incompletos
+                                                                    </p>
+                                                                    <p className="text-sm text-amber-700">
+                                                                        Por favor, complete seus dados antes de continuar com a compra.
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <Button
+                                                            type="button"
+                                                            variant="primary"
+                                                            className="w-full"
+                                                            onClick={() => setShowUpdateProfileDialog(true)}
                                                         >
-                                                            <SelectTrigger className="w-full">
-                                                                <SelectValue placeholder={buyerData.state ? "Selecione..." : "Selecione um estado primeiro"} />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {cities.map((city) => {
-                                                                    const cityValue = city.value || ""
-                                                                    return (
-                                                                        <SelectItem key={cityValue} value={cityValue}>
-                                                                            {city.label || ""}
-                                                                        </SelectItem>
-                                                                    )
-                                                                })}
-                                                            </SelectContent>
-                                                        </Select>
+                                                            <UserCircle className="h-4 w-4 mr-2" />
+                                                            Atualizar meus dados
+                                                        </Button>
                                                     </div>
-
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                            País *
-                                                        </label>
-                                                        <Select
-                                                            value={buyerData.country || undefined}
-                                                            onValueChange={(value) => setBuyerData({ ...buyerData, country: value })}
+                                                )
+                                            ) : user?.role === "ORGANIZER" ? (
+                                                user.isCompleteInfo ? (
+                                                    <div className="space-y-4">
+                                                        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+                                                            <div className="flex items-start gap-3">
+                                                                <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                                                                <div>
+                                                                    <p className="text-sm font-semibold text-emerald-900 mb-1">
+                                                                        Dados completos
+                                                                    </p>
+                                                                    <p className="text-sm text-emerald-700">
+                                                                        Seus dados estão completos e prontos para a compra.
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-4">
+                                                        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
+                                                            <div className="flex items-start gap-3">
+                                                                <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                                                                <div>
+                                                                    <p className="text-sm font-semibold text-amber-900 mb-1">
+                                                                        Dados incompletos
+                                                                    </p>
+                                                                    <p className="text-sm text-amber-700">
+                                                                        Por favor, vá até "Meu Perfil" e complete seu cadastro antes de continuar com a compra.
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <Button
+                                                            type="button"
+                                                            variant="primary"
+                                                            className="w-full"
+                                                            onClick={() => router.push("/meu-perfil")}
                                                         >
-                                                            <SelectTrigger className="w-full">
-                                                                <SelectValue placeholder="Selecione..." />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {countries.map((country) => (
-                                                                    <SelectItem key={country.value} value={country.value}>
-                                                                        {country.label}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
+                                                            <UserCircle className="h-4 w-4 mr-2" />
+                                                            Ir para Meu Perfil
+                                                        </Button>
                                                     </div>
-                                                </div>
-                                            </div>
+                                                )
+                                            ) : null}
                                         </div>
                                     ) : (
                                         <div className="space-y-6">
@@ -2025,6 +2051,100 @@ const CheckoutInfo = () => {
                                                                 </div>
                                                             </div>
                                                         )}
+
+                                                        {buyTicketResponse?.pixData && (
+                                                            <div className="space-y-6 pt-6 border-t border-psi-dark/10">
+                                                                <div>
+                                                                    <h3 className="text-lg font-semibold text-psi-dark mb-4">Pagamento via PIX</h3>
+                                                                    <p className="text-sm text-psi-dark/70 mb-6">
+                                                                        Escaneie o QR Code ou copie o código para realizar o pagamento
+                                                                    </p>
+                                                                </div>
+
+                                                                <div className="flex justify-center">
+                                                                    <div className="p-4 bg-white rounded-xl border border-psi-dark/10">
+                                                                        <img
+                                                                            src={`data:image/png;base64,${buyTicketResponse.pixData.encodedImage}`}
+                                                                            alt="QR Code PIX"
+                                                                            className="w-64 h-64
+                                                                            sm:w-80 sm:h-80"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="space-y-2">
+                                                                    <label className="block text-xs font-medium text-psi-dark mb-2">
+                                                                        Código PIX (Copia e Cola)
+                                                                    </label>
+                                                                    <div className="flex gap-2">
+                                                                        <Input
+                                                                            value={buyTicketResponse.pixData.payload}
+                                                                            readOnly
+                                                                            className="
+                                                                            w-[270px] font-mono text-xs cursor-pointer hover:bg-psi-dark/5
+                                                                            lg:w-[500px]
+                                                                            "
+                                                                            onClick={handleCopyPayload}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
+                                                                    <div className="flex items-start gap-3">
+                                                                        <Clock className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                                                                        <div>
+                                                                            <p className="text-sm font-semibold text-amber-900 mb-1">
+                                                                                Válido até
+                                                                            </p>
+                                                                            <p className="text-sm text-amber-700">
+                                                                                {new Date(buyTicketResponse.pixData.expirationDate).toLocaleString("pt-BR", {
+                                                                                    day: "2-digit",
+                                                                                    month: "2-digit",
+                                                                                    year: "numeric",
+                                                                                    hour: "2-digit",
+                                                                                    minute: "2-digit"
+                                                                                })}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div className="p-4 rounded-xl bg-psi-primary/5 border border-psi-primary/20">
+                                                                    <div className="flex items-start gap-3">
+                                                                        <QrCode className="h-5 w-5 text-psi-primary shrink-0 mt-0.5" />
+                                                                        <div>
+                                                                            <p className="text-sm font-semibold text-psi-dark mb-1">
+                                                                                {buyTicketResponse.pixData.description}
+                                                                            </p>
+                                                                            <p className="text-xs text-psi-dark/70">
+                                                                                Após realizar o pagamento, o sistema verificará automaticamente a cada 5 segundos. Você também pode verificar manualmente clicando no botão abaixo.
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="primary"
+                                                                    className="w-full"
+                                                                    size="lg"
+                                                                    onClick={handleCheckPayment}
+                                                                    disabled={isCheckingPayment || paymentVerified}
+                                                                >
+                                                                    {isCheckingPayment ? (
+                                                                        <>
+                                                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                                            Verificando...
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <RefreshCw className="h-4 w-4 mr-2" />
+                                                                            Verificar Pagamento
+                                                                        </>
+                                                                    )}
+                                                                </Button>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )
                                         }
@@ -2073,23 +2193,25 @@ const CheckoutInfo = () => {
                                             </div>
                                         </div>
 
-                                        <div className="flex justify-center">
-                                            <Button
-                                                type="button"
-                                                onClick={handleFinalize}
-                                                variant="primary"
-                                                size="lg"
-                                                className=""
-                                                disabled={isBuyingTicket}
-                                            >
-                                                {isBuyingTicket ? (
-                                                    <LoadingButton />
-                                                ) : (
-                                                    <Check className="size-4" />
-                                                )}
-                                                Finalizar Compra
-                                            </Button>
-                                        </div>
+                                        {!buyTicketResponse?.pixData && (
+                                            <div className="flex justify-center">
+                                                <Button
+                                                    type="button"
+                                                    onClick={handleFinalize}
+                                                    variant="primary"
+                                                    size="lg"
+                                                    className=""
+                                                    disabled={isBuyingTicket}
+                                                >
+                                                    {isBuyingTicket ? (
+                                                        <LoadingButton />
+                                                    ) : (
+                                                        <Check className="size-4" />
+                                                    )}
+                                                    Finalizar Compra
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -2580,6 +2702,633 @@ const CheckoutInfo = () => {
                             </p>
                         </div>
                     </form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showUpdateProfileDialog} onOpenChange={(open) => {
+                setShowUpdateProfileDialog(open)
+                if (!open) {
+                    updateProfileForm.reset()
+                }
+            }}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Atualizar Dados do Perfil</DialogTitle>
+                        <DialogDescription>
+                            Complete seus dados para continuar com a compra
+                        </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={updateProfileForm.handleSubmit(handleUpdateProfile)} className="space-y-6">
+                        <div className="space-y-4 pt-6 border-t border-psi-dark/10">
+                            <h2 className="text-xl font-semibold text-psi-dark">Informações Pessoais</h2>
+
+                            <div className="grid gap-4
+                            sm:grid-cols-3">
+                                <div>
+                                    <label htmlFor="firstName" className="block text-sm font-medium text-psi-dark mb-2">
+                                        Nome
+                                    </label>
+                                    <Controller
+                                        name="firstName"
+                                        control={updateProfileForm.control}
+                                        render={({ field }) => (
+                                            <Input
+                                                {...field}
+                                                icon={User}
+                                            />
+                                        )}
+                                    />
+                                    <FieldError message={updateProfileForm.formState.errors.firstName?.message || ""} />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="lastName" className="block text-sm font-medium text-psi-dark mb-2">
+                                        Sobrenome
+                                    </label>
+                                    <Controller
+                                        name="lastName"
+                                        control={updateProfileForm.control}
+                                        render={({ field }) => (
+                                            <Input
+                                                {...field}
+                                                icon={User}
+                                            />
+                                        )}
+                                    />
+                                    <FieldError message={updateProfileForm.formState.errors.lastName?.message || ""} />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="email" className="block text-sm font-medium text-psi-dark mb-2">
+                                        E-mail
+                                    </label>
+                                    <Input
+                                        type="email"
+                                        value={user?.email || ""}
+                                        disabled
+                                        icon={Mail}
+                                        className="bg-psi-dark/5"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid gap-4
+                            sm:grid-cols-2">
+                                <div>
+                                    <label htmlFor="phone" className="block text-sm font-medium text-psi-dark mb-2">
+                                        Telefone
+                                    </label>
+                                    <Controller
+                                        name="phone"
+                                        control={updateProfileForm.control}
+                                        render={({ field }) => (
+                                            <InputMask
+                                                {...field}
+                                                value={field.value || ""}
+                                                mask="(00) 00000-0000"
+                                                placeholder="(00) 00000-0000"
+                                                icon={Phone}
+                                            />
+                                        )}
+                                    />
+                                    <FieldError message={updateProfileForm.formState.errors.phone?.message || ""} />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="document" className="block text-sm font-medium text-psi-dark mb-2">
+                                        CPF
+                                    </label>
+                                    <Controller
+                                        name="document"
+                                        control={updateProfileForm.control}
+                                        render={({ field }) => (
+                                            <InputMask
+                                                {...field}
+                                                value={field.value || ""}
+                                                mask="000.000.000-00"
+                                                placeholder="000.000.000-00"
+                                                icon={FileText}
+                                                disabled={field.value ? true : false}
+                                                className={`${field.value ? "bg-psi-dark/5" : ""}`}
+                                            />
+                                        )}
+                                    />
+                                    <FieldError message={updateProfileForm.formState.errors.document?.message || ""} />
+                                </div>
+                            </div>
+
+                            <div className="grid gap-4
+                            sm:grid-cols-3">
+                                <div>
+                                    <label htmlFor="nationality" className="block text-sm font-medium text-psi-dark mb-2">
+                                        Nacionalidade
+                                    </label>
+                                    <Controller
+                                        name="nationality"
+                                        control={updateProfileForm.control}
+                                        render={({ field }) => (
+                                            <Select
+                                                value={field.value || undefined}
+                                                onValueChange={(value) => field.onChange(value || null)}
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <div className="flex items-center gap-2">
+                                                        <Globe className="size-4 text-muted-foreground" />
+                                                        <SelectValue placeholder="Selecione..." />
+                                                    </div>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {countries.map((country) => (
+                                                        <SelectItem key={country.value} value={country.value}>
+                                                            {country.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    />
+                                    <FieldError message={updateProfileForm.formState.errors.nationality?.message || ""} />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="genre" className="block text-sm font-medium text-psi-dark mb-2">
+                                        Gênero
+                                    </label>
+                                    <Controller
+                                        name="gender"
+                                        control={updateProfileForm.control}
+                                        render={({ field }) => (
+                                            <Select
+                                                value={field.value || undefined}
+                                                onValueChange={(value) => field.onChange(value || null)}
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Selecione..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {genres.map((genre) => (
+                                                        <SelectItem key={genre.value} value={genre.value}>
+                                                            {genre.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    />
+                                    <FieldError message={updateProfileForm.formState.errors.gender?.message || ""} />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="birth" className="block text-sm font-medium text-psi-dark mb-2">
+                                        Data de Nascimento
+                                    </label>
+                                    <Controller
+                                        name="birth"
+                                        control={updateProfileForm.control}
+                                        render={({ field }) => (
+                                            <InputMask
+                                                {...field}
+                                                value={field.value || ""}
+                                                mask="00/00/0000"
+                                                placeholder="DD/MM/AAAA"
+                                            />
+                                        )}
+                                    />
+                                    <FieldError message={updateProfileForm.formState.errors.birth?.message || ""} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4 pt-6 border-t border-psi-dark/10">
+                            <h2 className="text-xl font-semibold text-psi-dark">Endereço</h2>
+
+                            <div className="grid gap-4
+                            sm:grid-cols-2">
+                                <div>
+                                    <label htmlFor="address?.zipCode" className="block text-sm font-medium text-psi-dark mb-2">
+                                        CEP
+                                    </label>
+                                    <Controller
+                                        name="address.zipCode"
+                                        control={updateProfileForm.control}
+                                        render={({ field }) => (
+                                            <InputMask
+                                                mask="00000-000"
+                                                value={field.value || ""}
+                                                onAccept={(value) => updateAddressField("zipCode", value as string)}
+                                                placeholder="00000-000"
+                                                icon={Hash}
+                                            />
+                                        )}
+                                    />
+                                    <FieldError message={updateProfileForm.formState.errors.address?.zipCode?.message || ""} />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="address.complement" className="block text-sm font-medium text-psi-dark mb-2">
+                                        Complemento
+                                    </label>
+                                    <Controller
+                                        name="address.complement"
+                                        control={updateProfileForm.control}
+                                        render={({ field }) => (
+                                            <Input
+                                                value={field.value || ""}
+                                                onChange={(e) => updateAddressField("complement", e.target.value)}
+                                                placeholder="Apartamento, bloco, etc."
+                                            />
+                                        )}
+                                    />
+                                    <FieldError message={updateProfileForm.formState.errors.address?.complement?.message || ""} />
+                                </div>
+                            </div>
+
+                            <div className="grid gap-4
+                            sm:grid-cols-3">
+                                <div>
+                                    <label htmlFor="address.street" className="block text-sm font-medium text-psi-dark mb-2">
+                                        Rua
+                                    </label>
+                                    <Controller
+                                        name="address.street"
+                                        control={updateProfileForm.control}
+                                        render={({ field }) => (
+                                            <Input
+                                                value={field.value || ""}
+                                                onChange={(e) => updateAddressField("street", e.target.value)}
+                                                placeholder="Nome da rua"
+                                                icon={MapPin}
+                                            />
+                                        )}
+                                    />
+                                    <FieldError message={updateProfileForm.formState.errors.address?.street?.message || ""} />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="address.number" className="block text-sm font-medium text-psi-dark mb-2">
+                                        Número
+                                    </label>
+                                    <Controller
+                                        name="address.number"
+                                        control={updateProfileForm.control}
+                                        render={({ field }) => (
+                                            <Input
+                                                value={field.value || ""}
+                                                onChange={(e) => updateAddressField("number", e.target.value)}
+                                                placeholder="123"
+                                            />
+                                        )}
+                                    />
+                                    <FieldError message={updateProfileForm.formState.errors.address?.number?.message || ""} />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="address.neighborhood" className="block text-sm font-medium text-psi-dark mb-2">
+                                        Bairro
+                                    </label>
+                                    <Controller
+                                        name="address.neighborhood"
+                                        control={updateProfileForm.control}
+                                        render={({ field }) => (
+                                            <Input
+                                                value={field.value || ""}
+                                                onChange={(e) => updateAddressField("neighborhood", e.target.value)}
+                                                placeholder="Nome do bairro"
+                                                icon={Building2}
+                                            />
+                                        )}
+                                    />
+                                    <FieldError message={updateProfileForm.formState.errors.address?.neighborhood?.message || ""} />
+                                </div>
+                            </div>
+
+                            <div className="grid gap-4
+                            sm:grid-cols-3">
+                                <div>
+                                    <label htmlFor="address.country" className="block text-sm font-medium text-psi-dark mb-2">
+                                        País
+                                    </label>
+                                    <Controller
+                                        name="address.country"
+                                        control={updateProfileForm.control}
+                                        render={({ field }) => (
+                                            <Select
+                                                value={field.value || undefined}
+                                                onValueChange={(value) => updateAddressField("country", value)}
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Selecione..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {countries.map((country) => (
+                                                        <SelectItem key={country.value} value={country.value}>
+                                                            {country.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    />
+                                    <FieldError message={updateProfileForm.formState.errors.address?.country?.message || ""} />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="address.state" className="block text-sm font-medium text-psi-dark mb-2">
+                                        Estado
+                                    </label>
+                                    <Controller
+                                        name="address.state"
+                                        control={updateProfileForm.control}
+                                        render={({ field }) => (
+                                            <Select
+                                                value={field.value || undefined}
+                                                onValueChange={(value) => {
+                                                    field.onChange(value)
+                                                    updateAddressField("state", value)
+                                                }}
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Selecione..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {states.map((state) => (
+                                                        <SelectItem key={state.value} value={state.value}>
+                                                            {state.label}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    />
+                                    <FieldError message={updateProfileForm.formState.errors.address?.state?.message || ""} />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="address.city" className="block text-sm font-medium text-psi-dark mb-2">
+                                        Cidade
+                                    </label>
+                                    <Controller
+                                        name="address.city"
+                                        control={updateProfileForm.control}
+                                        render={({ field }) => (
+                                            <Select
+                                                value={field.value || undefined}
+                                                onValueChange={(value) => updateAddressField("city", value)}
+                                                disabled={!selectedState}
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder={selectedState ? "Selecione..." : "Selecione um estado primeiro"} />
+                                                </SelectTrigger>
+                                                <SelectContent key={selectedState || "no-state"}>
+                                                    {cities.length > 0 ? (
+                                                        cities.map((city) => {
+                                                            const cityValue = city.value || ""
+                                                            if (!cityValue) return null
+                                                            return (
+                                                                <SelectItem key={cityValue} value={cityValue}>
+                                                                    {city.label || ""}
+                                                                </SelectItem>
+                                                            )
+                                                        })
+                                                    ) : (
+                                                        <div className="px-2 py-1.5 text-sm text-psi-dark/60">
+                                                            Nenhuma cidade encontrada
+                                                        </div>
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    />
+                                    <FieldError message={updateProfileForm.formState.errors.address?.city?.message || ""} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-6 border-t border-psi-dark/10 flex justify-end gap-4">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setShowUpdateProfileDialog(false)}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                type="submit"
+                                variant="primary"
+                                size="lg"
+                                disabled={isUpdatingUser}
+                            >
+                                {isUpdatingUser ? (
+                                    <LoadingButton message="Salvando..." />
+                                ) : (
+                                    "Salvar Alterações"
+                                )}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showViewProfileDialog} onOpenChange={setShowViewProfileDialog}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Meus Dados</DialogTitle>
+                        <DialogDescription>
+                            Visualize seus dados cadastrados
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-6">
+                        <div className="space-y-4 pt-6 border-t border-psi-dark/10">
+                            <h2 className="text-xl font-semibold text-psi-dark">Informações Pessoais</h2>
+
+                            <div className="grid gap-4
+                            sm:grid-cols-3">
+                                <div>
+                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                        Nome
+                                    </label>
+                                    <div className="p-3 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
+                                        <p className="text-sm text-psi-dark">{user?.firstName || "-"}</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                        Sobrenome
+                                    </label>
+                                    <div className="p-3 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
+                                        <p className="text-sm text-psi-dark">{user?.lastName || "-"}</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                        E-mail
+                                    </label>
+                                    <div className="p-3 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
+                                        <p className="text-sm text-psi-dark">{user?.email || "-"}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-4
+                            sm:grid-cols-2">
+                                <div>
+                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                        Telefone
+                                    </label>
+                                    <div className="p-3 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
+                                        <p className="text-sm text-psi-dark">{user?.phone || "-"}</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                        CPF
+                                    </label>
+                                    <div className="p-3 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
+                                        <p className="text-sm text-psi-dark">{user?.document || "-"}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="grid gap-4
+                            sm:grid-cols-3">
+                                <div>
+                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                        Nacionalidade
+                                    </label>
+                                    <div className="p-3 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
+                                        <p className="text-sm text-psi-dark">{user?.nationality || "-"}</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                        Gênero
+                                    </label>
+                                    <div className="p-3 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
+                                        <p className="text-sm text-psi-dark">
+                                            {user?.gender === "MALE" ? "Masculino" :
+                                                user?.gender === "FEMALE" ? "Feminino" :
+                                                    user?.gender === "PREFER_NOT_TO_SAY" ? "Prefiro não informar" : "-"}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                        Data de Nascimento
+                                    </label>
+                                    <div className="p-3 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
+                                        <p className="text-sm text-psi-dark">
+                                            {user?.birth ? formatBirthForForm(user.birth) : "-"}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {user?.Address && (
+                            <div className="space-y-4 pt-6 border-t border-psi-dark/10">
+                                <h2 className="text-xl font-semibold text-psi-dark">Endereço</h2>
+
+                                <div className="grid gap-4
+                                sm:grid-cols-2">
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                            CEP
+                                        </label>
+                                        <div className="p-3 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
+                                            <p className="text-sm text-psi-dark">{user.Address.zipCode || "-"}</p>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                            Complemento
+                                        </label>
+                                        <div className="p-3 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
+                                            <p className="text-sm text-psi-dark">{user.Address.complement || "-"}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-4
+                                sm:grid-cols-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                            Rua
+                                        </label>
+                                        <div className="p-3 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
+                                            <p className="text-sm text-psi-dark">{user.Address.street || "-"}</p>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                            Número
+                                        </label>
+                                        <div className="p-3 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
+                                            <p className="text-sm text-psi-dark">{user.Address.number || "-"}</p>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                            Bairro
+                                        </label>
+                                        <div className="p-3 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
+                                            <p className="text-sm text-psi-dark">{user.Address.neighborhood || "-"}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-4
+                                sm:grid-cols-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                            País
+                                        </label>
+                                        <div className="p-3 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
+                                            <p className="text-sm text-psi-dark">{user.Address.country || "-"}</p>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                            Estado
+                                        </label>
+                                        <div className="p-3 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
+                                            <p className="text-sm text-psi-dark">{user.Address.state || "-"}</p>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                            Cidade
+                                        </label>
+                                        <div className="p-3 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
+                                            <p className="text-sm text-psi-dark">{user.Address.city || "-"}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="pt-6 border-t border-psi-dark/10 flex justify-end">
+                            <Button
+                                type="button"
+                                variant="primary"
+                                onClick={() => {
+                                    setShowViewProfileDialog(false)
+                                    setShowUpdateProfileDialog(true)
+                                }}
+                            >
+                                Atualizar Dados
+                            </Button>
+                        </div>
+                    </div>
                 </DialogContent>
             </Dialog>
         </Background>

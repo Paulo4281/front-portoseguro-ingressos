@@ -28,7 +28,7 @@ type TUser = {
     birth: string | null
     image: string | null
     payCustomerId: string | null
-    completeInfo: boolean
+    isCompleteInfo: boolean
     role: typeof UserRoles[number]
     createdAt: string
     updatedAt: string | null
