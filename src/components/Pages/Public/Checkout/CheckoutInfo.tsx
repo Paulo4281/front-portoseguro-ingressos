@@ -139,7 +139,6 @@ const CheckoutInfo = () => {
 
     const handleFindTicketHoldId = (eventId: string, batchId: string, eventDateId: string | null, ticketTypeId: string | null) => {
         const ticketHold = ticketHoldData?.find((th) => th.eventDateId === eventDateId && th.ticketTypeId === ticketTypeId)
-        console.log(ticketHold)
         if (ticketHold) {
             return ticketHold.id
         }
@@ -397,10 +396,6 @@ const CheckoutInfo = () => {
 
     const [ticketHoldData, setTicketHoldData] = useState<TTicketHoldCreateResponse[] | null>(null)
     const hasRun = useRef(false)
-
-    useEffect(() => {
-        console.log(ticketHoldData)
-    }, [ticketHoldData])
 
     useEffect(() => {
         if (items.length > 0 && currentEvent && eventId) {
@@ -775,8 +770,11 @@ const CheckoutInfo = () => {
                 const eventFields = formFieldsByEvent[event.id] || []
                 const requiredFields = eventFields.filter(f => f.field.required)
                 const missingFields = requiredFields.filter(f => {
-                    const key = `${f.eventId}-${f.type}-${f.field.order}`
+                    const key = `${f.eventId}_${f.type}-${f.field.order}`
+                    // console.log(key)
+                    // console.log(formAnswers)
                     const answer = formAnswers[key]
+                    // console.log(answer)
 
                     if (!answer) return true
                     if (Array.isArray(answer) && answer.length === 0) return true
@@ -792,6 +790,8 @@ const CheckoutInfo = () => {
 
                     return false
                 })
+
+                console.log(missingFields)
 
                 if (missingFields.length > 0) {
                     Toast.info(`Por favor, preencha todos os campos obrigatórios do formulário do evento "${event.name}".`)
@@ -888,24 +888,37 @@ const CheckoutInfo = () => {
             })
         })
 
+        console.log(formAnswers)
+
         data["eventForms"] = Object.entries(formAnswers).reduce((acc, [key, value]) => {
             const [eventId, rest] = key.split("_")
-            const [ticketNumber, type, order] = (rest || "").split("-")
+            const parts = (rest || "").split("-")
+            
+            let ticketNumber: string
+            let type: string
+            let order: string
 
-            // pega (ou cria) o form do eventId
+            if (parts.length === 3) {
+                ticketNumber = parts[0]
+                type = parts[1]
+                order = parts[2]
+            } else if (parts.length === 2) {
+                ticketNumber = "0"
+                type = parts[0]
+                order = parts[1]
+            } else {
+                return acc
+            }
+
             let form = acc.find((f) => f.eventId === eventId)
             if (!form) {
                 form = { eventId, answers: [] as any[] }
                 acc.push(form)
             }
 
-            // pega (ou cria) o answer para aquele ticketNumber
             let answer = form.answers.find((a) => a.ticketNumber === ticketNumber)
             if (!answer) {
-
                 const item = items.find((it) => it.eventId === eventId)
-
-                // aplica o único ticketTypeId do evento
                 const ticketTypeId = ticketTypeMap[`${eventId}_${ticketNumber}`] ?? null
 
                 answer = {
@@ -921,15 +934,11 @@ const CheckoutInfo = () => {
                 form.answers.push(answer)
             }
 
-
-            // prepara o par label/answer
             const entry = {
-                label: value?.label || null,   // <-- aqui vem o label real da pergunta
-                answer: value?.answer ?? null  // <-- aqui vem a resposta
+                label: value?.label || null,
+                answer: value?.answer ?? null
             }
 
-
-            // insere no campo correto (cria array se necessário)
             switch (type) {
                 case "text":
                     answer.text = answer.text || []
@@ -952,7 +961,6 @@ const CheckoutInfo = () => {
                     answer.multiSelect.push(entry)
                     break
                 default:
-                    // se tiver tipos extras, trate aqui ou ignore
                     break
             }
 
@@ -1004,8 +1012,6 @@ const CheckoutInfo = () => {
 
 
         data["removeTicketHoldIds"] = ticketHoldData?.map((th) => th.id) || null
-
-        console.log(data)
 
         const response = await buyTicket(data)
 
@@ -1564,8 +1570,6 @@ const CheckoutInfo = () => {
                                                                                                 const batch = event.EventBatches?.find(b => b.id === item.batchId)
                                                                                                 const hasEventBatchTicketTypes = batch?.EventBatchTicketTypes && batch.EventBatchTicketTypes.length > 0
 
-                                                                                                console.log(underlineIdentifier)
-
                                                                                                 const updatedTicketTypes = CheckoutUtils.updateTicketTypeQuantityByIdentifier(
                                                                                                     item.ticketTypes || [],
                                                                                                     identifier,
@@ -1582,8 +1586,6 @@ const CheckoutInfo = () => {
                                                                                                 )
 
                                                                                                 const newTotalQuantity = updatedTicketTypes?.reduce((sum, t) => sum + t.quantity, 0) || 0
-
-                                                                                                console.log(updatedTicketTypes)
 
                                                                                                 if (updatedTicketTypes && updatedTicketTypes.length > 0 && newTotalQuantity > 0) {
                                                                                                     let ticketHoldId = ticketHoldData?.find((th) => th.eventDateId === (isMultipleDaysWithTicketTypes ? underlineIdentifier?.split("_")[1] : identifier) && th.ticketTypeId === (isMultipleDaysWithTicketTypes ? underlineIdentifier?.split("_")[0] : identifier))?.id || ""
@@ -1886,14 +1888,15 @@ const CheckoutInfo = () => {
                                                                             {formField.type === 'multiSelect' && (
                                                                                 <div className="space-y-2">
                                                                                     {formField.field.options?.map((option: string, optIndex: number) => {
-                                                                                        const isChecked = Array.isArray(currentValue?.answer) && currentValue?.answer.includes(option)
+                                                                                        const currentArray = Array.isArray(currentValue?.answer) ? currentValue.answer : []
+                                                                                        const isChecked = currentArray.includes(option)
                                                                                         return (
                                                                                             <div key={optIndex} className="flex items-center gap-2">
                                                                                                 <Checkbox
                                                                                                     id={`${key}-${optIndex}`}
                                                                                                     checked={isChecked}
                                                                                                     onCheckedChange={(checked) => {
-                                                                                                        const currentArray = Array.isArray(currentValue) ? currentValue : []
+                                                                                                        const currentArray = Array.isArray(currentValue?.answer) ? currentValue.answer : []
                                                                                                         if (checked) {
                                                                                                             setFormAnswers({ ...formAnswers, [key]: { label: formField.field.label, answer: [...currentArray, option] } })
                                                                                                         } else {
