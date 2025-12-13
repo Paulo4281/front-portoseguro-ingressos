@@ -97,6 +97,8 @@ import { useUserUpdate } from "@/hooks/User/useUserUpdate"
 import { UserProfileUpdateValidator, type TUserProfileUpdate } from "@/validators/User/UserProfileUpdateValidator"
 import { Globe, Building2, Hash } from "lucide-react"
 import { PaymentService } from "@/services/Payment/PaymentService"
+import { useCardFindByUserId } from "@/hooks/Card/useCardFindByUserId"
+import type { TCard } from "@/types/Card/TCard"
 
 type TPaymentMethod = "pix" | "credit"
 
@@ -171,6 +173,8 @@ const CheckoutInfo = () => {
     const [buyTicketResponse, setBuyTicketResponse] = useState<TTicketBuyResponse | null>(null)
     const [isCheckingPayment, setIsCheckingPayment] = useState(false)
     const [paymentVerified, setPaymentVerified] = useState(false)
+    const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
+    const [showNewCardForm, setShowNewCardForm] = useState(false)
 
     const loginForm = useForm<TAuth>({
         resolver: zodResolver(AuthValidator),
@@ -359,6 +363,22 @@ const CheckoutInfo = () => {
     const cardBrand = useMemo(() => {
         return getCardBrand(cardData.number)
     }, [cardData.number])
+
+    const getCardBrandIcon = (brand: string | null | undefined): string => {
+        if (!brand) return "/icons/payment/card-brand/card-unknown.png"
+        const brandLower = brand.toLowerCase()
+        const brandMap: Record<string, string> = {
+            amex: "card-amex.png",
+            discover: "card-discover.png",
+            hipercard: "card-hipercard.png",
+            jcb: "card-jcb.png",
+            mastercard: "card-master.png",
+            visa: "card-visa.png",
+            elo: "card-elo.png",
+        }
+        const iconName = brandMap[brandLower] || "card-unknown.png"
+        return `/icons/payment/card-brand/${iconName}`
+    }
 
     const eventId = useMemo(() => {
         return items.length > 0 ? items[0].eventId : null
@@ -574,6 +594,19 @@ const CheckoutInfo = () => {
 
     const maxStep = hasForms ? 4 : 3
 
+    const shouldFetchCards = useMemo(() => {
+        return isAuthenticated && currentStep === maxStep && paymentMethod === "credit"
+    }, [isAuthenticated, currentStep, maxStep, paymentMethod])
+
+    const { data: cardsData } = useCardFindByUserId({ enabled: shouldFetchCards })
+    const cards = cardsData?.data || []
+
+    useEffect(() => {
+        if (paymentMethod === "credit" && cards.length > 0 && !selectedCardId && !showNewCardForm) {
+            setSelectedCardId(cards[0].id)
+        }
+    }, [cards, paymentMethod, selectedCardId, showNewCardForm])
+
     const currentEventCoupon = useMemo(() => {
         if (!eventId || !appliedCoupons[eventId]) return null
         return appliedCoupons[eventId]
@@ -611,6 +644,8 @@ const CheckoutInfo = () => {
     useEffect(() => {
         if (paymentMethod === "pix") {
             setInstallments(1)
+            setSelectedCardId(null)
+            setShowNewCardForm(false)
         }
     }, [paymentMethod])
 
@@ -941,18 +976,29 @@ const CheckoutInfo = () => {
         })) || null
 
         if (data.paymentMethod === "CREDIT_CARD") {
-            if (!cardData.number || !cardData.name || !cardData.expiry || !cardData.cvv) {
-                Toast.error("Por favor, preencha todos os campos do cartão de crédito.")
-                return
-            }
+            if (selectedCardId) {
+                data["ccInfo"] = {
+                    number: "" as string,
+                    holderName: "" as string,
+                    exp: "" as string,
+                    cvv: "" as string,
+                    installments: installments,
+                    cardId: selectedCardId
+                }
+            } else {
+                if (!cardData.number || !cardData.name || !cardData.expiry || !cardData.cvv) {
+                    Toast.error("Por favor, preencha todos os campos do cartão de crédito ou selecione um cartão cadastrado.")
+                    return
+                }
 
-            data["ccInfo"] = {
-                number: cardData.number,
-                holderName: cardData.name,
-                exp: cardData.expiry,
-                cvv: cardData.cvv,
-                installments: installments,
-                cardId: null
+                data["ccInfo"] = {
+                    number: cardData.number,
+                    holderName: cardData.name,
+                    exp: cardData.expiry,
+                    cvv: cardData.cvv,
+                    installments: installments,
+                    cardId: null
+                }
             }
         }
 
@@ -1969,77 +2015,169 @@ const CheckoutInfo = () => {
 
                                                         {paymentMethod === "credit" && (
                                                             <div className="space-y-4 pt-6 border-t border-psi-dark/10">
-                                                                <div>
-                                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                                        Número do Cartão *
-                                                                    </label>
-                                                                    <div className="relative">
-                                                                        <InputMask
-                                                                            mask="0000 0000 0000 0000"
-                                                                            value={cardData.number}
-                                                                            onAccept={(value) => setCardData({ ...cardData, number: value as string })}
-                                                                            placeholder="0000 0000 0000 0000"
-                                                                            icon={CreditCard}
-                                                                        />
-                                                                        {cardBrand && (
-                                                                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                                                                <div className={`size-10 rounded flex items-center justify-center text-xs font-bold ${cardBrand === "visa" ? "bg-[#1434CB] text-white" :
-                                                                                        cardBrand === "mastercard" ? "bg-[#EB001B] text-white" :
-                                                                                            cardBrand === "amex" ? "bg-[#006FCF] text-white" :
-                                                                                                cardBrand === "elo" ? "bg-[#FFCB05] text-[#231F20]" :
-                                                                                                    cardBrand === "hipercard" ? "bg-[#DF0F50] text-white" :
-                                                                                                        "bg-gray-600 text-white"
-                                                                                    }`}>
-                                                                                    {cardBrand === "visa" ? "VISA" :
-                                                                                        cardBrand === "mastercard" ? "MC" :
-                                                                                            cardBrand === "amex" ? "AMEX" :
-                                                                                                cardBrand === "elo" ? "ELO" :
-                                                                                                    cardBrand === "hipercard" ? "HIPER" :
-                                                                                                        cardBrand.toUpperCase().substring(0, 4)}
-                                                                                </div>
+                                                                {cards.length > 0 && !showNewCardForm && (
+                                                                    <div className="space-y-3">
+                                                                        <div className="flex items-center justify-between">
+                                                                            <h4 className="text-sm font-semibold text-psi-dark">Cartões Cadastrados</h4>
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="outline"
+                                                                                size="sm"
+                                                                                onClick={() => {
+                                                                                    setShowNewCardForm(true)
+                                                                                    setSelectedCardId(null)
+                                                                                }}
+                                                                            >
+                                                                                <CreditCard className="h-4 w-4 mr-2" />
+                                                                                Novo Cartão
+                                                                            </Button>
+                                                                        </div>
+                                                                        <div className="grid gap-3
+                                                                        sm:grid-cols-2">
+                                                                            {cards.map((card: TCard) => {
+                                                                                const isSelected = selectedCardId === card.id
+                                                                                const cardBrandLower = card.brand.toLowerCase()
+                                                                                const brandColors: Record<string, { bg: string; text: string }> = {
+                                                                                    visa: { bg: "bg-[#1434CB]", text: "text-white" },
+                                                                                    mastercard: { bg: "bg-[#EB001B]", text: "text-white" },
+                                                                                    amex: { bg: "bg-[#006FCF]", text: "text-white" },
+                                                                                    elo: { bg: "bg-[#FFCB05]", text: "text-[#231F20]" },
+                                                                                    hipercard: { bg: "bg-[#DF0F50]", text: "text-white" },
+                                                                                }
+                                                                                const brandColor = brandColors[cardBrandLower] || { bg: "bg-gray-600", text: "text-white" }
+
+                                                                                return (
+                                                                                    <button
+                                                                                        key={card.id}
+                                                                                        type="button"
+                                                                                        onClick={() => setSelectedCardId(card.id)}
+                                                                                        className={`relative p-4 rounded-xl border-2 transition-all text-left overflow-hidden ${isSelected
+                                                                                                ? "border-psi-primary bg-psi-primary/5"
+                                                                                                : "border-psi-dark/10 hover:border-psi-primary/30 bg-white"
+                                                                                            }`}
+                                                                                    >
+                                                                                        <div className={`absolute top-0 right-0 w-20 h-20 ${brandColor.bg} rounded-full -mr-10 -mt-10 opacity-20`} />
+                                                                                        <div className="relative space-y-3">
+                                                                                            <div className="flex items-center justify-between">
+                                                                                                <div className="h-10 flex items-center">
+                                                                                                    <img
+                                                                                                        src={getCardBrandIcon(card.brand)}
+                                                                                                        alt={card.brand}
+                                                                                                        className="h-full object-contain"
+                                                                                                    />
+                                                                                                </div>
+                                                                                                {isSelected && (
+                                                                                                    <CheckCircle2 className="h-5 w-5 text-psi-primary" />
+                                                                                                )}
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <p className="text-xs text-psi-dark/60 mb-1">Número do Cartão</p>
+                                                                                                <p className="text-lg font-semibold text-psi-dark font-mono">
+                                                                                                    •••• •••• •••• {card.last4}
+                                                                                                </p>
+                                                                                            </div>
+                                                                                            <div className="flex items-center justify-between">
+                                                                                                <div>
+                                                                                                    <p className="text-xs text-psi-dark/60 mb-1">Nome</p>
+                                                                                                    <p className="text-sm font-medium text-psi-dark">{card.name}</p>
+                                                                                                </div>
+                                                                                                <div>
+                                                                                                    <p className="text-xs text-psi-dark/60 mb-1">Validade</p>
+                                                                                                    <p className="text-sm font-medium text-psi-dark">
+                                                                                                        {card.expMonth?.padStart(2, "0")}/{card.expYear?.slice(-2)}
+                                                                                                    </p>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </button>
+                                                                                )
+                                                                            })}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {(showNewCardForm || cards.length === 0) && (
+                                                                    <div className="space-y-4">
+                                                                        {cards.length > 0 && (
+                                                                            <div className="flex items-center justify-between">
+                                                                                <h4 className="text-sm font-semibold text-psi-dark">Novo Cartão</h4>
+                                                                                <Button
+                                                                                    type="button"
+                                                                                    variant="ghost"
+                                                                                    size="sm"
+                                                                                    onClick={() => {
+                                                                                        setShowNewCardForm(false)
+                                                                                        setCardData({ number: "", name: "", expiry: "", cvv: "" })
+                                                                                    }}
+                                                                                >
+                                                                                    Usar cartão cadastrado
+                                                                                </Button>
                                                                             </div>
                                                                         )}
-                                                                    </div>
-                                                                </div>
+                                                                        <div>
+                                                                            <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                                                Número do Cartão *
+                                                                            </label>
+                                                                            <div className="relative">
+                                                                                <InputMask
+                                                                                    mask="0000 0000 0000 0000"
+                                                                                    value={cardData.number}
+                                                                                    onAccept={(value) => setCardData({ ...cardData, number: value as string })}
+                                                                                    placeholder="0000 0000 0000 0000"
+                                                                                    icon={CreditCard}
+                                                                                />
+                                                                                {cardBrand && (
+                                                                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                                                                        <img
+                                                                                            src={getCardBrandIcon(cardBrand)}
+                                                                                            alt={cardBrand}
+                                                                                            className="h-10 w-auto object-contain"
+                                                                                        />
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
 
-                                                                <div>
-                                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                                        Nome no Cartão *
-                                                                    </label>
-                                                                    <Input
-                                                                        value={cardData.name}
-                                                                        onChange={(e) => setCardData({ ...cardData, name: e.target.value.toUpperCase() })}
-                                                                        placeholder="NOME COMO ESTÁ NO CARTÃO"
-                                                                        required
-                                                                    />
-                                                                </div>
+                                                                        <div>
+                                                                            <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                                                Nome no Cartão *
+                                                                            </label>
+                                                                            <Input
+                                                                                value={cardData.name}
+                                                                                onChange={(e) => setCardData({ ...cardData, name: e.target.value.toUpperCase() })}
+                                                                                placeholder="NOME COMO ESTÁ NO CARTÃO"
+                                                                                required
+                                                                            />
+                                                                        </div>
 
-                                                                <div className="grid gap-4
-                                                        sm:grid-cols-2">
-                                                                    <div>
-                                                                        <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                                            Validade *
-                                                                        </label>
-                                                                        <InputMask
-                                                                            mask="00/00"
-                                                                            value={cardData.expiry}
-                                                                            onAccept={(value) => setCardData({ ...cardData, expiry: value as string })}
-                                                                            placeholder="MM/AA"
-                                                                        />
-                                                                    </div>
+                                                                        <div className="grid gap-4
+                                                                sm:grid-cols-2">
+                                                                            <div>
+                                                                                <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                                                    Validade *
+                                                                                </label>
+                                                                                <InputMask
+                                                                                    mask="00/00"
+                                                                                    value={cardData.expiry}
+                                                                                    onAccept={(value) => setCardData({ ...cardData, expiry: value as string })}
+                                                                                    placeholder="MM/AA"
+                                                                                />
+                                                                            </div>
 
-                                                                    <div>
-                                                                        <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                                            CVV *
-                                                                        </label>
-                                                                        <InputMask
-                                                                            mask="000"
-                                                                            value={cardData.cvv}
-                                                                            onAccept={(value) => setCardData({ ...cardData, cvv: value as string })}
-                                                                            placeholder="000"
-                                                                        />
+                                                                            <div>
+                                                                                <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                                                    CVV *
+                                                                                </label>
+                                                                                <InputMask
+                                                                                    mask="000"
+                                                                                    value={cardData.cvv}
+                                                                                    onAccept={(value) => setCardData({ ...cardData, cvv: value as string })}
+                                                                                    placeholder="000"
+                                                                                />
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
-                                                                </div>
+                                                                )}
 
                                                                 <div className="pt-4 border-t border-psi-dark/10">
                                                                     <SelectInstallment
@@ -2330,11 +2468,6 @@ const CheckoutInfo = () => {
                                     {paymentMethod === "credit" && installments > 1 && (
                                         <p className="text-psi-dark/70 text-xs">
                                             {installments}x de {ValueUtils.centsToCurrency(Math.round(total / installments))}
-                                        </p>
-                                    )}
-                                    {paymentMethod === "credit" && installments === 1 && (
-                                        <p className="text-psi-dark/70 text-xs">
-                                            À vista com taxa de {ValueUtils.centsToCurrency(total - subtotal)}
                                         </p>
                                     )}
                                     {paymentMethod === "credit" && installments === 1 && (

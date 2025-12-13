@@ -16,7 +16,8 @@ type Prefixes =
     "/ticket" |
     "/ticket-hold" |
     "/support" |
-    "/payment-gateway"
+    "/payment-gateway" |
+    "/card"
 
 type TAPIParams = {
     prefix: Prefixes
