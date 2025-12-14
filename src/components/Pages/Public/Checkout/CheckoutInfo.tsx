@@ -304,29 +304,29 @@ const CheckoutInfo = () => {
         loadCountries()
     }, [])
 
-    useEffect(() => {
-        if (!buyTicketResponse?.paymentId || paymentVerified) return
+    // useEffect(() => {
+    //     if (!buyTicketResponse?.paymentId || paymentVerified) return
 
-        const interval = setInterval(async () => {
-            try {
-                const response = await PaymentService.verifyPaymentStatus(buyTicketResponse.paymentId!)
-                const status = response?.data?.status
+    //     const interval = setInterval(async () => {
+    //         try {
+    //             const response = await PaymentService.verifyPaymentStatus(buyTicketResponse.paymentId!)
+    //             const status = response?.data?.status
 
-                if (status === "CONFIRMED" || status === "RECEIVED") {
-                    setPaymentVerified(true)
-                    clearInterval(interval)
-                    Toast.success("Pagamento realizado com sucesso! Redirecionando...")
-                    setTimeout(() => {
-                        router.push("/")
-                    }, 1500)
-                }
-            } catch (error) {
-                console.error("Erro ao verificar status do pagamento:", error)
-            }
-        }, 5000)
+    //             if (status === "CONFIRMED" || status === "RECEIVED") {
+    //                 setPaymentVerified(true)
+    //                 clearInterval(interval)
+    //                 Toast.success("Pagamento realizado com sucesso! Redirecionando...")
+    //                 setTimeout(() => {
+    //                     router.push("/")
+    //                 }, 1500)
+    //             }
+    //         } catch (error) {
+    //             console.error("Erro ao verificar status do pagamento:", error)
+    //         }
+    //     }, 5000)
 
-        return () => clearInterval(interval)
-    }, [buyTicketResponse?.paymentId, paymentVerified, router])
+    //     return () => clearInterval(interval)
+    // }, [buyTicketResponse?.paymentId, paymentVerified, router])
 
     const [cardData, setCardData] = useState({
         number: "",

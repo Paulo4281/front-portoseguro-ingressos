@@ -1,8 +1,8 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Ticket, QrCode, Copy, Download, Share2, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, Eye, EyeOff, FileText, Loader2 } from "lucide-react"
+import { Calendar, Clock, MapPin, Ticket, QrCode, Copy, Share2, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, Eye, EyeOff, FileText, Loader2, Check } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import { TicketService } from "@/services/Ticket/TicketService"
 import { Toast } from "@/components/Toast/Toast"
@@ -16,6 +16,13 @@ import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 import type { TTicket } from "@/types/Ticket/TTicket"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 
 type TStatusConfig = {
     label: string
@@ -54,6 +61,11 @@ const statusConfig: Record<TTicket["status"], TStatusConfig> = {
         description: "Ingresso já validado no acesso ao evento.",
         badgeClass: "border border-psi-primary/30 bg-psi-primary/10 text-psi-primary"
     },
+    PARTIALLY_USED: {
+        label: "Utilizado parcialmente",
+        description: "Ingresso já validado no acesso ao evento, mas parte do ingresso foi utilizada em outro dia.",
+        badgeClass: "border border-psi-primary/30 bg-psi-primary/10 text-psi-primary"
+    },
     EXPIRED: {
         label: "Expirado",
         description: "A compra não foi paga e venceu.",
@@ -64,8 +76,28 @@ const statusConfig: Record<TTicket["status"], TStatusConfig> = {
 const recurrenceDayLabels = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"]
 
 const getEventSchedule = (ticket: TTicket) => {
-    if (ticket.event.EventDates && ticket.event.EventDates.length > 0) {
-        const sortedDates = [...ticket.event.EventDates].sort((a, b) =>
+    if (ticket.TicketDates && ticket.TicketDates.length > 0) {
+        const sortedDates = [...ticket.TicketDates]
+            .filter(td => td.EventDate)
+            .sort((a, b) => {
+                const dateA = a.EventDate?.date ? getDateOrderValue(a.EventDate.date) : 0
+                const dateB = b.EventDate?.date ? getDateOrderValue(b.EventDate.date) : 0
+                return dateA - dateB
+            })
+        
+        if (sortedDates.length > 0) {
+            const firstDate = sortedDates[0].EventDate
+            if (firstDate) {
+                return {
+                    dateLabel: formatEventDate(firstDate.date, "DD [de] MMMM [de] YYYY"),
+                    timeLabel: formatEventTime(firstDate.hourStart, firstDate.hourEnd)
+                }
+            }
+        }
+    }
+
+    if (ticket.Event.EventDates && ticket.Event.EventDates.length > 0) {
+        const sortedDates = [...ticket.Event.EventDates].sort((a, b) =>
             getDateOrderValue(a?.date) - getDateOrderValue(b?.date)
         )
         const nextDate = sortedDates[0]
@@ -76,30 +108,30 @@ const getEventSchedule = (ticket: TTicket) => {
         }
     }
 
-    if (ticket.event.Recurrence && ticket.event.Recurrence.type !== "NONE") {
+    if (ticket.Event.Recurrence && ticket.Event.Recurrence.type !== "NONE") {
         const baseLabel = {
             DAILY: "Evento diário",
             WEEKLY: "Evento semanal",
             MONTHLY: "Evento mensal"
-        }[ticket.event.Recurrence.type]
+        }[ticket.Event.Recurrence.type]
 
         let detailLabel = baseLabel
 
-        if (ticket.event.Recurrence.type === "WEEKLY" && ticket.event.Recurrence.RecurrenceDays?.length) {
-            const days = ticket.event.Recurrence.RecurrenceDays
+        if (ticket.Event.Recurrence.type === "WEEKLY" && ticket.Event.Recurrence.RecurrenceDays?.length) {
+            const days = ticket.Event.Recurrence.RecurrenceDays
                 .map((day) => recurrenceDayLabels[day.day] || `Dia ${day.day}`)
                 .join(", ")
             detailLabel = `${baseLabel} (${days})`
         }
 
-        if (ticket.event.Recurrence.type === "MONTHLY" && ticket.event.Recurrence.RecurrenceDays?.length) {
-            const days = ticket.event.Recurrence.RecurrenceDays
+        if (ticket.Event.Recurrence.type === "MONTHLY" && ticket.Event.Recurrence.RecurrenceDays?.length) {
+            const days = ticket.Event.Recurrence.RecurrenceDays
                 .map((day) => `Dia ${day.day}`)
                 .join(", ")
             detailLabel = `${baseLabel} (${days})`
         }
 
-        const timeLabel = formatEventTime(ticket.event.Recurrence.hourStart, ticket.event.Recurrence.hourEnd)
+        const timeLabel = formatEventTime(ticket.Event.Recurrence.hourStart, ticket.Event.Recurrence.hourEnd)
 
         return {
             dateLabel: detailLabel,
@@ -120,12 +152,25 @@ const formatPurchaseDate = (date: string) => {
 const MeusIngressosPannel = () => {
     const { user, isAuthenticated } = useAuthStore()
     const userId = user?.id || ""
-    const { data, isLoading, isError } = useTicketFindByUserId(userId)
+    const { data: ticketsData, isLoading, isError } = useTicketFindByUserId()
     const [visibleQRCodes, setVisibleQRCodes] = useState<Record<string, boolean>>({})
     const [qrCodeData, setQrCodeData] = useState<Record<string, string>>({})
     const [loadingQRCodes, setLoadingQRCodes] = useState<Record<string, boolean>>({})
+    const [pixPaymentDialogOpen, setPixPaymentDialogOpen] = useState(false)
+    const [selectedTicketForPix, setSelectedTicketForPix] = useState<TTicket | null>(null)
+    const [copiedPayload, setCopiedPayload] = useState(false)
+    const [qrCodeZoomOpen, setQrCodeZoomOpen] = useState(false)
+    const [selectedTicketForZoom, setSelectedTicketForZoom] = useState<TTicket | null>(null)
 
-    const tickets = (data?.data ?? []) as TTicket[]
+    const [tickets, setTickets] = useState<TTicket[]>([])
+
+    useEffect(() => {
+        if (ticketsData?.success && ticketsData?.data) {
+            setTickets(ticketsData?.data)
+        }
+    }, [ticketsData])
+
+    // const tickets = (data?.data ?? []) as TTicket[]
 
     const orderedTickets = useMemo(() => {
         return [...tickets].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -164,11 +209,10 @@ const MeusIngressosPannel = () => {
 
             try {
                 const response = await TicketService.getTicketQRCode(ticketId)
-                if (response?.success && response?.data) {
-                    const qrCodeJson = JSON.stringify(response.data)
+                if (response?.success && response?.data?.token) {
                     setQrCodeData(prev => ({
                         ...prev,
-                        [ticketId]: qrCodeJson
+                        [ticketId]: response.data.token
                     }))
                     setVisibleQRCodes(prev => ({
                         ...prev,
@@ -197,8 +241,8 @@ const MeusIngressosPannel = () => {
     const handleShareTicket = (ticket: TTicket) => {
         const eventUrl = `${window.location.origin}/ver-evento?id=${ticket.eventId}`
         const sharePayload = {
-            title: ticket.event.name,
-            text: `Vou participar de ${ticket.event.name} em Porto Seguro. Garanta seu ingresso também!`,
+            title: ticket.Event.name,
+            text: `Vou participar de ${ticket.Event.name} em Porto Seguro. Garanta seu ingresso também!`,
             url: eventUrl
         }
 
@@ -210,28 +254,35 @@ const MeusIngressosPannel = () => {
         navigator.clipboard?.writeText(eventUrl)
     }
 
-    const handleDownloadTicket = (ticket: TTicket) => {
-        const schedule = getEventSchedule(ticket)
-        const content = [
-            `Ingresso: ${ticket.id}`,
-            `Evento: ${ticket.event.name}`,
-            `Data: ${schedule.dateLabel}${schedule.timeLabel ? ` - ${schedule.timeLabel}` : ""}`,
-            `Local: ${ticket.event.location || "Local a definir"}`,
-            `Status: ${statusConfig[ticket.status].label}`,
-            `Valor: ${ValueUtils.centsToCurrency(ticket.price)}`
-        ].join("\n")
-
-        const blob = new Blob([content], { type: "text/plain;charset=utf-8" })
-        const url = URL.createObjectURL(blob)
-        const anchor = document.createElement("a")
-        anchor.href = url
-        anchor.download = `ingresso-${ticket.id}.txt`
-        anchor.click()
-        URL.revokeObjectURL(url)
-    }
 
     const handleCopyCode = (ticketId: string) => {
         navigator.clipboard?.writeText(ticketId)
+    }
+
+    const handleOpenPixPayment = (ticket: TTicket) => {
+        setSelectedTicketForPix(ticket)
+        setPixPaymentDialogOpen(true)
+        setCopiedPayload(false)
+    }
+
+    const handleCopyPayload = async (payload: string) => {
+        try {
+            await navigator.clipboard?.writeText(payload)
+            setCopiedPayload(true)
+            Toast.success("Código PIX copiado!")
+            setTimeout(() => setCopiedPayload(false), 2000)
+        } catch (error) {
+            Toast.error("Erro ao copiar payload")
+        }
+    }
+
+    const formatExpirationDate = (dateString: string) => {
+        try {
+            const date = new Date(dateString.replace(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/, "$1-$2-$3T$4:$5:$6"))
+            return DateUtils.formatDate(date.toISOString(), "DD/MM/YYYY [às] HH:mm")
+        } catch {
+            return dateString
+        }
     }
 
     if (!isAuthenticated || !user) {
@@ -402,7 +453,6 @@ const MeusIngressosPannel = () => {
                                 const schedule = getEventSchedule(ticket)
                                 const status = statusConfig[ticket.status]
                                 const isPendingPayment = ticket.status === "PENDING"
-                                const canDownloadTicket = ticket.status === "CONFIRMED" || ticket.status === "USED"
                                 const canShowQRCode = ticket.status === "CONFIRMED" || ticket.status === "USED"
                                 const isQRCodeVisible = visibleQRCodes[ticket.id] || false
                                 const hasForm = ticket.form && (
@@ -412,6 +462,9 @@ const MeusIngressosPannel = () => {
                                     (ticket.form.select && ticket.form.select.length > 0) ||
                                     (ticket.form.multiSelect && ticket.form.multiSelect.length > 0)
                                 )
+                                const hasPixQrCode = ticket.Payment?.method === "PIX" && 
+                                                    ticket.Payment?.status === "PENDING" && 
+                                                    ticket.Payment?.qrcodeData
 
                                 return (
                                     <div
@@ -431,9 +484,8 @@ const MeusIngressosPannel = () => {
                                                 lg:w-80
                                                 lg:shrink-0">
                                                     <img
-                                                        // src={ImageUtils.getEventImageUrl(ticket.event.image)}
-                                                        src={ticket.event.image}
-                                                        alt={ticket.event.name}
+                                                        src={ImageUtils.getEventImageUrl(ticket.Event.image)}
+                                                        alt={ticket.Event.name}
                                                         className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
                                                     />
                                                 </div>
@@ -446,7 +498,7 @@ const MeusIngressosPannel = () => {
                                                 <div className="flex-1 space-y-4">
                                                     <div className="flex flex-wrap items-start gap-3 justify-between">
                                                         <div className="space-y-1">
-                                                            <h3 className="text-2xl font-semibold text-psi-dark">{ticket.event.name}</h3>
+                                                            <h3 className="text-2xl font-semibold text-psi-dark">{ticket.Event.name}</h3>
                                                             <p className="text-sm text-psi-dark/60">
                                                                 Comprado em {formatPurchaseDate(ticket.createdAt)}
                                                             </p>
@@ -478,7 +530,7 @@ const MeusIngressosPannel = () => {
                                                                 Local
                                                             </div>
                                                             <p className="text-sm text-psi-dark">
-                                                                {ticket.event.location || "Local a definir"}
+                                                                {ticket.Event.location || "Local a definir"}
                                                             </p>
                                                             <p className="text-xs text-psi-dark/60">
                                                                 QR Code validado diretamente na entrada.
@@ -491,39 +543,36 @@ const MeusIngressosPannel = () => {
                                                         <div className="rounded-2xl border border-psi-dark/10 bg-white p-4 shadow-sm space-y-1">
                                                             <p className="text-xs uppercase text-psi-dark/50 tracking-wide">Lote</p>
                                                             <p className="text-sm font-semibold text-psi-dark">
-                                                                {ticket.eventBatch?.name || "Ingresso único"}
+                                                                {ticket.EventBatch?.name || "Ingresso único"}
                                                             </p>
                                                             {ticket.TicketType && (
                                                                 <p className="text-xs text-psi-primary font-medium mt-1">
                                                                     {ticket.TicketType.name}
                                                                 </p>
                                                             )}
-                                                            {ticket.eventBatch && (
-                                                                <p className="text-xs text-psi-dark/60">
-                                                                    Até {ticket.eventBatch.endDate ? DateUtils.formatDate(ticket.eventBatch.endDate, "DD/MM/YYYY") : "data indefinida"}
-                                                                </p>
-                                                            )}
                                                         </div>
                                                         <div className="rounded-2xl border border-psi-dark/10 bg-white p-4 shadow-sm space-y-1">
                                                             <p className="text-xs uppercase text-psi-dark/50 tracking-wide">Valor pago</p>
                                                             <p className="text-2xl font-semibold text-psi-primary">
-                                                                {ValueUtils.centsToCurrency(ticket.price)}
+                                                                {ticket.Payment?.totalPaidByCustomer 
+                                                                    ? ValueUtils.centsToCurrency(ticket.Payment.totalPaidByCustomer)
+                                                                    : ValueUtils.centsToCurrency(ticket.price)
+                                                                }
                                                             </p>
                                                             <p className="text-xs text-psi-dark/60">Taxas já inclusas</p>
+                                                            {
+                                                                ticket.Payment?.transactionReceiptUrl && (
+                                                                    <Link href={ticket.Payment.transactionReceiptUrl} target="_blank" className="text-xs flex items-center gap-1 mt-2 text-psi-dark/60">
+                                                                        <FileText className="h-4 w-4 text-psi-primary" />
+                                                                        Ver recibo
+                                                                    </Link>
+                                                                )
+                                                            }
                                                         </div>
                                                         <div className="rounded-2xl border border-psi-dark/10 bg-white p-4 shadow-sm space-y-3">
-                                                            <p className="text-xs uppercase text-psi-dark/50 tracking-wide">Código</p>
                                                             <div className="flex items-center gap-2">
                                                                 <QrCode className="h-5 w-5 text-psi-primary" />
-                                                                <span className="font-mono text-sm text-psi-dark">{ticket.id}</span>
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="icon-sm"
-                                                                    aria-label="Copiar código do ingresso"
-                                                                    onClick={() => handleCopyCode(ticket.id)}
-                                                                >
-                                                                    <Copy className="h-4 w-4" />
-                                                                </Button>
+                                                                <p className="text-xs uppercase text-psi-dark/50 tracking-wide">Código</p>
                                                             </div>
                                                             {canShowQRCode && (
                                                                 <Button
@@ -552,7 +601,14 @@ const MeusIngressosPannel = () => {
                                                                 </Button>
                                                             )}
                                                             {isQRCodeVisible && canShowQRCode && qrCodeData[ticket.id] && (
-                                                                <div className="flex justify-center p-4 bg-psi-light rounded-lg">
+                                                                <div 
+                                                                    className="flex justify-center p-4 bg-psi-light rounded-lg cursor-pointer hover:bg-psi-primary/5 transition-colors"
+                                                                    onClick={() => {
+                                                                        setSelectedTicketForZoom(ticket)
+                                                                        setQrCodeZoomOpen(true)
+                                                                    }}
+                                                                    title="Clique para ampliar"
+                                                                >
                                                                     <QRCodeSVG
                                                                         value={qrCodeData[ticket.id]}
                                                                         size={200}
@@ -629,28 +685,15 @@ const MeusIngressosPannel = () => {
                                                     <div className="flex flex-col gap-3
                                                     lg:flex-row
                                                     lg:flex-wrap">
-                                                        {canDownloadTicket && (
+                                                        {isPendingPayment && (
                                                             <Button
-                                                                variant="primary"
+                                                                variant="tertiary"
                                                                 size="lg"
                                                                 className="flex-1 min-w-[200px]"
-                                                                onClick={() => handleDownloadTicket(ticket)}
+                                                                onClick={() => hasPixQrCode ? handleOpenPixPayment(ticket) : undefined}
                                                             >
-                                                                <Download className="h-4 w-4" />
-                                                                Baixar ingresso
+                                                                Realizar pagamento
                                                             </Button>
-                                                        )}
-
-                                                        {isPendingPayment && (
-                                                            <Link href="/checkout" className="flex-1 min-w-[200px]">
-                                                                <Button
-                                                                    variant="tertiary"
-                                                                    size="lg"
-                                                                    className="w-full"
-                                                                >
-                                                                    Efetuar pagamento
-                                                                </Button>
-                                                            </Link>
                                                         )}
 
                                                         <Button
@@ -662,7 +705,7 @@ const MeusIngressosPannel = () => {
                                                             <Share2 className="h-4 w-4" />
                                                             Compartilhar
                                                         </Button>
-                                                        <Link href={`/ver-evento/${ticket.event.slug}`} className="flex-1 min-w-[200px]">
+                                                        <Link href={`/ver-evento/${ticket.Event.slug}`} className="flex-1 min-w-[200px]">
                                                             <Button
                                                                 variant="secondary"
                                                                 size="lg"
@@ -683,6 +726,131 @@ const MeusIngressosPannel = () => {
                     )}
                 </div>
             </div>
+
+            <Dialog open={pixPaymentDialogOpen} onOpenChange={setPixPaymentDialogOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Pagamento via PIX</DialogTitle>
+                        <DialogDescription>
+                            Escaneie o QR Code ou copie o código para realizar o pagamento
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {selectedTicketForPix?.Payment?.qrcodeData && (
+                        <div className="space-y-4 mt-4">
+                            <div className="flex flex-col items-center space-y-3">
+                                {selectedTicketForPix.Payment.qrcodeData.encodedImage ? (
+                                    <div className="p-4 bg-white rounded-lg border border-psi-primary/20">
+                                        <img
+                                            src={`data:image/png;base64,${selectedTicketForPix.Payment.qrcodeData.encodedImage}`}
+                                            alt="QR Code PIX"
+                                            className="w-64 h-64"
+                                        />
+                                    </div>
+                                ) : selectedTicketForPix.Payment.qrcodeData.payload ? (
+                                    <div className="p-4 bg-white rounded-lg border border-psi-primary/20">
+                                        <QRCodeSVG
+                                            value={selectedTicketForPix.Payment.qrcodeData.payload}
+                                            size={256}
+                                            level="H"
+                                            includeMargin={true}
+                                        />
+                                    </div>
+                                ) : null}
+
+                                {selectedTicketForPix.Payment.qrcodeData.expirationDate && (
+                                    <div className="text-center">
+                                        <p className="text-sm text-psi-dark/60">Vencimento</p>
+                                        <p className="text-sm font-semibold text-psi-dark">
+                                            {formatExpirationDate(selectedTicketForPix.Payment.qrcodeData.expirationDate)}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {selectedTicketForPix.Payment.qrcodeData.payload && (
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-psi-dark">Código PIX (Copiar e Colar)</label>
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1 p-3 bg-psi-light rounded-lg border border-psi-primary/20">
+                                            <p className="text-xs font-mono text-psi-dark break-all">
+                                                {selectedTicketForPix.Payment.qrcodeData.payload}
+                                            </p>
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={() => selectedTicketForPix.Payment?.qrcodeData?.payload && handleCopyPayload(selectedTicketForPix.Payment.qrcodeData.payload)}
+                                            className="shrink-0"
+                                        >
+                                            {copiedPayload ? (
+                                                <Check className="h-4 w-4 text-emerald-600" />
+                                            ) : (
+                                                <Copy className="h-4 w-4" />
+                                            )}
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {selectedTicketForPix.Payment.qrcodeData.description && (
+                                <div className="rounded-lg border border-psi-primary/20 bg-psi-primary/5 p-3">
+                                    <p className="text-sm text-psi-dark">
+                                        {selectedTicketForPix.Payment.qrcodeData.description}
+                                    </p>
+                                </div>
+                            )}
+
+                            <div className="flex items-center justify-end pt-2">
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => setPixPaymentDialogOpen(false)}
+                                >
+                                    Fechar
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={qrCodeZoomOpen} onOpenChange={setQrCodeZoomOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>QR Code do Ingresso</DialogTitle>
+                        <DialogDescription>
+                            Apresente este QR Code na entrada do evento
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {selectedTicketForZoom && qrCodeData[selectedTicketForZoom.id] && (
+                        <div className="flex flex-col items-center space-y-4 mt-4">
+                            <div className="p-2 bg-white rounded-lg border border-psi-primary/20">
+                                <QRCodeSVG
+                                    value={qrCodeData[selectedTicketForZoom.id]}
+                                    size={300}
+                                    level="H"
+                                    includeMargin={true}
+                                />
+                            </div>
+                            <div className="text-center">
+                                <p className="text-sm text-psi-dark/60">Evento</p>
+                                <p className="text-sm font-semibold text-psi-dark">
+                                    {selectedTicketForZoom.Event.name}
+                                </p>
+                            </div>
+                            <div className="flex items-center justify-end w-full pt-2">
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => setQrCodeZoomOpen(false)}
+                                >
+                                    Fechar
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </Background>
     )
 }

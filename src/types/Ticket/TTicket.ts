@@ -1,6 +1,8 @@
 import type { TEvent } from "@/types/Event/TEvent"
 import type { TEventBatch } from "@/types/Event/TEventBatch"
 import { UserGenres } from "../User/TUser"
+import { TTicketDate } from "./TTicketDate"
+import type { TPayment } from "@/types/Payment/TPayment"
 
 const TicketStatuses = [
     "PENDING",
@@ -9,6 +11,7 @@ const TicketStatuses = [
     "REFUNDED",
     "OVERDUE",
     "USED",
+    "PARTIALLY_USED",
     "EXPIRED"
 ] as const
 
@@ -41,7 +44,6 @@ type TTicket = {
     status: typeof TicketStatuses[number]
     eventId: string
     eventBatchId: string
-    eventDateId: string
     ticketTypeId: string | null
     userId: string
     paymentId: string | null
@@ -51,13 +53,15 @@ type TTicket = {
     createdAt: string
     updatedAt: string | null
 
-    event: TEvent
-    eventBatch: TEventBatch
+    TicketDates: TTicketDate[]
+    Event: TEvent
+    EventBatch: TEventBatch
     TicketType?: {
         id: string
         name: string
         description: string | null
     } | null
+    Payment?: TPayment | null
 }
 
 type TTicketScanResponse = {
@@ -187,7 +191,7 @@ type TTicketBuyResponse = {
 }
 
 type TTicketQRCodeResponse = {
-    t: string
+    token: string
 }
 
 export type {

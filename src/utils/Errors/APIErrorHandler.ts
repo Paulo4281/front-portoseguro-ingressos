@@ -19,6 +19,7 @@ export const APIErrorHandler: Record<number, string> = {
     17: "Quantidade não disponível para este evento",
     18: "Você está tentando diminuir a quantidade de ingressos de um lote que já vendeu mais ingressos do que a quantidade que você está tentando remover",
     19: "Senha incorreta",
+    20: "QR Code do ingresso não está disponível",
 
     700: "Não é possível alterar datas do evento que já possuem ingressos vendidos. FALE COM O SUPORTE",
     701: "Não é possível alterar datas do evento que começarão em menos de 72 horas e já possuem ingressos vendidos. FALE COM O SUPORTE",

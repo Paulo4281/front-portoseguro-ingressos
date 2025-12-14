@@ -15,6 +15,38 @@ const PaymentGatewayBillingStatuses = [
     "AWAITING_RISK_ANALYSIS",
   ] as const
 
+type TPayment = {
+  id: string
+  userId: string
+  eventId: string
+  eventInfo: any
+  cardId: string | null
+  chargebackRequested: boolean
+  couponInfo: Record<string, unknown> | null
+  createdAt: string
+  updatedAt: string | null
+  creditCardInstallments: number | null
+  customerFee: number
+  customerPaymentFee: number
+  discountedValue: number
+  externalPaymentId: string | null
+  gatewayFeeGain: number
+  grossValue: number
+  netValue: number
+  organizerFee: number
+  organizerPayout: number
+  paidAt: string | null
+  platformPaymentFee: number
+  totalPaidByCustomer: number
+  invoiceUrl: string | null
+  invoiceNumber: string | null
+  transactionReceiptUrl: string | null
+  qrcodeData: any | null
+  status: typeof PaymentGatewayBillingStatuses[number]
+  type: "TICKET"
+  method: "PIX" | "CREDIT_CARD"
+}
+
 type TPaymentGatewayGetPIXQrCodeResponse = {
     encodedImage: string
     payload: string
@@ -28,7 +60,8 @@ type TPaymentStatusResponse = {
 
 export type {
     TPaymentGatewayGetPIXQrCodeResponse,
-    TPaymentStatusResponse
+    TPaymentStatusResponse,
+    TPayment
 }
 
 export {
