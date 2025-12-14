@@ -482,6 +482,11 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
         return eventDates[dateIndex]?.id || null
     }, [eventData])
 
+    const hasAnySoldTicketsForDates = useMemo(() => {
+        if (!soldTicketsData || soldTicketsData.length === 0) return false
+        return soldTicketsData.some(item => item.sold > 0)
+    }, [soldTicketsData])
+
     useEffect(() => {
         if (ticketTypes.length > 0) {
             const currentBatches = form.getValues("batches") || []
@@ -1077,35 +1082,55 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
 
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-lg font-semibold text-psi-dark">Tipos</h3>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={addTicketType}
-                                    >
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Adicionar Tipo
-                                    </Button>
+                                    {!hasAnySoldTicketsForDates && (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={addTicketType}
+                                        >
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Adicionar Tipo
+                                        </Button>
+                                    )}
                                 </div>
+
+                                {hasAnySoldTicketsForDates && (
+                                    <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
+                                        <div className="flex items-start gap-3">
+                                            <Info className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                                            <div>
+                                                <p className="text-sm font-semibold text-amber-900 mb-1">
+                                                    Adição de tipos de ingressos bloqueada
+                                                </p>
+                                                <p className="text-sm text-amber-700">
+                                                    Não é possível adicionar novos tipos de ingressos quando já existem ingressos vendidos.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {ticketTypeFields.map((field, index) => (
                                     <div
                                         key={field.id}
-                                        className="rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4 space-y-4"
+                                        className={`rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4 space-y-4 ${hasAnySoldTicketsForDates ? "opacity-60" : ""}`}
                                     >
                                         <div className="flex items-center justify-between">
                                             <span className="text-sm font-semibold text-psi-dark">
                                                 Tipo {index + 1}
                                             </span>
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => removeTicketType(index)}
-                                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
+                                            {!hasAnySoldTicketsForDates && (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => removeTicketType(index)}
+                                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            )}
                                         </div>
 
                                         <div className="grid grid-cols-1
@@ -1123,6 +1148,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                             placeholder="Ex: VIP, Meia, Inteira"
                                                             required
                                                             className="w-full"
+                                                            disabled={hasAnySoldTicketsForDates}
                                                         />
                                                     )}
                                                 />
@@ -1142,6 +1168,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                             placeholder="Ex: Acesso VIP com área exclusiva"
                                                             className="w-full"
                                                             value={field.value || ""}
+                                                            disabled={hasAnySoldTicketsForDates}
                                                         />
                                                     )}
                                                 />
@@ -1199,19 +1226,28 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                     name="isFree"
                                     control={form.control}
                                     render={({ field }) => (
-                                        <div className="flex items-center gap-3 rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4">
+                                        <div className={`flex items-center gap-3 rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4 ${hasAnySoldTicketsForDates ? "opacity-60" : ""}`}>
                                             <Checkbox
                                                 id="is-free"
                                                 checked={field.value || false}
-                                                onCheckedChange={(checked) => field.onChange(checked === true)}
+                                                onCheckedChange={(checked) => {
+                                                    if (hasAnySoldTicketsForDates) return
+                                                    field.onChange(checked === true)
+                                                }}
+                                                disabled={hasAnySoldTicketsForDates}
                                             />
                                             <div className="flex-1">
-                                                <label htmlFor="is-free" className="text-sm font-medium text-psi-dark cursor-pointer">
+                                                <label htmlFor="is-free" className={`text-sm font-medium text-psi-dark ${hasAnySoldTicketsForDates ? "cursor-not-allowed" : "cursor-pointer"}`}>
                                                     Evento gratuito
                                                 </label>
                                                 <p className="text-xs text-psi-dark/60 mt-1">
                                                     Quando ativado, os ingressos serão gratuitos e não haverá cobrança ao comprador.
                                                 </p>
+                                                {hasAnySoldTicketsForDates && (
+                                                    <p className="text-xs text-amber-600 mt-1">
+                                                        Não é possível alterar o tipo de evento para gratuito quando já existem ingressos vendidos.
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
                                     )}
@@ -1367,7 +1403,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                 </span>
                                                             )}
                                                         </span>
-                                                        {!isBatchDisabled && batchFields.length > 1 ? (
+                                                        {!isBatchDisabled && batchFields.length > 1 && !batch?.isActive ? (
                                                             <Button
                                                                 type="button"
                                                                 variant="ghost"
@@ -2064,28 +2100,46 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                         <Calendar className="h-5 w-5 text-psi-primary" />
                                         <h2 className="text-2xl font-bold text-psi-dark">Datas e Horários</h2>
                                     </div>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={addDate}
-                                    >
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Adicionar Data
-                                    </Button>
+                                    {!hasAnySoldTicketsForDates && (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={addDate}
+                                        >
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Adicionar Data
+                                        </Button>
+                                    )}
                                 </div>
+
+                                {hasAnySoldTicketsForDates && (
+                                    <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 mb-6">
+                                        <div className="flex items-start gap-3">
+                                            <Info className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                                            <div>
+                                                <p className="text-sm font-semibold text-amber-900 mb-1">
+                                                    Alteração de datas e horários bloqueada
+                                                </p>
+                                                <p className="text-sm text-amber-700">
+                                                    Não é possível alterar horário ou datas de eventos que já possui ingressos vendidos. Caso seja realmente necessário acesse a área de Suporte e abra um chamado solicitando a alteração para o dia e horário desejados.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="space-y-4">
                                     {dateFields.map((field, index) => (
                                         <div
                                             key={field.id}
-                                            className="rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4 space-y-4"
+                                            className={`rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4 space-y-4 ${hasAnySoldTicketsForDates ? "opacity-60 pointer-events-none" : ""}`}
                                         >
                                             <div className="flex items-center justify-between">
                                                 <span className="text-sm font-semibold text-psi-dark">
                                                     Data {index + 1}
                                                 </span>
-                                                {dateFields.length > 1 && (
+                                                {dateFields.length > 1 && !hasAnySoldTicketsForDates && (
                                                     <Button
                                                         type="button"
                                                         variant="ghost"
@@ -2113,6 +2167,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                 onChange={(value) => field.onChange(value || "")}
                                                                 required
                                                                 minDate={new Date().toISOString().split("T")[0]}
+                                                                disabled={hasAnySoldTicketsForDates}
                                                             />
                                                         )}
                                                     />
@@ -2131,6 +2186,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                 value={field.value}
                                                                 onChange={field.onChange}
                                                                 required
+                                                                disabled={hasAnySoldTicketsForDates}
                                                             />
                                                         )}
                                                     />
@@ -2148,6 +2204,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                             <TimePicker
                                                                 value={field.value || ""}
                                                                 onChange={field.onChange}
+                                                                disabled={hasAnySoldTicketsForDates}
                                                             />
                                                         )}
                                                     />
@@ -2159,6 +2216,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                     id={`has-specific-price-${index}`}
                                                     checked={form.watch(`dates.${index}.hasSpecificPrice`) || false}
                                                     onCheckedChange={(checked) => {
+                                                        if (hasAnySoldTicketsForDates) return
                                                         const isChecked = checked === true
                                                         form.setValue(`dates.${index}.hasSpecificPrice`, isChecked)
                                                         if (!isChecked) {
@@ -2176,6 +2234,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                             }
                                                         }
                                                     }}
+                                                    disabled={hasAnySoldTicketsForDates}
                                                 />
                                                 <label htmlFor={`has-specific-price-${index}`} className="text-sm font-medium text-psi-dark cursor-pointer">
                                                     Definir preço específico para este dia
@@ -2210,6 +2269,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                     <InputCurrency
                                                                         value={field.value || 0}
                                                                         onChangeValue={(value) => {
+                                                                            if (hasAnySoldTicketsForDates) return
                                                                             if (!value || value === "") {
                                                                                 field.onChange(0)
                                                                             } else {
@@ -2219,6 +2279,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                         }}
                                                                         required
                                                                         className="w-full"
+                                                                        disabled={hasAnySoldTicketsForDates}
                                                                     />
                                                                 )}
                                                             />
@@ -2272,6 +2333,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                                         <InputCurrency
                                                                                             value={field.value || 0}
                                                                                             onChangeValue={(value) => {
+                                                                                                if (hasAnySoldTicketsForDates) return
                                                                                                 if (!value || value === "") {
                                                                                                     field.onChange(0)
                                                                                                 } else {
@@ -2281,6 +2343,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                                                             }}
                                                                                             required
                                                                                             className="w-full"
+                                                                                            disabled={hasAnySoldTicketsForDates}
                                                                                         />
                                                                                     )}
                                                                                 />

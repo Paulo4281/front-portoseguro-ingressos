@@ -2299,10 +2299,6 @@ const CheckoutInfo = () => {
                                                             <span>Subtotal:</span>
                                                             <span>{ValueUtils.centsToCurrency(subtotal)}</span>
                                                         </div>
-                                                        <div className="flex items-center justify-between text-emerald-600 font-medium">
-                                                            <span>Desconto:</span>
-                                                            <span>-{ValueUtils.centsToCurrency(totalDiscount)}</span>
-                                                        </div>
                                                     </>
                                                 )}
                                                 <div className="flex items-center justify-between font-semibold text-psi-dark pt-2 border-t border-psi-dark/10">
