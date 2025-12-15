@@ -5,7 +5,7 @@ import type { TPaymentAdminListResponse } from "@/types/Payment/TPayment"
 
 type TUsePaymentAdminListParams = {
     offset?: number
-    status?: "RECEIVED" | "CONFIRMED" | "PENDING" | "FAILED" | "REFUNDED" | "OVERDUE"
+    status?: "RECEIVED" | "CONFIRMED" | "PENDING" | "FAILED" | "REFUNDED" | "OVERDUE" | "REFUND_REQUESTED"
 }
 
 type TListPaymentsResponse = {

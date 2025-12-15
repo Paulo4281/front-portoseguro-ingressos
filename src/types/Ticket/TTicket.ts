@@ -9,6 +9,7 @@ const TicketStatuses = [
     "CONFIRMED",
     "CANCELLED",
     "REFUNDED",
+    "REFUND_REQUESTED",
     "OVERDUE",
     "USED",
     "PARTIALLY_USED",

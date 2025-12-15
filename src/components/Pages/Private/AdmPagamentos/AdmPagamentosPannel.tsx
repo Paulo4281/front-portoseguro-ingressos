@@ -32,9 +32,28 @@ import {
     CheckCircle2,
     Clock,
     XCircle,
-    DollarSign
+    DollarSign,
+    Lock,
+    Eye,
+    EyeOff,
+    AlertTriangle
 } from "lucide-react"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
+import { usePaymentRefund } from "@/hooks/Payment/usePaymentRefund"
+import { usePaymentRefundCreditCard } from "@/hooks/Payment/usePaymentRefundCreditCard"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/Input/Input"
+import { Textarea } from "@/components/ui/textarea"
+import { useUserCheckPasswordAdmin } from "@/hooks/User/useUserCheckPasswordAdmin"
+import { Toast } from "@/components/Toast/Toast"
+import { LoadingButton } from "@/components/Loading/LoadingButton"
 
 const paymentStatusConfig: Record<TPaymentAdminListResponse["status"], { label: string; badgeClass: string }> = {
     RECEIVED: {
@@ -55,6 +74,10 @@ const paymentStatusConfig: Record<TPaymentAdminListResponse["status"], { label: 
     },
     REFUNDED: {
         label: "Estornado",
+        badgeClass: "bg-purple-50 text-purple-600 border-purple-200"
+    },
+    REFUND_REQUESTED: {
+        label: "Estorno solicitado",
         badgeClass: "bg-purple-50 text-purple-600 border-purple-200"
     },
     OVERDUE: {
@@ -121,12 +144,22 @@ const AdmPagamentosPannel = () => {
         return []
     }, [data])
 
+    const { mutateAsync: refundPayment, isPending: isRefundingPayment } = usePaymentRefund()
+    const { mutateAsync: refundCreditCardPayment, isPending: isRefundingCreditCard } = usePaymentRefundCreditCard()
+    const { mutateAsync: checkPasswordAdmin, isPending: isCheckingPassword } = useUserCheckPasswordAdmin()
+
     const responseData = data?.data || { data: [], total: 0, limit: 50, offset: 0 }
     const totalItems = responseData.total || 0
     const limit = responseData.limit || 50
     const totalPages = totalItems > 0 ? Math.ceil(totalItems / limit) : 0
 
     const [openRows, setOpenRows] = useState<Record<string, boolean>>({})
+    const [refundDialogOpen, setRefundDialogOpen] = useState(false)
+    const [selectedPaymentForRefund, setSelectedPaymentForRefund] = useState<TPaymentAdminListResponse | null>(null)
+    const [adminPassword, setAdminPassword] = useState("")
+    const [showPassword, setShowPassword] = useState(false)
+    const [refundReason, setRefundReason] = useState("")
+    const [passwordError, setPasswordError] = useState<string | null>(null)
 
     const toggleRow = (paymentId: string) => {
         setOpenRows((prev) => ({
@@ -150,6 +183,80 @@ const AdmPagamentosPannel = () => {
     const handleStatusChange = (status: string) => {
         setSelectedStatus(status as TPaymentAdminListResponse["status"] | "all")
         setCurrentPage(1)
+    }
+
+    const handleOpenRefundDialog = (payment: TPaymentAdminListResponse) => {
+        setSelectedPaymentForRefund(payment)
+        setRefundDialogOpen(true)
+    }
+
+    const handleCloseRefundDialog = () => {
+        setRefundDialogOpen(false)
+        setSelectedPaymentForRefund(null)
+        setAdminPassword("")
+        setRefundReason("")
+        setPasswordError(null)
+        setShowPassword(false)
+    }
+
+    const handleConfirmRefund = async () => {
+        if (!adminPassword.trim()) {
+            setPasswordError("Por favor, digite a senha do administrador")
+            return
+        }
+
+        if (!selectedPaymentForRefund) {
+            return
+        }
+
+        try {
+            const passwordResponse = await checkPasswordAdmin(adminPassword)
+            
+            if (passwordResponse?.success !== true) {
+                setPasswordError("Senha incorreta. Tente novamente.")
+                return
+            }
+
+            setPasswordError(null)
+
+            if (selectedPaymentForRefund.method === "CREDIT_CARD") {
+                if (!selectedPaymentForRefund.externalPaymentId) {
+                    setPasswordError("Dados do pagamento incompletos")
+                    return
+                }
+
+                const firstInstallment = selectedPaymentForRefund.Installments?.find(
+                    (installment) => installment.externalInstallmentId
+                )
+
+                if (!firstInstallment?.externalInstallmentId) {
+                    setPasswordError("Nenhuma parcela disponível para estorno")
+                    return
+                }
+
+                await refundCreditCardPayment({
+                    billingId: selectedPaymentForRefund.externalPaymentId,
+                    installmentId: firstInstallment.externalInstallmentId,
+                    params: {
+                        description: refundReason.trim() || undefined
+                    }
+                })
+            } else {
+                await refundPayment({
+                    billingId: selectedPaymentForRefund.externalPaymentId ?? "",
+                    params: {
+                        description: refundReason.trim() || undefined
+                    }
+                })
+            }
+
+            Toast.success("Estorno solicitado com sucesso")
+            handleCloseRefundDialog()
+        } catch (error: any) {
+            const errorMessage = error?.response?.data?.message || "Erro ao processar estorno. Tente novamente."
+            setPasswordError(errorMessage)
+            Toast.error(errorMessage)
+        }
     }
 
     return (
@@ -772,9 +879,18 @@ const AdmPagamentosPannel = () => {
                                                                 )}
 
                                                                 <div className="flex items-center justify-end gap-2">
-                                                                    <Button variant="destructive" size="sm">
-                                                                        Estornar pagamento
-                                                                    </Button>
+                                                                    {
+                                                                        ["CONFIRMED", "RECEIVED"].includes(payment.status) && (
+                                                                            <Button 
+                                                                                variant="destructive" 
+                                                                                size="sm" 
+                                                                                onClick={() => handleOpenRefundDialog(payment)} 
+                                                                                disabled={isRefundingPayment || payment.status === "REFUNDED"}
+                                                                            >
+                                                                                Estornar pagamento
+                                                                            </Button>
+                                                                        )
+                                                                    }
                                                                     <Button variant="primary" size="lg">
                                                                         Solicitar nota fiscal
                                                                     </Button>
@@ -802,6 +918,118 @@ const AdmPagamentosPannel = () => {
                     </div>
                 )}
             </section>
+
+            <Dialog open={refundDialogOpen} onOpenChange={handleCloseRefundDialog}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                                <AlertTriangle className="h-5 w-5 text-red-600" />
+                            </div>
+                            Confirmar Estorno de Pagamento
+                        </DialogTitle>
+                        <DialogDescription className="pt-2 space-y-2">
+                            <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
+                                <p className="text-sm font-semibold text-amber-900 mb-1">
+                                    ⚠️ Atenção: Esta ação é delicada e irreversível
+                                </p>
+                                <p className="text-xs text-amber-800">
+                                    O estorno de um pagamento pode resultar em perda de receita, problemas com o cliente e impactos financeiros significativos. Certifique-se de que esta ação é realmente necessária antes de prosseguir.
+                                </p>
+                            </div>
+                            {selectedPaymentForRefund && (
+                                <div className="pt-2 space-y-1">
+                                    <p className="text-sm text-psi-dark/70">
+                                        <span className="font-semibold">Pagamento:</span> {selectedPaymentForRefund.code}
+                                    </p>
+                                    <p className="text-sm text-psi-dark/70">
+                                        <span className="font-semibold">Valor:</span> {ValueUtils.centsToCurrency(selectedPaymentForRefund.grossValue)}
+                                    </p>
+                                </div>
+                            )}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
+                        <div>
+                            <label className="block text-sm font-medium text-psi-dark mb-2">
+                                Senha do Administrador *
+                            </label>
+                            <div className="relative">
+                                <Input
+                                    type={showPassword ? "text" : "password"}
+                                    value={adminPassword}
+                                    onChange={(e) => {
+                                        setAdminPassword(e.target.value)
+                                        if (passwordError) setPasswordError(null)
+                                    }}
+                                    placeholder="Digite a senha do administrador"
+                                    icon={Lock}
+                                    className="pr-10"
+                                    required
+                                    disabled={isCheckingPassword || isRefundingPayment || isRefundingCreditCard}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-psi-dark/60 hover:text-psi-dark transition-colors"
+                                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                                    disabled={isCheckingPassword || isRefundingPayment || isRefundingCreditCard}
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="size-4" />
+                                    ) : (
+                                        <Eye className="size-4" />
+                                    )}
+                                </button>
+                            </div>
+                            {passwordError && (
+                                <p className="mt-2 text-sm text-red-600">{passwordError}</p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                Motivo do Estorno (Opcional)
+                            </label>
+                            <Textarea
+                                value={refundReason}
+                                onChange={(e) => setRefundReason(e.target.value)}
+                                placeholder="Descreva o motivo do estorno..."
+                                className="min-h-[100px]"
+                                maxLength={500}
+                                disabled={isCheckingPassword || isRefundingPayment || isRefundingCreditCard}
+                            />
+                            <p className="text-xs text-psi-dark/50 mt-1">
+                                {refundReason.length}/500 caracteres
+                            </p>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleCloseRefundDialog}
+                            disabled={isCheckingPassword || isRefundingPayment}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={handleConfirmRefund}
+                            disabled={isCheckingPassword || isRefundingPayment || isRefundingCreditCard || !adminPassword.trim()}
+                        >
+                            {isCheckingPassword || isRefundingPayment || isRefundingCreditCard ? (
+                                <LoadingButton />
+                            ) : (
+                                "Confirmar Estorno"
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </Background>
     )
 }

@@ -35,7 +35,7 @@ type TPaymentAdminListResponse = {
     code: string
     method: "CREDIT_CARD" | "PIX"
     type: "TICKET"
-    status: "RECEIVED" | "CONFIRMED" | "PENDING" | "FAILED" | "REFUNDED" | "OVERDUE"
+    status: "RECEIVED" | "CONFIRMED" | "PENDING" | "FAILED" | "REFUNDED" | "OVERDUE" | "REFUND_REQUESTED"
     externalPaymentId: string | null
     eventId: string
     eventInfo: any
@@ -154,6 +154,10 @@ type TPayment = {
   method: "PIX" | "CREDIT_CARD"
 }
 
+type TPaymentRefundParams = {
+    description?: string
+}
+
 type TPaymentGatewayGetPIXQrCodeResponse = {
     encodedImage: string
     payload: string
@@ -170,7 +174,8 @@ export type {
     TPaymentStatusResponse,
     TPayment,
     TPaymentAdminListResponse,
-    TPaymentInstallment
+    TPaymentInstallment,
+    TPaymentRefundParams
 }
 
 export {

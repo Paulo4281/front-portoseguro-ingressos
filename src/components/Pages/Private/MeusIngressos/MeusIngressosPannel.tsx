@@ -51,6 +51,11 @@ const statusConfig: Record<TTicket["status"], TStatusConfig> = {
         description: "Este ingresso foi estornado e o valor foi devolvido.",
         badgeClass: "border border-amber-200 bg-amber-50 text-amber-600"
     },
+    REFUND_REQUESTED: {
+        label: "Estorno solicitado",
+        description: "Estorno solicitado.",
+        badgeClass: "border border-psi-tertiary/90 bg-psi-tertiary/60 text-psi-dark"
+    },
     OVERDUE: {
         label: "Vencido",
         description: "A compra não foi paga e venceu.",
