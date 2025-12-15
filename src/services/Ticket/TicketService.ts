@@ -83,37 +83,17 @@ class TicketServiceClass {
     }
 
     async findByEventIdToOrganizer(eventId: string, offset: number = 0, limit: number = 30, search?: string, status?: string): Promise<AxiosResponse["data"]> {
-        if (!mockTicketsToOrganizer[eventId]) {
-            mockTicketsToOrganizer[eventId] = generateMockTicketsToOrganizer(eventId)
-        }
-        
-        let filteredTickets = [...mockTicketsToOrganizer[eventId]]
-        
-        if (search) {
-            const searchLower = search.toLowerCase()
-            filteredTickets = filteredTickets.filter(ticket => 
-                ticket.customer.name.toLowerCase().includes(searchLower) ||
-                ticket.customer.email.toLowerCase().includes(searchLower) ||
-                (ticket.customer.phone && ticket.customer.phone.includes(search))
-            )
-        }
-        
-        if (status && status !== "ALL") {
-            filteredTickets = filteredTickets.filter(ticket => ticket.status === status)
-        }
-        
-        const total = filteredTickets.length
-        const paginatedTickets = filteredTickets.slice(offset, offset + limit)
-        
-        return {
-            success: true,
-            data: {
-                data: paginatedTickets,
-                total,
+        const response = (await API.GET({
+            prefix: "/ticket",
+            url: `/list-sold-by-event/${eventId}`,
+            params: {
+                offset,
                 limit,
-                offset
+                search: search || "",
+                status: status || ""
             }
-        }
+        }))?.data
+        return response
     }
 
     async scan(): Promise<AxiosResponse["data"]> {

@@ -118,6 +118,11 @@ type TEventDetailedStats = {
 
 }
 
+type TEventSoldInValueResponse = {
+    eventId: string
+    value: number
+}
+
 export type {
     TEvent,
     TEventDate,
@@ -130,5 +135,6 @@ export type {
     TEventDetailedStats,
     TEventUpdate,
     TEventVerifyLastTicketsResponse,
-    TEventVerifySoldResponse
+    TEventVerifySoldResponse,
+    TEventSoldInValueResponse
 }

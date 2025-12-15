@@ -32,6 +32,8 @@ import { EventSalesReport } from "@/components/Report/EventSalesReport"
 import { useEventClickCount } from "@/hooks/EventClick/useEventClickCount"
 import { SheetTicketsToOrganizer } from "@/components/Sheet/SheetTicketsToOrganizer/SheetTicketsToOrganizer"
 import { useEventVerifySold } from "@/hooks/Event/useEventVerifySold"
+import { useEventSoldInValue } from "@/hooks/Event/useEventSoldInValue"
+import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { useRouter } from "next/navigation"
 
 type TEventWithStats = TEvent & {
@@ -49,13 +51,6 @@ const mockStats = {
 
 const formatDate = (dateString?: string | null) => {
     return formatEventDate(dateString, "DD MMM YYYY")
-}
-
-const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-        style: "currency",
-        currency: "BRL"
-    }).format(value)
 }
 
 const formatRecurrence = (recurrence: TEvent["Recurrence"]) => {
@@ -271,8 +266,8 @@ const MeusEventosPannel = () => {
         ...event,
         isActive: true,
         views: mockStats.views,
-        sales: mockStats.sales,
-        revenue: mockStats.revenue
+        sales: 0,
+        revenue: 0
     }))
 
     return (
@@ -452,7 +447,21 @@ const EventCard = ({
         isLoading: isLoadingClickCount
     } = useEventClickCount(event.id, !!event.id)
 
+    const {
+        data: verifySoldData,
+        isLoading: isLoadingVerifySold
+    } = useEventVerifySold(event.id)
+
+    const {
+        data: soldInValueData,
+        isLoading: isLoadingSoldInValue
+    } = useEventSoldInValue(event.id)
+
     const totalClicks = clickCountData?.data ?? 0
+
+    const totalSales = verifySoldData?.data?.reduce((sum, item) => sum + (item.sold || 0), 0) ?? 0
+
+    const totalRevenue = soldInValueData?.data?.value ?? 0
 
     return (
         <div
@@ -636,14 +645,22 @@ const EventCard = ({
                             <Ticket className="h-3.5 w-3.5" />
                             <span className="text-xs">Vendas</span>
                         </div>
-                        <p className="text-lg font-bold text-psi-dark">{event.sales}</p>
+                        {isLoadingVerifySold ? (
+                            <Skeleton className="h-6 w-12 mx-auto" />
+                        ) : (
+                            <p className="text-lg font-bold text-psi-dark">{totalSales}</p>
+                        )}
                     </div>
                     <div className="text-center">
                         <div className="flex items-center justify-center gap-1 text-psi-dark/60 mb-1">
                             <TrendingUp className="h-3.5 w-3.5" />
                             <span className="text-xs">Receita</span>
                         </div>
-                        <p className="text-lg font-bold text-psi-primary">{formatCurrency(event.revenue)}</p>
+                        {isLoadingSoldInValue ? (
+                            <Skeleton className="h-6 w-16 mx-auto" />
+                        ) : (
+                            <p className="text-lg font-bold text-psi-primary">{ValueUtils.centsToCurrency(totalRevenue)}</p>
+                        )}
                     </div>
                 </div>
 

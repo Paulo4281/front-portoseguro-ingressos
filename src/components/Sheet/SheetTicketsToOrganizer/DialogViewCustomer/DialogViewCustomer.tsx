@@ -71,7 +71,15 @@ const DialogViewCustomer = ({
                                     <Phone className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs text-psi-dark/60 mb-1">Telefone</p>
-                                        <p className="text-sm font-medium text-psi-dark">{customer.phone}</p>
+                                        <p className="text-sm font-medium text-psi-dark">
+                                            {customer.phone
+                                                .replace(/\D/g, "")
+                                                .replace(
+                                                    /^(\d{2})(\d{4,5})(\d{4})$/,
+                                                    "($1) $2-$3"
+                                                )
+                                            }
+                                        </p>
                                     </div>
                                 </div>
                             )}
@@ -81,7 +89,26 @@ const DialogViewCustomer = ({
                                     <FileText className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs text-psi-dark/60 mb-1">CPF/CNPJ</p>
-                                        <p className="text-sm font-medium text-psi-dark">{customer.document}</p>
+                                        <p className="text-sm font-medium text-psi-dark">
+                                            {(() => {
+                                                const numericDoc = customer.document.replace(/\D/g, "")
+                                                if (numericDoc.length === 11) {
+                                                    // CPF Mask
+                                                    return numericDoc.replace(
+                                                        /^(\d{3})(\d{3})(\d{3})(\d{2})$/,
+                                                        "$1.$2.$3-$4"
+                                                    )
+                                                }
+                                                if (numericDoc.length === 14) {
+                                                    // CNPJ Mask
+                                                    return numericDoc.replace(
+                                                        /^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,
+                                                        "$1.$2.$3/$4-$5"
+                                                    )
+                                                }
+                                                return customer.document
+                                            })()}
+                                        </p>
                                     </div>
                                 </div>
                             )}
