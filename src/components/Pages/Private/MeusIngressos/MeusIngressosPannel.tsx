@@ -560,6 +560,8 @@ const MeusIngressosPannel = () => {
                                                                 }
                                                             </p>
                                                             <p className="text-xs text-psi-dark/60">Taxas já inclusas</p>
+                                                            <hr />
+                                                            <p className="text-xs text-psi-dark/60">Código da compra: <span className="font-semibold text-psi-dark text-sm">{ticket.Payment?.code}</span></p>
                                                             {
                                                                 ticket.Payment?.transactionReceiptUrl && (
                                                                     <Link href={ticket.Payment.transactionReceiptUrl} target="_blank" className="text-xs flex items-center gap-1 mt-2 text-psi-dark/60">

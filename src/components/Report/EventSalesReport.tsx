@@ -49,36 +49,78 @@ const EventSalesReport = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-[100vw]
-            w-full
-            h-screen
-            max-h-screen
-            p-0
-            m-0
-            rounded-none
-            border-0
-            translate-x-0
-            translate-y-0
-            left-0
-            top-0
-            overflow-hidden">
-                <DialogHeader className="px-6
-                pt-6
-                pb-4
-                border-b
-                border-[#E4E6F0]
-                sticky
+            <DialogContent
+                className="max-w-[100vw]
+                w-full
+                h-screen
+                max-h-screen
+                p-0
+                m-0
+                rounded-none
+                border-0
+                translate-x-0
+                translate-y-0
+                mt-2
+                left-0
                 top-0
-                bg-white
-                z-10">
+                overflow-hidden"
+            >
+                <DialogHeader
+                    className="px-6
+                    pt-6
+                    pb-4
+                    border-b
+                    border-[#E4E6F0]
+                    sticky
+                    top-0
+                    bg-white
+                    z-10
+                    flex
+                    flex-row
+                    items-center
+                    justify-between"
+                >
                     <DialogTitle className="text-2xl
-                    font-bold
-                    text-psi-dark">
+                        font-bold
+                        text-psi-dark"
+                    >
                         Relatório de Vendas
                         {eventName && (
                             <span className="text-psi-primary ml-2">{eventName}</span>
                         )}
                     </DialogTitle>
+                    <button
+                        type="button"
+                        aria-label="Fechar relatório"
+                        onClick={() => onOpenChange(false)}
+                        className="ml-4
+                        inline-flex
+                        items-center
+                        justify-center
+                        rounded-full
+                        w-10
+                        h-10
+                        bg-transparent
+                        hover:bg-psi-primary/10
+                        focus-visible:ring-2
+                        focus-visible:ring-psi-primary
+                        transition-colors
+                        outline-none"
+                        tabIndex={0}
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-6 w-6 text-psi-dark"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                            aria-hidden="true"
+                            focusable="false"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
                 </DialogHeader>
 
                 <div className="flex-1 overflow-y-auto p-6 h-[calc(100vh-100px)]">
@@ -357,10 +399,10 @@ const EventSalesReport = ({
 
                                         <div className="p-4 rounded-lg bg-psi-tertiary/5 border border-psi-tertiary/20">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <Clock className="h-4 w-4 text-psi-tertiary" />
+                                                <Clock className="h-4 w-4 text-psi-dark" />
                                                 <p className="text-sm font-semibold text-psi-dark">Horário de Pico de Vendas</p>
                                             </div>
-                                            <p className="text-xl font-bold text-psi-tertiary">{reportData.peakSalesHour}</p>
+                                            <p className="text-xl font-bold text-psi-dark">{reportData.peakSalesHour}</p>
                                         </div>
                                     </div>
                                 </div>

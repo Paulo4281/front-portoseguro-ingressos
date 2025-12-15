@@ -32,6 +32,7 @@ type TPaymentInstallment = {
 
 type TPaymentAdminListResponse = {
     id: string
+    code: string
     method: "CREDIT_CARD" | "PIX"
     type: "TICKET"
     status: "RECEIVED" | "CONFIRMED" | "PENDING" | "FAILED" | "REFUNDED" | "OVERDUE"
@@ -55,6 +56,7 @@ type TPaymentAdminListResponse = {
     transactionReceiptUrl: string | null
     qrcodeData: any | null
     failedReason: string | null
+    additionalLogs: string | null
     paidAt: string | null
     chargebackRequested: boolean
     userId: string
@@ -119,6 +121,7 @@ type TPaymentAdminListResponse = {
 
 type TPayment = {
   id: string
+  code: string
   userId: string
   eventId: string
   eventInfo: any
@@ -145,6 +148,7 @@ type TPayment = {
   transactionReceiptUrl: string | null
   qrcodeData: any | null
   failedReason: string | null
+  additionalLogs: string | null
   status: typeof PaymentGatewayBillingStatuses[number]
   type: "TICKET"
   method: "PIX" | "CREDIT_CARD"

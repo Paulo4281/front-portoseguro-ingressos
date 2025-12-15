@@ -489,6 +489,9 @@ const AdmPagamentosPannel = () => {
                                                                             Informações adicionais
                                                                         </div>
                                                                         <div className="space-y-2">
+                                                                            <hr />
+                                                                            <p className="text-xs text-psi-dark/60">Código: <span className="font-semibold text-psi-dark text-sm">{payment.code}</span></p>
+                                                                            <hr />
                                                                             {payment.externalPaymentId && (
                                                                                 <p className="text-xs text-psi-dark/50">
                                                                                     ID: {payment.externalPaymentId}
@@ -538,6 +541,16 @@ const AdmPagamentosPannel = () => {
                                                                                 <Badge className="bg-red-50 text-red-600 border-red-200 text-xs">
                                                                                     Chargeback solicitado
                                                                                 </Badge>
+                                                                            )}
+                                                                            {payment.additionalLogs && (
+                                                                                <div className="pt-2 border-t border-psi-dark/10">
+                                                                                    <p className="text-xs text-psi-dark/60 mb-1">
+                                                                                        Logs adicionais
+                                                                                    </p>
+                                                                                    <p className="text-sm text-psi-dark/70 break-words whitespace-pre-line">
+                                                                                        {payment.additionalLogs}
+                                                                                    </p>
+                                                                                </div>
                                                                             )}
                                                                         </div>
                                                                     </div>
@@ -757,6 +770,15 @@ const AdmPagamentosPannel = () => {
                                                                         )}
                                                                     </div>
                                                                 )}
+
+                                                                <div className="flex items-center justify-end gap-2">
+                                                                    <Button variant="destructive" size="sm">
+                                                                        Estornar pagamento
+                                                                    </Button>
+                                                                    <Button variant="primary" size="lg">
+                                                                        Solicitar nota fiscal
+                                                                    </Button>
+                                                                </div>
                                                             </div>
                                                         </TableCell>
                                                     </TableRow>

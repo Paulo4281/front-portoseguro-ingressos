@@ -323,13 +323,11 @@ class EventServiceClass {
     }
 
     async generateSalesReport(eventId: string): Promise<AxiosResponse["data"]> {
-        return {
-            success: true,
-            data: {
-                ...eventSalesReportMock,
-                eventId
-            }
-        }
+        const response = (await API.GET({
+            prefix: "/event",
+            url: `/sales-report/${eventId}`
+        }))?.data
+        return response
     }
 }
 
