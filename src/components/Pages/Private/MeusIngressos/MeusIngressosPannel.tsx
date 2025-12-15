@@ -53,7 +53,7 @@ const statusConfig: Record<TTicket["status"], TStatusConfig> = {
     },
     OVERDUE: {
         label: "Vencido",
-        description: "Ingresso não utilizado e já vencido.",
+        description: "A compra não foi paga e venceu.",
         badgeClass: "border border-psi-dark/20 bg-psi-dark/10 text-psi-dark/60"
     },
     USED: {
@@ -68,7 +68,12 @@ const statusConfig: Record<TTicket["status"], TStatusConfig> = {
     },
     EXPIRED: {
         label: "Expirado",
-        description: "A compra não foi paga e venceu.",
+        description: "Ingresso não utilizado e já expirou.",
+        badgeClass: "border border-psi-dark/10 bg-psi-dark/5 text-psi-dark/70"
+    },
+    FAILED: {
+        label: "Falha",
+        description: "A compra não foi realizada com sucesso.",
         badgeClass: "border border-psi-dark/10 bg-psi-dark/5 text-psi-dark/70"
     }
 }
@@ -432,15 +437,10 @@ const MeusIngressosPannel = () => {
                                 Explore os eventos disponíveis em Porto Seguro e garanta ingressos exclusivos com as menores taxas da região.
                             </p>
                             <div className="flex items-center justify-center gap-3">
-                                <Link href="/#eventos">
+                                <Link href="/ver-eventos">
                                     <Button variant="primary" size="lg">
                                         Explorar eventos
                                         <ArrowRight className="h-4 w-4" />
-                                    </Button>
-                                </Link>
-                                <Link href="/ver-evento">
-                                    <Button variant="outline" size="lg">
-                                        Ver eventos em destaque
                                     </Button>
                                 </Link>
                             </div>

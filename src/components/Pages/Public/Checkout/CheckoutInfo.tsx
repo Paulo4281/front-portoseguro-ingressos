@@ -110,7 +110,7 @@ export type THandleUpdateQuantityParams = {
 }
 
 const CheckoutInfo = () => {
-    const { items, updateQuantity, updateTicketTypeQuantity, addItem, removeItem, getTotal } = useCart()
+    const { items, updateQuantity, updateTicketTypeQuantity, addItem, removeItem, getTotal, clearCart } = useCart()
     const { user, isAuthenticated, setUser } = useAuthStore()
     const router = useRouter()
     const [currentStep, setCurrentStep] = useState(1)
@@ -303,30 +303,6 @@ const CheckoutInfo = () => {
         }
         loadCountries()
     }, [])
-
-    // useEffect(() => {
-    //     if (!buyTicketResponse?.paymentId || paymentVerified) return
-
-    //     const interval = setInterval(async () => {
-    //         try {
-    //             const response = await PaymentService.verifyPaymentStatus(buyTicketResponse.paymentId!)
-    //             const status = response?.data?.status
-
-    //             if (status === "CONFIRMED" || status === "RECEIVED") {
-    //                 setPaymentVerified(true)
-    //                 clearInterval(interval)
-    //                 Toast.success("Pagamento realizado com sucesso! Redirecionando...")
-    //                 setTimeout(() => {
-    //                     router.push("/")
-    //                 }, 1500)
-    //             }
-    //         } catch (error) {
-    //             console.error("Erro ao verificar status do pagamento:", error)
-    //         }
-    //     }, 5000)
-
-    //     return () => clearInterval(interval)
-    // }, [buyTicketResponse?.paymentId, paymentVerified, router])
 
     const [cardData, setCardData] = useState({
         number: "",
@@ -1015,13 +991,22 @@ const CheckoutInfo = () => {
 
         const response = await buyTicket(data)
 
-        if (response?.success && response?.data) {
+        if (response?.success && response?.data?.pixData) {
             setBuyTicketResponse(response.data)
             setPaymentVerified(false)
             if (!response.data.pixData) {
                 Toast.success("Compra realizada com sucesso!")
-                router.push("/meus-ingressos")
+                setTimeout(() => {
+                    clearCart()
+                    router.push("/meus-ingressos")
+                }, 1500)
             }
+        } else if (response?.success && response?.data?.confirmedByCreditCard) {
+            Toast.success("Compra realizada com sucesso!")
+            setTimeout(() => {
+                clearCart()
+                router.push("/meus-ingressos")
+            }, 1500)
         }
     }
 
@@ -1120,6 +1105,7 @@ const CheckoutInfo = () => {
 
             if (status === "CONFIRMED" || status === "RECEIVED") {
                 setPaymentVerified(true)
+                clearCart()
                 Toast.success("Pagamento realizado com sucesso! Redirecionando...")
                 setTimeout(() => {
                     router.push("/")

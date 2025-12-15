@@ -42,6 +42,7 @@ type TPayment = {
   invoiceNumber: string | null
   transactionReceiptUrl: string | null
   qrcodeData: any | null
+  failedReason: string | null
   status: typeof PaymentGatewayBillingStatuses[number]
   type: "TICKET"
   method: "PIX" | "CREDIT_CARD"

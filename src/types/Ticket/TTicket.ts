@@ -12,7 +12,8 @@ const TicketStatuses = [
     "OVERDUE",
     "USED",
     "PARTIALLY_USED",
-    "EXPIRED"
+    "EXPIRED",
+    "FAILED"
 ] as const
 
 type TTicketForm = {
@@ -188,6 +189,7 @@ type TTicketBuyResponse = {
         description: string
     } | null
     paymentId?: string | null
+    confirmedByCreditCard?: boolean
 }
 
 type TTicketQRCodeResponse = {
