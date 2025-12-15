@@ -32,6 +32,7 @@ import { Pagination } from "@/components/Pagination/Pagination"
 import { DialogViewCustomer } from "./DialogViewCustomer/DialogViewCustomer"
 import { DialogCancelTicketWarning } from "./DialogCancelTicketWarning/DialogCancelTicketWarning"
 import type { TTicketToOrganizer } from "@/types/Ticket/TTicket"
+import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 
 type TSheetTicketsToOrganizerProps = {
     open: boolean
@@ -133,7 +134,7 @@ const SheetTicketsToOrganizer = ({
                     </SheetHeader>
 
                     <div className="mt-6 space-y-6 mx-6">
-                        <div className="flex flex-col
+                        <div className="flex flex-colGerencie e visualize todos os ingressos vendidos para este evento
                         sm:flex-row gap-3">
                             <div className="flex-1">
                                 <Input
@@ -215,7 +216,7 @@ const SheetTicketsToOrganizer = ({
                                                         <div className="flex items-center gap-1">
                                                             <span className="font-medium">Comprado em:</span>
                                                             <span>
-                                                                {formatEventDate(ticket.createdAt, "DD/MM/YYYY [às] HH:mm")}
+                                                                {DateUtils.formatDate(ticket.createdAt, "DD/MM/YYYY [às] HH:mm")}
                                                             </span>
                                                         </div>
                                                     </div>

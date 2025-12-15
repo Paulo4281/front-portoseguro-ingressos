@@ -1,14 +1,14 @@
-type TLeadEvent = {
+type TClientEvent = {
     id: string
     eventId: string
     eventName: string
-    purchaseId: string
-    purchaseDate: string
-    purchaseValue: number
+    paymentId: string
+    paymentDate: string
+    paymentValue: number
     ticketsCount: number
 }
 
-type TLead = {
+type TClient = {
     id: string
     userId: string
     firstName: string
@@ -16,7 +16,6 @@ type TLead = {
     email: string
     phone: string | null
     birth: string | null
-    device: "DESKTOP" | "MOBILE" | "TABLET" | null
     address: {
         street: string | null
         number: string | null
@@ -27,12 +26,20 @@ type TLead = {
         country: string | null
         zipCode: string | null
     } | null
-    totalEventsPurchased: number
-    events: TLeadEvent[]
+    totalPayments: number
+    events: TClientEvent[]
     createdAt: string
 }
 
+type TFindOrganizerClientsResponse = {
+    data: TClient[]
+    total: number
+    limit: number
+    offset: number
+}
+
 export type {
-    TLead,
-    TLeadEvent
+    TClient,
+    TClientEvent,
+    TFindOrganizerClientsResponse
 }

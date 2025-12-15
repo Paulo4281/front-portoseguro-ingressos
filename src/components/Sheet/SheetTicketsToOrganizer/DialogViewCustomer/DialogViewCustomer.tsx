@@ -11,6 +11,7 @@ import {
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { formatEventDate } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import type { TTicketToOrganizer } from "@/types/Ticket/TTicket"
+import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 
 type TDialogViewCustomerProps = {
     open: boolean
@@ -180,7 +181,7 @@ const DialogViewCustomer = ({
                                 <div className="flex-1 min-w-0">
                                     <p className="text-xs text-psi-dark/60 mb-1">Data da compra</p>
                                     <p className="text-sm font-medium text-psi-dark">
-                                        {formatEventDate(ticket.createdAt, "DD/MM/YYYY [às] HH:mm")}
+                                        {DateUtils.formatDate(ticket.createdAt, "DD/MM/YYYY [às] HH:mm")}
                                     </p>
                                 </div>
                             </div>
