@@ -16,6 +16,7 @@ type Prefixes =
     "/ticket" |
     "/ticket-hold" |
     "/support" |
+    "/payment" |
     "/payment-gateway" |
     "/card"
 

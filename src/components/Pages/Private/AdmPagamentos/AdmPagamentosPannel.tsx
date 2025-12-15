@@ -1,0 +1,789 @@
+"use client"
+
+import { useMemo, useState } from "react"
+import { usePaymentAdminList } from "@/hooks/Payment/usePaymentAdminList"
+import type { TPaymentAdminListResponse } from "@/types/Payment/TPayment"
+import { Background } from "@/components/Background/Background"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Pagination } from "@/components/Pagination/Pagination"
+import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
+import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
+import {
+    ChevronDown,
+    Calendar,
+    CreditCard,
+    User,
+    Ticket,
+    Building2,
+    FileText,
+    ExternalLink,
+    AlertCircle,
+    CheckCircle2,
+    Clock,
+    XCircle,
+    DollarSign
+} from "lucide-react"
+import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
+
+const paymentStatusConfig: Record<TPaymentAdminListResponse["status"], { label: string; badgeClass: string }> = {
+    RECEIVED: {
+        label: "Recebido",
+        badgeClass: "bg-emerald-50 text-emerald-600 border-emerald-200"
+    },
+    CONFIRMED: {
+        label: "Confirmado",
+        badgeClass: "bg-blue-50 text-blue-600 border-blue-200"
+    },
+    PENDING: {
+        label: "Pendente",
+        badgeClass: "bg-amber-50 text-amber-600 border-amber-200"
+    },
+    FAILED: {
+        label: "Falhou",
+        badgeClass: "bg-red-50 text-red-600 border-red-200"
+    },
+    REFUNDED: {
+        label: "Estornado",
+        badgeClass: "bg-purple-50 text-purple-600 border-purple-200"
+    },
+    OVERDUE: {
+        label: "Vencido",
+        badgeClass: "bg-gray-50 text-gray-600 border-gray-200"
+    }
+}
+
+const installmentStatusConfig: Record<string, { label: string; badgeClass: string }> = {
+    RECEIVED: {
+        label: "Recebido",
+        badgeClass: "bg-emerald-50 text-emerald-600 border-emerald-200"
+    },
+    CONFIRMED: {
+        label: "Confirmado",
+        badgeClass: "bg-blue-50 text-blue-600 border-blue-200"
+    },
+    PENDING: {
+        label: "Pendente",
+        badgeClass: "bg-amber-50 text-amber-600 border-amber-200"
+    },
+    FAILED: {
+        label: "Falhou",
+        badgeClass: "bg-red-50 text-red-600 border-red-200"
+    },
+    REFUNDED: {
+        label: "Estornado",
+        badgeClass: "bg-purple-50 text-purple-600 border-purple-200"
+    }
+}
+
+const getCardBrandIcon = (brand: string | null | undefined): string => {
+    if (!brand) return "/icons/payment/card-brand/card-unknown.png"
+    const brandLower = brand.toLowerCase()
+    const brandMap: Record<string, string> = {
+        amex: "card-amex.png",
+        discover: "card-discover.png",
+        hipercard: "card-hipercard.png",
+        jcb: "card-jcb.png",
+        mastercard: "card-master.png",
+        visa: "card-visa.png",
+        elo: "card-elo.png",
+    }
+    const iconName = brandMap[brandLower] || "card-unknown.png"
+    return `/icons/payment/card-brand/${iconName}`
+}
+
+const AdmPagamentosPannel = () => {
+    const [currentPage, setCurrentPage] = useState(1)
+    const [selectedStatus, setSelectedStatus] = useState<TPaymentAdminListResponse["status"] | "all">("all")
+
+    const offset = (currentPage - 1) * 50
+
+    const { data, isLoading } = usePaymentAdminList({
+        offset,
+        status: selectedStatus === "all" ? undefined : selectedStatus
+    })
+
+    const payments = useMemo(() => {
+        if (!data?.data?.data) return []
+        if (Array.isArray(data.data.data)) {
+            return data.data.data
+        }
+        return []
+    }, [data])
+
+    const responseData = data?.data || { data: [], total: 0, limit: 50, offset: 0 }
+    const totalItems = responseData.total || 0
+    const limit = responseData.limit || 50
+    const totalPages = totalItems > 0 ? Math.ceil(totalItems / limit) : 0
+
+    const [openRows, setOpenRows] = useState<Record<string, boolean>>({})
+
+    const toggleRow = (paymentId: string) => {
+        setOpenRows((prev) => ({
+            ...prev,
+            [paymentId]: !prev[paymentId]
+        }))
+    }
+
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric"
+        })
+    }
+
+    const formatDateTime = (dateString: string) => {
+        return DateUtils.formatDate(dateString, "DD/MM/YYYY HH:mm")
+    }
+
+    const handleStatusChange = (status: string) => {
+        setSelectedStatus(status as TPaymentAdminListResponse["status"] | "all")
+        setCurrentPage(1)
+    }
+
+    return (
+        <Background variant="light" className="min-h-screen py-10 mt-[80px] container">
+            <section className="space-y-8 px-4
+            sm:px-6
+            lg:px-8">
+                <div className="space-y-4">
+                    <div className="space-y-3">
+                        <h1 className="text-3xl font-semibold text-psi-primary
+                        sm:text-4xl">
+                            Pagamentos
+                        </h1>
+                        <p className="text-psi-dark/70 max-w-3xl">
+                            Visualize todos os pagamentos realizados na plataforma. Acompanhe transações, parcelas e detalhes completos de cada pagamento.
+                        </p>
+                    </div>
+
+                    <div className="flex gap-3
+                    flex-col
+                    sm:flex-row">
+                        <Select value={selectedStatus} onValueChange={handleStatusChange}>
+                            <SelectTrigger className="w-full
+                            sm:w-[250px] bg-psi-light">
+                                <SelectValue placeholder="Filtrar por status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Todos os status</SelectItem>
+                                <SelectItem value="RECEIVED">Recebido</SelectItem>
+                                <SelectItem value="CONFIRMED">Confirmado</SelectItem>
+                                <SelectItem value="PENDING">Pendente</SelectItem>
+                                <SelectItem value="FAILED">Falhou</SelectItem>
+                                <SelectItem value="REFUNDED">Estornado</SelectItem>
+                                <SelectItem value="OVERDUE">Vencido</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                {isLoading ? (
+                    <div className="space-y-4">
+                        {Array.from({ length: 5 }).map((_, index) => (
+                            <Skeleton key={index} className="h-20 w-full rounded-3xl" />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="rounded-3xl border border-[#E4E6F0] bg-white/90 shadow-lg shadow-black/5 overflow-hidden">
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="border-b border-psi-dark/10 hover:bg-transparent bg-psi-dark/2">
+                                    <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider">Pagamento</TableHead>
+                                    <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider">Cliente</TableHead>
+                                    <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider">Evento</TableHead>
+                                    <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider">Valor</TableHead>
+                                    <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider">Status</TableHead>
+                                    <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider text-right">Ações</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {payments.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="h-40 text-center">
+                                            <div className="flex flex-col items-center justify-center gap-4 py-8">
+                                                <div className="h-16 w-16 rounded-full bg-psi-primary/10 flex items-center justify-center">
+                                                    <DollarSign className="h-8 w-8 text-psi-primary/60" />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-base font-semibold text-psi-dark">Nenhum pagamento encontrado</p>
+                                                    <p className="text-sm text-psi-dark/50">Os pagamentos aparecerão aqui.</p>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    payments.map((payment) => {
+                                        const isOpen = openRows[payment.id] || false
+                                        const statusConfig = paymentStatusConfig[payment.status]
+                                        const user = payment.User
+
+    return (
+        <>
+                                                <TableRow key={payment.id} className="border-b border-psi-dark/5 hover:bg-psi-dark/3 transition-colors">
+                                                    <TableCell className="py-5 px-6">
+                                                        <div className="space-y-2">
+                                                            <div className="flex items-center gap-3">
+                                                                {payment.method === "PIX" ? (
+                                                                    <img
+                                                                        src="/icons/payment/pix.png"
+                                                                        alt="PIX"
+                                                                        className="h-6 w-6"
+                                                                    />
+                                                                ) : (
+                                                                    <img
+                                                                        src="/icons/payment/credit-card.png"
+                                                                        alt="Cartão de Crédito"
+                                                                        className="h-6 w-6"
+                                                                    />
+                                                                )}
+                                                                <div>
+                                                                    <p className="font-semibold text-psi-dark text-sm">
+                                                                        {payment.method === "PIX" ? "PIX" : "Cartão de Crédito"}
+                                                                    </p>
+                                                                    <p className="text-sm text-psi-dark/80">
+                                                                        {formatDateTime(payment.createdAt)}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="py-5 px-6">
+                                                        <div className="space-y-1">
+                                                            <p className="font-semibold text-psi-dark text-sm">
+                                                                {user.firstName} {user.lastName}
+                                                            </p>
+                                                            <p className="text-xs text-psi-dark/50">
+                                                                {user.email}
+                                                            </p>
+                                                            {user.phone && (
+                                                                <p className="text-xs text-psi-dark/50">
+                                                                    {user.phone}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="py-5 px-6">
+                                                        <div className="space-y-1">
+                                                            <p className="font-semibold text-psi-dark text-sm">
+                                                                {payment.Event.name}
+                                                            </p>
+                                                            <p className="text-xs text-psi-dark/50">
+                                                                {payment.Event.location || "Evento online"}
+                                                            </p>
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="py-5 px-6">
+                                                        <div className="space-y-1">
+                                                            <p className="font-semibold text-psi-dark text-sm">
+                                                                {ValueUtils.centsToCurrency(payment.totalPaidByCustomer || payment.grossValue)}
+                                                            </p>
+                                                            {payment.creditCardInstallments && payment.creditCardInstallments > 1 && (
+                                                                <p className="text-xs text-psi-dark/50">
+                                                                    {payment.creditCardInstallments}x
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="py-5 px-6">
+                                                        <Badge className={statusConfig.badgeClass}>
+                                                            {statusConfig.label}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="py-5 px-6 text-right">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => toggleRow(payment.id)}
+                                                            className="inline-flex items-center gap-2 text-sm font-medium text-psi-primary hover:text-psi-primary/80 transition-all hover:gap-3 px-3 py-1.5 rounded-lg hover:bg-psi-primary/5"
+                                                        >
+                                                            Ver detalhes
+                                                            <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} />
+                                                        </button>
+                                                    </TableCell>
+                                                </TableRow>
+                                                {isOpen && (
+                                                    <TableRow className="border-0">
+                                                        <TableCell colSpan={6} className="p-0">
+                                                            <div className="bg-gradient-to-br from-psi-dark/2 to-psi-dark/5 px-8 py-8 space-y-8 border-t border-psi-dark/10">
+                                                                <div className="grid gap-6
+                                                                md:grid-cols-2
+                                                                lg:grid-cols-3">
+                                                                    <div className="rounded-2xl border border-psi-dark/10 bg-white/80 p-4 space-y-2 shadow-sm">
+                                                                        <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
+                                                                            <User className="h-4 w-4 text-psi-primary" />
+                                                                            Cliente
+                                                                        </div>
+                                                                        <div className="space-y-1">
+                                                                            <p className="text-base font-semibold text-psi-dark">
+                                                                                {user.firstName} {user.lastName}
+                                                                            </p>
+                                                                            <p className="text-sm text-psi-dark/70">
+                                                                                {user.email}
+                                                                            </p>
+                                                                            {user.phone && (
+                                                                                <p className="text-sm text-psi-dark/70">
+                                                                                    {user.phone}
+                                                                                </p>
+                                                                            )}
+                                                                            {user.document && (
+                                                                                <p className="text-sm text-psi-dark/70">
+                                                                                    {user.document}
+                                                                                </p>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="rounded-2xl border border-psi-dark/10 bg-white/80 p-4 space-y-2 shadow-sm">
+                                                                        <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
+                                                                            <Building2 className="h-4 w-4 text-psi-primary" />
+                                                                            Organizador
+                                                                        </div>
+                                                                        <div className="space-y-1">
+                                                                            <p className="text-base font-semibold text-psi-dark">
+                                                                                {payment.Event.Organizer.companyName}
+                                                                            </p>
+                                                                            <p className="text-sm text-psi-dark/70">
+                                                                                {payment.Event.Organizer.companyDocument}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="rounded-2xl border border-psi-dark/10 bg-white/80 p-4 space-y-2 shadow-sm">
+                                                                        <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
+                                                                            <Ticket className="h-4 w-4 text-psi-primary" />
+                                                                            Evento
+                                                                        </div>
+                                                                        <div className="space-y-1">
+                                                                            <p className="text-base font-semibold text-psi-dark">
+                                                                                {payment.Event.name}
+                                                                            </p>
+                                                                            {payment.Event.location && (
+                                                                                <p className="text-sm text-psi-dark/70">
+                                                                                    {payment.Event.location}
+                                                                                </p>
+                                                                            )}
+                                                                            {payment.Event.isOnline && (
+                                                                                <Badge className="bg-blue-50 text-blue-600 border-blue-200 text-xs">
+                                                                                    Online
+                                                                                </Badge>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="rounded-2xl border border-psi-dark/10 bg-white/80 p-4 space-y-2 shadow-sm">
+                                                                        <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
+                                                                            <DollarSign className="h-4 w-4 text-psi-primary" />
+                                                                            Valores
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            <div className="flex justify-between items-center">
+                                                                                <span className="text-sm text-psi-dark/70">Valor bruto:</span>
+                                                                                <span className="text-sm font-semibold text-psi-dark">
+                                                                                    {ValueUtils.centsToCurrency(payment.grossValue)}
+                                                                                </span>
+                                                                            </div>
+                                                                            {payment.discountedValue !== null && payment.discountedValue !== undefined && payment.discountedValue > 0 && (
+                                                                                <div className="flex justify-between items-center">
+                                                                                    <span className="text-sm text-psi-dark/70">Desconto:</span>
+                                                                                    <span className="text-sm font-semibold text-emerald-600">
+                                                                                        -{ValueUtils.centsToCurrency(payment.discountedValue)}
+                                                                                    </span>
+                                                                                </div>
+                                                                            )}
+                                                                            {payment.customerFee !== null && payment.customerFee !== undefined && payment.customerFee > 0 && (
+                                                                                <div className="flex justify-between items-center">
+                                                                                    <span className="text-sm text-psi-dark/70">Taxa do cliente:</span>
+                                                                                    <span className="text-sm font-semibold text-psi-dark">
+                                                                                        {ValueUtils.centsToCurrency(payment.customerFee)}
+                                                                                    </span>
+                                                                                </div>
+                                                                            )}
+                                                                            {payment.platformPaymentFee !== null && payment.platformPaymentFee !== undefined && payment.platformPaymentFee > 0 && (
+                                                                                <div className="flex justify-between items-center">
+                                                                                    <span className="text-sm text-psi-dark/70">Taxa da plataforma:</span>
+                                                                                    <span className="text-sm font-semibold text-psi-dark">
+                                                                                        {ValueUtils.centsToCurrency(payment.platformPaymentFee)}
+                                                                                    </span>
+                                                                                </div>
+                                                                            )}
+                                                                            {payment.organizerPayout !== null && payment.organizerPayout !== undefined && payment.organizerPayout > 0 && (
+                                                                                <div className="flex justify-between items-center pt-2 border-t border-psi-dark/10">
+                                                                                    <span className="text-sm font-semibold text-psi-dark">Repasse organizador:</span>
+                                                                                    <span className="text-sm font-semibold text-emerald-600">
+                                                                                        {ValueUtils.centsToCurrency(payment.organizerPayout)}
+                                                                                    </span>
+                                                                                </div>
+                                                                            )}
+                                                                            <div className="flex justify-between items-center pt-2 border-t border-psi-dark/10">
+                                                                                <span className="text-sm font-semibold text-psi-dark">Total pago:</span>
+                                                                                <span className="text-base font-bold text-psi-primary">
+                                                                                    {ValueUtils.centsToCurrency(payment.totalPaidByCustomer || payment.grossValue)}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="rounded-2xl border border-psi-dark/10 bg-white/80 p-4 space-y-2 shadow-sm">
+                                                                        <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
+                                                                            <Calendar className="h-4 w-4 text-psi-primary" />
+                                                                            Datas
+                                                                        </div>
+                                                                        <div className="space-y-1">
+                                                                            <p className="text-sm text-psi-dark/70">
+                                                                                Criado: {formatDateTime(payment.createdAt)}
+                                                                            </p>
+                                                                            {payment.paidAt && (
+                                                                                <p className="text-sm text-psi-dark/70">
+                                                                                    Pago: {formatDateTime(payment.paidAt)}
+                                                                                </p>
+                                                                            )}
+                                                                            {payment.updatedAt && (
+                                                                                <p className="text-sm text-psi-dark/70">
+                                                                                    Atualizado: {formatDateTime(payment.updatedAt)}
+                                                                                </p>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {payment.couponInfo && (
+                                                                        <div className="rounded-2xl border border-psi-dark/10 bg-white/80 p-4 space-y-2 shadow-sm">
+                                                                            <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
+                                                                                <FileText className="h-4 w-4 text-psi-primary" />
+                                                                                Cupom de Desconto
+                                                                            </div>
+                                                                            <div className="space-y-2">
+                                                                                {payment.couponInfo.code && (
+                                                                                    <div>
+                                                                                        <span className="text-xs text-psi-dark/60">Código: </span>
+                                                                                        <span className="text-sm font-semibold text-psi-dark">
+                                                                                            {payment.couponInfo.code}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                )}
+                                                                                {payment.couponInfo.discount !== null && payment.couponInfo.discount !== undefined && (
+                                                                                    <div>
+                                                                                        <span className="text-xs text-psi-dark/60">Desconto aplicado: </span>
+                                                                                        <span className="text-sm font-semibold text-emerald-600">
+                                                                                            {ValueUtils.centsToCurrency(payment.couponInfo.discount)}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+
+                                                                    <div className="rounded-2xl border border-psi-dark/10 bg-white/80 p-4 space-y-2 shadow-sm">
+                                                                        <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
+                                                                            <FileText className="h-4 w-4 text-psi-primary" />
+                                                                            Informações adicionais
+                                                                        </div>
+                                                                        <div className="space-y-2">
+                                                                            {payment.externalPaymentId && (
+                                                                                <p className="text-xs text-psi-dark/50">
+                                                                                    ID: {payment.externalPaymentId}
+                                                                                </p>
+                                                                            )}
+                                                                            {payment.invoiceNumber && (
+                                                                                <div>
+                                                                                    <span className="text-xs text-psi-dark/60">Nota fiscal: </span>
+                                                                                    <span className="text-sm font-semibold text-psi-dark">
+                                                                                        {payment.invoiceNumber}
+                                                                                    </span>
+                                                                                </div>
+                                                                            )}
+                                                                            <div className="flex flex-col">
+                                                                                {payment.invoiceUrl && (
+                                                                                    <a
+                                                                                        href={payment.invoiceUrl}
+                                                                                        target="_blank"
+                                                                                        rel="noopener noreferrer"
+                                                                                        className="inline-flex items-center gap-1 text-sm text-psi-primary hover:text-psi-primary/80"
+                                                                                    >
+                                                                                        Ver fatura
+                                                                                        <ExternalLink className="h-3 w-3" />
+                                                                                    </a>
+                                                                                )}
+                                                                                {payment.transactionReceiptUrl && (
+                                                                                    <a
+                                                                                        href={payment.transactionReceiptUrl}
+                                                                                        target="_blank"
+                                                                                        rel="noopener noreferrer"
+                                                                                        className="inline-flex items-center gap-1 text-sm text-psi-primary hover:text-psi-primary/80"
+                                                                                    >
+                                                                                        Ver comprovante
+                                                                                        <ExternalLink className="h-3 w-3" />
+                                                                                    </a>
+                                                                                )}
+                                                                            </div>
+                                                                            {payment.failedReason && (
+                                                                                <div className="pt-2 border-t border-psi-dark/10">
+                                                                                    <p className="text-xs text-psi-dark/60 mb-1">Motivo da falha:</p>
+                                                                                    <p className="text-sm text-red-600">
+                                                                                        {payment.failedReason}
+                                                                                    </p>
+                                                                                </div>
+                                                                            )}
+                                                                            {payment.chargebackRequested && (
+                                                                                <Badge className="bg-red-50 text-red-600 border-red-200 text-xs">
+                                                                                    Chargeback solicitado
+                                                                                </Badge>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {payment.Card && (
+                                                                    <div className="space-y-4 pt-6 border-t border-psi-dark/10">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
+                                                                                <CreditCard className="h-5 w-5 text-psi-primary" />
+                                                                            </div>
+                                                                            <div>
+                                                                                <h3 className="text-base font-semibold text-psi-dark">
+                                                                                    Cartão de Crédito
+                                                                                </h3>
+                                                                                <p className="text-xs text-psi-dark/50">
+                                                                                    Informações do cartão utilizado
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="grid gap-4
+                                                                        md:grid-cols-2
+                                                                        lg:grid-cols-4">
+                                                                            <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3">
+                                                                                <p className="text-xs text-psi-dark/60 mb-1">Nome no cartão</p>
+                                                                                <p className="text-sm font-semibold text-psi-dark">
+                                                                                    {payment.Card.name}
+                                                                                </p>
+                                                                            </div>
+                                                                            <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3">
+                                                                                <p className="text-xs text-psi-dark/60 mb-1">Últimos 4 dígitos</p>
+                                                                                <p className="text-sm font-semibold text-psi-dark">
+                                                                                    **** {payment.Card.last4}
+                                                                                </p>
+                                                                            </div>
+                                                                            <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3">
+                                                                                <p className="text-xs text-psi-dark/60 mb-1">Bandeira</p>
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <img
+                                                                                        src={getCardBrandIcon(payment.Card.brand)}
+                                                                                        alt={payment.Card.brand}
+                                                                                        className="h-12 w-12 object-contain"
+                                                                                    />
+                                                                                    <p className="text-xs font-light text-psi-dark">
+                                                                                        {payment.Card.brand}
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3">
+                                                                                <p className="text-xs text-psi-dark/60 mb-1">Validade</p>
+                                                                                <p className="text-sm font-semibold text-psi-dark">
+                                                                                    {payment.Card.expMonth}/{payment.Card.expYear}
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {payment.Installments && payment.Installments.length > 0 && (
+                                                                    <div className="space-y-4 pt-6 border-t border-psi-dark/10">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
+                                                                                <CreditCard className="h-5 w-5 text-psi-primary" />
+                                                                            </div>
+                                                                            <div>
+                                                                                <h3 className="text-base font-semibold text-psi-dark">
+                                                                                    Parcelas
+                                                                                </h3>
+                                                                                <p className="text-xs text-psi-dark/50">
+                                                                                    {payment.Installments.length} {payment.Installments.length === 1 ? "parcela" : "parcelas"}
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="space-y-3">
+                                                                            {payment.Installments.map((installment) => {
+                                                                                const installmentStatus = installmentStatusConfig[installment.status]
+                                                                                return (
+                                                                                    <div key={installment.id} className="rounded-xl border border-psi-dark/10 bg-white/80 p-4">
+                                                                                        <div className="flex items-center justify-between mb-3">
+                                                                                            <div className="flex items-center gap-3">
+                                                                                                <Badge className={installmentStatus.badgeClass}>
+                                                                                                    {installmentStatus.label}
+                                                                                                </Badge>
+                                                                                                <span className="text-sm font-semibold text-psi-dark">
+                                                                                                    Parcela {installment.installmentNumber} de {payment.creditCardInstallments}
+                                                                                                </span>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div className="grid gap-3
+                                                                                        md:grid-cols-3">
+                                                                                            <div>
+                                                                                                <p className="text-xs text-psi-dark/60 mb-1">Valor bruto</p>
+                                                                                                <p className="text-sm font-semibold text-psi-dark">
+                                                                                                    {ValueUtils.centsToCurrency(installment.grossValue)}
+                                                                                                </p>
+                                                                                            </div>
+                                                                                            <div>
+                                                                                                <p className="text-xs text-psi-dark/60 mb-1">Valor líquido</p>
+                                                                                                <p className="text-sm font-semibold text-psi-dark">
+                                                                                                    {ValueUtils.centsToCurrency(installment.netValue)}
+                                                                                                </p>
+                                                                                            </div>
+                                                                                            {installment.dueDate && (
+                                                                                                <div>
+                                                                                                    <p className="text-xs text-psi-dark/60 mb-1">Vencimento</p>
+                                                                                                    <p className="text-sm font-semibold text-psi-dark">
+                                                                                                        {formatDate(installment.dueDate)}
+                                                                                                    </p>
+                                                                                                </div>
+                                                                                            )}
+                                                                                            {installment.paidAt && (
+                                                                                                <div>
+                                                                                                    <p className="text-xs text-psi-dark/60 mb-1">Pago em</p>
+                                                                                                    <p className="text-sm font-semibold text-psi-dark">
+                                                                                                        {formatDateTime(installment.paidAt)}
+                                                                                                    </p>
+                                                                                                </div>
+                                                                                            )}
+                                                                                            {installment.receivedAt && (
+                                                                                                <div>
+                                                                                                    <p className="text-xs text-psi-dark/60 mb-1">Recebido em</p>
+                                                                                                    <p className="text-sm font-semibold text-psi-dark">
+                                                                                                        {formatDateTime(installment.receivedAt)}
+                                                                                                    </p>
+                                                                                                </div>
+                                                                                            )}
+                                                                                            {installment.externalPaymentId && (
+                                                                                                <div>
+                                                                                                    <p className="text-xs text-psi-dark/60 mb-1">ID externo</p>
+                                                                                                    <p className="text-sm font-semibold text-psi-dark">
+                                                                                                        {installment.externalPaymentId}
+                                                                                                    </p>
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )
+                                                                            })}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {payment.Tickets && payment.Tickets.length > 0 && (
+                                                                    <div className="space-y-4 pt-6 border-t border-psi-dark/10">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
+                                                                                <Ticket className="h-5 w-5 text-psi-primary" />
+                                                                            </div>
+                                                                            <div>
+                                                                                <h3 className="text-base font-semibold text-psi-dark">
+                                                                                    Ingressos
+                                                                                </h3>
+                                                                                <p className="text-xs text-psi-dark/50">
+                                                                                    {payment.Tickets.length} {payment.Tickets.length === 1 ? "ingresso" : "ingressos"} vinculados
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="space-y-3">
+                                                                            {payment.Tickets.map((ticket) => (
+                                                                                <div key={ticket.id} className="rounded-xl border border-psi-dark/10 bg-white/80 p-4">
+                                                                                    <div className="flex items-center justify-between mb-3">
+                                                                                        <div>
+                                                                                            <p className="text-sm font-semibold text-psi-dark">
+                                                                                                {ticket.TicketType?.name || "Ingresso sem tipo"}
+                                                                                            </p>
+                                                                                            {ticket.TicketType?.description && (
+                                                                                                <p className="text-xs text-psi-dark/50 mt-1">
+                                                                                                    {ticket.TicketType.description}
+                                                                                                </p>
+                                                                                            )}
+                                                                                        </div>
+                                                                                        <Badge className="bg-gray-50 text-gray-600 border-gray-200">
+                                                                                            {ticket.status}
+                                                                                        </Badge>
+                                                                                    </div>
+                                                                                    {ticket.TicketDates && ticket.TicketDates.length > 0 && (
+                                                                                        <div className="space-y-2 pt-3 border-t border-psi-dark/10">
+                                                                                            <p className="text-xs font-medium text-psi-dark/60 uppercase tracking-wide">Datas do evento:</p>
+                                                                                            {ticket.TicketDates.map((ticketDate) => (
+                                                                                                <div key={ticketDate.id} className="flex items-center gap-2 text-sm text-psi-dark/70">
+                                                                                                    <Calendar className="h-3 w-3" />
+                                                                                                    <span>
+                                                                                                        {formatDate(ticketDate.EventDate.date)} - {ticketDate.EventDate.hourStart} às {ticketDate.EventDate.hourEnd}
+                                                                                                    </span>
+                                                                                                </div>
+                                                                                            ))}
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+
+                                                                {payment.qrcodeData && payment.method === "PIX" && (
+                                                                    <div className="space-y-4 pt-6 border-t border-psi-dark/10">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
+                                                                                <FileText className="h-5 w-5 text-psi-primary" />
+                                                                            </div>
+                                                                            <div>
+                                                                                <h3 className="text-base font-semibold text-psi-dark">
+                                                                                    Dados PIX
+                                                                                </h3>
+                                                                                <p className="text-xs text-psi-dark/50">
+                                                                                    Informações do QR Code PIX
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                        {payment.qrcodeData.expirationDate && (
+                                                                            <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3">
+                                                                                <p className="text-xs text-psi-dark/60 mb-1">Data de expiração</p>
+                                                                                <p className="text-sm font-semibold text-psi-dark">
+                                                                                    {formatDateTime(payment.qrcodeData.expirationDate)}
+                                                                                </p>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )}
+                                            </>
+                                        )
+                                    })
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
+
+                {totalPages > 1 && (
+                    <div className="flex justify-center pt-6">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                        />
+                    </div>
+                )}
+            </section>
+        </Background>
+    )
+}
+
+export {
+    AdmPagamentosPannel
+}
