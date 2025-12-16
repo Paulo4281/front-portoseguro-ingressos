@@ -15,6 +15,14 @@ const PaymentGatewayBillingStatuses = [
     "AWAITING_RISK_ANALYSIS",
   ] as const
 
+const PaymentRefundStatuses = [
+    "PENDING",
+    "DONE",
+    "CANCELLED",
+    "AWAITING_CRITICAL_ACTION_AUTHORIZATION",
+    "AWAITING_CUSTOMER_EXTERNAL_AUTHORIZATION"
+] as const
+
 type TPaymentInstallment = {
     id: string
     paymentId: string
@@ -57,6 +65,10 @@ type TPaymentAdminListResponse = {
     qrcodeData: any | null
     failedReason: string | null
     additionalLogs: string | null
+    refundReason: string | null
+    refundedBy: string | null
+    refundStatus: typeof PaymentRefundStatuses[number] | null
+    refundedAt: string | null
     paidAt: string | null
     chargebackRequested: boolean
     userId: string
@@ -149,6 +161,10 @@ type TPayment = {
   qrcodeData: any | null
   failedReason: string | null
   additionalLogs: string | null
+  refundReason: string | null
+  refundedBy: string | null
+  refundStatus: typeof PaymentRefundStatuses[number] | null
+  refundedAt: string | null
   status: typeof PaymentGatewayBillingStatuses[number]
   type: "TICKET"
   method: "PIX" | "CREDIT_CARD"
@@ -175,7 +191,8 @@ export type {
     TPayment,
     TPaymentAdminListResponse,
     TPaymentInstallment,
-    TPaymentRefundParams
+    TPaymentRefundParams,
+    PaymentRefundStatuses
 }
 
 export {

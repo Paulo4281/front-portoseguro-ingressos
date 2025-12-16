@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Ticket, QrCode, Copy, Share2, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, Eye, EyeOff, FileText, Loader2, Check } from "lucide-react"
+import { Calendar, Clock, MapPin, Ticket, QrCode, Copy, Share2, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, Eye, EyeOff, FileText, Loader2, Check, AlertTriangle } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import { TicketService } from "@/services/Ticket/TicketService"
 import { Toast } from "@/components/Toast/Toast"
 import { Background } from "@/components/Background/Background"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Badge } from "@/components/ui/badge"
 import { useAuthStore } from "@/stores/Auth/AuthStore"
 import { useTicketFindByUserId } from "@/hooks/Ticket/useTicketFindByUserId"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
@@ -84,6 +85,29 @@ const statusConfig: Record<TTicket["status"], TStatusConfig> = {
 }
 
 const recurrenceDayLabels = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"]
+
+const refundStatusConfig: Record<string, { label: string; badgeClass: string }> = {
+    PENDING: {
+        label: "Pendente",
+        badgeClass: "bg-amber-50 text-amber-600 border-amber-200"
+    },
+    DONE: {
+        label: "Concluído",
+        badgeClass: "bg-emerald-50 text-emerald-600 border-emerald-200"
+    },
+    CANCELLED: {
+        label: "Cancelado",
+        badgeClass: "bg-red-50 text-red-600 border-red-200"
+    },
+    AWAITING_CRITICAL_ACTION_AUTHORIZATION: {
+        label: "Aguardando autorização crítica",
+        badgeClass: "bg-orange-50 text-orange-600 border-orange-200"
+    },
+    AWAITING_CUSTOMER_EXTERNAL_AUTHORIZATION: {
+        label: "Aguardando autorização do cliente",
+        badgeClass: "bg-blue-50 text-blue-600 border-blue-200"
+    }
+}
 
 const getEventSchedule = (ticket: TTicket) => {
     if (ticket.TicketDates && ticket.TicketDates.length > 0) {
@@ -686,6 +710,48 @@ const MeusIngressosPannel = () => {
                                                                     </div>
                                                                 )}
                                                             </div>
+                                                        </div>
+                                                    )}
+
+                                                    {(ticket.status === "REFUND_REQUESTED" || ticket.status === "REFUNDED" || ticket.Payment?.refundStatus) && (
+                                                        <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 shadow-sm space-y-4">
+                                                            <div className="flex items-center gap-2 text-sm font-semibold text-psi-dark">
+                                                                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                                                                Status do Reembolso
+                                                            </div>
+                                                            <div className="grid gap-3
+                                                            sm:grid-cols-2">
+                                                                {ticket.Payment?.refundStatus && (
+                                                                    <div className="space-y-1">
+                                                                        <p className="text-xs text-psi-dark/60">Status</p>
+                                                                        <Badge className={refundStatusConfig[ticket.Payment.refundStatus]?.badgeClass || "bg-gray-50 text-gray-600 border-gray-200"}>
+                                                                            {refundStatusConfig[ticket.Payment.refundStatus]?.label || ticket.Payment.refundStatus}
+                                                                        </Badge>
+                                                                    </div>
+                                                                )}
+                                                                {ticket.Payment?.refundedAt && (
+                                                                    <div className="space-y-1">
+                                                                        <p className="text-xs text-psi-dark/60">Concluído em</p>
+                                                                        <p className="text-sm font-semibold text-psi-dark">
+                                                                            {DateUtils.formatDate(ticket.Payment.refundedAt, "DD/MM/YYYY [às] HH:mm")}
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            {ticket.status === "REFUND_REQUESTED" && !ticket.Payment?.refundedAt && (
+                                                                <div className="rounded-lg border border-amber-200 bg-amber-100/50 p-3">
+                                                                    <p className="text-xs text-amber-800">
+                                                                        Seu pedido de reembolso está sendo processado. Você será notificado quando o reembolso for concluído.
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                            {ticket.Payment?.refundStatus === "DONE" && ticket.Payment?.refundedAt && (
+                                                                <div className="rounded-lg border border-emerald-200 bg-emerald-100/50 p-3">
+                                                                    <p className="text-xs text-emerald-800">
+                                                                        Seu reembolso foi concluído com sucesso. O valor será creditado na sua conta em até 3 dias úteis.
+                                                                    </p>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
 

@@ -109,6 +109,29 @@ const installmentStatusConfig: Record<string, { label: string; badgeClass: strin
     }
 }
 
+const refundStatusConfig: Record<string, { label: string; badgeClass: string }> = {
+    PENDING: {
+        label: "Pendente",
+        badgeClass: "bg-amber-50 text-amber-600 border-amber-200"
+    },
+    DONE: {
+        label: "Concluído",
+        badgeClass: "bg-emerald-50 text-emerald-600 border-emerald-200"
+    },
+    CANCELLED: {
+        label: "Cancelado",
+        badgeClass: "bg-red-50 text-red-600 border-red-200"
+    },
+    AWAITING_CRITICAL_ACTION_AUTHORIZATION: {
+        label: "Aguardando autorização crítica",
+        badgeClass: "bg-orange-50 text-orange-600 border-orange-200"
+    },
+    AWAITING_CUSTOMER_EXTERNAL_AUTHORIZATION: {
+        label: "Aguardando autorização do cliente",
+        badgeClass: "bg-blue-50 text-blue-600 border-blue-200"
+    }
+}
+
 const getCardBrandIcon = (brand: string | null | undefined): string => {
     if (!brand) return "/icons/payment/card-brand/card-unknown.png"
     const brandLower = brand.toLowerCase()
@@ -606,7 +629,7 @@ const AdmPagamentosPannel = () => {
                                                                             )}
                                                                             {payment.invoiceNumber && (
                                                                                 <div>
-                                                                                    <span className="text-xs text-psi-dark/60">Nota fiscal: </span>
+                                                                                    <span className="text-xs text-psi-dark/60">Número da fatura: </span>
                                                                                     <span className="text-sm font-semibold text-psi-dark">
                                                                                         {payment.invoiceNumber}
                                                                                     </span>
@@ -875,6 +898,60 @@ const AdmPagamentosPannel = () => {
                                                                                 </p>
                                                                             </div>
                                                                         )}
+                                                                    </div>
+                                                                )}
+
+                                                                {(payment.status === "REFUND_REQUESTED" || payment.status === "REFUNDED" || payment.refundStatus || payment.refundReason || payment.refundedBy) && (
+                                                                    <div className="space-y-4 pt-6 border-t border-psi-dark/10">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                                                                                <AlertTriangle className="h-5 w-5 text-purple-600" />
+                                                                            </div>
+                                                                            <div>
+                                                                                <h3 className="text-base font-semibold text-psi-dark">
+                                                                                    Informações de Reembolso
+                                                                                </h3>
+                                                                                <p className="text-xs text-psi-dark/50">
+                                                                                    Detalhes sobre o pedido de estorno
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="grid gap-4
+                                                                        md:grid-cols-2">
+                                                                            {payment.refundStatus && (
+                                                                                <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3">
+                                                                                    <p className="text-xs text-psi-dark/60 mb-2">Status do reembolso</p>
+                                                                                    <Badge className={refundStatusConfig[payment.refundStatus]?.badgeClass || "bg-gray-50 text-gray-600 border-gray-200"}>
+                                                                                        {refundStatusConfig[payment.refundStatus]?.label || payment.refundStatus}
+                                                                                    </Badge>
+                                                                                </div>
+                                                                            )}
+                                                                            {payment.refundedBy && (
+                                                                                <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3">
+                                                                                    <p className="text-xs text-psi-dark/60 mb-1">Solicitado por</p>
+                                                                                    <p className="text-sm font-semibold text-psi-dark font-mono">
+                                                                                        {payment.refundedBy}
+                                                                                    </p>
+                                                                                </div>
+                                                                            )}
+                                                                            {payment.refundedAt && (
+                                                                                <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3">
+                                                                                    <p className="text-xs text-psi-dark/60 mb-1">Concluído em</p>
+                                                                                    <p className="text-sm font-semibold text-psi-dark">
+                                                                                        {formatDateTime(payment.refundedAt)}
+                                                                                    </p>
+                                                                                </div>
+                                                                            )}
+                                                                            {payment.refundReason && (
+                                                                                <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3
+                                                                                md:col-span-2">
+                                                                                    <p className="text-xs text-psi-dark/60 mb-2">Motivo do reembolso</p>
+                                                                                    <p className="text-sm text-psi-dark/70 whitespace-pre-line">
+                                                                                        {payment.refundReason}
+                                                                                    </p>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
                                                                 )}
 
