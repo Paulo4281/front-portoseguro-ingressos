@@ -69,6 +69,8 @@ type TPaymentAdminListResponse = {
     refundedBy: string | null
     refundStatus: typeof PaymentRefundStatuses[number] | null
     refundedAt: string | null
+    refundReceiptUrl: string | null
+    refundEndToEndIdentifier: string | null
     paidAt: string | null
     chargebackRequested: boolean
     userId: string
@@ -165,6 +167,8 @@ type TPayment = {
   refundedBy: string | null
   refundStatus: typeof PaymentRefundStatuses[number] | null
   refundedAt: string | null
+  refundReceiptUrl: string | null
+  refundEndToEndIdentifier: string | null
   status: typeof PaymentGatewayBillingStatuses[number]
   type: "TICKET"
   method: "PIX" | "CREDIT_CARD"

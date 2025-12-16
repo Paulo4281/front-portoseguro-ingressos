@@ -34,7 +34,7 @@ type TStatusConfig = {
 const statusConfig: Record<TTicket["status"], TStatusConfig> = {
     PENDING: {
         label: "Pagamento pendente",
-        description: "Assim que o pagamento for confirmado enviaremos o QR Code definitivo.",
+        description: "Assim que o pagamento for confirmado enviaremos o QR Code.",
         badgeClass: "border border-psi-tertiary/90 bg-psi-tertiary/60 text-psi-dark"
     },
     CONFIRMED: {
@@ -744,6 +744,12 @@ const MeusIngressosPannel = () => {
                                                                         Seu pedido de reembolso está sendo processado. Você será notificado quando o reembolso for concluído.
                                                                     </p>
                                                                 </div>
+                                                            )}
+                                                            {ticket.Payment?.refundReceiptUrl && (
+                                                                <Link href={ticket.Payment.refundReceiptUrl} target="_blank" className="text-xs flex items-center gap-1 mt-2 text-psi-dark/60">
+                                                                    <FileText className="h-4 w-4 text-psi-primary" />
+                                                                    Ver recibo
+                                                                </Link>
                                                             )}
                                                             {ticket.Payment?.refundStatus === "DONE" && ticket.Payment?.refundedAt && (
                                                                 <div className="rounded-lg border border-emerald-200 bg-emerald-100/50 p-3">

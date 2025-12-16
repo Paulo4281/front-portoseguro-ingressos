@@ -951,6 +951,22 @@ const AdmPagamentosPannel = () => {
                                                                                     </p>
                                                                                 </div>
                                                                             )}
+                                                                            {payment.refundReceiptUrl && (
+                                                                                <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3">
+                                                                                    <p className="text-xs text-psi-dark/60 mb-1">URL do recibo</p>
+                                                                                    <a href={payment.refundReceiptUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-psi-primary hover:text-psi-primary/80">
+                                                                                        Ver recibo
+                                                                                    </a>
+                                                                                </div>
+                                                                            )}
+                                                                            {payment.refundEndToEndIdentifier && (
+                                                                                <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3">
+                                                                                    <p className="text-xs text-psi-dark/60 mb-1">ID de end to end</p>
+                                                                                    <p className="text-sm font-semibold text-psi-dark">
+                                                                                        {payment.refundEndToEndIdentifier}
+                                                                                    </p>
+                                                                                </div>
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                 )}
