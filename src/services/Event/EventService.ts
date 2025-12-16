@@ -2,7 +2,7 @@ import { API } from "@/api/api"
 import type { AxiosResponse } from "axios"
 import { EventCreateValidator } from "@/validators/Event/EventValidator"
 import { z } from "zod"
-import type { TEventSalesReport, TEventDetailedStats, TEventUpdate } from "@/types/Event/TEvent"
+import type { TEventSalesReport, TEventDetailedStats, TEventUpdate, TEventListBuyers } from "@/types/Event/TEvent"
 
 type TEventCreate = z.infer<typeof EventCreateValidator>
 
@@ -318,6 +318,26 @@ class EventServiceClass {
             prefix: "/event",
             url: `/update-image/${eventId}`,
             formData: formData
+        }))?.data
+        return response
+    }
+
+    async listBuyers(
+        eventId: string,
+        eventDateId?: string,
+        ticketTypeId?: string
+    ): Promise<AxiosResponse["data"]> {
+        const params: Record<string, string> = {}
+        if (eventDateId) {
+            params.eventDateId = eventDateId
+        }
+        if (ticketTypeId) {
+            params.ticketTypeId = ticketTypeId
+        }
+        const response = (await API.GET({
+            prefix: "/event",
+            url: `/list-buyers/${eventId}`,
+            params: Object.keys(params).length > 0 ? params : undefined
         }))?.data
         return response
     }

@@ -807,6 +807,14 @@ const AdmPagamentosPannel = () => {
                                                                                                     </p>
                                                                                                 </div>
                                                                                             )}
+                                                                                            {installment.estimatedCreditDate && (
+                                                                                                <div>
+                                                                                                    <p className="text-xs text-psi-dark/60 mb-1">Data de crédito estimada</p>
+                                                                                                    <p className="text-sm font-semibold text-psi-dark">
+                                                                                                        {DateUtils.formatDate(installment.estimatedCreditDate)}
+                                                                                                    </p>
+                                                                                                </div>
+                                                                                            )}
                                                                                             {installment.externalPaymentId && (
                                                                                                 <div>
                                                                                                     <p className="text-xs text-psi-dark/60 mb-1">ID externo</p>
@@ -843,12 +851,20 @@ const AdmPagamentosPannel = () => {
                                                                                 <div key={ticket.id} className="rounded-xl border border-psi-dark/10 bg-white/80 p-4">
                                                                                     <div className="flex items-center justify-between mb-3">
                                                                                         <div>
+                                                                                            <p className="text-xs text-psi-dark/80 mb-2">
+                                                                                                {ticket.code}
+                                                                                            </p>
                                                                                             <p className="text-sm font-semibold text-psi-dark">
                                                                                                 {ticket.TicketType?.name || "Ingresso sem tipo"}
                                                                                             </p>
                                                                                             {ticket.TicketType?.description && (
                                                                                                 <p className="text-xs text-psi-dark/50 mt-1">
                                                                                                     {ticket.TicketType.description}
+                                                                                                </p>
+                                                                                            )}
+                                                                                            {ticket.code && (
+                                                                                                <p className="text-xs text-psi-dark/60 mt-1">
+                                                                                                    Código: <span className="font-mono font-semibold text-psi-dark">{ticket.code}</span>
                                                                                                 </p>
                                                                                             )}
                                                                                         </div>

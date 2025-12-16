@@ -123,6 +123,14 @@ type TEventSoldInValueResponse = {
     value: number
 }
 
+type TEventListBuyers = {
+    customerName: string
+    paymentDate: Date | string
+    ticketTypeName: string | null
+    eventDates: string[]
+    formAnswers: Record<string, string>
+}
+
 export type {
     TEvent,
     TEventDate,
@@ -136,5 +144,6 @@ export type {
     TEventUpdate,
     TEventVerifyLastTicketsResponse,
     TEventVerifySoldResponse,
-    TEventSoldInValueResponse
+    TEventSoldInValueResponse,
+    TEventListBuyers
 }

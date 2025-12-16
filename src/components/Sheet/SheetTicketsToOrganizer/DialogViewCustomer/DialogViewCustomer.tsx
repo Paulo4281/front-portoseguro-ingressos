@@ -1,6 +1,6 @@
 "use client"
 
-import { User, Mail, Phone, FileText, Calendar, MapPin, CreditCard } from "lucide-react"
+import { User, Mail, Phone, FileText, Calendar, MapPin, CreditCard, Code, QrCode, TicketCheck } from "lucide-react"
 import {
     Dialog,
     DialogContent,
@@ -183,6 +183,14 @@ const DialogViewCustomer = ({
                                     <p className="text-sm font-medium text-psi-dark">
                                         {DateUtils.formatDate(ticket.createdAt, "DD/MM/YYYY [às] HH:mm")}
                                     </p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-3">
+                                <TicketCheck className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-xs text-psi-dark/60 mb-1">Código do ingresso</p>
+                                    <p className="text-sm font-medium text-psi-dark">{ticket.code}</p>
                                 </div>
                             </div>
                         </div>

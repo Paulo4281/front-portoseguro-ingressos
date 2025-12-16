@@ -13,6 +13,7 @@ import type { TEventSalesReport } from "@/types/Event/TEvent"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { cn } from "@/lib/utils"
+import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 
 type TEventSalesReportProps = {
     eventId: string
@@ -250,7 +251,7 @@ const EventSalesReport = ({
                                         <XAxis
                                             dataKey="date"
                                             tick={{ fontSize: 12 }}
-                                            tickFormatter={formatDate}
+                                            tickFormatter={(label) => DateUtils.formatDate(label, "DD/MM")}
                                         />
                                         <YAxis tick={{ fontSize: 12 }} />
                                         <Tooltip
@@ -258,7 +259,7 @@ const EventSalesReport = ({
                                                 value.toLocaleString("pt-BR"),
                                                 "Ingressos"
                                             ]}
-                                            labelFormatter={(label) => formatDate(label)}
+                                            labelFormatter={(label) => DateUtils.formatDate(label)}
                                             contentStyle={{
                                                 backgroundColor: "white",
                                                 border: "1px solid #E4E6F0",

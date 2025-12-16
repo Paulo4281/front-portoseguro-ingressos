@@ -35,6 +35,7 @@ type TPaymentInstallment = {
     status: "RECEIVED" | "CONFIRMED" | "PENDING" | "FAILED" | "REFUNDED"
     externalPaymentId: string | null
     externalInstallmentId: string | null
+    estimatedCreditDate: string | null
     createdAt: string
 }
 
@@ -96,6 +97,7 @@ type TPaymentAdminListResponse = {
     Installments: TPaymentInstallment[]
     Tickets: Array<{
         id: string
+        code: string
         status: string
         ticketTypeId: string | null
         TicketType: {

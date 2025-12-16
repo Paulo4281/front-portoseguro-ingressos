@@ -605,6 +605,14 @@ const MeusIngressosPannel = () => {
                                                                 <QrCode className="h-5 w-5 text-psi-primary" />
                                                                 <p className="text-xs uppercase text-psi-dark/50 tracking-wide">Código</p>
                                                             </div>
+                                                            {ticket.code && (
+                                                                <div className="space-y-1">
+                                                                    <p className="text-xs text-psi-dark/60">Código do ingresso</p>
+                                                                    <p className="text-sm font-semibold text-psi-dark font-mono">
+                                                                        {ticket.code}
+                                                                    </p>
+                                                                </div>
+                                                            )}
                                                             {canShowQRCode && (
                                                                 <Button
                                                                     variant="outline"

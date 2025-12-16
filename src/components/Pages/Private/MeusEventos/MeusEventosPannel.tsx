@@ -388,13 +388,14 @@ const MeusEventosPannel = () => {
                 />
             )}
 
-            <DialogExportBuyersList
-                open={exportBuyersListOpen}
-                onOpenChange={setExportBuyersListOpen}
-                onFormatSelect={(format) => {
-                    console.log("Formato selecionado:", format, "Evento:", selectedEventId)
-                }}
-            />
+            {selectedEventId && (
+                <DialogExportBuyersList
+                    open={exportBuyersListOpen}
+                    onOpenChange={setExportBuyersListOpen}
+                    eventId={selectedEventId}
+                    eventName={selectedEventName || undefined}
+                />
+            )}
 
             {selectedEventId && (
                 <SheetTicketsToOrganizer

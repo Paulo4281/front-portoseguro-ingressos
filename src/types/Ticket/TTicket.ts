@@ -42,6 +42,7 @@ type TTicketForm = {
 
 type TTicket = {
     id: string
+    code: string
     token: string
     status: typeof TicketStatuses[number]
     eventId: string
@@ -160,6 +161,7 @@ type TTicketBuy = {
 
 type TTicketToOrganizer = {
     id: string
+    code: string
     customer: {
         id: string
         name: string
