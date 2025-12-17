@@ -41,15 +41,27 @@ type TSheetTicketsToOrganizerProps = {
 }
 
 const statusLabels: Record<string, string> = {
+    PENDING: "Pendente",
     CONFIRMED: "Confirmado",
     USED: "Utilizado",
-    REFUNDED: "Reembolsado"
+    PARTIALLY_USED: "Utilizado parcialmente",
+    CANCELLED: "Cancelado",
+    REFUNDED: "Reembolsado",
+    OVERDUE: "Vencido",
+    EXPIRED: "Expirado",
+    FAILED: "Falhou",
 }
 
 const statusColors: Record<string, string> = {
-    CONFIRMED: "bg-green-100 text-green-800",
-    USED: "bg-blue-100 text-blue-800",
-    REFUNDED: "bg-gray-100 text-gray-800"
+    PENDING: "bg-amber-50 text-amber-600 border-amber-200",
+    CONFIRMED: "bg-green-50 text-green-600 border-green-200",
+    USED: "bg-blue-50 text-blue-600 border-blue-200",
+    PARTIALLY_USED: "bg-yellow-50 text-yellow-600 border-yellow-200",
+    CANCELLED: "bg-red-50 text-red-600 border-red-200",
+    REFUNDED: "bg-gray-50 text-gray-600 border-gray-200",
+    OVERDUE: "bg-gray-50 text-gray-600 border-gray-200",
+    EXPIRED: "bg-gray-50 text-gray-600 border-gray-200",
+    FAILED: "bg-red-50 text-red-600 border-red-200",
 }
 
 const SheetTicketsToOrganizer = ({

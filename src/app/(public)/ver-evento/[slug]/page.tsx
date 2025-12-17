@@ -1,9 +1,4 @@
-import dynamic from "next/dynamic"
-
-const VerEventoInfo = dynamic(
-  () => import("@/components/Pages/Public/VerEvento/VerEventoInfo").then((mod) => ({ default: mod.VerEventoInfo })),
-  { ssr: false }
-)
+import { VerEventoInfo } from "@/components/Pages/Public/VerEvento/VerEventoInfo"
 
 type PageProps = {
   params: Promise<{

@@ -445,7 +445,7 @@ const AdmPagamentosPannel = () => {
                                                 {isOpen && (
                                                     <TableRow className="border-0">
                                                         <TableCell colSpan={6} className="p-0">
-                                                            <div className="bg-gradient-to-br from-psi-dark/2 to-psi-dark/5 px-8 py-8 space-y-8 border-t border-psi-dark/10">
+                                                            <div className="bg-linear-to-br from-psi-dark/2 to-psi-dark/5 px-8 py-8 space-y-8 border-t border-psi-dark/10">
                                                                 <div className="grid gap-6
                                                                 md:grid-cols-2
                                                                 lg:grid-cols-3">
@@ -593,19 +593,30 @@ const AdmPagamentosPannel = () => {
                                                                                 Cupom de Desconto
                                                                             </div>
                                                                             <div className="space-y-2">
-                                                                                {payment.couponInfo.code && (
+                                                                                {payment.couponInfo.couponCode && (
                                                                                     <div>
                                                                                         <span className="text-xs text-psi-dark/60">Código: </span>
                                                                                         <span className="text-sm font-semibold text-psi-dark">
-                                                                                            {payment.couponInfo.code}
+                                                                                            {payment.couponInfo.couponCode}
                                                                                         </span>
                                                                                     </div>
                                                                                 )}
-                                                                                {payment.couponInfo.discount !== null && payment.couponInfo.discount !== undefined && (
+                                                                                {payment.couponInfo.discountValue !== null && payment.couponInfo.discountValue !== undefined && (
                                                                                     <div>
                                                                                         <span className="text-xs text-psi-dark/60">Desconto aplicado: </span>
                                                                                         <span className="text-sm font-semibold text-emerald-600">
-                                                                                            {ValueUtils.centsToCurrency(payment.couponInfo.discount)}
+                                                                                            {payment.couponInfo.discountType === "PERCENTAGE" 
+                                                                                                ? `${payment.couponInfo.discountValue}%`
+                                                                                                : ValueUtils.centsToCurrency(payment.couponInfo.discountValue)
+                                                                                            }
+                                                                                        </span>
+                                                                                    </div>
+                                                                                )}
+                                                                                {payment.couponInfo.discountType && (
+                                                                                    <div>
+                                                                                        <span className="text-xs text-psi-dark/60">Tipo: </span>
+                                                                                        <span className="text-sm font-semibold text-psi-dark">
+                                                                                            {payment.couponInfo.discountType === "PERCENTAGE" ? "Porcentagem" : "Valor fixo"}
                                                                                         </span>
                                                                                     </div>
                                                                                 )}
@@ -677,7 +688,7 @@ const AdmPagamentosPannel = () => {
                                                                                     <p className="text-xs text-psi-dark/60 mb-1">
                                                                                         Logs adicionais
                                                                                     </p>
-                                                                                    <p className="text-sm text-psi-dark/70 break-words whitespace-pre-line">
+                                                                                    <p className="text-sm text-psi-dark/70 wrap-break-word whitespace-pre-line">
                                                                                         {payment.additionalLogs}
                                                                                     </p>
                                                                                 </div>
@@ -1000,7 +1011,7 @@ const AdmPagamentosPannel = () => {
                                                                             </Button>
                                                                         )
                                                                     }
-                                                                    <Button variant="primary" size="lg">
+                                                                    <Button variant="primary" size="lg" disabled>
                                                                         Solicitar nota fiscal
                                                                     </Button>
                                                                 </div>

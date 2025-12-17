@@ -25,6 +25,7 @@ import type { TEventDate } from "@/types/Event/TEventDate"
 import type { TTicketType } from "@/types/TicketType/TTicketType"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
+import * as XLSX from "xlsx"
 
 type TDialogExportBuyersListProps = {
     open: boolean
@@ -95,11 +96,11 @@ const DialogExportBuyersList = ({
             if (format === "pdf") {
                 generatePDF(buyersData)
             } else if (format === "xlsx") {
-                Toast.info("Exportação em Excel será implementada em breve")
+                generateXLSX(buyersData)
             } else if (format === "csv") {
-                Toast.info("Exportação em CSV será implementada em breve")
+                generateCSV(buyersData)
             } else if (format === "json") {
-                Toast.info("Exportação em JSON será implementada em breve")
+                generateJSON(buyersData)
             }
 
             if (onFormatSelect) {
@@ -116,6 +117,54 @@ const DialogExportBuyersList = ({
         }
     }
 
+    const formatFormAnswers = (formAnswers: Record<string, any>, type: "pdf" | "xlsx" | "csv" | "json"): string => {
+        if (!formAnswers || Object.keys(formAnswers).length === 0) {
+            return "-"
+        }
+
+        const formattedAnswers: string[] = []
+        const metadataFields = ["ticketNumber", "ticketTypeId"]
+        const separator = type === "xlsx" ? " || " : type === "csv" ? " | " : "\n"
+
+        Object.entries(formAnswers).forEach(([key, value]) => {
+            if (metadataFields.includes(key)) {
+                return
+            }
+
+            if (value === null || value === undefined || value === "") {
+                return
+            }
+
+            if (Array.isArray(value)) {
+                value.forEach((item: any) => {
+                    if (typeof item === "object" && item !== null) {
+                        if (item.label && item.answer) {
+                            if (type === "xlsx") {
+                                formattedAnswers.push(`${item.label}: ${item.answer}`)
+                            } else {
+                                formattedAnswers.push(`${item.label}: ${item.answer} `)
+                            }
+                        }
+                    } else if (item) {
+                        formattedAnswers.push(String(item))
+                    }
+                })
+            } else if (typeof value === "object" && value !== null) {
+                if (value.label && value.answer) {
+                    if (type === "xlsx") {
+                        formattedAnswers.push(`${value.label}: ${value.answer}`)
+                    } else {
+                        formattedAnswers.push(`${value.label}: ${value.answer} `)
+                    }
+                }
+            } else {
+                formattedAnswers.push(String(value))
+            }
+        })
+
+        return formattedAnswers.length > 0 ? formattedAnswers.join(separator) : "-"
+    }
+
     const generatePDF = (buyers: TEventListBuyers[]) => {
         const doc = new jsPDF()
         
@@ -127,52 +176,13 @@ const DialogExportBuyersList = ({
         doc.text(`Data de geração: ${DateUtils.formatDate(new Date().toISOString(), "DD/MM/YYYY HH:mm")}`, 14, 36)
         doc.text(`Total de ingressos: ${buyers.length}`, 14, 42)
 
-        const formatFormAnswers = (formAnswers: Record<string, any>): string => {
-            if (!formAnswers || Object.keys(formAnswers).length === 0) {
-                return "-"
-            }
-
-            const formattedAnswers: string[] = []
-            const metadataFields = ["ticketNumber", "ticketTypeId"]
-
-            Object.entries(formAnswers).forEach(([key, value]) => {
-                if (metadataFields.includes(key)) {
-                    return
-                }
-
-                if (value === null || value === undefined || value === "") {
-                    return
-                }
-
-                if (Array.isArray(value)) {
-                    value.forEach((item: any) => {
-                        if (typeof item === "object" && item !== null) {
-                            if (item.label && item.answer) {
-                                formattedAnswers.push(`${item.label}: ${item.answer}`)
-                            }
-                        } else if (item) {
-                            formattedAnswers.push(String(item))
-                        }
-                    })
-                } else if (typeof value === "object" && value !== null) {
-                    if (value.label && value.answer) {
-                        formattedAnswers.push(`${value.label}: ${value.answer}`)
-                    }
-                } else {
-                    formattedAnswers.push(String(value))
-                }
-            })
-
-            return formattedAnswers.length > 0 ? formattedAnswers.join("\n") : "-"
-        }
-
         const tableData = buyers.map((buyer, index) => [
             (index + 1).toString(),
             buyer.customerName || "-",
             buyer.ticketTypeName || "-",
             buyer.eventDates?.map((date) => DateUtils.formatDate(date, "DD/MM/YYYY")).join(", ") || "-",
             buyer.paymentDate ? DateUtils.formatDate(typeof buyer.paymentDate === "string" ? buyer.paymentDate : buyer.paymentDate.toISOString(), "DD/MM/YYYY HH:mm") : "-",
-            formatFormAnswers(buyer.formAnswers || {})
+            formatFormAnswers(buyer.formAnswers || {}, "pdf")
         ])
 
         autoTable(doc, {
@@ -222,6 +232,160 @@ const DialogExportBuyersList = ({
         doc.save(fileName)
         
         Toast.success("PDF gerado com sucesso!")
+    }
+
+    const generateXLSX = (buyers: TEventListBuyers[]) => {
+        const worksheetData: any[] = []
+
+        worksheetData.push(["Lista de Participantes"])
+        worksheetData.push([])
+        worksheetData.push(["Evento", eventData.name])
+        worksheetData.push(["Data de geração", DateUtils.formatDate(new Date().toISOString(), "DD/MM/YYYY HH:mm")])
+        worksheetData.push(["Total de ingressos", buyers.length])
+        worksheetData.push([])
+
+        const headers = ["#", "Nome", "Tipo de Ingresso", "Datas do Evento", "Data do Pagamento", "Respostas do Formulário"]
+        worksheetData.push(headers)
+
+        buyers.forEach((buyer, index) => {
+            worksheetData.push([
+                index + 1,
+                buyer.customerName || "-",
+                buyer.ticketTypeName || "-",
+                buyer.eventDates?.map((date) => DateUtils.formatDate(date, "DD/MM/YYYY")).join(", ") || "-",
+                buyer.paymentDate 
+                    ? DateUtils.formatDate(
+                        typeof buyer.paymentDate === "string" 
+                            ? buyer.paymentDate 
+                            : buyer.paymentDate.toISOString(), 
+                        "DD/MM/YYYY HH:mm"
+                    )
+                    : "-",
+                formatFormAnswers(buyer.formAnswers || {}, "xlsx")
+            ])
+        })
+
+        const worksheet = XLSX.utils.aoa_to_sheet(worksheetData)
+
+        const columnWidths = [
+            { wch: 5 },
+            { wch: 30 },
+            { wch: 25 },
+            { wch: 25 },
+            { wch: 20 },
+            { wch: 50 }
+        ]
+        worksheet["!cols"] = columnWidths
+
+        const range = XLSX.utils.decode_range(worksheet["!ref"] || "A1")
+        for (let row = 7; row <= range.e.r; row++) {
+            const cellAddress = XLSX.utils.encode_cell({ r: row, c: 5 })
+            if (!worksheet[cellAddress]) continue
+            if (!worksheet[cellAddress].s) worksheet[cellAddress].s = {}
+            if (!worksheet[cellAddress].s.alignment) worksheet[cellAddress].s.alignment = {}
+            worksheet[cellAddress].s.alignment.wrapText = true
+            worksheet[cellAddress].s.alignment.vertical = "top"
+        }
+
+        const workbook = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Participantes")
+
+        const fileName = `lista-compradores-${eventData.name.replace(/[^a-z0-9]/gi, "-").toLowerCase()}-${Date.now()}.xlsx`
+        XLSX.writeFile(workbook, fileName)
+        
+        Toast.success("Arquivo Excel gerado com sucesso!")
+    }
+
+    const escapeCSVField = (field: string): string => {
+        if (field.includes(",") || field.includes('"') || field.includes("\n")) {
+            return `"${field.replace(/"/g, '""')}"`
+        }
+        return field
+    }
+
+    const generateCSV = (buyers: TEventListBuyers[]) => {
+        const csvRows: string[] = []
+
+        csvRows.push("Lista de Participantes")
+        csvRows.push("")
+        csvRows.push(`Evento,${escapeCSVField(eventData.name)}`)
+        csvRows.push(`Data de geração,${escapeCSVField(DateUtils.formatDate(new Date().toISOString(), "DD/MM/YYYY HH:mm"))}`)
+        csvRows.push(`Total de ingressos,${buyers.length}`)
+        csvRows.push("")
+
+        const headers = ["#", "Nome", "Tipo de Ingresso", "Datas do Evento", "Data do Pagamento", "Respostas do Formulário"]
+        csvRows.push(headers.map(escapeCSVField).join(","))
+
+        buyers.forEach((buyer, index) => {
+            const row = [
+                (index + 1).toString(),
+                buyer.customerName || "-",
+                buyer.ticketTypeName || "-",
+                buyer.eventDates?.map((date) => DateUtils.formatDate(date, "DD/MM/YYYY")).join(", ") || "-",
+                buyer.paymentDate 
+                    ? DateUtils.formatDate(
+                        typeof buyer.paymentDate === "string" 
+                            ? buyer.paymentDate 
+                            : buyer.paymentDate.toISOString(), 
+                        "DD/MM/YYYY HH:mm"
+                    )
+                    : "-",
+                formatFormAnswers(buyer.formAnswers || {}, "csv")
+            ]
+            csvRows.push(row.map(escapeCSVField).join(","))
+        })
+
+        const csvContent = csvRows.join("\n")
+        const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement("a")
+        link.href = url
+        link.download = `lista-compradores-${eventData.name.replace(/[^a-z0-9]/gi, "-").toLowerCase()}-${Date.now()}.csv`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+        
+        Toast.success("Arquivo CSV gerado com sucesso!")
+    }
+
+    const generateJSON = (buyers: TEventListBuyers[]) => {
+        const jsonData = {
+            evento: {
+                id: eventData.id,
+                nome: eventData.name,
+                dataGeracao: DateUtils.formatDate(new Date().toISOString(), "DD/MM/YYYY HH:mm"),
+                totalIngressos: buyers.length
+            },
+            participantes: buyers.map((buyer, index) => ({
+                numero: index + 1,
+                nome: buyer.customerName || null,
+                tipoIngresso: buyer.ticketTypeName || null,
+                datasEvento: buyer.eventDates?.map((date) => DateUtils.formatDate(date, "DD/MM/YYYY")) || [],
+                dataPagamento: buyer.paymentDate 
+                    ? DateUtils.formatDate(
+                        typeof buyer.paymentDate === "string" 
+                            ? buyer.paymentDate 
+                            : buyer.paymentDate.toISOString(), 
+                        "DD/MM/YYYY HH:mm"
+                    )
+                    : null,
+                respostasFormulario: buyer.formAnswers || {}
+            }))
+        }
+
+        const jsonContent = JSON.stringify(jsonData, null, 2)
+        const blob = new Blob([jsonContent], { type: "application/json;charset=utf-8;" })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement("a")
+        link.href = url
+        link.download = `lista-compradores-${eventData.name.replace(/[^a-z0-9]/gi, "-").toLowerCase()}-${Date.now()}.json`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+        
+        Toast.success("Arquivo JSON gerado com sucesso!")
     }
 
     return (
