@@ -1,5 +1,6 @@
 "use client"
 
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
@@ -11,11 +12,26 @@ import { FieldError } from "@/components/FieldError/FieldError"
 import { Input } from "@/components/Input/Input"
 import { Icon } from "@/components/Icon/Icon"
 import { useAuthLogin } from "@/hooks/Auth/useAuthLogin"
+import { useAuthLoginWithGoogle } from "@/hooks/Auth/useAuthLoginWithGoogle"
 import { useRouter } from "next/navigation"
 import { LoadingButton } from "@/components/Loading/LoadingButton"
 import { useAuthStore } from "@/stores/Auth/AuthStore"
 import { Toast } from "@/components/Toast/Toast"
 import { AuthLayout } from "@/components/Layout/AuthLayout/AuthLayout"
+
+declare global {
+    interface Window {
+        google: {
+            accounts: {
+                id: {
+                    initialize: (config: { client_id: string; callback: (response: { credential: string }) => void }) => void
+                    renderButton: (element: HTMLElement, config: any) => void
+                    prompt: () => void
+                }
+            }
+        }
+    }
+}
 
 const LoginForm = () => {
     const form = useForm<TAuth>({
@@ -24,15 +40,82 @@ const LoginForm = () => {
 
     const routerService = useRouter()
     const { mutateAsync: loginUser, isPending: isLoggingIn } = useAuthLogin()
+    const { mutateAsync: loginWithGoogle, isPending: isLoggingInWithGoogle } = useAuthLoginWithGoogle()
     const { setUser } = useAuthStore()
+    const googleButtonRef = useRef<HTMLDivElement>(null)
+    const [isGoogleScriptLoaded, setIsGoogleScriptLoaded] = useState(false)
 
     const handleSubmit = async (data: TAuth) => {
         const response = await loginUser(data)
         if (response && response.success && response.data?.user) {
             setUser(response.data.user)
-            routerService.push("/")
+            if (response.data.user.role === "NOT_DEFINED") {
+                routerService.push("/confirmar-social")
+            } else {
+                routerService.push("/")
+            }
         }
     }
+
+    const handleCredentialResponse = useCallback(async (response: { credential: string }) => {
+        try {
+            const authResponse = await loginWithGoogle(response.credential)
+            if (authResponse && authResponse.success && authResponse.data?.user) {
+                setUser(authResponse.data.user)
+                if (authResponse.data.user.role === "NOT_DEFINED") {
+                    routerService.push("/confirmar-social")
+                } else {
+                    routerService.push("/")
+                }
+            }
+        } catch (error) {
+            Toast.error("Erro ao fazer login com Google")
+        }
+    }, [loginWithGoogle, setUser, routerService])
+
+    useEffect(() => {
+        const clientId = process.env.NEXT_PUBLIC_GOOGLE_SOCIAL_LOGIN_CLIENT_ID
+        if (!clientId) {
+            console.error("CLIENT_ID não configurado")
+            return
+        }
+
+        const script = document.createElement("script")
+        script.src = "https://accounts.google.com/gsi/client"
+        script.async = true
+        script.defer = true
+        script.onload = () => {
+            if (window.google && window.google.accounts) {
+                window.google.accounts.id.initialize({
+                    client_id: clientId,
+                    callback: handleCredentialResponse
+                })
+                setIsGoogleScriptLoaded(true)
+            }
+        }
+        document.head.appendChild(script)
+
+        return () => {
+            if (document.head.contains(script)) {
+                document.head.removeChild(script)
+            }
+        }
+    }, [handleCredentialResponse])
+
+    useEffect(() => {
+        if (isGoogleScriptLoaded && googleButtonRef.current && window.google) {
+            try {
+                window.google.accounts.id.renderButton(googleButtonRef.current, {
+                    theme: "filled_blue",
+                    type: "standard",
+                    size: "large",
+                    shape: "pill",
+                })
+            } catch (error) {
+                console.error("Erro ao renderizar botão do Google:", error)
+            }
+        }
+    }, [isGoogleScriptLoaded])
 
     return (
         <AuthLayout>
@@ -132,18 +215,14 @@ const LoginForm = () => {
                     </div>
                 </div>
 
-                <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    size="lg"
-                >
-                    <Icon
-                        icon="google"
-                        className="size-6"
-                    />
-                    Continuar com o Google
-                </Button>
+                <div className="w-full">
+                    <div ref={googleButtonRef} className="w-full flex justify-center" />
+                    {isLoggingInWithGoogle && (
+                        <div className="mt-2 flex justify-center">
+                            <LoadingButton />
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div className="mt-6 flex items-center justify-center gap-2">

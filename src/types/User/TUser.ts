@@ -1,12 +1,13 @@
 import { z } from "zod"
-import { UserCreateValidator, UserResetPasswordValidator, UserResetPasswordByCodeValidator, UserUpdateValidator } from "@/validators/User/UserValidator"
+import { UserCreateValidator, UserResetPasswordValidator, UserResetPasswordByCodeValidator, UserUpdateValidator, UserConfirmSocialValidator } from "@/validators/User/UserValidator"
 import type { TUserAddress } from "./TUserAddress"
 import { TOrganizer } from "../Organizer/TOrganizer"
 
 const UserRoles = [
     "CUSTOMER",
     "ORGANIZER",
-    "ADMIN"
+    "ADMIN",
+    "NOT_DEFINED"
 ] as const
 
 const UserGenres = [
@@ -46,12 +47,15 @@ type TUserResetPassword = z.infer<typeof UserResetPasswordValidator>
 
 type TUserUpdate = z.infer<typeof UserUpdateValidator>
 
+type TUserConfirmSocial = z.infer<typeof UserConfirmSocialValidator>
+
 export type {
     TUser,
     TUserCreate,
     TUserResetPasswordByCode,
     TUserResetPassword,
-    TUserUpdate
+    TUserUpdate,
+    TUserConfirmSocial
 }
 
 export {

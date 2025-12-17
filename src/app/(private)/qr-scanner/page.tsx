@@ -1,8 +1,11 @@
 import { QrScannerPannel } from "@/components/Pages/Private/QrScanner/QrScannerPannel"
+import { VerificationStatusGuard } from "@/components/VerificationStatus/VerificationStatusGuard"
 
 const QrScannerPage = () => {
     return (
-        <QrScannerPannel />
+        <VerificationStatusGuard>
+            <QrScannerPannel />
+        </VerificationStatusGuard>
     )
 }
 

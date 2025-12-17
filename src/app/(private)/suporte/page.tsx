@@ -1,9 +1,12 @@
 import { SuportePannel } from "@/components/Pages/Private/Suporte/SuportePannel"
+import { VerificationStatusGuard } from "@/components/VerificationStatus/VerificationStatusGuard"
 
 const SuportePage = () => {
     return (
         <>
-        <SuportePannel />
+        <VerificationStatusGuard>
+            <SuportePannel />
+        </VerificationStatusGuard>
         </>
     )
 }

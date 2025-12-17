@@ -33,7 +33,7 @@ type TOrganizer = {
     facebookUrl: string | null
     supportEmail: string | null
     supportPhone: string | null
-    verificationStatus: "PENDING" | "APPROVED" | "REJECTED" | null
+    verificationStatus: "PENDING" | "WAITING_DOCUMENTATION" | "APPROVED" | "REJECTED" | null
     createdAt: string
     updatedAt: string | null
     Bank?: TBank | null

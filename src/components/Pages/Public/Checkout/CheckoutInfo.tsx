@@ -2,6 +2,20 @@
 
 import { useState, useMemo, useCallback, useEffect, useRef } from "react"
 import { useForm, Controller } from "react-hook-form"
+
+declare global {
+    interface Window {
+        google: {
+            accounts: {
+                id: {
+                    initialize: (config: { client_id: string; callback: (response: { credential: string }) => void }) => void
+                    renderButton: (element: HTMLElement, config: any) => void
+                    prompt: () => void
+                }
+            }
+        }
+    }
+}
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useCart } from "@/contexts/CartContext"
 import { useAuthStore } from "@/stores/Auth/AuthStore"
@@ -69,6 +83,7 @@ import { Toast } from "@/components/Toast/Toast"
 import { useCouponCheck } from "@/hooks/Coupon/useCouponCheck"
 import { useUserCheckEmailExists } from "@/hooks/User/useUserCheckEmailExistst"
 import { useAuthLogin } from "@/hooks/Auth/useAuthLogin"
+import { useAuthLoginWithGoogle } from "@/hooks/Auth/useAuthLoginWithGoogle"
 import { useUserCreate } from "@/hooks/User/useUserCreate"
 import { useUserConfirmationConfirmByCode } from "@/hooks/UserConfirmation/useUserConfirmationConfirmByCode"
 import { useUserConfirmationResendConfirmation } from "@/hooks/UserConfirmation/useUserConfirmationResendConfirmation"
@@ -160,9 +175,12 @@ const CheckoutInfo = () => {
     const [hasResent, setHasResent] = useState(false)
     const [cadastroEmail, setCadastroEmail] = useState("")
     const [cadastroName, setCadastroName] = useState("")
+    const googleButtonRefCadastro = useRef<HTMLDivElement>(null)
+    const [isGoogleScriptLoadedCadastro, setIsGoogleScriptLoadedCadastro] = useState(false)
 
     const { mutateAsync: checkEmailExists, isPending: isCheckingEmail } = useUserCheckEmailExists()
     const { mutateAsync: loginUser, isPending: isLoggingIn } = useAuthLogin()
+    const { mutateAsync: loginWithGoogle, isPending: isLoggingInWithGoogle } = useAuthLoginWithGoogle()
     const { mutateAsync: createUser, isPending: isCreatingUser } = useUserCreate()
     const { mutateAsync: confirmByCode, isPending: isConfirmingByCode } = useUserConfirmationConfirmByCode()
     const { mutateAsync: resendConfirmation, isPending: isResendingConfirmation } = useUserConfirmationResendConfirmation()
@@ -295,6 +313,23 @@ const CheckoutInfo = () => {
             cadastroForm.setValue("email", cadastroEmail)
         }
     }, [showCadastroDialog, cadastroEmail, cadastroForm])
+
+    useEffect(() => {
+        if (isGoogleScriptLoadedCadastro && googleButtonRefCadastro.current && window.google && showCadastroDialog) {
+            try {
+                if (googleButtonRefCadastro.current.children.length === 0) {
+                    window.google.accounts.id.renderButton(googleButtonRefCadastro.current, {
+                        theme: "filled_blue",
+                        type: "standard",
+                        size: "large",
+                        shape: "pill",
+                    })
+                }
+            } catch (error) {
+                console.error("Erro ao renderizar botão do Google:", error)
+            }
+        }
+    }, [isGoogleScriptLoadedCadastro, showCadastroDialog])
 
     useEffect(() => {
         const loadCountries = async () => {
@@ -1063,6 +1098,66 @@ const CheckoutInfo = () => {
             Toast.error(error?.response?.data?.message || "Erro ao criar conta. Tente novamente.")
         }
     }
+
+    const handleCredentialResponseCadastro = useCallback(async (response: { credential: string }) => {
+        try {
+            const authResponse = await loginWithGoogle(response.credential)
+            if (authResponse && authResponse.success && authResponse.data?.user) {
+                setUser(authResponse.data.user)
+                setShowCadastroDialog(false)
+                if (authResponse.data.user.role === "NOT_DEFINED") {
+                    router.push("/confirmar-social")
+                } else {
+                    Toast.success("Login realizado com sucesso!")
+                }
+            }
+        } catch (error) {
+            Toast.error("Erro ao fazer login com Google")
+        }
+    }, [loginWithGoogle, setUser, router])
+
+    useEffect(() => {
+        if (!showCadastroDialog) {
+            setIsGoogleScriptLoadedCadastro(false)
+            return
+        }
+
+        const clientId = process.env.NEXT_PUBLIC_GOOGLE_SOCIAL_LOGIN_CLIENT_ID
+        if (!clientId) {
+            console.error("CLIENT_ID não configurado")
+            return
+        }
+
+        if (window.google && window.google.accounts) {
+            window.google.accounts.id.initialize({
+                client_id: clientId,
+                callback: handleCredentialResponseCadastro
+            })
+            setIsGoogleScriptLoadedCadastro(true)
+            return
+        }
+
+        const script = document.createElement("script")
+        script.src = "https://accounts.google.com/gsi/client"
+        script.async = true
+        script.defer = true
+        script.onload = () => {
+            if (window.google && window.google.accounts) {
+                window.google.accounts.id.initialize({
+                    client_id: clientId,
+                    callback: handleCredentialResponseCadastro
+                })
+                setIsGoogleScriptLoadedCadastro(true)
+            }
+        }
+        document.head.appendChild(script)
+
+        return () => {
+            if (document.head.contains(script)) {
+                document.head.removeChild(script)
+            }
+        }
+    }, [showCadastroDialog, handleCredentialResponseCadastro])
 
     const handleConfirmacao = async (data: TUserCreateConfirm) => {
         try {
@@ -2715,18 +2810,14 @@ const CheckoutInfo = () => {
                                 </span>
                             </div>
                         </div>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            className="w-full"
-                            size="lg"
-                        >
-                            <Icon
-                                icon="google"
-                                className="size-6"
-                            />
-                            Continuar com o Google
-                        </Button>
+                        <div className="w-full">
+                            <div ref={googleButtonRefCadastro} className="w-full flex justify-center" />
+                            {isLoggingInWithGoogle && (
+                                <div className="mt-2 flex justify-center">
+                                    <LoadingButton />
+                                </div>
+                            )}
+                        </div>
                     </form>
                 </DialogContent>
             </Dialog>

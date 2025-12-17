@@ -125,9 +125,50 @@ const UserUpdateValidator = z.object({
     }).optional()
 })
 
+const UserConfirmSocialValidator = z.object({
+    firstName: z.string({ error: DefaultFormErrors.required }),
+    lastName: z.string({ error: DefaultFormErrors.required }),
+    email: z.email({ error: DefaultFormErrors.email }),
+    phone: z.string({ error: DefaultFormErrors.required }),
+    document: z.string({ error: DefaultFormErrors.required }),
+    password: z.string({ error: DefaultFormErrors.required }),
+    role: z.enum(["CUSTOMER", "ORGANIZER"], { error: DefaultFormErrors.required })
+}).superRefine((data, ctx) => {
+    if (!data.password) {
+        return
+    }
+
+    if (data.password.length < 8) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["password"],
+            message: DefaultFormErrors.passwordMinLength
+        })
+        return
+    }
+
+    if (!/[A-Z]/.test(data.password)) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["password"],
+            message: DefaultFormErrors.passwordUppercase
+        })
+        return
+    }
+
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(data.password)) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["password"],
+            message: DefaultFormErrors.passwordSpecialChar
+        })
+    }
+})
+
 export {
     UserCreateValidator,
     UserResetPasswordByCodeValidator,
     UserResetPasswordValidator,
-    UserUpdateValidator
+    UserUpdateValidator,
+    UserConfirmSocialValidator
 }

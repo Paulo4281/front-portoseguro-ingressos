@@ -312,6 +312,12 @@ const MeuPerfilOrganizer = () => {
                     icon: XCircle,
                     variant: "destructive" as const
                 }
+            case "WAITING_DOCUMENTATION":
+                return {
+                    message: "Envie seus dados e documentação para análise.",
+                    icon: Clock,
+                    variant: "secondary" as const
+                }
             default:
                 return {
                     message: "Status desconhecido",
@@ -1351,39 +1357,50 @@ const MeuPerfilOrganizer = () => {
                                         <FieldError message={form.formState.errors.pixAddressKey?.message || ""} />
                                     </div>
                                 </div>
-
-                                {hasBankAccount && hasPix && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Método de pagamento preferido *
-                                        </label>
-                                        <Controller
-                                            name="payoutMethod"
-                                            control={form.control}
-                                            render={({ field }) => (
-                                                <Select
-                                                    value={field.value ? String(field.value) : undefined}
-                                                    onValueChange={(value) => field.onChange(value || null)}
-                                                >
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Selecione o método preferido" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="PIX">PIX</SelectItem>
-                                                        <SelectItem value="BANK_ACCOUNT">Conta Bancária</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                        />
-                                        <FieldError message={form.formState.errors.payoutMethod?.message || ""} />
-                                        <p className="text-xs text-psi-dark/50 mt-1">
-                                            Selecione como você prefere receber os pagamentos quando ambos os métodos estiverem configurados
-                                        </p>
-                                    </div>
-                                )}
                                     </CollapsibleContent>
                                 </div>
                             </Collapsible>
+
+                            {hasBankAccount && hasPix && (
+                                <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
+                                sm:p-8 shadow-sm">
+                                    <div className="space-y-4">
+                                        <div>
+                                            <h2 className="text-lg font-semibold text-psi-dark mb-2">Método de Pagamento Preferido</h2>
+                                            <p className="text-sm text-psi-dark/60 mb-4">
+                                                Você configurou tanto a conta bancária quanto a chave PIX. Selecione qual método você prefere usar para receber os repasses.
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                Método de pagamento preferido *
+                                            </label>
+                                            <Controller
+                                                name="payoutMethod"
+                                                control={form.control}
+                                                render={({ field }) => (
+                                                    <Select
+                                                        value={field.value ? String(field.value) : undefined}
+                                                        onValueChange={(value) => field.onChange(value || null)}
+                                                    >
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Selecione o método preferido" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="PIX">PIX</SelectItem>
+                                                            <SelectItem value="BANK_ACCOUNT">Conta Bancária</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                )}
+                                            />
+                                            <FieldError message={form.formState.errors.payoutMethod?.message || ""} />
+                                            <p className="text-xs text-psi-dark/50 mt-1">
+                                                Selecione como você prefere receber os pagamentos quando ambos os métodos estiverem configurados
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {!hasAllDocuments && (
                                 <Collapsible
@@ -1398,7 +1415,7 @@ const MeuPerfilOrganizer = () => {
                                                     <div className="h-10 w-10 rounded-xl bg-red-100 flex items-center justify-center">
                                                         <FileText className="h-5 w-5 text-red-600" />
                                                     </div>
-                                                    <div>
+                                                    <div className="text-start">
                                                         <h2 className="text-lg font-semibold text-psi-dark">Documentos de Identidade</h2>
                                                         <p className="text-sm text-red-600 font-medium">Obrigatório</p>
                                                     </div>

@@ -1,5 +1,5 @@
 import { API } from "@/api/api"
-import type { TUserCreate, TUserResetPasswordByCode, TUserResetPassword, TUserUpdate } from "@/types/User/TUser"
+import type { TUserCreate, TUserResetPasswordByCode, TUserResetPassword, TUserUpdate, TUserConfirmSocial } from "@/types/User/TUser"
 import type { AxiosResponse } from "axios"
 
 class UserServiceClass {
@@ -52,6 +52,23 @@ class UserServiceClass {
         const response = (await API.POST({
             prefix: "/user",
             url: "/reset-password-by-code",
+            data: data
+        }))?.data
+        return response
+    }
+
+    async loginWithGoogle(googleAuthToken: string): Promise<AxiosResponse["data"]> {
+        const response = (await API.GET({
+            prefix: "/user",
+            url: `/google/sub/${googleAuthToken}`
+        }))?.data
+        return response
+    }
+
+    async confirmSocial(data: TUserConfirmSocial): Promise<AxiosResponse["data"]> {
+        const response = (await API.PUT({
+            prefix: "/user",
+            url: "/confirm-social/google",
             data: data
         }))?.data
         return response

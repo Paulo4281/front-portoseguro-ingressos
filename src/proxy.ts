@@ -12,7 +12,7 @@ type TPublicRoutes = {
 
 type TJwtDecoded = {
     id: string
-    role: "CUSTOMER" | "ORGANIZER" | "ADMIN"
+    role: "CUSTOMER" | "ORGANIZER" | "ADMIN" | "NOT_DEFINED"
     customerId?: string
     organizer?: string
 }

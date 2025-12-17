@@ -1,9 +1,12 @@
 import { CarteiraPannel } from "@/components/Pages/Private/Carteira/CarteiraPannel"
+import { VerificationStatusGuard } from "@/components/VerificationStatus/VerificationStatusGuard"
 
 const CarteiraPage = () => {
     return (
         <>
-        <CarteiraPannel />
+        <VerificationStatusGuard>
+            <CarteiraPannel />
+        </VerificationStatusGuard>
         </>
     )
 }

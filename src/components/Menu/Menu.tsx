@@ -44,7 +44,7 @@ type TMenuLink = {
     href?: string
     label: string
     icon: ComponentType<{ className?: string }>
-    roles?: ("CUSTOMER" | "ORGANIZER" | "ADMIN")[]
+    roles?: ("CUSTOMER" | "ORGANIZER" | "ADMIN" | "NOT_DEFINED")[]
     sublinks?: TSubLink[]
 }
 
@@ -53,6 +53,12 @@ const menuLinks: TMenuLink[] = [
         href: "/",
         label: "Home",
         icon: Home,
+    },
+    {
+        href: "/confirmar-social",
+        label: "Confirmar Cadastro",
+        icon: User,
+        roles: ["NOT_DEFINED"]
     },
     {
         href: "/dashboard",
@@ -164,7 +170,8 @@ const Menu = () => {
         "/cadastro-confirmar",
         "/senha-redefinir",
         "/senha-redefinir-confirmar",
-        "/redefinir-senha-log"
+        "/redefinir-senha-log",
+        "/confirmar-social"
     ]
     const pathname = usePathname()
 
