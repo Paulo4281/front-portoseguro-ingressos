@@ -117,6 +117,7 @@ const MeusEventosPannel = () => {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
     const [selectedEventName, setSelectedEventName] = useState<string | null>(null)
+    const [selectedEventData, setSelectedEventData] = useState<TEvent | null>(null)
     const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
 
     const router = useRouter()
@@ -157,8 +158,9 @@ const MeusEventosPannel = () => {
         setUpdateDialogOpen(true)
     }
 
-    const handleOpenExportBuyersList = (eventId: string) => {
+    const handleOpenExportBuyersList = (eventId: string, eventData: TEvent) => {
         setSelectedEventId(eventId)
+        setSelectedEventData(eventData)
         setExportBuyersListOpen(true)
     }
 
@@ -394,6 +396,7 @@ const MeusEventosPannel = () => {
                     onOpenChange={setExportBuyersListOpen}
                     eventId={selectedEventId}
                     eventName={selectedEventName || undefined}
+                    eventData={selectedEventData as TEvent}
                 />
             )}
 
@@ -427,7 +430,7 @@ export {
 type TEventCardProps = {
     event: TEventWithStats
     onEdit: (eventId: string) => void
-    onExportBuyers: (eventId: string) => void
+    onExportBuyers: (eventId: string, eventData: TEvent) => void
     onSalesReport: (eventId: string, eventName: string) => void
     onCancel: (eventId: string) => void
     onTickets: (eventId: string) => void
@@ -499,7 +502,7 @@ const EventCard = ({
                             <DropdownMenuSeparator className="bg-[#E4E6F0]" />
                             <DropdownMenuItem 
                                 className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer"
-                                onClick={() => onExportBuyers(event.id)}
+                                onClick={() => onExportBuyers(event.id, event)}
                                 disabled={event.isCancelled}
                             >
                                 <FileSpreadsheet className="h-4 w-4 mr-2 text-psi-primary" />

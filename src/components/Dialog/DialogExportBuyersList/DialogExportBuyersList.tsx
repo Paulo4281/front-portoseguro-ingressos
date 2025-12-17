@@ -33,6 +33,7 @@ type TDialogExportBuyersListProps = {
     eventName?: string
     eventDateId?: string
     ticketTypeId?: string
+    eventData: TEvent
     onFormatSelect?: (format: "pdf" | "xlsx" | "csv" | "json") => void
 }
 
@@ -43,6 +44,7 @@ const DialogExportBuyersList = ({
     eventName,
     eventDateId: initialEventDateId,
     ticketTypeId: initialTicketTypeId,
+    eventData,
     onFormatSelect 
 }: TDialogExportBuyersListProps) => {
     const [isGenerating, setIsGenerating] = useState(false)
@@ -50,8 +52,7 @@ const DialogExportBuyersList = ({
     const [selectedEventDateId, setSelectedEventDateId] = useState<string | undefined>(initialEventDateId)
     const [selectedTicketTypeId, setSelectedTicketTypeId] = useState<string | undefined>(initialTicketTypeId)
 
-    const { data: eventData, isLoading: isLoadingEvent } = useEventFindById(eventId)
-    const event = eventData?.data as TEvent | undefined
+    const event = eventData
 
     const { data: buyersData, refetch, isFetching } = useEventListBuyers({
         eventId,
@@ -92,7 +93,7 @@ const DialogExportBuyersList = ({
             const buyersData = response.data.data
 
             if (format === "pdf") {
-                generatePDF(buyersData, eventName || "Evento")
+                generatePDF(buyersData)
             } else if (format === "xlsx") {
                 Toast.info("Exportação em Excel será implementada em breve")
             } else if (format === "csv") {
@@ -115,16 +116,16 @@ const DialogExportBuyersList = ({
         }
     }
 
-    const generatePDF = (buyers: TEventListBuyers[], eventName: string) => {
+    const generatePDF = (buyers: TEventListBuyers[]) => {
         const doc = new jsPDF()
         
         doc.setFontSize(18)
-        doc.text("Lista de Compradores", 14, 20)
+        doc.text("Lista de participantes", 14, 20)
         
         doc.setFontSize(12)
-        doc.text(`Evento: ${eventName}`, 14, 30)
+        doc.text(`Evento: ${eventData.name}`, 14, 30)
         doc.text(`Data de geração: ${DateUtils.formatDate(new Date().toISOString(), "DD/MM/YYYY HH:mm")}`, 14, 36)
-        doc.text(`Total de compradores: ${buyers.length}`, 14, 42)
+        doc.text(`Total de ingressos: ${buyers.length}`, 14, 42)
 
         const formatFormAnswers = (formAnswers: Record<string, any>): string => {
             if (!formAnswers || Object.keys(formAnswers).length === 0) {
@@ -132,39 +133,37 @@ const DialogExportBuyersList = ({
             }
 
             const formattedAnswers: string[] = []
+            const metadataFields = ["ticketNumber", "ticketTypeId"]
 
             Object.entries(formAnswers).forEach(([key, value]) => {
+                if (metadataFields.includes(key)) {
+                    return
+                }
+
                 if (value === null || value === undefined || value === "") {
                     return
                 }
 
                 if (Array.isArray(value)) {
-                    const arrayValues = value
-                        .map((item: any) => {
-                            if (typeof item === "object" && item !== null) {
-                                if (item.label && item.answer) {
-                                    return `${item.label}: ${item.answer}`
-                                }
-                                return JSON.stringify(item)
+                    value.forEach((item: any) => {
+                        if (typeof item === "object" && item !== null) {
+                            if (item.label && item.answer) {
+                                formattedAnswers.push(`${item.label}: ${item.answer}`)
                             }
-                            return String(item)
-                        })
-                        .filter(Boolean)
-                    if (arrayValues.length > 0) {
-                        formattedAnswers.push(`${key}: ${arrayValues.join(", ")}`)
-                    }
+                        } else if (item) {
+                            formattedAnswers.push(String(item))
+                        }
+                    })
                 } else if (typeof value === "object" && value !== null) {
                     if (value.label && value.answer) {
                         formattedAnswers.push(`${value.label}: ${value.answer}`)
-                    } else {
-                        formattedAnswers.push(`${key}: ${JSON.stringify(value)}`)
                     }
                 } else {
-                    formattedAnswers.push(`${key}: ${String(value)}`)
+                    formattedAnswers.push(String(value))
                 }
             })
 
-            return formattedAnswers.length > 0 ? formattedAnswers.join("; ") : "-"
+            return formattedAnswers.length > 0 ? formattedAnswers.join("\n") : "-"
         }
 
         const tableData = buyers.map((buyer, index) => [
@@ -180,20 +179,46 @@ const DialogExportBuyersList = ({
             startY: 50,
             head: [["#", "Nome", "Tipo de Ingresso", "Datas do Evento", "Data do Pagamento", "Respostas do Formulário"]],
             body: tableData,
-            styles: { fontSize: 8 },
-            headStyles: { fillColor: [108, 75, 255] },
-            columnStyles: {
-                0: { cellWidth: 15 },
-                1: { cellWidth: 50 },
-                2: { cellWidth: 40 },
-                3: { cellWidth: 40 },
-                4: { cellWidth: 35 },
-                5: { cellWidth: 60 }
+            styles: { 
+                fontSize: 9,
+                cellPadding: 2.5,
+                overflow: "linebreak",
+                cellWidth: "wrap",
+                lineWidth: 0.1,
+                lineColor: [200, 200, 200]
             },
-            margin: { left: 0, right: 0 }
+            headStyles: { 
+                fillColor: [108, 75, 255],
+                textColor: [255, 255, 255],
+                fontStyle: "bold",
+                fontSize: 9
+            },
+            columnStyles: {
+                0: { cellWidth: 12, halign: "center" },
+                1: { cellWidth: 35 },
+                2: { cellWidth: 30 },
+                3: { cellWidth: 28 },
+                4: { cellWidth: 30 },
+                5: { 
+                    cellWidth: 55,
+                    cellPadding: 3
+                }
+            },
+            margin: { left: 14, right: 14 },
+            didParseCell: (data: any) => {
+                if (data.column.index === 5 && data.cell.text) {
+                    const text = data.cell.text[0]
+                    if (typeof text === "string" && text.includes("\n")) {
+                        data.cell.text = text.split("\n")
+                    }
+                }
+            },
+            alternateRowStyles: {
+                fillColor: [250, 250, 250]
+            }
         })
 
-        const fileName = `lista-compradores-${eventName.replace(/[^a-z0-9]/gi, "-").toLowerCase()}-${Date.now()}.pdf`
+        const fileName = `lista-compradores-${eventData.name.replace(/[^a-z0-9]/gi, "-").toLowerCase()}-${Date.now()}.pdf`
         doc.save(fileName)
         
         Toast.success("PDF gerado com sucesso!")
