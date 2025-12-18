@@ -40,6 +40,16 @@ type TTicketForm = {
     }[] | null
 }
 
+type TTicketValidationInfo = {
+    validatedAt?: string | null
+    validatedByOrganizer?: boolean
+    method?: "qr-scan" | "qr-image" | "button" | null
+    code?: string | null
+    ip?: string | null
+    name?: string | null
+    location?: string | null
+} | null
+
 type TTicket = {
     id: string
     code: string
@@ -51,6 +61,7 @@ type TTicket = {
     userId: string
     paymentId: string | null
     form: TTicketForm | null
+    validationInfo?: TTicketValidationInfo
     usedAt: string | null
     price: number
     createdAt: string
@@ -70,6 +81,20 @@ type TTicket = {
 type TTicketScanResponse = {
     status: "VALID" | "EXPIRED" | "CANCELLED" | "USED"
     description: string | null
+}
+
+type TTicketValidateQrCodeResponse = {
+    isValid: boolean
+    reason: string | null
+    ticketId?: string | null
+    validationInfo?: TTicketValidationInfo
+}
+
+type TTicketValidate = {
+    isValid: boolean
+    reason: string | null
+    ticketId?: string | null
+    validationInfo?: TTicketValidationInfo
 }
 
 type TTicketScanLinkGenerateResponse = {
@@ -181,6 +206,7 @@ type TTicketToOrganizer = {
     }
     price: number
     form: TTicketForm | null
+    validationInfo?: TTicketValidationInfo
     createdAt: string
 }
 
@@ -204,11 +230,14 @@ export type {
     TTicketBuy,
     TTicketBuyResponse,
     TTicketScanResponse,
+    TTicketValidateQrCodeResponse,
+    TTicketValidate,
     TTicketScanLinkGenerateResponse,
     TTicketScanLink,
     TTicketScanLinkCreate,
     TTicketScanLinkDelete,
     TTicketQRCodeResponse,
     TTicketForm,
+    TTicketValidationInfo,
     TTicketToOrganizer
 }

@@ -7,16 +7,17 @@ type TUseEventListBuyersParams = {
     eventId: string
     eventDateId?: string
     ticketTypeId?: string
+    onlyConfirmed?: boolean
     enabled?: boolean
 }
 
 export const useEventListBuyers = (params: TUseEventListBuyersParams) => {
-    const { eventId, eventDateId, ticketTypeId, enabled = true } = params
+    const { eventId, eventDateId, ticketTypeId, onlyConfirmed = false, enabled = true } = params
 
     return useQuery<TApiResponse<TEventListBuyers[]>>({
         queryKey: ["event-list-buyers", eventId, eventDateId, ticketTypeId],
         queryFn: async () => {
-            const response = await EventService.listBuyers(eventId, eventDateId, ticketTypeId)
+            const response = await EventService.listBuyers(eventId, eventDateId, ticketTypeId, onlyConfirmed)
             return response
         },
         enabled: enabled && !!eventId

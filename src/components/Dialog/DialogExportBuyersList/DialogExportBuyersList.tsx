@@ -59,6 +59,7 @@ const DialogExportBuyersList = ({
         eventId,
         eventDateId: selectedEventDateId,
         ticketTypeId: selectedTicketTypeId,
+        onlyConfirmed: true,
         enabled: false
     })
 

@@ -5,8 +5,7 @@ import { Html5Qrcode } from "html5-qrcode"
 import { Button } from "@/components/ui/button"
 import { Background } from "@/components/Background/Background"
 import { Input } from "@/components/Input/Input"
-import { TicketService } from "@/services/Ticket/TicketService"
-import { QrCode, Scan, Lock, Search, CheckCircle2, XCircle, Info, MoreVertical, Check, LogOut } from "lucide-react"
+import { QrCode, Scan, Lock, Search, CheckCircle2, XCircle, Info, MoreVertical, Check, LogOut, ImageUp } from "lucide-react"
 import { Toast } from "@/components/Toast/Toast"
 import { useSearchParams } from "next/navigation"
 import { useForm, Controller } from "react-hook-form"
@@ -14,11 +13,14 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { TicketScanSessionAuthenticateValidator, type TTicketScanSessionAuthenticateForm } from "@/validators/TicketScanSession/TicketScanSessionValidator"
 import { useTicketScanSessionCreate } from "@/hooks/TicketScanSession/useTicketScanSessionCreate"
 import { useTicketScanSessionDelete } from "@/hooks/TicketScanSession/useTicketScanSessionDelete"
+import { useTicketValidateQrcodeWorker } from "@/hooks/Ticket/useTicketValidateQrcodeWorker"
+import { useTicketValidateWorker } from "@/hooks/Ticket/useTicketValidateWorker"
 import { useEventListBuyersSession } from "@/hooks/Event/useEventListBuyersSession"
 import type { TEventListBuyers } from "@/types/Event/TEvent"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { DialogConfirm } from "@/components/Dialog/DialogConfirm/DialogConfirm"
 import {
     Dialog,
     DialogContent,
@@ -51,16 +53,50 @@ const QrScanLinkPannel = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false)
 
     const [isScanning, setIsScanning] = useState(false)
+    const [scanFeedback, setScanFeedback] = useState<string>("")
     const scannerRef = useRef<Html5Qrcode | null>(null)
     const scannerContainerRef = useRef<HTMLDivElement>(null)
     const [scannerId] = useState(() => `qr-reader-link-${Date.now()}`)
+    const lastScanFeedbackAtRef = useRef(0)
+    const fileInputRef = useRef<HTMLInputElement | null>(null)
+    const [isDecodingQrImage, setIsDecodingQrImage] = useState(false)
+    const [fileReaderId] = useState(() => `qr-file-reader-link-${Date.now()}`)
+
+    const getScanFeedbackMessage = (raw: string) => {
+        const msg = (raw || "").toLowerCase()
+
+        if (msg.includes("notfoundexception") || msg.includes("no qr code found")) {
+            return "Aponte a câmera para o QR Code. Chegue mais perto e mantenha o celular firme."
+        }
+
+        if (msg.includes("formatexception") || msg.includes("checksumexception")) {
+            return "QR Code ilegível. Tente melhorar a iluminação e enquadrar melhor."
+        }
+
+        if (msg.includes("permission") || msg.includes("notallowederror")) {
+            return "Permissão da câmera negada. Libere o acesso e tente novamente."
+        }
+
+        return "Procurando QR Code..."
+    }
 
     const [validatedTickets, setValidatedTickets] = useState<Set<string>>(new Set())
     const [searchQuery, setSearchQuery] = useState("")
     const [buyerInfoDialog, setBuyerInfoDialog] = useState<{ open: boolean; buyer: TEventListBuyers | null }>({ open: false, buyer: null })
+    const [qrImageErrorDialog, setQrImageErrorDialog] = useState<{ open: boolean; title: string; description: string }>({
+        open: false,
+        title: "",
+        description: ""
+    })
+    const [confirmValidateDialog, setConfirmValidateDialog] = useState<{ open: boolean; buyer: TEventListBuyers | null }>({
+        open: false,
+        buyer: null
+    })
 
     const { mutateAsync: authenticateSession, isPending: isAuthenticating } = useTicketScanSessionCreate()
     const { mutateAsync: logoutSession, isPending: isLoggingOut } = useTicketScanSessionDelete()
+    const { mutateAsync: validateTicketQrCode, isPending: isValidatingTicketQrCode } = useTicketValidateQrcodeWorker()
+    const { mutateAsync: validateTicketById, isPending: isValidatingTicketById } = useTicketValidateWorker()
 
     const { data: buyersData, isLoading: isLoadingBuyers, isError: isBuyersError, refetch: refetchBuyers } = useEventListBuyersSession(isAuthenticated)
 
@@ -95,6 +131,16 @@ const QrScanLinkPannel = () => {
         setSearchQuery("")
     }, [pubId])
 
+    useEffect(() => {
+        const next = new Set<string>()
+        buyers.forEach((buyer) => {
+            if (buyer.status === "USED" || !!buyer.validationInfo) {
+                next.add(`${buyer.customerName}-${buyer.paymentDate}`)
+            }
+        })
+        setValidatedTickets(next)
+    }, [buyers])
+
     const filteredBuyers = useMemo(() => {
         if (!searchQuery) return buyers
 
@@ -107,8 +153,9 @@ const QrScanLinkPannel = () => {
     }, [buyers, searchQuery])
 
     const validationStats = useMemo(() => {
-        const total = filteredBuyers.length
-        const validated = filteredBuyers.filter((buyer: TEventListBuyers) => {
+        const validatable = filteredBuyers.filter((buyer) => buyer.status !== "CANCELLED" && buyer.status !== "REFUNDED")
+        const total = validatable.length
+        const validated = validatable.filter((buyer: TEventListBuyers) => {
             const key = `${buyer.customerName}-${buyer.paymentDate}`
             return validatedTickets.has(key)
         }).length
@@ -164,6 +211,17 @@ const QrScanLinkPannel = () => {
         return null
     }
 
+    const findBuyerKeyByTicketId = (ticketId?: string | null): string | null => {
+        if (!ticketId) {
+            return null
+        }
+        const buyer = buyers.find((b) => b.ticketId === ticketId)
+        if (!buyer) {
+            return null
+        }
+        return `${buyer.customerName}-${buyer.paymentDate}`
+    }
+
     const handleAuthenticate = async (data: TTicketScanSessionAuthenticateForm) => {
         if (!isValidPubId) {
             Toast.error("Código inválido")
@@ -208,12 +266,14 @@ const QrScanLinkPannel = () => {
             Toast.error("Faça login para iniciar o escaneamento")
             return
         }
+        setScanFeedback("Iniciando câmera...")
         setIsScanning(true)
         
         await new Promise(resolve => setTimeout(resolve, 100))
         
         if (!scannerContainerRef.current) {
             setIsScanning(false)
+            setScanFeedback("")
             Toast.error("Erro ao inicializar o scanner")
             return
         }
@@ -232,12 +292,19 @@ const QrScanLinkPannel = () => {
                     handleScanSuccess(decodedText)
                 },
                 (errorMessage) => {
-                    // Ignorar erros de leitura contínua
+                    const now = Date.now()
+                    if (now - lastScanFeedbackAtRef.current < 900) {
+                        return
+                    }
+                    lastScanFeedbackAtRef.current = now
+                    setScanFeedback(getScanFeedbackMessage(errorMessage))
                 }
             )
+            setScanFeedback("Procurando QR Code...")
         } catch (error) {
             console.error("Erro ao iniciar scanner:", error)
             setIsScanning(false)
+            setScanFeedback("")
             Toast.error("Erro ao iniciar a câmera. Verifique as permissões.")
         }
     }
@@ -248,38 +315,104 @@ const QrScanLinkPannel = () => {
                 scannerRef.current?.clear()
                 scannerRef.current = null
                 setIsScanning(false)
+                setScanFeedback("")
             }).catch((error) => {
                 console.error("Erro ao parar scanner:", error)
             })
         }
     }
 
-    const handleScanSuccess = async (qrData: string) => {
+    const handlePickQrImage = () => {
+        fileInputRef.current?.click()
+    }
+
+    const handleQrImageSelected = async (file?: File | null) => {
+        if (!file) {
+            return
+        }
+
+        try {
+            setIsDecodingQrImage(true)
+            setScanFeedback("Lendo QR Code pela foto...")
+            handleStopScan()
+
+            const reader = new Html5Qrcode(fileReaderId)
+            const decodedText = await reader.scanFile(file, true)
+            await reader.clear()
+
+            if (decodedText) {
+                await handleScanSuccess(decodedText, "photo")
+            } else {
+                setQrImageErrorDialog({
+                    open: true,
+                    title: "Não foi possível ler o QR Code",
+                    description: "Tente enviar uma foto mais nítida (boa iluminação, sem tremor e com o QR Code inteiro no enquadramento)."
+                })
+            }
+        } catch (error) {
+            setQrImageErrorDialog({
+                open: true,
+                title: "Não foi possível ler o QR Code",
+                description: "Tente novamente com outra foto (evite reflexo/baixa luz e aproxime o QR Code da câmera)."
+            })
+        } finally {
+            setIsDecodingQrImage(false)
+        }
+    }
+
+    const handleScanSuccess = async (qrData: string, origin: "camera" | "photo" = "camera") => {
+        setScanFeedback("Validando ingresso...")
         handleStopScan()
         
         try {
-            const response = await TicketService.scanWithData(qrData)
+            const response = await validateTicketQrCode({
+                qrcodeToken: qrData,
+                method: origin === "photo" ? "qr-image" : "qr-scan"
+            })
             if (response?.success && response?.data) {
-                const scanResponse = response.data
-
-                if (scanResponse.status === "VALID") {
-                    const buyerKey = findBuyerByQrCode(qrData)
+                if (response.data.isValid) {
+                    const buyerKey = findBuyerKeyByTicketId(response.data.ticketId) || findBuyerByQrCode(qrData)
                     if (buyerKey) {
-                        setValidatedTickets(prev => new Set([...prev, buyerKey]))
-                        Toast.success("Ingresso validado com sucesso!")
-                        refetchBuyers()
-                    } else {
-                        Toast.success("Ingresso válido, mas não encontrado na lista")
+                        setValidatedTickets((prev) => new Set([...prev, buyerKey]))
                     }
-                } else {
-                    Toast.error(scanResponse.description || "Ingresso inválido")
+                    Toast.success("Ingresso validado com sucesso!")
+                    refetchBuyers()
+                    return
                 }
+
+                const reason = response.data.reason || "Ingresso inválido"
+                if (origin === "photo") {
+                    setQrImageErrorDialog({
+                        open: true,
+                        title: "Ingresso inválido",
+                        description: reason
+                    })
+                } else {
+                    Toast.error(reason)
+                }
+                return
+            }
+
+            if (origin === "photo") {
+                setQrImageErrorDialog({
+                    open: true,
+                    title: "Erro ao validar",
+                    description: "Não foi possível validar o ingresso. Tente novamente."
+                })
             } else {
                 Toast.error("Erro ao validar ingresso")
             }
         } catch (error) {
             console.error("Erro ao escanear:", error)
-            Toast.error("Erro ao validar ingresso")
+            if (origin === "photo") {
+                setQrImageErrorDialog({
+                    open: true,
+                    title: "Erro ao validar",
+                    description: "Não foi possível validar o ingresso. Tente novamente."
+                })
+            } else {
+                Toast.error("Erro ao validar ingresso")
+            }
         }
     }
 
@@ -305,10 +438,35 @@ const QrScanLinkPannel = () => {
         form.setValue("code", pubId)
     }, [pubId, form])
 
-    const handleValidateTicket = (buyer: TEventListBuyers) => {
-        const key = `${buyer.customerName}-${buyer.paymentDate}`
-        setValidatedTickets(prev => new Set([...prev, key]))
-        Toast.success(`Ingresso de ${buyer.customerName} validado com sucesso!`)
+    const handleValidateTicket = async (buyer: TEventListBuyers) => {
+        if (!buyer.ticketId) {
+            Toast.error("Não foi possível validar este ingresso")
+            return
+        }
+
+        try {
+            const response = await validateTicketById({ ticketId: buyer.ticketId })
+            if (response?.success && response?.data) {
+                if (response.data.isValid) {
+                    const key = `${buyer.customerName}-${buyer.paymentDate}`
+                    setValidatedTickets((prev) => new Set([...prev, key]))
+                    Toast.success(`Ingresso de ${buyer.customerName} validado com sucesso!`)
+                    refetchBuyers()
+                    return
+                }
+
+                Toast.error(response.data.reason || "Ingresso inválido")
+                return
+            }
+
+            Toast.error("Erro ao validar ingresso")
+        } catch (error) {
+            Toast.error("Erro ao validar ingresso")
+        }
+    }
+
+    const handleOpenConfirmValidate = (buyer: TEventListBuyers) => {
+        setConfirmValidateDialog({ open: true, buyer })
     }
 
     const handleViewMoreInfo = (buyer: TEventListBuyers) => {
@@ -462,6 +620,18 @@ const QrScanLinkPannel = () => {
                             <p className="text-xs text-psi-dark/50 mt-1">Código: {pubId}</p>
                         </div>
                         <div className="flex flex-col w-full lg:w-auto lg:flex-row gap-3">
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="image/*"
+                                capture="environment"
+                                className="hidden"
+                                onChange={(e) => {
+                                    handleQrImageSelected(e.target.files?.[0] || null)
+                                    e.currentTarget.value = ""
+                                }}
+                            />
+                            <div id={fileReaderId} className="hidden" />
                             <Button
                                 variant="outline"
                                 onClick={handleLogout}
@@ -470,6 +640,15 @@ const QrScanLinkPannel = () => {
                             >
                                 <LogOut className="h-4 w-4 mr-2" />
                                 Sair
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={handlePickQrImage}
+                                disabled={isDecodingQrImage}
+                                className="w-full lg:w-auto"
+                            >
+                                <ImageUp className="h-4 w-4 mr-2" />
+                                {isDecodingQrImage ? "Lendo foto..." : "Ler pela foto"}
                             </Button>
                             {isScanning ? (
                                 <Button
@@ -483,6 +662,7 @@ const QrScanLinkPannel = () => {
                                 <Button
                                     variant="primary"
                                     onClick={handleStartScan}
+                                    disabled={isValidatingTicketQrCode}
                                     className="w-full lg:w-auto"
                                 >
                                     <Scan className="h-4 w-4 mr-2" />
@@ -519,6 +699,12 @@ const QrScanLinkPannel = () => {
 
                         {isScanning && (
                             <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
+                                <div className="mb-4">
+                                    <p className="text-sm font-semibold text-psi-dark">Leitura do QR Code</p>
+                                    <p className="text-xs text-psi-dark/60">
+                                        {scanFeedback || "Aponte a câmera para o QR Code. Chegue mais perto e mantenha o celular firme."}
+                                    </p>
+                                </div>
                                 <div
                                     id={scannerId}
                                     ref={scannerContainerRef}
@@ -568,21 +754,46 @@ const QrScanLinkPannel = () => {
                                         {filteredBuyers.map((buyer: TEventListBuyers, index: number) => {
                                             const key = `${buyer.customerName}-${buyer.paymentDate}`
                                             const isValidated = validatedTickets.has(key)
+                                            const isCancelled = buyer.status === "CANCELLED"
+                                            const validatedAt = buyer.validationInfo?.validatedAt
+                                            const validatedByOrganizer = buyer.validationInfo?.validatedByOrganizer
+                                            const validatedByText = validatedByOrganizer
+                                                ? "Organizador"
+                                                : buyer.validationInfo?.name
+                                                    ? buyer.validationInfo.name
+                                                    : "Equipe"
+                                            const validatedWhenText = validatedAt ? DateUtils.formatDate(validatedAt, "DD/MM/YYYY HH:mm") : ""
+                                            const validatedLocationText = buyer.validationInfo?.location ? ` • ${buyer.validationInfo.location}` : ""
 
                                             return (
                                                 <TableRow key={index}>
                                                     <TableCell>
-                                                        {isValidated ? (
-                                                            <Badge variant="default" className="bg-green-600">
-                                                                <CheckCircle2 className="h-3 w-3 mr-1" />
-                                                                Validado
-                                                            </Badge>
-                                                        ) : (
-                                                            <Badge variant="outline">
-                                                                <XCircle className="h-3 w-3 mr-1" />
-                                                                Pendente
-                                                            </Badge>
-                                                        )}
+                                                        <div className="space-y-1">
+                                                            {isCancelled ? (
+                                                                <Badge variant="destructive">
+                                                                    <XCircle className="h-3 w-3 mr-1" />
+                                                                    Cancelado
+                                                                </Badge>
+                                                            ) : isValidated ? (
+                                                                <Badge variant="default" className="bg-green-600">
+                                                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                                                    Validado
+                                                                </Badge>
+                                                            ) : (
+                                                                <Badge variant="outline">
+                                                                    <XCircle className="h-3 w-3 mr-1" />
+                                                                    Pendente
+                                                                </Badge>
+                                                            )}
+
+                                                            {buyer.validationInfo && !isCancelled && (
+                                                                <p className="text-[11px] text-psi-dark/60">
+                                                                    {validatedByText}
+                                                                    {validatedLocationText}
+                                                                    {validatedWhenText ? ` • ${validatedWhenText}` : ""}
+                                                                </p>
+                                                            )}
+                                                        </div>
                                                     </TableCell>
                                                     <TableCell className="font-medium">{buyer.customerName}</TableCell>
                                                     <TableCell>{buyer.ticketTypeName || "-"}</TableCell>
@@ -613,13 +824,14 @@ const QrScanLinkPannel = () => {
                                                                 </Button>
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end">
-                                                                {!isValidated && (
+                                                                {!isValidated && !isCancelled && (
                                                                     <DropdownMenuItem
-                                                                        onClick={() => handleValidateTicket(buyer)}
+                                                                        onClick={() => handleOpenConfirmValidate(buyer)}
+                                                                        disabled={isValidatingTicketById}
                                                                         className="cursor-pointer"
                                                                     >
                                                                         <Check className="h-4 w-4 mr-2" />
-                                                                        Validar
+                                                                        {isValidatingTicketById ? "Validando..." : "Validar"}
                                                                     </DropdownMenuItem>
                                                                 )}
                                                                 <DropdownMenuItem
@@ -685,6 +897,60 @@ const QrScanLinkPannel = () => {
                             </div>
 
                             <div className="space-y-2">
+                                <p className="text-xs text-psi-dark/60">Validação</p>
+                                <div className="rounded-lg border border-psi-primary/10 bg-white p-3">
+                                    {buyerInfoDialog.buyer.validationInfo ? (
+                                        <div className="space-y-2">
+                                            <div className="flex flex-wrap items-center gap-2 text-sm text-psi-dark/80">
+                                                <Badge variant="outline">
+                                                    {buyerInfoDialog.buyer.validationInfo.validatedByOrganizer ? "Organizador" : "Equipe"}
+                                                </Badge>
+                                                <span>
+                                                    {buyerInfoDialog.buyer.validationInfo.validatedAt
+                                                        ? DateUtils.formatDate(buyerInfoDialog.buyer.validationInfo.validatedAt, "DD/MM/YYYY HH:mm")
+                                                        : "-"}
+                                                </span>
+                                            </div>
+
+                                            <div className="text-xs text-psi-dark/70">
+                                                <span className="font-semibold text-psi-dark">Método:</span>{" "}
+                                                {buyerInfoDialog.buyer.validationInfo.method === "qr-scan"
+                                                    ? "Câmera"
+                                                    : buyerInfoDialog.buyer.validationInfo.method === "qr-image"
+                                                        ? "Foto"
+                                                        : buyerInfoDialog.buyer.validationInfo.method === "button"
+                                                            ? "Botão"
+                                                            : "-"}
+                                            </div>
+
+                                            {!buyerInfoDialog.buyer.validationInfo.validatedByOrganizer && (
+                                                <div className="grid gap-3 sm:grid-cols-2 text-xs text-psi-dark/70">
+                                                    <div>
+                                                        <span className="font-semibold text-psi-dark">Nome:</span>{" "}
+                                                        {buyerInfoDialog.buyer.validationInfo.name || "-"}
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-semibold text-psi-dark">Local:</span>{" "}
+                                                        {buyerInfoDialog.buyer.validationInfo.location || "-"}
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-semibold text-psi-dark">IP:</span>{" "}
+                                                        {buyerInfoDialog.buyer.validationInfo.ip || "-"}
+                                                    </div>
+                                                    <div>
+                                                        <span className="font-semibold text-psi-dark">Código do link de validação:</span>{" "}
+                                                        {buyerInfoDialog.buyer.validationInfo.code || "-"}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-psi-dark/60">Ainda não validado.</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
                                 <p className="text-xs text-psi-dark/60">Respostas do formulário</p>
                                 <div className="max-h-[240px] overflow-auto rounded-lg border border-psi-primary/10 bg-psi-primary/5 p-3">
                                     <p className="text-sm text-psi-dark/80 whitespace-pre-wrap wrap-break-word">
@@ -700,6 +966,44 @@ const QrScanLinkPannel = () => {
                             type="button"
                             variant="outline"
                             onClick={() => setBuyerInfoDialog({ open: false, buyer: null })}
+                        >
+                            Fechar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <DialogConfirm
+                open={confirmValidateDialog.open}
+                onOpenChange={(open) => setConfirmValidateDialog({ open, buyer: open ? confirmValidateDialog.buyer : null })}
+                onConfirm={async () => {
+                    if (!confirmValidateDialog.buyer) {
+                        return
+                    }
+                    await handleValidateTicket(confirmValidateDialog.buyer)
+                    setConfirmValidateDialog({ open: false, buyer: null })
+                }}
+                title="Confirmar validação"
+                description="Após validar, não é possível desfazer. Deseja realmente prosseguir?"
+                confirmText="Validar"
+                cancelText="Cancelar"
+                isLoading={isValidatingTicketById}
+                variant="default"
+            />
+
+            <Dialog open={qrImageErrorDialog.open} onOpenChange={(open) => setQrImageErrorDialog((prev) => ({ ...prev, open }))}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>{qrImageErrorDialog.title || "Atenção"}</DialogTitle>
+                        <DialogDescription>
+                            {qrImageErrorDialog.description}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setQrImageErrorDialog({ open: false, title: "", description: "" })}
                         >
                             Fechar
                         </Button>

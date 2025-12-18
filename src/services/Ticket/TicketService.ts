@@ -1,24 +1,7 @@
 import { API } from "@/api/api"
 import type { AxiosResponse } from "axios"
-import type { TTicket, TTicketBuy, TTicketScanLinkGenerateResponse, TTicketScanResponse, TTicketScanLink, TTicketScanLinkCreate, TTicketScanLinkDelete, TTicketQRCodeResponse, TTicketToOrganizer } from "@/types/Ticket/TTicket"
+import type { TTicket, TTicketBuy, TTicketScanLinkGenerateResponse, TTicketScanResponse, TTicketScanLink, TTicketScanLinkCreate, TTicketScanLinkDelete, TTicketQRCodeResponse, TTicketToOrganizer, TTicketValidate, TTicketValidateQrCodeResponse } from "@/types/Ticket/TTicket"
 import type { TApiResponse } from "@/types/TApiResponse"
-
-const mockTicketScanResponse: TApiResponse<TTicketScanResponse> = {
-    success: true,
-    data: {
-        status: "VALID",
-        description: null
-    }
-}
-
-const mockTicketScanLinkGenerateResponse: TApiResponse<TTicketScanLinkGenerateResponse> = {
-    success: true,
-    data: {
-        link: "https://www.google.com"
-    }
-}
-
-const mockScanLinks: TTicketScanLink[] = []
 
 class TicketServiceClass {
     async buy(data: TTicketBuy): Promise<AxiosResponse["data"]> {
@@ -44,53 +27,6 @@ class TicketServiceClass {
         return response
     }
 
-    async scan(): Promise<AxiosResponse["data"]> {
-        return mockTicketScanResponse
-    }
-
-    async generateScanLink(): Promise<AxiosResponse["data"]> {
-        return mockTicketScanLinkGenerateResponse
-    }
-
-    async createScanLink(data: TTicketScanLinkCreate): Promise<AxiosResponse["data"]> {
-        const newLink: TTicketScanLink = {
-            id: `link-${Date.now()}`,
-            link: `${window.location.origin}/qr-scan-link/${Date.now()}`,
-            maxUsers: data.maxUsers,
-            currentUsers: 0,
-            password: data.password,
-            createdAt: new Date().toISOString()
-        }
-        mockScanLinks.push(newLink)
-        return {
-            success: true,
-            data: newLink
-        }
-    }
-
-    async getScanLinks(): Promise<AxiosResponse["data"]> {
-        return {
-            success: true,
-            data: mockScanLinks
-        }
-    }
-
-    async deleteScanLink(data: TTicketScanLinkDelete): Promise<AxiosResponse["data"]> {
-        const index = mockScanLinks.findIndex(link => link.id === data.linkId)
-        if (index >= 0) {
-            mockScanLinks.splice(index, 1)
-        }
-        return {
-            success: true,
-            data: null
-        }
-    }
-
-    async scanWithData(qrData: string): Promise<AxiosResponse["data"]> {
-        console.log("Enviando dados do QR Code para o servidor:", qrData)
-        return mockTicketScanResponse
-    }
-
     async getTicketQRCode(ticketId: string): Promise<AxiosResponse["data"]> {
         const response = (await API.GET({
             prefix: "/ticket",
@@ -103,6 +39,40 @@ class TicketServiceClass {
         const response = (await API.GET({
             prefix: "/ticket",
             url: "/user"
+        }))?.data
+        return response
+    }
+
+    async validateTicketQrCodeWorker(qrcodeToken: string, method: "qr-scan" | "qr-image"): Promise<AxiosResponse["data"]> {
+        const response = (await API.POST({
+            prefix: "/ticket",
+            url: `/validate-ticket-qrcode/worker/${encodeURIComponent(qrcodeToken)}`,
+            data: { method }
+        }))?.data
+        return response
+    }
+
+    async validateTicketQrCodeOrganizer(qrcodeToken: string, method: "qr-scan" | "qr-image"): Promise<AxiosResponse["data"]> {
+        const response = (await API.POST({
+            prefix: "/ticket",
+            url: `/validate-ticket-qrcode/organizer/${encodeURIComponent(qrcodeToken)}`,
+            data: { method }
+        }))?.data
+        return response
+    }
+
+    async validateTicketWorker(ticketId: string): Promise<AxiosResponse["data"]> {
+        const response = (await API.POST({
+            prefix: "/ticket",
+            url: `/validate-ticket/worker/${encodeURIComponent(ticketId)}`
+        }))?.data
+        return response
+    }
+
+    async validateTicketOrganizer(ticketId: string): Promise<AxiosResponse["data"]> {
+        const response = (await API.POST({
+            prefix: "/ticket",
+            url: `/validate-ticket/organizer/${encodeURIComponent(ticketId)}`
         }))?.data
         return response
     }

@@ -129,6 +129,36 @@ const SheetTicketsToOrganizer = ({
         setSelectedTicket(null)
     }
 
+    const formatValidationAudit = (ticket: TTicketToOrganizer) => {
+        const info = ticket.validationInfo
+        if (!info) {
+            return null
+        }
+
+        const validatedAt = info.validatedAt ? DateUtils.formatDate(info.validatedAt, "DD/MM/YYYY [às] HH:mm") : "-"
+        const by = info.validatedByOrganizer ? "Organizador" : "Equipe"
+        const methodLabel = info.method === "qr-scan"
+            ? "Câmera"
+            : info.method === "qr-image"
+                ? "Foto"
+                : info.method === "button"
+                    ? "Botão"
+                    : null
+
+        const parts: string[] = [`${by} • ${validatedAt}`]
+        if (methodLabel) {
+            parts.push(`Método: ${methodLabel}`)
+        }
+        if (!info.validatedByOrganizer) {
+            if (info.name) parts.push(`Nome: ${info.name}`)
+            if (info.location) parts.push(`Local: ${info.location}`)
+            if (info.ip) parts.push(`IP: ${info.ip}`)
+            if (info.code) parts.push(`Código: ${info.code}`)
+        }
+
+        return parts.join(" • ")
+    }
+
     return (
         <>
             <Sheet open={open} onOpenChange={onOpenChange}>
@@ -146,8 +176,8 @@ const SheetTicketsToOrganizer = ({
                     </SheetHeader>
 
                     <div className="mt-6 space-y-6 mx-6">
-                        <div className="flex flex-colGerencie e visualize todos os ingressos vendidos para este evento
-                        sm:flex-row gap-3">
+                        <div className="flex flex-col gap-3
+                        sm:flex-row">
                             <div className="flex-1">
                                 <Input
                                     placeholder="Pesquisar por nome, email ou telefone..."
@@ -232,6 +262,16 @@ const SheetTicketsToOrganizer = ({
                                                             </span>
                                                         </div>
                                                     </div>
+
+                                                    {ticket.validationInfo && (
+                                                        <div className="mt-3 flex items-start gap-2 text-xs text-psi-dark/70">
+                                                            <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0 mt-px" />
+                                                            <div className="min-w-0">
+                                                                <p className="font-semibold text-psi-dark">Validação</p>
+                                                                <p className="wrap-break-word">{formatValidationAudit(ticket)}</p>
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 <DropdownMenu>

@@ -325,7 +325,8 @@ class EventServiceClass {
     async listBuyers(
         eventId: string,
         eventDateId?: string,
-        ticketTypeId?: string
+        ticketTypeId?: string,
+        onlyConfirmed?: boolean
     ): Promise<AxiosResponse["data"]> {
         const params: Record<string, string> = {}
         if (eventDateId) {
@@ -333,6 +334,9 @@ class EventServiceClass {
         }
         if (ticketTypeId) {
             params.ticketTypeId = ticketTypeId
+        }
+        if (onlyConfirmed) {
+            params.onlyConfirmed = "true"
         }
         const response = (await API.GET({
             prefix: "/event",

@@ -123,12 +123,37 @@ type TEventSoldInValueResponse = {
     value: number
 }
 
+type TEventBuyerValidationInfo = {
+    validatedAt?: string | null
+    validatedByOrganizer?: boolean
+    method?: "qr-scan" | "qr-image" | "button" | null
+    code?: string | null
+    ip?: string | null
+    name?: string | null
+    location?: string | null
+} | null
+
+type TEventBuyerTicketStatus =
+    "PENDING" |
+    "CONFIRMED" |
+    "CANCELLED" |
+    "REFUNDED" |
+    "REFUND_REQUESTED" |
+    "OVERDUE" |
+    "USED" |
+    "PARTIALLY_USED" |
+    "EXPIRED" |
+    "FAILED"
+
 type TEventListBuyers = {
+    ticketId: string
+    status: TEventBuyerTicketStatus
     customerName: string
     paymentDate: Date | string
     ticketTypeName: string | null
     eventDates: string[]
-    formAnswers: Record<string, string>
+    formAnswers: Record<string, any>
+    validationInfo: TEventBuyerValidationInfo
 }
 
 export type {
