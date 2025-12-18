@@ -28,7 +28,8 @@ const publicRoutes: TPublicRoutes[] = [
     { path: "/recursos", whenAuthenticated: "next" },
     { path: "/checkout", whenAuthenticated: "next" },
     { path: "/ver-eventos", whenAuthenticated: "next" },
-    { path: "/conheca", whenAuthenticated: "next" }
+    { path: "/conheca", whenAuthenticated: "next" },
+    { path: "/qr-scanner-link", whenAuthenticated: "next" }
 ]
 
 export default async function proxy(request: NextRequest): Promise<NextResponse> {

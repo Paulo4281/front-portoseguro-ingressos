@@ -342,6 +342,14 @@ class EventServiceClass {
         return response
     }
 
+    async listBuyersSession(): Promise<AxiosResponse["data"]> {
+        const response = (await API.GET({
+            prefix: "/event",
+            url: "/list-buyers/session/client"
+        }))?.data
+        return response
+    }
+
     async generateSalesReport(eventId: string): Promise<AxiosResponse["data"]> {
         const response = (await API.GET({
             prefix: "/event",

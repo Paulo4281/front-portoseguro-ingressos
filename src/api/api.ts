@@ -14,6 +14,8 @@ type Prefixes =
     "/bank" |
     "/event-click" |
     "/ticket" |
+    "/ticketscan" |
+    "/ticketscan-session" |
     "/ticket-hold" |
     "/support" |
     "/payment" |

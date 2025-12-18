@@ -543,7 +543,7 @@ const Menu = () => {
                     </div>
                 </div>
 
-                {!isAuthenticated && (
+                {!isAuthenticated && isOpen && (
                     <div className="md:hidden border-t border-[#E4E6F0] bg-white/95 backdrop-blur-md rounded-2xl mt-2 mb-4 shadow-lg shadow-black/5">
                         <div className="px-2 pt-2 pb-3 space-y-1">
                             <Button

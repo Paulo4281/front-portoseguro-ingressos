@@ -24,8 +24,6 @@ import { Input } from "@/components/Input/Input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
-import { TicketService } from "@/services/Ticket/TicketService"
 import type { TTicketScanLink } from "@/types/Ticket/TTicket"
 import { QrCode, Link2, Trash2, Users, Scan, CheckCircle2, XCircle, Calendar, Ticket, Search, MoreVertical, Check, Info } from "lucide-react"
 import { DialogConfirm } from "@/components/Dialog/DialogConfirm/DialogConfirm"
@@ -37,6 +35,16 @@ import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useEventCache } from "@/hooks/Event/useEventCache"
+import { TicketService } from "@/services/Ticket/TicketService"
+import { useTicketScanFind } from "@/hooks/TicketScan/useTicketScanFind"
+import { useTicketScanCreate } from "@/hooks/TicketScan/useTicketScanCreate"
+import { useTicketScanDelete } from "@/hooks/TicketScan/useTicketScanDelete"
+import { TicketScanCreateLinkValidator, type TTicketScanCreateLinkForm } from "@/validators/TicketScan/TicketScanValidator"
+import { useTicketUpdateExpAt } from "@/hooks/TicketScan/useTicketUpdateExpAt"
+import { useTicketScanUpdatePassword } from "@/hooks/TicketScan/useTicketScanUpdatePassword"
+import { useTicketScanSessionDeleteByOrganizer } from "@/hooks/TicketScanSession/useTicketScanSessionDeleteByOrganizer"
+import { TicketScanUpdateExpAtValidator, TicketScanUpdatePasswordValidator, type TTicketScanUpdateExpAtForm, type TTicketScanUpdatePasswordForm } from "@/validators/TicketScan/TicketScanValidator"
+import type { TTicketScanPublic, TTicketScanSessionPublic } from "@/types/TicketScan/TTicketScan"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -44,17 +52,9 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-const createLinkSchema = z.object({
-    maxUsers: z.number().min(1, { error: "Mínimo de 1 usuário" }).max(100, { error: "Máximo de 100 usuários" }),
-    password: z.string().min(4, { error: "Senha deve ter no mínimo 4 caracteres" }).max(50, { error: "Senha deve ter no máximo 50 caracteres" })
-})
-
-type TCreateLinkForm = z.infer<typeof createLinkSchema>
-
 const QrScannerPannel = () => {
     const [selectedEventId, setSelectedEventId] = useState<string>("")
     const [isScanning, setIsScanning] = useState(false)
-    const [scanLinks, setScanLinks] = useState<TTicketScanLink[]>([])
     const [createLinkDialogOpen, setCreateLinkDialogOpen] = useState(false)
     const [deleteLinkDialog, setDeleteLinkDialog] = useState<{ open: boolean; linkId: string }>({ open: false, linkId: "" })
     const [validatedTickets, setValidatedTickets] = useState<Set<string>>(new Set())
@@ -86,11 +86,20 @@ const QrScannerPannel = () => {
         }
     }, [buyersData])
 
-    const form = useForm<TCreateLinkForm>({
-        resolver: zodResolver(createLinkSchema),
+    const form = useForm<TTicketScanCreateLinkForm>({
+        resolver: zodResolver(TicketScanCreateLinkValidator),
         defaultValues: {
             maxUsers: 1,
-            password: ""
+            password: "",
+            expiresAt: (() => {
+                const date = new Date(Date.now() + 24 * 60 * 60 * 1000)
+                const yyyy = date.getFullYear()
+                const mm = String(date.getMonth() + 1).padStart(2, "0")
+                const dd = String(date.getDate()).padStart(2, "0")
+                const hh = String(date.getHours()).padStart(2, "0")
+                const min = String(date.getMinutes()).padStart(2, "0")
+                return `${yyyy}-${mm}-${dd}T${hh}:${min}`
+            })()
         }
     })
 
@@ -153,24 +162,60 @@ const QrScannerPannel = () => {
         return formattedAnswers.length > 0 ? formattedAnswers.join("; ") : "-"
     }
 
-    useEffect(() => {
-        loadScanLinks()
-    }, [])
+    const { data: scanLinksData, isLoading: isLoadingScanLinks, refetch: refetchScanLinks } = useTicketScanFind()
+    const { mutateAsync: createScanLink, isPending: isCreatingScanLink } = useTicketScanCreate()
+    const { mutateAsync: deleteScanLink, isPending: isDeletingScanLink } = useTicketScanDelete()
+    const { mutateAsync: updateScanLinkExpAt, isPending: isUpdatingScanLinkExpAt } = useTicketUpdateExpAt()
+    const { mutateAsync: updateScanLinkPassword, isPending: isUpdatingScanLinkPassword } = useTicketScanUpdatePassword()
+    const { mutateAsync: forceLogoutSession, isPending: isForcingLogoutSession } = useTicketScanSessionDeleteByOrganizer()
+
+    const scanLinks = useMemo(() => {
+        if (scanLinksData?.data && Array.isArray(scanLinksData.data)) {
+            return scanLinksData.data
+        }
+        return []
+    }, [scanLinksData])
+
+    const [manageSessionsDialog, setManageSessionsDialog] = useState<{ open: boolean; linkId: string }>({ open: false, linkId: "" })
+    const [updatePasswordDialog, setUpdatePasswordDialog] = useState<{ open: boolean; linkId: string }>({ open: false, linkId: "" })
+    const [updateExpAtDialog, setUpdateExpAtDialog] = useState<{ open: boolean; linkId: string }>({ open: false, linkId: "" })
+    const [buyerInfoDialog, setBuyerInfoDialog] = useState<{ open: boolean; buyer: TEventListBuyers | null }>({ open: false, buyer: null })
+
+    const selectedManageLink = useMemo(() => {
+        return scanLinks.find((link: TTicketScanPublic) => link.id === manageSessionsDialog.linkId) || null
+    }, [scanLinks, manageSessionsDialog.linkId])
+
+    const sessionsForSelectedLink = useMemo(() => {
+        return (selectedManageLink?.TicketScanSessions || []) as TTicketScanSessionPublic[]
+    }, [selectedManageLink])
+
+    const updatePasswordForm = useForm<TTicketScanUpdatePasswordForm>({
+        resolver: zodResolver(TicketScanUpdatePasswordValidator),
+        defaultValues: {
+            id: "",
+            password: ""
+        }
+    })
+
+    const updateExpAtForm = useForm<TTicketScanUpdateExpAtForm>({
+        resolver: zodResolver(TicketScanUpdateExpAtValidator),
+        defaultValues: {
+            id: "",
+            expiresAt: (() => {
+                const date = new Date(Date.now() + 24 * 60 * 60 * 1000)
+                const yyyy = date.getFullYear()
+                const mm = String(date.getMonth() + 1).padStart(2, "0")
+                const dd = String(date.getDate()).padStart(2, "0")
+                const hh = String(date.getHours()).padStart(2, "0")
+                const min = String(date.getMinutes()).padStart(2, "0")
+                return `${yyyy}-${mm}-${dd}T${hh}:${min}`
+            })()
+        }
+    })
 
     useEffect(() => {
         setValidatedTickets(new Set())
     }, [selectedEventId])
-
-    const loadScanLinks = async () => {
-        try {
-            const response = await TicketService.getScanLinks()
-            if (response?.success && response?.data) {
-                setScanLinks(response.data)
-            }
-        } catch (error) {
-            console.error("Erro ao carregar links:", error)
-        }
-    }
 
     const handleStartScan = async () => {
         if (!selectedEventId) {
@@ -269,38 +314,40 @@ const QrScannerPannel = () => {
     }
 
     const handleViewMoreInfo = (buyer: TEventListBuyers) => {
-        const info = [
-            `Nome: ${buyer.customerName}`,
-            `Tipo de Ingresso: ${buyer.ticketTypeName || "Não especificado"}`,
-            `Datas do Evento: ${buyer.eventDates.map((date) => DateUtils.formatDate(date, "DD/MM/YYYY")).join(", ")}`,
-            `Data do Pagamento: ${buyer.paymentDate 
-                ? DateUtils.formatDate(
-                    typeof buyer.paymentDate === "string" 
-                        ? buyer.paymentDate 
-                        : buyer.paymentDate.toISOString(), 
-                    "DD/MM/YYYY HH:mm"
-                )
-                : "Não informado"
-            }`,
-            `Respostas do Formulário: ${formatFormAnswers(buyer.formAnswers || {})}`
-        ].join("\n")
-        
-        Toast.info(info)
+        setBuyerInfoDialog({ open: true, buyer })
     }
 
-    const handleCreateLink = async (data: TCreateLinkForm) => {
-        if (scanLinks.length >= 5) {
-            Toast.error("Você já possui o máximo de 5 links ativos")
+    const handleCreateLink = async (data: TTicketScanCreateLinkForm) => {
+        if (!selectedEventId) {
+            Toast.error("Selecione um evento primeiro")
             return
         }
 
         try {
-            const response = await TicketService.createScanLink(data)
+            const response = await createScanLink({
+                eventId: selectedEventId,
+                password: data.password,
+                maxUsers: data.maxUsers,
+                expiresAt: new Date(data.expiresAt).toISOString()
+            })
+
             if (response?.success) {
                 Toast.success("Link criado com sucesso!")
                 setCreateLinkDialogOpen(false)
-                form.reset()
-                loadScanLinks()
+                form.reset({
+                    maxUsers: 1,
+                    password: "",
+                    expiresAt: (() => {
+                        const date = new Date(Date.now() + 24 * 60 * 60 * 1000)
+                        const yyyy = date.getFullYear()
+                        const mm = String(date.getMonth() + 1).padStart(2, "0")
+                        const dd = String(date.getDate()).padStart(2, "0")
+                        const hh = String(date.getHours()).padStart(2, "0")
+                        const min = String(date.getMinutes()).padStart(2, "0")
+                        return `${yyyy}-${mm}-${dd}T${hh}:${min}`
+                    })()
+                })
+                refetchScanLinks()
             }
         } catch (error) {
             console.error("Erro ao criar link:", error)
@@ -310,15 +357,83 @@ const QrScannerPannel = () => {
 
     const handleDeleteLink = async () => {
         try {
-            const response = await TicketService.deleteScanLink({ linkId: deleteLinkDialog.linkId })
+            const response = await deleteScanLink({ id: deleteLinkDialog.linkId })
             if (response?.success) {
                 Toast.success("Link excluído com sucesso!")
                 setDeleteLinkDialog({ open: false, linkId: "" })
-                loadScanLinks()
+                refetchScanLinks()
             }
         } catch (error) {
             console.error("Erro ao excluir link:", error)
             Toast.error("Erro ao excluir link")
+        }
+    }
+
+    const handleOpenManageSessions = (linkId: string) => {
+        setManageSessionsDialog({ open: true, linkId })
+    }
+
+    const handleOpenUpdatePassword = (linkId: string) => {
+        updatePasswordForm.reset({ id: linkId, password: "" })
+        setUpdatePasswordDialog({ open: true, linkId })
+    }
+
+    const handleOpenUpdateExpAt = (linkId: string, expiresAt?: string) => {
+        const parsed = expiresAt ? new Date(expiresAt) : new Date(Date.now() + 24 * 60 * 60 * 1000)
+        const yyyy = parsed.getFullYear()
+        const mm = String(parsed.getMonth() + 1).padStart(2, "0")
+        const dd = String(parsed.getDate()).padStart(2, "0")
+        const hh = String(parsed.getHours()).padStart(2, "0")
+        const min = String(parsed.getMinutes()).padStart(2, "0")
+
+        updateExpAtForm.reset({
+            id: linkId,
+            expiresAt: `${yyyy}-${mm}-${dd}T${hh}:${min}`
+        })
+        setUpdateExpAtDialog({ open: true, linkId })
+    }
+
+    const handleConfirmUpdatePassword = async (data: TTicketScanUpdatePasswordForm) => {
+        try {
+            const response = await updateScanLinkPassword({
+                id: data.id,
+                password: data.password
+            })
+            if (response?.success) {
+                Toast.success("Senha atualizada com sucesso!")
+                setUpdatePasswordDialog({ open: false, linkId: "" })
+                refetchScanLinks()
+            }
+        } catch (error) {
+            Toast.error("Erro ao atualizar senha")
+        }
+    }
+
+    const handleConfirmUpdateExpAt = async (data: TTicketScanUpdateExpAtForm) => {
+        try {
+            const response = await updateScanLinkExpAt({
+                id: data.id,
+                expiresAt: new Date(data.expiresAt).toISOString()
+            })
+            if (response?.success) {
+                Toast.success("Data de expiração atualizada com sucesso!")
+                setUpdateExpAtDialog({ open: false, linkId: "" })
+                refetchScanLinks()
+            }
+        } catch (error) {
+            Toast.error("Erro ao atualizar data de expiração")
+        }
+    }
+
+    const handleForceLogoutSession = async (sessionId: string) => {
+        try {
+            const response = await forceLogoutSession({ id: sessionId })
+            if (response?.success) {
+                Toast.success("Desconectado com sucesso!")
+                refetchScanLinks()
+            }
+        } catch (error) {
+            Toast.error("Erro ao desconectar")
         }
     }
 
@@ -352,7 +467,7 @@ const QrScannerPannel = () => {
                             <Button
                                 variant="outline"
                                 onClick={() => setCreateLinkDialogOpen(true)}
-                                disabled={scanLinks.length >= 5}
+                                disabled={!selectedEventId}
                                 className="w-full lg:w-auto"
                             >
                                 <Link2 className="h-4 w-4 mr-2" />
@@ -455,26 +570,80 @@ const QrScannerPannel = () => {
                                             <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
                                                 <h2 className="text-lg font-semibold text-psi-dark mb-4">Links de Escaneamento</h2>
                                                 <div className="space-y-3">
-                                                    {scanLinks.map((link) => (
+                                                    {scanLinks.map((link) => {
+                                                        const eventName = events.find((event) => event.id === link.eventId)?.name || "Evento"
+                                                        const publicPath = `/qr-scanner-link?pubId=${link.code}`
+                                                        const currentUsers = (link.TicketScanSessions?.length || 0)
+
+                                                        return (
                                                         <div key={link.id} className="flex items-center justify-between p-3 rounded-lg border border-psi-primary/10">
                                                             <div className="flex-1 min-w-0">
-                                                                <p className="text-xs font-mono text-psi-dark/60 truncate">{link.link}</p>
+                                                                <p className="text-xs font-medium text-psi-dark truncate">{eventName}</p>
+                                                                <button
+                                                                    type="button"
+                                                                    aria-label="Copiar link de escaneamento"
+                                                                    className="text-sm font-semibold underline cursor-pointer text-psi-dark/70 truncate text-left outline-none focus-visible:ring-2 focus-visible:ring-psi-primary transition select-text hover:underline w-full"
+                                                                    style={{ background: "none", border: "none", padding: 0 }}
+                                                                    onClick={() => {
+                                                                        const url = `${process.env.NEXT_PUBLIC_FRONT_URL}${publicPath}`
+                                                                        navigator.clipboard.writeText(url)
+                                                                        Toast.success("Link de escaneamento copiado para a área de transferência")
+                                                                    }}
+                                                                >
+                                                                    {process.env.NEXT_PUBLIC_FRONT_URL}{publicPath}
+                                                                </button>
                                                                 <div className="flex items-center gap-4 mt-1">
                                                                     <span className="text-xs text-psi-dark/60 flex items-center gap-1">
                                                                         <Users className="h-3 w-3" />
-                                                                        {link.currentUsers}/{link.maxUsers}
+                                                                        {currentUsers}/{link.maxUsers}
+                                                                    </span>
+                                                                    <span className="text-xs text-psi-dark/60">
+                                                                        Expira em {DateUtils.formatDate(link.expiresAt, "DD/MM/YYYY HH:mm")}
                                                                     </span>
                                                                 </div>
                                                             </div>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => setDeleteLinkDialog({ open: true, linkId: link.id })}
-                                                            >
-                                                                <Trash2 className="h-4 w-4 text-destructive" />
-                                                            </Button>
+                                                            <div className="flex items-center gap-2">
+                                                                <DropdownMenu>
+                                                                    <DropdownMenuTrigger asChild>
+                                                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                                            <MoreVertical className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </DropdownMenuTrigger>
+                                                                    <DropdownMenuContent align="end">
+                                                                        <DropdownMenuItem
+                                                                            onClick={() => handleOpenManageSessions(link.id)}
+                                                                            className="cursor-pointer"
+                                                                        >
+                                                                            <Users className="h-4 w-4 mr-2" />
+                                                                            Ver conectados ({currentUsers})
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem
+                                                                            onClick={() => handleOpenUpdatePassword(link.id)}
+                                                                            className="cursor-pointer"
+                                                                        >
+                                                                            <QrCode className="h-4 w-4 mr-2" />
+                                                                            Alterar senha
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem
+                                                                            onClick={() => handleOpenUpdateExpAt(link.id, link.expiresAt)}
+                                                                            className="cursor-pointer"
+                                                                        >
+                                                                            <Calendar className="h-4 w-4 mr-2" />
+                                                                            Alterar expiração
+                                                                        </DropdownMenuItem>
+                                                                        <DropdownMenuItem
+                                                                            onClick={() => setDeleteLinkDialog({ open: true, linkId: link.id })}
+                                                                            className="cursor-pointer text-destructive"
+                                                                        >
+                                                                            <Trash2 className="h-4 w-4 mr-2" />
+                                                                            Excluir link
+                                                                        </DropdownMenuItem>
+                                                                    </DropdownMenuContent>
+                                                                </DropdownMenu>
+                                                            </div>
                                                         </div>
-                                                    ))}
+                                                        )
+                                                    })}
                                                 </div>
                                             </div>
                                         )}
@@ -628,10 +797,32 @@ const QrScannerPannel = () => {
                             <DialogHeader>
                                 <DialogTitle>Criar Link de Escaneamento</DialogTitle>
                                 <DialogDescription>
-                                    Crie um link para compartilhar com sua equipe. Máximo de 5 links ativos.
+                                    Crie um link para compartilhar com sua equipe.
                                 </DialogDescription>
                             </DialogHeader>
                             <form onSubmit={form.handleSubmit(handleCreateLink)} className="space-y-4">
+                                <div className="space-y-2">
+                                    <label htmlFor="expiresAt" className="text-sm font-medium text-psi-dark">
+                                        Data de expiração
+                                    </label>
+                                    <Controller
+                                        name="expiresAt"
+                                        control={form.control}
+                                        render={({ field }) => (
+                                            <Input
+                                                {...field}
+                                                id="expiresAt"
+                                                type="datetime-local"
+                                                required
+                                            />
+                                        )}
+                                    />
+                                    {form.formState.errors.expiresAt && (
+                                        <p className="text-xs text-destructive">
+                                            {form.formState.errors.expiresAt.message}
+                                        </p>
+                                    )}
+                                </div>
                                 <div className="space-y-2">
                                     <label htmlFor="maxUsers" className="text-sm font-medium text-psi-dark">
                                         Número máximo de pessoas simultâneas
@@ -645,7 +836,7 @@ const QrScannerPannel = () => {
                                                 id="maxUsers"
                                                 type="number"
                                                 min={1}
-                                                max={100}
+                                                max={99}
                                                 onChange={(e) => field.onChange(Number(e.target.value))}
                                                 required
                                             />
@@ -684,11 +875,12 @@ const QrScannerPannel = () => {
                                         type="button"
                                         variant="outline"
                                         onClick={() => setCreateLinkDialogOpen(false)}
+                                        disabled={isCreatingScanLink}
                                     >
                                         Cancelar
                                     </Button>
-                                    <Button type="submit" variant="primary">
-                                        Criar Link
+                                    <Button type="submit" variant="primary" disabled={isCreatingScanLink}>
+                                        {isCreatingScanLink ? "Criando..." : "Criar Link"}
                                     </Button>
                                 </DialogFooter>
                             </form>
@@ -705,6 +897,257 @@ const QrScannerPannel = () => {
                         cancelText="Cancelar"
                         variant="destructive"
                     />
+
+                    <Dialog open={manageSessionsDialog.open} onOpenChange={(open) => setManageSessionsDialog({ open, linkId: manageSessionsDialog.linkId })}>
+                        <DialogContent className="max-w-3xl">
+                            <DialogHeader>
+                                <DialogTitle>Conectados</DialogTitle>
+                                <DialogDescription>
+                                    Confira quem está conectado e desconecte alguém, se necessário.
+                                </DialogDescription>
+                            </DialogHeader>
+
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-sm text-psi-dark/70">
+                                        {sessionsForSelectedLink.length} conectado(s) de {selectedManageLink?.maxUsers || 0}
+                                    </p>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => refetchScanLinks()}
+                                    >
+                                        Atualizar
+                                    </Button>
+                                </div>
+
+                                {sessionsForSelectedLink.length === 0 ? (
+                                    <p className="text-sm text-psi-dark/60">Ninguém conectado no momento.</p>
+                                ) : (
+                                    <div className="overflow-x-auto">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Nome</TableHead>
+                                                    <TableHead>Local</TableHead>
+                                                    <TableHead>IP</TableHead>
+                                                    <TableHead>Conectado em</TableHead>
+                                                    <TableHead className="text-right">Ações</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {sessionsForSelectedLink.map((session: TTicketScanSessionPublic) => (
+                                                    <TableRow key={session.id}>
+                                                        <TableCell className="font-medium">{session.name}</TableCell>
+                                                        <TableCell>{session.location || "-"}</TableCell>
+                                                        <TableCell className="font-mono text-xs">{session.ip}</TableCell>
+                                                        <TableCell>
+                                                            {DateUtils.formatDate(session.createdAt, "DD/MM/YYYY HH:mm")}
+                                                        </TableCell>
+                                                        <TableCell className="text-right">
+                                                            <Button
+                                                                type="button"
+                                                                variant="destructive"
+                                                                size="sm"
+                                                                disabled={isForcingLogoutSession}
+                                                                onClick={() => handleForceLogoutSession(session.id)}
+                                                            >
+                                                                Desconectar
+                                                            </Button>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                )}
+                            </div>
+
+                            <DialogFooter>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setManageSessionsDialog({ open: false, linkId: "" })}
+                                >
+                                    Fechar
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    <Dialog open={updatePasswordDialog.open} onOpenChange={(open) => setUpdatePasswordDialog({ open, linkId: updatePasswordDialog.linkId })}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Alterar senha do link</DialogTitle>
+                                <DialogDescription>
+                                    Defina uma nova senha para que a equipe possa acessar este link.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <form onSubmit={updatePasswordForm.handleSubmit(handleConfirmUpdatePassword)} className="space-y-4">
+                                <Controller
+                                    name="id"
+                                    control={updatePasswordForm.control}
+                                    render={({ field }) => (
+                                        <input type="hidden" {...field} />
+                                    )}
+                                />
+
+                                <div className="space-y-2">
+                                    <label htmlFor="newPassword" className="text-sm font-medium text-psi-dark">
+                                        Nova senha
+                                    </label>
+                                    <Controller
+                                        name="password"
+                                        control={updatePasswordForm.control}
+                                        render={({ field }) => (
+                                            <Input
+                                                {...field}
+                                                id="newPassword"
+                                                type="password"
+                                                required
+                                            />
+                                        )}
+                                    />
+                                    {updatePasswordForm.formState.errors.password?.message && (
+                                        <p className="text-xs text-destructive">{updatePasswordForm.formState.errors.password.message}</p>
+                                    )}
+                                </div>
+
+                                <DialogFooter>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setUpdatePasswordDialog({ open: false, linkId: "" })}
+                                        disabled={isUpdatingScanLinkPassword}
+                                    >
+                                        Cancelar
+                                    </Button>
+                                    <Button type="submit" variant="primary" disabled={isUpdatingScanLinkPassword}>
+                                        {isUpdatingScanLinkPassword ? "Salvando..." : "Salvar"}
+                                    </Button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+
+                    <Dialog open={updateExpAtDialog.open} onOpenChange={(open) => setUpdateExpAtDialog({ open, linkId: updateExpAtDialog.linkId })}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Alterar expiração do link</DialogTitle>
+                                <DialogDescription>
+                                    Defina uma nova data de expiração para este link.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <form onSubmit={updateExpAtForm.handleSubmit(handleConfirmUpdateExpAt)} className="space-y-4">
+                                <Controller
+                                    name="id"
+                                    control={updateExpAtForm.control}
+                                    render={({ field }) => (
+                                        <input type="hidden" {...field} />
+                                    )}
+                                />
+
+                                <div className="space-y-2">
+                                    <label htmlFor="expiresAtUpdate" className="text-sm font-medium text-psi-dark">
+                                        Data de expiração
+                                    </label>
+                                    <Controller
+                                        name="expiresAt"
+                                        control={updateExpAtForm.control}
+                                        render={({ field }) => (
+                                            <Input
+                                                {...field}
+                                                id="expiresAtUpdate"
+                                                type="datetime-local"
+                                                required
+                                            />
+                                        )}
+                                    />
+                                    {updateExpAtForm.formState.errors.expiresAt?.message && (
+                                        <p className="text-xs text-destructive">{updateExpAtForm.formState.errors.expiresAt.message}</p>
+                                    )}
+                                </div>
+
+                                <DialogFooter>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setUpdateExpAtDialog({ open: false, linkId: "" })}
+                                        disabled={isUpdatingScanLinkExpAt}
+                                    >
+                                        Cancelar
+                                    </Button>
+                                    <Button type="submit" variant="primary" disabled={isUpdatingScanLinkExpAt}>
+                                        {isUpdatingScanLinkExpAt ? "Salvando..." : "Salvar"}
+                                    </Button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+
+                    <Dialog open={buyerInfoDialog.open} onOpenChange={(open) => setBuyerInfoDialog({ open, buyer: open ? buyerInfoDialog.buyer : null })}>
+                        <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                                <DialogTitle>Mais informações</DialogTitle>
+                                <DialogDescription>
+                                    Confira os detalhes do comprador e as respostas do formulário.
+                                </DialogDescription>
+                            </DialogHeader>
+
+                            {buyerInfoDialog.buyer && (
+                                <div className="space-y-4">
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-psi-dark/60">Nome</p>
+                                            <p className="text-sm font-medium text-psi-dark">{buyerInfoDialog.buyer.customerName}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-psi-dark/60">Tipo de ingresso</p>
+                                            <p className="text-sm font-medium text-psi-dark">{buyerInfoDialog.buyer.ticketTypeName || "-"}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-psi-dark/60">Datas do evento</p>
+                                            <p className="text-sm font-medium text-psi-dark">
+                                                {buyerInfoDialog.buyer.eventDates.map((date) => DateUtils.formatDate(date, "DD/MM/YYYY")).join(", ")}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-psi-dark/60">Data do pagamento</p>
+                                            <p className="text-sm font-medium text-psi-dark">
+                                                {buyerInfoDialog.buyer.paymentDate
+                                                    ? DateUtils.formatDate(
+                                                        typeof buyerInfoDialog.buyer.paymentDate === "string"
+                                                            ? buyerInfoDialog.buyer.paymentDate
+                                                            : buyerInfoDialog.buyer.paymentDate.toISOString(),
+                                                        "DD/MM/YYYY HH:mm"
+                                                    )
+                                                    : "-"}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <p className="text-xs text-psi-dark/60">Respostas do formulário</p>
+                                        <div className="max-h-[240px] overflow-auto rounded-lg border border-psi-primary/10 bg-psi-primary/5 p-3">
+                                            <p className="text-sm text-psi-dark/80 whitespace-pre-wrap wrap-break-word">
+                                                {formatFormAnswers(buyerInfoDialog.buyer.formAnswers || {}).split("; ").join("\n")}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <DialogFooter>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setBuyerInfoDialog({ open: false, buyer: null })}
+                                >
+                                    Fechar
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </div>
         </Background>
