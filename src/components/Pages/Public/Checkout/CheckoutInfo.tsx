@@ -1200,10 +1200,12 @@ const CheckoutInfo = () => {
 
             if (status === "CONFIRMED" || status === "RECEIVED") {
                 setPaymentVerified(true)
-                clearCart()
                 Toast.success("Pagamento realizado com sucesso! Redirecionando...")
                 setTimeout(() => {
-                    router.push("/")
+                    clearCart()
+                }, 1000)
+                setTimeout(() => {
+                    router.push("/meus-ingressos")
                 }, 1500)
             } else {
                 Toast.info("Pagamento ainda não foi processado. Tente novamente em alguns instantes.")

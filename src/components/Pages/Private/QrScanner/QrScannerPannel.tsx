@@ -640,21 +640,21 @@ const QrScannerPannel = () => {
                             <div id={fileReaderId} className="hidden" />
                             <Button
                                 variant="outline"
-                                onClick={handlePickQrImage}
-                                disabled={!selectedEventId || isDecodingQrImage}
-                                className="w-full lg:w-auto"
-                            >
-                                <ImageUp className="h-4 w-4 mr-2" />
-                                {isDecodingQrImage ? "Lendo foto..." : "Ler pela foto"}
-                            </Button>
-                            <Button
-                                variant="outline"
                                 onClick={() => setCreateLinkDialogOpen(true)}
                                 disabled={!selectedEventId}
                                 className="w-full lg:w-auto"
                             >
-                                <Link2 className="h-4 w-4 mr-2" />
+                                <Link2 className="h-4 w-4" />
                                 Criar link de escaneamento
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={handlePickQrImage}
+                                disabled={!selectedEventId || isDecodingQrImage}
+                                className="w-full lg:w-auto"
+                            >
+                                <ImageUp className="h-4 w-4" />
+                                {isDecodingQrImage ? "Lendo foto..." : "Ler pela foto"}
                             </Button>
                             {isScanning ? (
                                 <Button
@@ -671,7 +671,7 @@ const QrScannerPannel = () => {
                                     disabled={!selectedEventId || isValidatingTicketQrCode}
                                     className="w-full lg:w-auto"
                                 >
-                                    <Scan className="h-4 w-4 mr-2" />
+                                    <Scan className="h-4 w-4" />
                                     Escanear QR Code
                                 </Button>
                             )}

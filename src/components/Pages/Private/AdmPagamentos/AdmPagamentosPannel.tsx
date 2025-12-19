@@ -464,7 +464,7 @@ const AdmPagamentosPannel = () => {
                                                                 {payment.Event.name}
                                                             </p>
                                                             <p className="text-xs text-psi-dark/50">
-                                                                {payment.Event.location || "Evento online"}
+                                                                {payment.Event.location || "Sem localização"}
                                                             </p>
                                                         </div>
                                                     </TableCell>
@@ -590,6 +590,14 @@ const AdmPagamentosPannel = () => {
                                                                                     <span className="text-sm text-psi-dark/70">Taxa do cliente:</span>
                                                                                     <span className="text-sm font-semibold text-psi-dark">
                                                                                         {ValueUtils.centsToCurrency(payment.customerFee)}
+                                                                                    </span>
+                                                                                </div>
+                                                                            )}
+                                                                            {payment.organizerFee !== null && payment.organizerFee !== undefined && payment.organizerFee > 0 && (
+                                                                                <div className="flex justify-between items-center">
+                                                                                    <span className="text-sm text-psi-dark/70">Taxa do organizador:</span>
+                                                                                    <span className="text-sm font-semibold text-psi-dark">
+                                                                                        {ValueUtils.centsToCurrency(payment.organizerFee)}
                                                                                     </span>
                                                                                 </div>
                                                                             )}

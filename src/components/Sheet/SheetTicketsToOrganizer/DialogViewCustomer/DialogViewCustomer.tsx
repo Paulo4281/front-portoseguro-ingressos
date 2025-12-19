@@ -32,6 +32,8 @@ const DialogViewCustomer = ({
 }: TDialogViewCustomerProps) => {
     const customer = ticket.customer
 
+    console.log(ticket)
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -158,21 +160,25 @@ const DialogViewCustomer = ({
                             <div className="flex items-start gap-3">
                                 <CreditCard className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-xs text-psi-dark/60 mb-1">Tipo de ingresso</p>
-                                    <p className="text-sm font-medium text-psi-dark">{ticket.ticketType.name}</p>
-                                    {ticket.ticketType.description && (
-                                        <p className="text-xs text-psi-dark/50 mt-1">{ticket.ticketType.description}</p>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="flex items-start gap-3">
-                                <CreditCard className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
-                                <div className="flex-1 min-w-0">
                                     <p className="text-xs text-psi-dark/60 mb-1">Valor pago</p>
                                     <p className="text-sm font-medium text-psi-primary">
                                         {ValueUtils.centsToCurrency(ticket.price)}
                                     </p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-start gap-3">
+                                <div className="flex-1 min-w-0">
+                                    {ticket.ticketType && ticket.ticketType?.name && (
+                                        <div className="flex items-center gap-1">
+                                            <CreditCard className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
+                                            <span className="font-medium">Tipo:</span>
+                                            <span>{ticket.ticketType.name}</span>
+                                        </div>
+                                    )}
+                                    {ticket.ticketType && ticket.ticketType.description && (
+                                        <p className="text-xs text-psi-dark/50 mt-1">{ticket.ticketType.description}</p>
+                                    )}
                                 </div>
                             </div>
 

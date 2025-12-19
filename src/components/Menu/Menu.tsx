@@ -675,14 +675,28 @@ const NotificationBell = () => {
         switch (subject) {
             case "PAYMENT_SUCCESS":
                 return "Pagamento"
-            case "DAYS_15_WARNING":
-            case "DAYS_7_WARNING":
-            case "DAYS_3_WARNING":
-                return "Aviso"
-            case "AFTER_EVENT":
+            case "EVENT_DAYS15_WARNING":
+            case "EVENT_DAYS7_WARNING":
+            case "EVENT_DAYS3_WARNING":
+                return "Falta poucos dias para o evento"
+            case "EVENT_AFTER_CUSTOMER":
+            case "EVENT_AFTER_ORGANIZER":
                 return "Pós-evento"
+            case "EVENT_CANCELLED_CLIENT":
+                return "Evento cancelado"
+            case "EVENT_POSTPONED_CLIENT":
+                return "Evento adiado"
+            case "EVENT_CANCELLED_ORGANIZER":
+                return "Evento cancelado"
+            case "EVENT_POSTPONED_ORGANIZER":
+                return "Evento adiado"
+            case "PAYMENT_REFUNDED_BY_CUSTOMER":
+            case "PAYMENT_REFUNDED_BY_ORGANIZER":
+            case "PAYMENT_REFUNDED_BY_ADMIN_TO_CUSTOMER":
+            case "PAYMENT_REFUNDED_BY_ADMIN_TO_ORGANIZER":
+                return "Reembolso de ingresso"
             default:
-                return "Atualização"
+                return "Notificação"
         }
     }
 
@@ -695,40 +709,55 @@ const NotificationBell = () => {
         return ValueUtils.centsToCurrency(numericValue)
     }
 
-    const getDaysFallback = (subject: TNotification["subject"]) => {
-        switch (subject) {
-            case "DAYS_15_WARNING":
-                return "15"
-            case "DAYS_7_WARNING":
-                return "7"
-            case "DAYS_3_WARNING":
-                return "3"
-            default:
-                return ""
-        }
-    }
-
     const getNotificationMessage = (notification: TNotification) => {
         const data = notification.templateData || {}
 
         switch (notification.subject) {
             case "PAYMENT_SUCCESS": {
-                const amount = formatCurrencyFromTemplate(data.amount)
                 const eventName = data.eventName || "seu evento"
-                const payoutDate = data.payoutDate ? new Date(data.payoutDate).toLocaleDateString("pt-BR") : ""
-                return `Pagamento de ${amount || "valor não informado"} referente ao ${eventName} confirmado${payoutDate ? ` para ${payoutDate}` : ""}.`
+
+                return `O pagamento do ingresso para o evento ${eventName} foi confirmado com sucesso!`
             }
-            case "DAYS_15_WARNING":
-            case "DAYS_7_WARNING":
-            case "DAYS_3_WARNING": {
+            case "EVENT_DAYS15_WARNING":
+            case "EVENT_DAYS7_WARNING":
+            case "EVENT_DAYS3_WARNING": {
                 const eventName = data.eventName || "seu evento"
-                const days = data.daysRemaining || getDaysFallback(notification.subject)
-                return `Faltam ${days} dias para o ${eventName}. Revise ingressos, lotes e comunicações.`
+                const days = data.daysLeft
+
+                return `Faltam ${days} dias para o evento ${eventName} começar! Revise ingressos, lotes e comunicações.`
             }
-            case "AFTER_EVENT": {
+            case "EVENT_AFTER_CUSTOMER": {
                 const eventName = data.eventName || "seu evento"
-                const totalTickets = data.totalTickets ? `${data.totalTickets} ingressos validados.` : "Consulte os relatórios completos."
-                return `${eventName} foi finalizado. ${totalTickets}`
+                const feedbackLink = data.feedbackLink
+
+                return `O evento ${eventName} foi finalizado. Esperamos que tenha sido uma experiência incrível!`
+            }
+            case "EVENT_AFTER_ORGANIZER": {
+                const eventName = data.eventName || "seu evento"
+
+                return `O evento ${eventName} foi finalizado.`
+            }
+            case "PAYMENT_REFUNDED_BY_CUSTOMER": {
+                const firstName = data.firstName
+                const eventName = data.eventName
+
+                return `O cliente ${firstName} solicitou reembolso para o ingresso do evento ${eventName}.`
+            }
+            case "PAYMENT_REFUNDED_BY_ORGANIZER": {
+                const eventName = data.eventName
+
+                return `O organizador do evento ${eventName} solicitou reembolso para o seu ingresso.`
+            }
+            case "PAYMENT_REFUNDED_BY_ADMIN_TO_CUSTOMER": {
+                const eventName = data.eventName
+
+                return `O administrador solicitou reembolso para o ingresso do evento ${eventName}.`
+            }
+            case "PAYMENT_REFUNDED_BY_ADMIN_TO_ORGANIZER": {
+                const eventName = data.eventName
+                const customerName = data.customerName
+
+                return `O administrador solicitou reembolso para o ingresso do evento ${eventName} para o cliente ${customerName}.`
             }
             default:
                 return notification.message || "Você possui uma atualização importante."
@@ -818,7 +847,7 @@ const NotificationBell = () => {
                             return (
                                 <div
                                     key={notification.id}
-                                    className={`rounded-xl border p-3 cursor-pointer transition-all hover:shadow-md ${
+                                    className={`rounded-xl border p-3 transition-all hover:shadow-md ${
                                         isUnread
                                             ? `${colors.border} ${colors.bg} border-2`
                                             : "border-[#E4E6F0] bg-white"
@@ -829,11 +858,7 @@ const NotificationBell = () => {
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between gap-2 mb-1">
                                                 <div className="flex items-center gap-2">
-                                                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                                                        notification.subject === "PAYMENT_SUCCESS" ? "bg-psi-primary/10 text-psi-primary" :
-                                                        notification.subject === "AFTER_EVENT" ? "bg-emerald-100 text-emerald-700" :
-                                                        "bg-psi-secondary/10 text-psi-secondary"
-                                                    }`}>
+                                                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full`}>
                                                         {getSubjectLabel(notification.subject)}
                                                     </span>
                                                 </div>

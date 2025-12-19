@@ -283,10 +283,14 @@ const SheetTicketsToOrganizer = ({
                                                     </div>
                                                     
                                                     <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-psi-dark/70">
-                                                        <div className="flex items-center gap-1">
-                                                            <span className="font-medium">Tipo:</span>
-                                                            <span>{ticket.ticketType.name}</span>
-                                                        </div>
+                                                    {
+                                                        ticket.ticketType?.name && (
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="font-medium">Tipo:</span>
+                                                                <span>{ticket.ticketType.name}</span>
+                                                            </div>
+                                                        )
+                                                    }
                                                         <div className="flex items-center gap-1">
                                                             <span className="font-medium">Valor:</span>
                                                             <span className="text-psi-primary font-semibold">
