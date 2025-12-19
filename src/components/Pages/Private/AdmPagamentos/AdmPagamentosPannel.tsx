@@ -55,6 +55,60 @@ import { useUserCheckPasswordAdmin } from "@/hooks/User/useUserCheckPasswordAdmi
 import { Toast } from "@/components/Toast/Toast"
 import { LoadingButton } from "@/components/Loading/LoadingButton"
 
+export const ticketCancelledByConfig: Record<string, { label: string; badgeClass: string }> = {
+    ORGANIZER: {
+        label: "Cancelado pelo organizador",
+        badgeClass: "bg-purple-50 text-purple-600 border-purple-200"
+    },
+    CUSTOMER: {
+        label: "Cancelado pelo cliente",
+        badgeClass: "bg-red-50 text-red-600 border-red-200"
+    },
+    ADMIN: {
+        label: "Cancelado pelo administrador",
+        badgeClass: "bg-blue-50 text-blue-600 border-blue-200"
+    }
+}
+
+export const ticketStatusConfig: Record<string, { label: string; badgeClass: string }> = {
+    PENDING: {
+        label: "Pendente",
+        badgeClass: "bg-amber-50 text-amber-600 border-amber-200"
+    },
+    CONFIRMED: {
+        label: "Confirmado",
+        badgeClass: "bg-blue-50 text-blue-600 border-blue-200"
+    },
+    USED: {
+        label: "Utilizado",
+        badgeClass: "bg-green-50 text-green-600 border-green-200"
+    },
+    PARTIALLY_USED: {
+        label: "Utilizado parcialmente",
+        badgeClass: "bg-yellow-50 text-yellow-600 border-yellow-200"
+    },
+    CANCELLED: {
+        label: "Cancelado",
+        badgeClass: "bg-red-50 text-red-600 border-red-200"
+    },
+    REFUNDED: {
+        label: "Estornado",
+        badgeClass: "bg-purple-50 text-purple-600 border-purple-200"
+    },
+    OVERDUE: {
+        label: "Vencido",
+        badgeClass: "bg-gray-50 text-gray-600 border-gray-200"
+    },
+    EXPIRED: {
+        label: "Expirado",
+        badgeClass: "bg-gray-50 text-gray-600 border-gray-200"
+    },
+    FAILED: {
+        label: "Falhou",
+        badgeClass: "bg-red-50 text-red-600 border-red-200"
+    }
+}
+
 const paymentStatusConfig: Record<TPaymentAdminListResponse["status"], { label: string; badgeClass: string }> = {
     RECEIVED: {
         label: "Recebido",
@@ -879,9 +933,21 @@ const AdmPagamentosPannel = () => {
                                                                                                 </p>
                                                                                             )}
                                                                                         </div>
-                                                                                        <Badge className="bg-gray-50 text-gray-600 border-gray-200">
-                                                                                            {ticket.status}
-                                                                                        </Badge>
+                                                                                        <div className="flex flex-col gap-2">
+                                                                                            <Badge className={ticketStatusConfig[ticket.status]?.badgeClass || "bg-gray-50 text-gray-600 border-gray-200"}>
+                                                                                                {ticketStatusConfig[ticket.status]?.label || ticket.status}
+                                                                                            </Badge>
+                                                                                            {ticket.cancelledBy && (
+                                                                                                <Badge className={ticketCancelledByConfig[ticket.cancelledBy]?.badgeClass || "bg-gray-50 text-gray-600 border-gray-200"}>
+                                                                                                    {ticketCancelledByConfig[ticket.cancelledBy]?.label || ticket.cancelledBy}
+                                                                                                </Badge>
+                                                                                            )}
+                                                                                            {ticket.cancelledAt && (
+                                                                                                <p className="text-xs text-psi-dark/60 mt-1">
+                                                                                                    Cancelado em: {formatDateTime(ticket.cancelledAt)}
+                                                                                                </p>
+                                                                                            )}
+                                                                                        </div>
                                                                                     </div>
                                                                                     {ticket.TicketDates && ticket.TicketDates.length > 0 && (
                                                                                         <div className="space-y-2 pt-3 border-t border-psi-dark/10">

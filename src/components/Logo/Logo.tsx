@@ -19,7 +19,7 @@ const Logo = (
         <img
             src={variant === "primary" ? logoPrimaryUrl : variant === "secondary" ? logoSecondaryUrl : variant === "black" ? logoBlackUrl : logoWhiteUrl}
             alt="Logo"
-            width={100} height={100}
+            width={70} height={70}
             className={className}
         />
         </>

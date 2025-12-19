@@ -249,8 +249,8 @@ const Menu = () => {
                         aria-label="Ir para a página inicial"
                     >
                         <Logo
-                            className="h-10 w-auto
-                            sm:h-20 sm:me-[-6px]
+                            className="h-12 w-auto
+                            sm:h-14 sm:me-[-6px]
                             transition-transform duration-300 group-hover:scale-105"
                             variant="primary"
                         />

@@ -1,3 +1,5 @@
+import { TicketCancelledBy } from "../Ticket/TTicket"
+
 const PaymentGatewayBillingStatuses = [
     "PENDING",
     "RECEIVED",
@@ -13,7 +15,7 @@ const PaymentGatewayBillingStatuses = [
     "DUNNING_REQUESTED",
     "DUNNING_RECEIVED",
     "AWAITING_RISK_ANALYSIS",
-  ] as const
+] as const
 
 const PaymentRefundStatuses = [
     "PENDING",
@@ -100,6 +102,8 @@ type TPaymentAdminListResponse = {
         code: string
         status: string
         ticketTypeId: string | null
+        cancelledBy: typeof TicketCancelledBy[number] | null
+        cancelledAt: string | null
         TicketType: {
             id: string
             name: string
@@ -202,5 +206,5 @@ export type {
 }
 
 export {
-    PaymentGatewayBillingStatuses
+    PaymentGatewayBillingStatuses,
 }

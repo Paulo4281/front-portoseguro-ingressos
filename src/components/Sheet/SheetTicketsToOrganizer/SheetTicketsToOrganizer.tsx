@@ -31,8 +31,11 @@ import { formatEventDate } from "@/utils/Helpers/EventSchedule/EventScheduleUtil
 import { Pagination } from "@/components/Pagination/Pagination"
 import { DialogViewCustomer } from "./DialogViewCustomer/DialogViewCustomer"
 import { DialogCancelTicketWarning } from "./DialogCancelTicketWarning/DialogCancelTicketWarning"
+import { useTicketOrganizerRequestRefund } from "@/hooks/Ticket/useTicketOrganizerRequestRefund"
+import { Toast } from "@/components/Toast/Toast"
 import type { TTicketToOrganizer } from "@/types/Ticket/TTicket"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
+import { ticketCancelledByConfig } from "@/components/Pages/Private/AdmPagamentos/AdmPagamentosPannel"
 
 type TSheetTicketsToOrganizerProps = {
     open: boolean
@@ -88,6 +91,8 @@ const SheetTicketsToOrganizer = ({
         enabled: open && !!eventId
     })
 
+    const { mutateAsync: requestRefund, isPending: isRequestingRefund } = useTicketOrganizerRequestRefund()
+
     const tickets = useMemo(() => {
         if (!data?.data?.data) return []
         return data.data.data
@@ -121,12 +126,33 @@ const SheetTicketsToOrganizer = ({
         setCancelTicketOpen(true)
     }
 
-    const handleCancelTicketConfirm = () => {
-        if (selectedTicket) {
-            console.log("Cancelar ingresso:", selectedTicket.id)
+    const handleCancelTicketConfirm = async (reason: string) => {
+        if (!selectedTicket) {
+            return
         }
-        setCancelTicketOpen(false)
-        setSelectedTicket(null)
+
+        try {
+            const response = await requestRefund({
+                ticketId: selectedTicket.id,
+                reason: reason
+            })
+
+            if (response?.success && response?.data) {
+                if (response.data.refunded) {
+                    Toast.success("Ingresso cancelado e reembolso solicitado com sucesso!")
+                    setSelectedTicket(null)
+                    setCancelTicketOpen(false)
+                } else {
+                    const errorReason = response.data.reason || "Não foi possível processar o cancelamento"
+                    Toast.error(errorReason)
+                }
+            } else {
+                Toast.error("Erro ao processar o cancelamento")
+            }
+        } catch (error: any) {
+            const errorMessage = error?.response?.data?.message || error?.message || "Erro ao processar o cancelamento"
+            Toast.error(errorMessage)
+        }
     }
 
     const formatValidationAudit = (ticket: TTicketToOrganizer) => {
@@ -239,9 +265,21 @@ const SheetTicketsToOrganizer = ({
                                                                 </p>
                                                             )}
                                                         </div>
-                                                        <span className={`px-2 py-1 rounded-full text-xs font-semibold shrink-0 ${statusColors[ticket.status] || "bg-gray-100 text-gray-800"}`}>
-                                                            {statusLabels[ticket.status] || ticket.status}
-                                                        </span>
+                                                        <div className="flex flex-col gap-2">
+                                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold shrink-0 ${statusColors[ticket.status] || "bg-gray-100 text-gray-800"}`}>
+                                                                {statusLabels[ticket.status] || ticket.status}
+                                                            </span>
+                                                            {ticket.cancelledBy && (
+                                                                <span className={`px-2 py-1 rounded-full text-xs font-semibold shrink-0 ${statusColors[ticket.cancelledBy] || "bg-gray-100 text-gray-800"}`}>
+                                                                    {ticketCancelledByConfig[ticket.cancelledBy]?.label || ticket.cancelledBy}
+                                                                </span>
+                                                            )}
+                                                            {ticket.cancelledAt && (
+                                                                <span className="text-xs text-psi-dark/50">
+                                                                    Cancelado em: {DateUtils.formatDate(ticket.cancelledAt, "DD/MM/YYYY [às] HH:mm")}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     
                                                     <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-psi-dark/70">
@@ -343,7 +381,12 @@ const SheetTicketsToOrganizer = ({
                     />
                     <DialogCancelTicketWarning
                         open={cancelTicketOpen}
-                        onOpenChange={setCancelTicketOpen}
+                        onOpenChange={(open) => {
+                            setCancelTicketOpen(open)
+                            if (!open) {
+                                setSelectedTicket(null)
+                            }
+                        }}
                         onConfirm={handleCancelTicketConfirm}
                         ticket={selectedTicket}
                     />

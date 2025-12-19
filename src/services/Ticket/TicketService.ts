@@ -1,6 +1,6 @@
 import { API } from "@/api/api"
 import type { AxiosResponse } from "axios"
-import type { TTicket, TTicketBuy, TTicketScanLinkGenerateResponse, TTicketScanResponse, TTicketScanLink, TTicketScanLinkCreate, TTicketScanLinkDelete, TTicketQRCodeResponse, TTicketToOrganizer, TTicketValidate, TTicketValidateQrCodeResponse } from "@/types/Ticket/TTicket"
+import type { TTicket, TTicketBuy, TTicketScanLinkGenerateResponse, TTicketScanResponse, TTicketScanLink, TTicketScanLinkCreate, TTicketScanLinkDelete, TTicketQRCodeResponse, TTicketToOrganizer, TTicketValidate, TTicketValidateQrCodeResponse, TTicketOrganizerRequestRefundResponse } from "@/types/Ticket/TTicket"
 import type { TApiResponse } from "@/types/TApiResponse"
 
 class TicketServiceClass {
@@ -73,6 +73,15 @@ class TicketServiceClass {
         const response = (await API.POST({
             prefix: "/ticket",
             url: `/validate-ticket/organizer/${encodeURIComponent(ticketId)}`
+        }))?.data
+        return response
+    }
+
+    async organizerRequestRefund(ticketId: string, reason: string): Promise<AxiosResponse["data"]> {
+        const response = (await API.POST({
+            prefix: "/ticket",
+            url: `/organizer/request-refund/${encodeURIComponent(ticketId)}`,
+            data: { reason }
         }))?.data
         return response
     }

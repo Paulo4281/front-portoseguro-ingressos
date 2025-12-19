@@ -4,6 +4,12 @@ import { UserGenres } from "../User/TUser"
 import { TTicketDate } from "./TTicketDate"
 import type { TPayment } from "@/types/Payment/TPayment"
 
+const TicketCancelledBy = [
+    "ORGANIZER",
+    "CUSTOMER",
+    "ADMIN"
+] as const
+
 const TicketStatuses = [
     "PENDING",
     "CONFIRMED",
@@ -207,7 +213,14 @@ type TTicketToOrganizer = {
     price: number
     form: TTicketForm | null
     validationInfo?: TTicketValidationInfo
+    cancelledBy: typeof TicketCancelledBy[number] | null
+    cancelledAt: string | null
     createdAt: string
+}
+
+type TTicketOrganizerRequestRefundResponse = {
+    refunded: boolean
+    reason?: string
 }
 
 type TTicketBuyResponse = {
@@ -239,5 +252,10 @@ export type {
     TTicketQRCodeResponse,
     TTicketForm,
     TTicketValidationInfo,
-    TTicketToOrganizer
+    TTicketToOrganizer,
+    TTicketOrganizerRequestRefundResponse
+}
+
+export {
+    TicketCancelledBy
 }
