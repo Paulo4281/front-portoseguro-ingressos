@@ -25,7 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { TTicketScanLink } from "@/types/Ticket/TTicket"
-import { QrCode, Link2, Trash2, Users, Scan, CheckCircle2, XCircle, Calendar, Ticket, Search, MoreVertical, Check, Info, ImageUp } from "lucide-react"
+import { QrCode, Link2, Trash2, Users, Scan, CheckCircle2, XCircle, Calendar, Ticket, Search, MoreVertical, Check, Info, ImageUp, CircleMinus } from "lucide-react"
 import { DialogConfirm } from "@/components/Dialog/DialogConfirm/DialogConfirm"
 import { Toast } from "@/components/Toast/Toast"
 import { useEventFindByUserId } from "@/hooks/Event/useEventFindByUserId"
@@ -740,10 +740,10 @@ const QrScannerPannel = () => {
                                                     </div>
                                                     <div className="flex items-center justify-between p-3 rounded-lg bg-orange-50">
                                                         <span className="text-sm text-psi-dark/70 flex items-center gap-2">
-                                                            <XCircle className="h-4 w-4 text-orange-600" />
+                                                            <CircleMinus className="h-4 w-4 text-yellow-500" />
                                                             Pendentes
                                                         </span>
-                                                        <span className="text-lg font-semibold text-orange-600">{validationStats.remaining}</span>
+                                                        <span className="text-lg font-semibold text-yellow-500">{validationStats.remaining}</span>
                                                     </div>
                                                 </div>
                                             </div>

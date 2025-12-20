@@ -1571,10 +1571,10 @@ const VerEventoInfo = (
                                                     <span className="text-sm font-medium text-psi-dark">Selecione os dias e quantidades</span>
                                                     <span className="text-xs text-psi-dark/60">Máximo {buyTicketsLimit} por pessoa</span>
                                                 </div>
-                                                {event.EventDates && event.EventDates.filter(ed => ed.hasSpecificPrice).map((eventDate) => {
+                                                {event.EventDates && event.EventDates.some((ed) => ed.hasSpecificPrice) && event.EventDates.map((eventDate) => {
                                                     const isSelected = selectedDaysWithoutTicketTypes.includes(eventDate.id)
                                                     const qty = dayQuantities[eventDate.id] || 0
-                                                    const price = eventDate.price || 0
+                                                    const price = eventDate.price !== null ? eventDate.price : event.EventBatches?.find(eb => eb.id === selectedBatchId)?.price || 0
                                                     const feeCents = TicketFeeUtils.calculateFeeInCents(price, event.isClientTaxed)
                                                     
                                                     return (
@@ -1619,16 +1619,16 @@ const VerEventoInfo = (
                                                                     {isSelected && (
                                                                         <div className="mt-2 space-y-1">
                                                                             <p className="text-sm font-medium text-psi-primary">
-                                                                                {event.isFree ? "Gratuito" : `${ValueUtils.formatPrice(price)} por ingresso`}
+                                                                                {event.isFree ? "Gratuito" : `${ValueUtils.formatPrice(price || 0)} por ingresso`}
                                                                             </p>
-                                                                            {!event.isFree && price > 0 && (
+                                                                            {!event.isFree && price && price > 0 && (
                                                                                 <p className="text-xs text-psi-dark/60">
                                                                                     + Taxa: {ValueUtils.centsToCurrency(feeCents)} por ingresso
                                                                                 </p>
                                                                             )}
                                                                             {qty > 0 && (
                                                                                 <p className="text-sm font-semibold text-psi-dark mt-2">
-                                                                                    Subtotal: {ValueUtils.centsToCurrency((price + feeCents) * qty)}
+                                                                                    Subtotal: {ValueUtils.centsToCurrency(((price || 0) + feeCents) * qty)}
                                                                                 </p>
                                                                             )}
                                                                         </div>

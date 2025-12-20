@@ -530,7 +530,7 @@ const EventCard = ({
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-[#E4E6F0]" />
                             {
-                                event.isCancelled && (
+                                (event.isCancelled || totalSales === 0) && (
                                     <DropdownMenuItem 
                                         className="rounded-lg text-sm text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                                         onClick={() => onDelete(event.id, event.name)}

@@ -2211,34 +2211,57 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-3 rounded-lg border border-[#E4E6F0] bg-[#F3F4FB] p-3">
-                                                <Checkbox
-                                                    id={`has-specific-price-${index}`}
-                                                    checked={form.watch(`dates.${index}.hasSpecificPrice`) || false}
-                                                    onCheckedChange={(checked) => {
-                                                        if (hasAnySoldTicketsForDates) return
-                                                        const isChecked = checked === true
-                                                        form.setValue(`dates.${index}.hasSpecificPrice`, isChecked)
-                                                        if (!isChecked) {
-                                                            form.setValue(`dates.${index}.price`, null)
-                                                            form.setValue(`dates.${index}.ticketTypePrices`, null)
-                                                        } else {
-                                                            if (ticketTypes.length > 0) {
-                                                                const initialPrices = ticketTypes.map((_, typeIdx) => ({
-                                                                    ticketTypeId: typeIdx.toString(),
-                                                                    price: 0
-                                                                }))
-                                                                form.setValue(`dates.${index}.ticketTypePrices`, initialPrices)
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-3 rounded-lg border border-[#E4E6F0] bg-[#F3F4FB] p-3">
+                                                    <Checkbox
+                                                        id={`has-specific-price-${index}`}
+                                                        checked={form.watch(`dates.${index}.hasSpecificPrice`) || false}
+                                                        onCheckedChange={(checked) => {
+                                                            if (hasAnySoldTicketsForDates) return
+                                                            const isChecked = checked === true
+                                                            const allDates = form.getValues("dates") || []
+                                                            
+                                                            if (isChecked) {
+                                                                allDates.forEach((_, dateIdx) => {
+                                                                    form.setValue(`dates.${dateIdx}.hasSpecificPrice`, true)
+                                                                    if (ticketTypes.length > 0) {
+                                                                        const currentPrices = form.getValues(`dates.${dateIdx}.ticketTypePrices`) || []
+                                                                        const initialPrices = ticketTypes.map((_, typeIdx) => {
+                                                                            const existingPrice = currentPrices.find(ttp => ttp.ticketTypeId === typeIdx.toString())
+                                                                            return existingPrice || {
+                                                                                ticketTypeId: typeIdx.toString(),
+                                                                                price: 0
+                                                                            }
+                                                                        })
+                                                                        form.setValue(`dates.${dateIdx}.ticketTypePrices`, initialPrices)
+                                                                    } else {
+                                                                        const currentPrice = form.getValues(`dates.${dateIdx}.price`)
+                                                                        if (currentPrice === null || currentPrice === undefined || currentPrice === 0) {
+                                                                            form.setValue(`dates.${dateIdx}.price`, 0)
+                                                                        }
+                                                                    }
+                                                                })
                                                             } else {
-                                                                form.setValue(`dates.${index}.ticketTypePrices`, null)
+                                                                allDates.forEach((_, dateIdx) => {
+                                                                    form.setValue(`dates.${dateIdx}.hasSpecificPrice`, false)
+                                                                    form.setValue(`dates.${dateIdx}.price`, null)
+                                                                    form.setValue(`dates.${dateIdx}.ticketTypePrices`, null)
+                                                                })
                                                             }
-                                                        }
-                                                    }}
-                                                    disabled={hasAnySoldTicketsForDates}
-                                                />
-                                                <label htmlFor={`has-specific-price-${index}`} className="text-sm font-medium text-psi-dark cursor-pointer">
-                                                    Definir preço específico para este dia
-                                                </label>
+                                                        }}
+                                                        disabled={hasAnySoldTicketsForDates}
+                                                    />
+                                                    <label htmlFor={`has-specific-price-${index}`} className="text-sm font-medium text-psi-dark cursor-pointer">
+                                                        Definir preço específico para este dia
+                                                    </label>
+                                                </div>
+                                                {form.watch(`dates.${index}.hasSpecificPrice`) && (
+                                                    <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3">
+                                                        <p className="text-xs text-amber-800 leading-relaxed">
+                                                            <strong>Importante:</strong> Ao utilizar preços específicos por data, o preço definido pelos lotes será desconsiderado. Todas as datas devem ter preço específico quando esta opção estiver ativada.
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {form.watch(`dates.${index}.hasSpecificPrice`) && (

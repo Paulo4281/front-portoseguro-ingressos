@@ -197,6 +197,8 @@ const getCardBrandIcon = (brand: string | null | undefined): string => {
         mastercard: "card-master.png",
         visa: "card-visa.png",
         elo: "card-elo.png",
+        cabal: "card-cabal.png",
+        banescard: "card-banescard.png",
     }
     const iconName = brandMap[brandLower] || "card-unknown.png"
     return `/icons/payment/card-brand/${iconName}`

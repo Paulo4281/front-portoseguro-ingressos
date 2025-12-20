@@ -165,6 +165,22 @@ const EventCreateValidator = z.object({
         })
     }
 
+    if (data.dates && data.dates.length > 0) {
+        const datesWithSpecificPrice = data.dates.filter(date => date.hasSpecificPrice === true)
+        const datesWithoutSpecificPrice = data.dates.filter(date => !date.hasSpecificPrice || date.hasSpecificPrice === false)
+        
+        if (datesWithSpecificPrice.length > 0 && datesWithoutSpecificPrice.length > 0) {
+            datesWithoutSpecificPrice.forEach((date, index) => {
+                const dateIndex = data.dates!.findIndex(d => d === date)
+                ctx.addIssue({
+                    code: "custom",
+                    path: ["dates", dateIndex, "hasSpecificPrice"],
+                    message: "Se você definir preço específico para uma data, todas as outras datas também devem ter preço específico"
+                })
+            })
+        }
+    }
+
     if (hasBatches && data.batches && data.batches.length > 0) {
         let eventStartDate: string | null = null
         let eventEndDate: string | null = null
@@ -320,6 +336,22 @@ const EventUpdateValidator = EventUpdateValidatorBase.superRefine((data, ctx) =>
             path: ["recurrence", "hourStart"],
             message: "Horário de início é obrigatório para eventos diários"
         })
+    }
+
+    if (data.dates && data.dates.length > 0) {
+        const datesWithSpecificPrice = data.dates.filter(date => date.hasSpecificPrice === true)
+        const datesWithoutSpecificPrice = data.dates.filter(date => !date.hasSpecificPrice || date.hasSpecificPrice === false)
+        
+        if (datesWithSpecificPrice.length > 0 && datesWithoutSpecificPrice.length > 0) {
+            datesWithoutSpecificPrice.forEach((date, index) => {
+                const dateIndex = data.dates!.findIndex(d => d === date)
+                ctx.addIssue({
+                    code: "custom",
+                    path: ["dates", dateIndex, "hasSpecificPrice"],
+                    message: "Se você definir preço específico para uma data, todas as outras datas também devem ter preço específico"
+                })
+            })
+        }
     }
 
     if (hasBatches && data.batches && data.batches.length > 0) {

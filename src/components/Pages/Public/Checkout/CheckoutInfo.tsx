@@ -385,6 +385,8 @@ const CheckoutInfo = () => {
             mastercard: "card-master.png",
             visa: "card-visa.png",
             elo: "card-elo.png",
+            cabal: "card-cabal.png",
+            banescard: "card-banescard.png",
         }
         const iconName = brandMap[brandLower] || "card-unknown.png"
         return `/icons/payment/card-brand/${iconName}`
@@ -2129,6 +2131,10 @@ const CheckoutInfo = () => {
                                                                                     amex: { bg: "bg-[#006FCF]", text: "text-white" },
                                                                                     elo: { bg: "bg-[#FFCB05]", text: "text-[#231F20]" },
                                                                                     hipercard: { bg: "bg-[#DF0F50]", text: "text-white" },
+                                                                                    jcb: { bg: "bg-[#052F9C]", text: "text-white" },
+                                                                                    discover: { bg: "bg-[#00AEEF]", text: "text-white" },
+                                                                                    cabal: { bg: "bg-[#000000]", text: "text-white" },
+                                                                                    banescard: { bg: "bg-[#000000]", text: "text-white" },
                                                                                 }
                                                                                 const brandColor = brandColors[cardBrandLower] || { bg: "bg-gray-600", text: "text-white" }
 

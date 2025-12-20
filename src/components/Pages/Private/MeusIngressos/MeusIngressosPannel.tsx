@@ -210,6 +210,27 @@ const MeusIngressosPannel = () => {
         return [...tickets].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     }, [tickets])
 
+    const groupedTickets = useMemo(() => {
+        const groups: Record<string, TTicket[]> = {}
+        
+        orderedTickets.forEach((ticket) => {
+            const groupKey = `${ticket.eventId}-${ticket.Payment?.id || 'no-payment'}`
+            
+            if (!groups[groupKey]) {
+                groups[groupKey] = []
+            }
+            
+            groups[groupKey].push(ticket)
+        })
+        
+        return Object.values(groups).map(group => ({
+            tickets: group.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
+            event: group[0].Event,
+            payment: group[0].Payment,
+            purchaseDate: group[0].createdAt
+        }))
+    }, [orderedTickets])
+
     const stats = useMemo(() => {
         const total = tickets.length
         const confirmed = tickets.filter((ticket) => ticket.status === "CONFIRMED" || ticket.status === "USED").length
@@ -478,26 +499,30 @@ const MeusIngressosPannel = () => {
 
                     {hasTickets && (
                         <div className="space-y-8">
-                            {orderedTickets.map((ticket) => {
-                                const schedule = getEventSchedule(ticket)
-                                const status = statusConfig[ticket.status]
-                                const isPendingPayment = ticket.status === "PENDING"
-                                const canShowQRCode = ticket.status === "CONFIRMED" || ticket.status === "USED"
-                                const isQRCodeVisible = visibleQRCodes[ticket.id] || false
-                                const hasForm = ticket.form && (
-                                    (ticket.form.text && ticket.form.text.length > 0) ||
-                                    (ticket.form.email && ticket.form.email.length > 0) ||
-                                    (ticket.form.textArea && ticket.form.textArea.length > 0) ||
-                                    (ticket.form.select && ticket.form.select.length > 0) ||
-                                    (ticket.form.multiSelect && ticket.form.multiSelect.length > 0)
+                            {groupedTickets.map((group, groupIndex) => {
+                                const firstTicket = group.tickets[0]
+                                const isMultipleTickets = group.tickets.length > 1
+                                const hasForm = firstTicket.form && (
+                                    (firstTicket.form.text && firstTicket.form.text.length > 0) ||
+                                    (firstTicket.form.email && firstTicket.form.email.length > 0) ||
+                                    (firstTicket.form.textArea && firstTicket.form.textArea.length > 0) ||
+                                    (firstTicket.form.select && firstTicket.form.select.length > 0) ||
+                                    (firstTicket.form.multiSelect && firstTicket.form.multiSelect.length > 0)
                                 )
-                                const hasPixQrCode = ticket.Payment?.method === "PIX" && 
-                                                    ticket.Payment?.status === "PENDING" && 
-                                                    ticket.Payment?.qrcodeData
+                                const hasPixQrCode = group.payment?.method === "PIX" && 
+                                                    group.payment?.status === "PENDING" && 
+                                                    group.payment?.qrcodeData
+                                const hasRefundInfo = group.tickets.some(t => 
+                                    t.status === "REFUND_REQUESTED" || 
+                                    t.status === "REFUNDED" || 
+                                    t.Payment?.refundStatus
+                                )
+                                const totalPaid = group.payment?.totalPaidByCustomer || 
+                                    group.tickets.reduce((sum, t) => sum + (t.price || 0), 0)
 
                                 return (
                                     <div
-                                        key={ticket.id}
+                                        key={`group-${groupIndex}`}
                                         className="relative overflow-visible rounded-3xl border border-white/40 bg-linear-to-br from-white to-psi-primary/5 p-6 shadow-lg shadow-psi-primary/5 hover:shadow-xl hover:shadow-psi-primary/20 transition-all duration-500
                                         before:content-[''] before:absolute before:top-1/2 before:-left-6 before:-translate-y-1/2 before:w-12 before:h-12 before:rounded-full before:bg-[#F4F6FB]
                                         after:content-[''] after:absolute after:top-1/2 after:-right-6 after:-translate-y-1/2 after:w-12 after:h-12 after:rounded-full after:bg-[#F4F6FB]"
@@ -513,8 +538,8 @@ const MeusIngressosPannel = () => {
                                                 lg:w-80
                                                 lg:shrink-0">
                                                     <img
-                                                        src={ImageUtils.getEventImageUrl(ticket.Event.image)}
-                                                        alt={ticket.Event.name}
+                                                        src={ImageUtils.getEventImageUrl(group.event.image)}
+                                                        alt={group.event.name}
                                                         className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
                                                     />
                                                 </div>
@@ -527,136 +552,176 @@ const MeusIngressosPannel = () => {
                                                 <div className="flex-1 space-y-4">
                                                     <div className="flex flex-wrap items-start gap-3 justify-between">
                                                         <div className="space-y-1">
-                                                            <h3 className="text-2xl font-semibold text-psi-dark">{ticket.Event.name}</h3>
+                                                            <div className="flex items-center gap-2">
+                                                                <h3 className="text-2xl font-semibold text-psi-dark">{group.event.name}</h3>
+                                                                {isMultipleTickets && (
+                                                                    <Badge className="bg-psi-primary/10 text-psi-primary border-psi-primary/20">
+                                                                        {group.tickets.length} ingressos
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
                                                             <p className="text-sm text-psi-dark/60">
-                                                                Comprado em {formatPurchaseDate(ticket.createdAt)}
+                                                                Comprado em {formatPurchaseDate(group.purchaseDate)}
                                                             </p>
                                                         </div>
-                                                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold shadow-sm ${status.badgeClass}`}>
-                                                            {status.label}
-                                                        </span>
                                                     </div>
 
                                                     <div className="grid gap-4
                                                     sm:grid-cols-2">
                                                         <div className="space-y-3 rounded-2xl border border-psi-primary/20 bg-white/80 p-4 shadow-sm">
                                                             <div className="flex items-center gap-2 text-sm font-semibold text-psi-dark">
-                                                                <Calendar className="h-4 w-4 text-psi-primary" />
-                                                                Data e horário
-                                                            </div>
-                                                            <p className="text-sm text-psi-dark">{schedule.dateLabel}</p>
-                                                            {schedule.timeLabel && (
-                                                                <div className="flex items-center gap-2 text-sm text-psi-dark/70">
-                                                                    <Clock className="h-4 w-4 text-psi-primary" />
-                                                                    {schedule.timeLabel}
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                        <div className="space-y-3 rounded-2xl border border-psi-primary/20 bg-white/80 p-4 shadow-sm">
-                                                            <div className="flex items-center gap-2 text-sm font-semibold text-psi-dark">
                                                                 <MapPin className="h-4 w-4 text-psi-primary" />
                                                                 Local
                                                             </div>
                                                             <p className="text-sm text-psi-dark">
-                                                                {ticket.Event.location || "Local a definir"}
+                                                                {group.event.location || "Local a definir"}
                                                             </p>
                                                             <p className="text-xs text-psi-dark/60">
                                                                 QR Code validado diretamente na entrada.
                                                             </p>
                                                         </div>
-                                                    </div>
 
-                                                    <div className="grid gap-4
-                                                    sm:grid-cols-3">
                                                         <div className="rounded-2xl border border-psi-dark/10 bg-white p-4 shadow-sm space-y-1">
-                                                            <p className="text-xs uppercase text-psi-dark/50 tracking-wide">Lote</p>
-                                                            <p className="text-sm font-semibold text-psi-dark">
-                                                                {ticket.EventBatch?.name || "Ingresso único"}
-                                                            </p>
-                                                            {ticket.TicketType && (
-                                                                <p className="text-xs text-psi-primary font-medium mt-1">
-                                                                    {ticket.TicketType.name}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                        <div className="rounded-2xl border border-psi-dark/10 bg-white p-4 shadow-sm space-y-1">
-                                                            <p className="text-xs uppercase text-psi-dark/50 tracking-wide">Valor pago</p>
+                                                            <p className="text-xs uppercase text-psi-dark/50 tracking-wide">Valor total pago</p>
                                                             <p className="text-2xl font-semibold text-psi-primary">
-                                                                {ticket.Payment?.totalPaidByCustomer 
-                                                                    ? ValueUtils.centsToCurrency(ticket.Payment.totalPaidByCustomer)
-                                                                    : ValueUtils.centsToCurrency(ticket.price)
-                                                                }
+                                                                {ValueUtils.centsToCurrency(totalPaid)}
                                                             </p>
                                                             <p className="text-xs text-psi-dark/60">Taxas já inclusas</p>
-                                                            <hr />
-                                                            <p className="text-xs text-psi-dark/60">Código da compra: <span className="font-semibold text-psi-dark text-sm">{ticket.Payment?.code}</span></p>
-                                                            {
-                                                                ticket.Payment?.transactionReceiptUrl && (
-                                                                    <Link href={ticket.Payment.transactionReceiptUrl} target="_blank" className="text-xs flex items-center gap-1 mt-2 text-psi-dark/60">
-                                                                        <FileText className="h-4 w-4 text-psi-primary" />
-                                                                        Ver recibo
-                                                                    </Link>
-                                                                )
-                                                            }
+                                                            <hr className="my-2" />
+                                                            <p className="text-xs text-psi-dark/60">Código da compra: <span className="font-semibold text-psi-dark text-sm">{group.payment?.code}</span></p>
+                                                            {group.payment?.transactionReceiptUrl && (
+                                                                <Link href={group.payment.transactionReceiptUrl} target="_blank" className="text-xs flex items-center gap-1 mt-2 text-psi-dark/60">
+                                                                    <FileText className="h-4 w-4 text-psi-primary" />
+                                                                    Ver recibo
+                                                                </Link>
+                                                            )}
                                                         </div>
-                                                        <div className="rounded-2xl border border-psi-dark/10 bg-white p-4 shadow-sm space-y-3">
-                                                            <div className="flex items-center gap-2">
-                                                                <QrCode className="h-5 w-5 text-psi-primary" />
-                                                                <p className="text-xs uppercase text-psi-dark/50 tracking-wide">Código</p>
-                                                            </div>
-                                                            {ticket.code && (
-                                                                <div className="space-y-1">
-                                                                    <p className="text-xs text-psi-dark/60">Código do ingresso</p>
-                                                                    <p className="text-sm font-semibold text-psi-dark font-mono">
-                                                                        {ticket.code}
-                                                                    </p>
-                                                                </div>
-                                                            )}
-                                                            {canShowQRCode && (
-                                                                <Button
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    className="w-full"
-                                                                    onClick={() => toggleQRCode(ticket.id)}
-                                                                    disabled={loadingQRCodes[ticket.id]}
-                                                                >
-                                                                    {loadingQRCodes[ticket.id] ? (
-                                                                        <>
-                                                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                                            Carregando...
-                                                                        </>
-                                                                    ) : isQRCodeVisible ? (
-                                                                        <>
-                                                                            <EyeOff className="h-4 w-4 mr-2" />
-                                                                            Ocultar QR Code
-                                                                        </>
-                                                                    ) : (
-                                                                        <>
-                                                                            <Eye className="h-4 w-4 mr-2" />
-                                                                            Mostrar QR Code
-                                                                        </>
-                                                                    )}
-                                                                </Button>
-                                                            )}
-                                                            {isQRCodeVisible && canShowQRCode && qrCodeData[ticket.id] && (
-                                                                <div 
-                                                                    className="flex justify-center p-4 bg-psi-light rounded-lg cursor-pointer hover:bg-psi-primary/5 transition-colors"
-                                                                    onClick={() => {
-                                                                        setSelectedTicketForZoom(ticket)
-                                                                        setQrCodeZoomOpen(true)
-                                                                    }}
-                                                                    title="Clique para ampliar"
-                                                                >
-                                                                    <QRCodeSVG
-                                                                        value={qrCodeData[ticket.id]}
-                                                                        size={200}
-                                                                        level="H"
-                                                                        includeMargin={true}
-                                                                    />
-                                                                </div>
-                                                            )}
-                                                            <p className="text-xs text-psi-dark/60">{status.description}</p>
+                                                    </div>
+
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center gap-2 text-lg font-semibold text-psi-dark">
+                                                            <Ticket className="h-5 w-5 text-psi-primary" />
+                                                            {isMultipleTickets ? "Ingressos" : "Ingresso"}
+                                                        </div>
+                                                        
+                                                        <div className="space-y-3">
+                                                            {group.tickets.map((ticket, ticketIndex) => {
+                                                                const ticketSchedule = getEventSchedule(ticket)
+                                                                const ticketStatus = statusConfig[ticket.status]
+                                                                const canShowQRCode = ticket.status === "CONFIRMED" || ticket.status === "USED"
+                                                                const isQRCodeVisible = visibleQRCodes[ticket.id] || false
+                                                                const isPendingPayment = ticket.status === "PENDING"
+                                                                
+                                                                return (
+                                                                    <div
+                                                                        key={ticket.id}
+                                                                        className="rounded-2xl border border-psi-primary/20 bg-white/80 p-4 shadow-sm space-y-4"
+                                                                    >
+                                                                        <div className="flex items-start justify-between gap-3">
+                                                                            <div className="flex-1 space-y-2">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-sm font-semibold text-psi-dark">
+                                                                                        Ingresso {ticketIndex + 1}
+                                                                                    </span>
+                                                                                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${ticketStatus.badgeClass}`}>
+                                                                                        {ticketStatus.label}
+                                                                                    </span>
+                                                                                </div>
+                                                                                {ticket.code && (
+                                                                                    <div>
+                                                                                        <p className="text-xs text-psi-dark/60">Código</p>
+                                                                                        <p className="text-sm font-semibold text-psi-dark font-mono">
+                                                                                            {ticket.code}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="grid gap-4
+                                                                        sm:grid-cols-2">
+                                                                            <div className="space-y-2 rounded-xl border border-psi-primary/10 bg-psi-primary/5 p-3">
+                                                                                <div className="flex items-center gap-2 text-xs font-semibold text-psi-dark">
+                                                                                    <Calendar className="h-3.5 w-3.5 text-psi-primary" />
+                                                                                    Data e horário
+                                                                                </div>
+                                                                                <p className="text-sm text-psi-dark">{ticketSchedule.dateLabel}</p>
+                                                                                {ticketSchedule.timeLabel && (
+                                                                                    <div className="flex items-center gap-2 text-xs text-psi-dark/70">
+                                                                                        <Clock className="h-3.5 w-3.5 text-psi-primary" />
+                                                                                        {ticketSchedule.timeLabel}
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+
+                                                                            <div className="space-y-2 rounded-xl border border-psi-primary/10 bg-psi-primary/5 p-3">
+                                                                                <div className="flex items-center gap-2 text-xs font-semibold text-psi-dark">
+                                                                                    <QrCode className="h-3.5 w-3.5 text-psi-primary" />
+                                                                                    QR Code
+                                                                                </div>
+                                                                                {canShowQRCode ? (
+                                                                                    <div className="space-y-2">
+                                                                                        <Button
+                                                                                            variant="outline"
+                                                                                            size="sm"
+                                                                                            className="w-full text-xs"
+                                                                                            onClick={() => toggleQRCode(ticket.id)}
+                                                                                            disabled={loadingQRCodes[ticket.id]}
+                                                                                        >
+                                                                                            {loadingQRCodes[ticket.id] ? (
+                                                                                                <>
+                                                                                                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                                                                                    Carregando...
+                                                                                                </>
+                                                                                            ) : isQRCodeVisible ? (
+                                                                                                <>
+                                                                                                    <EyeOff className="h-3 w-3 mr-1" />
+                                                                                                    Ocultar
+                                                                                                </>
+                                                                                            ) : (
+                                                                                                <>
+                                                                                                    <Eye className="h-3 w-3 mr-1" />
+                                                                                                    Mostrar
+                                                                                                </>
+                                                                                            )}
+                                                                                        </Button>
+                                                                                        {isQRCodeVisible && qrCodeData[ticket.id] && (
+                                                                                            <div 
+                                                                                                className="flex justify-center p-3 bg-white rounded-lg cursor-pointer hover:bg-psi-primary/5 transition-colors border border-psi-primary/10"
+                                                                                                onClick={() => {
+                                                                                                    setSelectedTicketForZoom(ticket)
+                                                                                                    setQrCodeZoomOpen(true)
+                                                                                                }}
+                                                                                                title="Clique para ampliar"
+                                                                                            >
+                                                                                                <QRCodeSVG
+                                                                                                    value={qrCodeData[ticket.id]}
+                                                                                                    size={150}
+                                                                                                    level="H"
+                                                                                                    includeMargin={true}
+                                                                                                />
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <p className="text-xs text-psi-dark/60">{ticketStatus.description}</p>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {ticket.EventBatch && (
+                                                                            <div className="text-xs text-psi-dark/60">
+                                                                                <span className="font-medium">Lote:</span> {ticket.EventBatch.name}
+                                                                                {ticket.TicketType && (
+                                                                                    <span className="ml-2">
+                                                                                        <span className="font-medium">Tipo:</span> {ticket.TicketType.name}
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )
+                                                            })}
                                                         </div>
                                                     </div>
 
@@ -667,9 +732,9 @@ const MeusIngressosPannel = () => {
                                                                 Respostas do Formulário
                                                             </div>
                                                             <div className="space-y-3">
-                                                                {ticket.form?.text && ticket.form.text.length > 0 && (
+                                                                {firstTicket.form?.text && firstTicket.form.text.length > 0 && (
                                                                     <div className="space-y-2">
-                                                                        {ticket.form.text.map((item, index) => (
+                                                                        {firstTicket.form.text.map((item, index) => (
                                                                             <div key={index} className="text-sm">
                                                                                 <p className="font-medium text-psi-dark/70">{item.label}</p>
                                                                                 <p className="text-psi-dark">{item.answer || "-"}</p>
@@ -677,9 +742,9 @@ const MeusIngressosPannel = () => {
                                                                         ))}
                                                                     </div>
                                                                 )}
-                                                                {ticket.form?.email && ticket.form.email.length > 0 && (
+                                                                {firstTicket.form?.email && firstTicket.form.email.length > 0 && (
                                                                     <div className="space-y-2">
-                                                                        {ticket.form.email.map((item, index) => (
+                                                                        {firstTicket.form.email.map((item, index) => (
                                                                             <div key={index} className="text-sm">
                                                                                 <p className="font-medium text-psi-dark/70">{item.label}</p>
                                                                                 <p className="text-psi-dark">{item.answer || "-"}</p>
@@ -687,9 +752,9 @@ const MeusIngressosPannel = () => {
                                                                         ))}
                                                                     </div>
                                                                 )}
-                                                                {ticket.form?.textArea && ticket.form.textArea.length > 0 && (
+                                                                {firstTicket.form?.textArea && firstTicket.form.textArea.length > 0 && (
                                                                     <div className="space-y-2">
-                                                                        {ticket.form.textArea.map((item, index) => (
+                                                                        {firstTicket.form.textArea.map((item, index) => (
                                                                             <div key={index} className="text-sm">
                                                                                 <p className="font-medium text-psi-dark/70">{item.label}</p>
                                                                                 <p className="text-psi-dark whitespace-pre-wrap">{item.answer || "-"}</p>
@@ -697,9 +762,9 @@ const MeusIngressosPannel = () => {
                                                                         ))}
                                                                     </div>
                                                                 )}
-                                                                {ticket.form?.select && ticket.form.select.length > 0 && (
+                                                                {firstTicket.form?.select && firstTicket.form.select.length > 0 && (
                                                                     <div className="space-y-2">
-                                                                        {ticket.form.select.map((item, index) => (
+                                                                        {firstTicket.form.select.map((item, index) => (
                                                                             <div key={index} className="text-sm">
                                                                                 <p className="font-medium text-psi-dark/70">{item.label}</p>
                                                                                 <p className="text-psi-dark">{item.answer || "-"}</p>
@@ -707,9 +772,9 @@ const MeusIngressosPannel = () => {
                                                                         ))}
                                                                     </div>
                                                                 )}
-                                                                {ticket.form?.multiSelect && ticket.form.multiSelect.length > 0 && (
+                                                                {firstTicket.form?.multiSelect && firstTicket.form.multiSelect.length > 0 && (
                                                                     <div className="space-y-2">
-                                                                        {ticket.form.multiSelect.map((item, index) => (
+                                                                        {firstTicket.form.multiSelect.map((item, index) => (
                                                                             <div key={index} className="text-sm">
                                                                                 <p className="font-medium text-psi-dark/70">{item.label}</p>
                                                                                 <p className="text-psi-dark">{item.answer || "-"}</p>
@@ -721,7 +786,7 @@ const MeusIngressosPannel = () => {
                                                         </div>
                                                     )}
 
-                                                    {(ticket.status === "REFUND_REQUESTED" || ticket.status === "REFUNDED" || ticket.Payment?.refundStatus) && (
+                                                    {hasRefundInfo && (
                                                         <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 shadow-sm space-y-4">
                                                             <div className="flex items-center gap-2 text-sm font-semibold text-psi-dark">
                                                                 <AlertTriangle className="h-4 w-4 text-amber-600" />
@@ -729,37 +794,37 @@ const MeusIngressosPannel = () => {
                                                             </div>
                                                             <div className="grid gap-3
                                                             sm:grid-cols-2">
-                                                                {ticket.Payment?.refundStatus && (
+                                                                {group.payment?.refundStatus && (
                                                                     <div className="space-y-1">
                                                                         <p className="text-xs text-psi-dark/60">Status</p>
-                                                                        <Badge className={refundStatusConfig[ticket.Payment.refundStatus]?.badgeClass || "bg-gray-50 text-gray-600 border-gray-200"}>
-                                                                            {refundStatusConfig[ticket.Payment.refundStatus]?.label || ticket.Payment.refundStatus}
+                                                                        <Badge className={refundStatusConfig[group.payment.refundStatus]?.badgeClass || "bg-gray-50 text-gray-600 border-gray-200"}>
+                                                                            {refundStatusConfig[group.payment.refundStatus]?.label || group.payment.refundStatus}
                                                                         </Badge>
                                                                     </div>
                                                                 )}
-                                                                {ticket.Payment?.refundedAt && (
+                                                                {group.payment?.refundedAt && (
                                                                     <div className="space-y-1">
                                                                         <p className="text-xs text-psi-dark/60">Concluído em</p>
                                                                         <p className="text-sm font-semibold text-psi-dark">
-                                                                            {DateUtils.formatDate(ticket.Payment.refundedAt, "DD/MM/YYYY [às] HH:mm")}
+                                                                            {DateUtils.formatDate(group.payment.refundedAt, "DD/MM/YYYY [às] HH:mm")}
                                                                         </p>
                                                                     </div>
                                                                 )}
                                                             </div>
-                                                            {ticket.status === "REFUND_REQUESTED" && !ticket.Payment?.refundedAt && (
+                                                            {group.tickets.some(t => t.status === "REFUND_REQUESTED") && !group.payment?.refundedAt && (
                                                                 <div className="rounded-lg border border-amber-200 bg-amber-100/50 p-3">
                                                                     <p className="text-xs text-amber-800">
                                                                         Seu pedido de reembolso está sendo processado. Você será notificado quando o reembolso for concluído.
                                                                     </p>
                                                                 </div>
                                                             )}
-                                                            {ticket.Payment?.refundReceiptUrl && (
-                                                                <Link href={ticket.Payment.refundReceiptUrl} target="_blank" className="text-xs flex items-center gap-1 mt-2 text-psi-dark/60">
+                                                            {group.payment?.refundReceiptUrl && (
+                                                                <Link href={group.payment.refundReceiptUrl} target="_blank" className="text-xs flex items-center gap-1 mt-2 text-psi-dark/60">
                                                                     <FileText className="h-4 w-4 text-psi-primary" />
                                                                     Ver recibo
                                                                 </Link>
                                                             )}
-                                                            {ticket.Payment?.refundStatus === "DONE" && ticket.Payment?.refundedAt && (
+                                                            {group.payment?.refundStatus === "DONE" && group.payment?.refundedAt && (
                                                                 <div className="rounded-lg border border-emerald-200 bg-emerald-100/50 p-3">
                                                                     <p className="text-xs text-emerald-800">
                                                                         Seu reembolso foi concluído com sucesso. O valor será creditado na sua conta em até 3 dias úteis.
@@ -772,12 +837,12 @@ const MeusIngressosPannel = () => {
                                                     <div className="flex flex-col gap-3
                                                     lg:flex-row
                                                     lg:flex-wrap">
-                                                        {isPendingPayment && (
+                                                        {group.tickets.some(t => t.status === "PENDING") && (
                                                             <Button
                                                                 variant="tertiary"
                                                                 size="lg"
                                                                 className="flex-1 min-w-[200px]"
-                                                                onClick={() => hasPixQrCode ? handleOpenPixPayment(ticket) : undefined}
+                                                                onClick={() => hasPixQrCode && firstTicket ? handleOpenPixPayment(firstTicket) : undefined}
                                                             >
                                                                 Realizar pagamento
                                                             </Button>
@@ -787,12 +852,12 @@ const MeusIngressosPannel = () => {
                                                             variant="outline"
                                                             size="lg"
                                                             className="flex-1 min-w-[200px]"
-                                                            onClick={() => handleShareTicket(ticket)}
+                                                            onClick={() => handleShareTicket(firstTicket)}
                                                         >
                                                             <Share2 className="h-4 w-4" />
                                                             Compartilhar
                                                         </Button>
-                                                        <Link href={`/ver-evento/${ticket.Event.slug}`} className="flex-1 min-w-[200px]">
+                                                        <Link href={`/ver-evento/${group.event.slug}`} className="flex-1 min-w-[200px]">
                                                             <Button
                                                                 variant="secondary"
                                                                 size="lg"
