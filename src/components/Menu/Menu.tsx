@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent, Wallet, QrCode, HeartPlus, Info, HouseHeart, CreditCard } from "lucide-react"
+import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent, Wallet, QrCode, HeartPlus, Info, HouseHeart, CreditCard, Book } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Logo from "@/components/Logo/Logo"
 import { Avatar } from "@/components/Avatar/Avatar"
@@ -276,7 +276,7 @@ const Menu = () => {
                     </Link>
 
                     <div className="hidden items-center gap-3
-                    md:flex">
+                    min-[821px]:flex">
                         <CartDropdown />
                         |
                             <>
@@ -289,6 +289,17 @@ const Menu = () => {
                                     <Link href="/">
                                         <Home className="h-4 w-4" />
                                         Home
+                                    </Link>
+                                </Button>
+                                <Button
+                                    asChild
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-psi-dark/70 hover:text-psi-dark"
+                                >
+                                    <Link href="/casos-de-uso">
+                                        <Book className="h-4 w-4" />
+                                        Casos de Uso
                                     </Link>
                                 </Button>
                                 <Button
@@ -428,10 +439,12 @@ const Menu = () => {
                             }
                     </div>
 
-                    <div className="md:hidden flex items-center gap-2">
+                    <div className="flex items-center gap-2
+                    min-[821px]:hidden">
                         <CartDropdown />
                         {isAuthenticated && (
-                            <div className="md:hidden">
+                            <div className="block
+                            min-[821px]:hidden">
                                 <NotificationBell />
                             </div>
                         )}
@@ -544,7 +557,8 @@ const Menu = () => {
                 </div>
 
                 {!isAuthenticated && isOpen && (
-                    <div className="md:hidden border-t border-[#E4E6F0] bg-white/95 backdrop-blur-md rounded-2xl mt-2 mb-4 shadow-lg shadow-black/5">
+                    <div className="block border-t border-[#E4E6F0] bg-white/95 backdrop-blur-md rounded-2xl mt-2 mb-4 shadow-lg shadow-black/5
+                    min-[821px]:hidden">
                         <div className="px-2 pt-2 pb-3 space-y-1">
                             <Button
                                 asChild
@@ -553,8 +567,41 @@ const Menu = () => {
                                 className="w-full justify-start text-psi-dark/70 hover:text-psi-dark hover:bg-[#F3F4FB] rounded-xl"
                             >
                                 <Link href="/" onClick={closeMenu}>
-                                    <Home className="mr-2 h-4 w-4" />
+                                    <Home className="h-4 w-4" />
                                     Home
+                                </Link>
+                            </Button>
+                            <Button
+                                asChild
+                                variant="ghost"
+                                size="sm"
+                                className="w-full justify-start text-psi-dark/70 hover:text-psi-dark hover:bg-[#F3F4FB] rounded-xl"
+                            >
+                                <Link href="/casos-de-uso" onClick={closeMenu}>
+                                    <Book className="h-4 w-4" />
+                                    Casos de Uso
+                                </Link>
+                            </Button>
+                            <Button
+                                asChild
+                                variant="ghost"
+                                size="sm"
+                                className="w-full justify-start text-psi-dark/70 hover:text-psi-dark hover:bg-[#F3F4FB] rounded-xl"
+                            >
+                                <Link href="/ver-eventos" onClick={closeMenu}>
+                                    <Calendar className="h-4 w-4" />
+                                    Eventos
+                                </Link>
+                            </Button>
+                            <Button
+                                asChild
+                                variant="ghost"
+                                size="sm"
+                                className="w-full justify-start text-psi-dark/70 hover:text-psi-dark hover:bg-[#F3F4FB] rounded-xl"
+                            >
+                                <Link href="/conheca" onClick={closeMenu}>
+                                    <HouseHeart className="h-4 w-4" />
+                                    Conheça
                                 </Link>
                             </Button>
                             <Button
@@ -570,7 +617,7 @@ const Menu = () => {
                             </Button>
                             </div>
                         </div>
-                    )}
+                )}
             </div>
         </nav>
     )

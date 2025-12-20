@@ -20,6 +20,13 @@ import { Pagination } from "@/components/Pagination/Pagination"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { useSearchParamsHook } from "@/hooks/useSearchParams"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
 const VerEventosPannel = () => {
     const [currentPage, setCurrentPage] = useState(1)
@@ -83,7 +90,9 @@ const VerEventosPannel = () => {
 
     const categories = useMemo(() => {
         if (eventCategoriesData?.data && Array.isArray(eventCategoriesData.data)) {
-            return eventCategoriesData.data
+            return [...eventCategoriesData.data].sort((a, b) => 
+                a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" })
+            )
         }
         return []
     }, [eventCategoriesData])
@@ -233,7 +242,37 @@ const VerEventosPannel = () => {
                         {categories.length > 0 && (
                             <div className="mb-6">
                                 <p className="text-sm font-medium text-psi-dark/70 mb-3">Filtrar por categoria:</p>
-                                <div className="flex flex-wrap gap-2">
+                                
+                                <div className="block
+                                min-[821px]:hidden">
+                                    <Select
+                                        value={selectedCategoryId || "all"}
+                                        onValueChange={(value) => handleCategorySelect(value === "all" ? null : value)}
+                                    >
+                                        <SelectTrigger className="w-full bg-white border border-[#E4E6F0] text-psi-dark/70">
+                                            <SelectValue placeholder="Selecione uma categoria" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">
+                                                Todas
+                                            </SelectItem>
+                                            {categories.map((category) => {
+                                                const Icon = EventCategoryIconHandler(category.name)
+                                                return (
+                                                    <SelectItem key={category.id} value={category.id}>
+                                                        <div className="flex items-center gap-2">
+                                                            <Icon className="h-4 w-4" />
+                                                            <span>{category.name}</span>
+                                                        </div>
+                                                    </SelectItem>
+                                                )
+                                            })}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="hidden
+                                min-[821px]:flex flex-wrap gap-2">
                                     <button
                                         onClick={() => handleCategorySelect(null)}
                                         className={cn(

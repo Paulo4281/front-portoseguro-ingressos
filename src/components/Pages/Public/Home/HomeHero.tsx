@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CTAButton } from "@/components/CTAButton/CTAButton"
-import { ArrowUpRight, Lock, ShieldCheck, Ticket, Music2, SunMedium, Waves, PartyPopper, TrendingDown, Users, CreditCard, TrendingUp, Megaphone, Tag, Fingerprint, Cpu, Sparkles, Globe2, CheckCircle2, HeartHandshake, DollarSign, Star, BookOpen, ArrowRight, DollarSignIcon } from "lucide-react"
+import { ArrowUpRight, Lock, ShieldCheck, Ticket, Music2, SunMedium, Waves, PartyPopper, TrendingDown, Users, CreditCard, TrendingUp, Megaphone, Tag, Fingerprint, Cpu, Sparkles, Globe2, CheckCircle2, HeartHandshake, DollarSign, Star, BookOpen, ArrowRight, DollarSignIcon, Book } from "lucide-react"
 import { useEventFindFeatured } from "@/hooks/Event/useEventFindFeatured"
 import { CardEvent } from "@/components/Card/CardEvent/CardEvent"
 import { Carousel } from "@/components/Carousel/Carousel"
@@ -241,7 +241,9 @@ const HomeHero = () => {
                             sm:min-h-[140px]
                             lg:min-h-[160px]">
 
-                                <div className="absolute left-[40vw] bottom-[-35px] w-[180px] h-auto z-10 pointer-events-none
+                                <div className="
+                                absolute left-[44vw] bottom-0 w-[140px] h-auto z-10 pointer-events-none
+                                xs:left-0 xs:bottom-[65px] xs:w-[100px]
                                 sm:w-[250px] sm:left-[400px] sm:bottom-[-60px]
                                 lg:w-[260px] lg:left-[465px] lg:bottom-[-30px]
                                 3xl:w-[320px] 3xl:left-[500px] 3xl:bottom-[-75px]
@@ -251,7 +253,7 @@ const HomeHero = () => {
                                         alt="Pedro Álvares Cabral apontando para as taxas da plataforma"
                                         width={350}
                                         height={437}
-                                        className="object-contain w-full h-auto -scale-x-100 lg:scale-x-100"
+                                        className="object-contain w-full h-auto -scale-x-100 xs:scale-x-100 sm:-scale-x-100 lg:scale-x-100"
                                         priority
                                     />
                                 </div>
@@ -275,8 +277,8 @@ const HomeHero = () => {
                                         </Button>
 
                                         <Button asChild size="lg" variant="dark">
-                                            <Link href="/organizadores" aria-label="Acessar área do organizador">
-                                                Área do produtor
+                                            <Link href="/casos-de-uso" aria-label="Acessar área de casos de uso">
+                                                <Book /> Casos de uso
                                             </Link>
                                         </Button>
                                     </div>

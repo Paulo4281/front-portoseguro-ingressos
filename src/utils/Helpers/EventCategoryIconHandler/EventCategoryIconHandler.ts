@@ -1,5 +1,5 @@
 import { TEventCategory } from "@/types/Event/TEventCategory";
-import { Baby, Beer, Bolt, BookOpenText, Brain, Brush, Camera, Car, ChartColumn, ChartSpline, Church, Clapperboard, Cpu, Cross, Drama, Dumbbell, EyeClosed, Footprints, Gamepad2, Gauge, GraduationCap, HandFist, HandMetal, Handshake, HeartHandshakeIcon, LucideIcon, Luggage, Medal, Microchip, MicVocal, Motorbike, Music, Music4, Orbit, PartyPopper, PawPrint, PenTool, PersonStanding, Plane, ScissorsLineDashed, Shirt, Smile, Speech, Tag, TentTree, Tractor, TreePalm, Trees, Users, Utensils, Volleyball, Wine } from "lucide-react";
+import { Baby, Beer, Bolt, BookOpenText, Brain, Brush, Camera, Car, ChartColumn, ChartSpline, Church, Clapperboard, Cpu, Cross, Drama, Dumbbell, EyeClosed, Footprints, Gamepad2, Gauge, GraduationCap, HandFist, HandMetal, Handshake, HeartHandshakeIcon, House, LucideIcon, Luggage, Medal, Microchip, MicVocal, Motorbike, Music, Music4, Orbit, PartyPopper, PawPrint, PenTool, PersonStanding, Plane, ScissorsLineDashed, Shirt, Smile, Speech, Tag, TentTree, Tractor, TreePalm, Trees, Users, Utensils, Volleyball, Wine } from "lucide-react";
 
 const EventCategoryIconHandler = (category: TEventCategory["name"]): LucideIcon => {
     switch (category) {
@@ -95,7 +95,7 @@ const EventCategoryIconHandler = (category: TEventCategory["name"]): LucideIcon 
             return Users
         case "Espiritualidade":
             return Church
-        case "Beneficente":
+        case "Beneficentes":
             return HeartHandshakeIcon
         case "Universitários":
             return GraduationCap
@@ -115,6 +115,8 @@ const EventCategoryIconHandler = (category: TEventCategory["name"]): LucideIcon 
             return Plane
         case "Geek":
             return Orbit
+        case "Imobiliário":
+            return House
         default:
             return Tag
     }

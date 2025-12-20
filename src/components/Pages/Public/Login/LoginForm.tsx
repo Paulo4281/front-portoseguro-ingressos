@@ -255,7 +255,7 @@ const LoginForm = () => {
                     className="w-full"
                 >
                     <Link href="/" className="flex items-center justify-center">
-                        <ArrowLeft className="size-4 mr-2" />
+                        <ArrowLeft className="size-4" />
                         Voltar ao início
                     </Link>
                 </Button>
