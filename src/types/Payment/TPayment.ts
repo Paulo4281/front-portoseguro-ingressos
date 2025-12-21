@@ -100,10 +100,17 @@ type TPaymentAdminListResponse = {
     Tickets: Array<{
         id: string
         code: string
+        price: number
         status: string
         ticketTypeId: string | null
         cancelledBy: typeof TicketCancelledBy[number] | null
         cancelledAt: string | null
+        refundReason: string | null
+        refundedBy: string | null
+        refundedAt: string | null
+        refundStatus: string | null
+        refundReceiptUrl: string | null
+        refundEndToEndIndentifier: string | null
         TicketType: {
             id: string
             name: string
@@ -182,6 +189,7 @@ type TPayment = {
 
 type TPaymentRefundParams = {
     description?: string
+    ticketId?: string
 }
 
 type TPaymentGatewayGetPIXQrCodeResponse = {

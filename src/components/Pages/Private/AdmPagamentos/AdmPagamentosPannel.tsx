@@ -95,6 +95,10 @@ export const ticketStatusConfig: Record<string, { label: string; badgeClass: str
         label: "Estornado",
         badgeClass: "bg-purple-50 text-purple-600 border-purple-200"
     },
+    REFUND_REQUESTED: {
+        label: "Estorno solicitado",
+        badgeClass: "bg-amber-50 text-amber-600 border-amber-200"
+    },
     OVERDUE: {
         label: "Vencido",
         badgeClass: "bg-gray-50 text-gray-600 border-gray-200"
@@ -163,7 +167,7 @@ const installmentStatusConfig: Record<string, { label: string; badgeClass: strin
     }
 }
 
-const refundStatusConfig: Record<string, { label: string; badgeClass: string }> = {
+export const refundStatusConfig: Record<string, { label: string; badgeClass: string }> = {
     PENDING: {
         label: "Pendente",
         badgeClass: "bg-amber-50 text-amber-600 border-amber-200"
@@ -235,6 +239,8 @@ const AdmPagamentosPannel = () => {
     const [openRows, setOpenRows] = useState<Record<string, boolean>>({})
     const [refundDialogOpen, setRefundDialogOpen] = useState(false)
     const [selectedPaymentForRefund, setSelectedPaymentForRefund] = useState<TPaymentAdminListResponse | null>(null)
+    const [refundTicketDialogOpen, setRefundTicketDialogOpen] = useState(false)
+    const [selectedTicketForRefund, setSelectedTicketForRefund] = useState<{ payment: TPaymentAdminListResponse, ticket: TPaymentAdminListResponse["Tickets"][0] } | null>(null)
     const [adminPassword, setAdminPassword] = useState("")
     const [showPassword, setShowPassword] = useState(false)
     const [refundReason, setRefundReason] = useState("")
@@ -272,6 +278,20 @@ const AdmPagamentosPannel = () => {
     const handleCloseRefundDialog = () => {
         setRefundDialogOpen(false)
         setSelectedPaymentForRefund(null)
+        setAdminPassword("")
+        setRefundReason("")
+        setPasswordError(null)
+        setShowPassword(false)
+    }
+
+    const handleOpenRefundTicketDialog = (payment: TPaymentAdminListResponse, ticket: TPaymentAdminListResponse["Tickets"][0]) => {
+        setSelectedTicketForRefund({ payment, ticket })
+        setRefundTicketDialogOpen(true)
+    }
+
+    const handleCloseRefundTicketDialog = () => {
+        setRefundTicketDialogOpen(false)
+        setSelectedTicketForRefund(null)
         setAdminPassword("")
         setRefundReason("")
         setPasswordError(null)
@@ -331,6 +351,75 @@ const AdmPagamentosPannel = () => {
 
             Toast.success("Estorno solicitado com sucesso")
             handleCloseRefundDialog()
+        } catch (error: any) {
+            const errorMessage = error?.response?.data?.message || "Erro ao processar estorno. Tente novamente."
+            setPasswordError(errorMessage)
+            Toast.error(errorMessage)
+        }
+    }
+
+    const handleConfirmRefundTicket = async () => {
+        if (!adminPassword.trim()) {
+            setPasswordError("Por favor, digite a senha do administrador")
+            return
+        }
+
+        if (!selectedTicketForRefund) {
+            return
+        }
+
+        const { payment, ticket } = selectedTicketForRefund
+
+        if (!payment.Tickets || payment.Tickets.length <= 1) {
+            setPasswordError("Não é possível estornar um ingresso específico quando há apenas um ingresso")
+            return
+        }
+
+        try {
+            const passwordResponse = await checkPasswordAdmin(adminPassword)
+            
+            if (passwordResponse?.success !== true) {
+                setPasswordError("Senha incorreta. Tente novamente.")
+                return
+            }
+
+            setPasswordError(null)
+
+            if (payment.method === "CREDIT_CARD") {
+                if (!payment.externalPaymentId) {
+                    setPasswordError("Dados do pagamento incompletos")
+                    return
+                }
+
+                const firstInstallment = payment.Installments?.find(
+                    (installment) => installment.externalInstallmentId
+                )
+
+                if (!firstInstallment?.externalInstallmentId) {
+                    setPasswordError("Nenhuma parcela disponível para estorno")
+                    return
+                }
+
+                await refundCreditCardPayment({
+                    billingId: payment.externalPaymentId,
+                    installmentId: firstInstallment.externalInstallmentId,
+                    params: {
+                        description: refundReason.trim() || undefined,
+                        ticketId: ticket.id
+                    }
+                })
+            } else {
+                await refundPayment({
+                    billingId: payment.externalPaymentId ?? "",
+                    params: {
+                        description: refundReason.trim() || undefined,
+                        ticketId: ticket.id
+                    }
+                })
+            }
+
+            Toast.success("Estorno do ingresso solicitado com sucesso")
+            handleCloseRefundTicketDialog()
         } catch (error: any) {
             const errorMessage = error?.response?.data?.message || "Erro ao processar estorno. Tente novamente."
             setPasswordError(errorMessage)
@@ -942,6 +1031,14 @@ const AdmPagamentosPannel = () => {
                                                                                                     Código: <span className="font-mono font-semibold text-psi-dark">{ticket.code}</span>
                                                                                                 </p>
                                                                                             )}
+                                                                                            {ticket.price && (
+                                                                                                <div className="flex gap-1">
+                                                                                                    <p className="text-xs text-psi-dark/60">Valor:</p>
+                                                                                                    <p className="text-sm font-semibold text-psi-dark">
+                                                                                                        {ValueUtils.centsToCurrency(ticket.price)}
+                                                                                                    </p>
+                                                                                                </div>
+                                                                                            )}
                                                                                         </div>
                                                                                         <div className="flex flex-col gap-2">
                                                                                             <Badge className={ticketStatusConfig[ticket.status]?.badgeClass || "bg-gray-50 text-gray-600 border-gray-200"}>
@@ -957,8 +1054,86 @@ const AdmPagamentosPannel = () => {
                                                                                                     Cancelado em: {formatDateTime(ticket.cancelledAt)}
                                                                                                 </p>
                                                                                             )}
+                                                                                            {payment.Tickets && payment.Tickets.length > 1 && 
+                                                                                             ["CONFIRMED", "RECEIVED"].includes(payment.status) && 
+                                                                                             !ticket.cancelledBy && (
+                                                                                                <Button
+                                                                                                    variant="destructive"
+                                                                                                    size="sm"
+                                                                                                    onClick={() => handleOpenRefundTicketDialog(payment, ticket)}
+                                                                                                    className="mt-2"
+                                                                                                >
+                                                                                                    Estornar ingresso
+                                                                                                </Button>
+                                                                                            )}
                                                                                         </div>
                                                                                     </div>
+                                                                                    
+                                                                                    {(ticket.refundStatus || ticket.refundedAt || ticket.refundReason) && (
+                                                                                        <div className="mt-3 pt-3 border-t border-psi-dark/10 space-y-2">
+                                                                                            <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
+                                                                                                <AlertTriangle className="h-3.5 w-3.5 text-purple-600" />
+                                                                                                Informações de Estorno Parcial
+                                                                                            </div>
+                                                                                            <div className="grid gap-2
+                                                                                            sm:grid-cols-2">
+                                                                                                {ticket.refundStatus && (
+                                                                                                    <div>
+                                                                                                        <p className="text-xs text-psi-dark/60 mb-1">Status do reembolso</p>
+                                                                                                        <Badge className={refundStatusConfig[ticket.refundStatus]?.badgeClass || "bg-gray-50 text-gray-600 border-gray-200"}>
+                                                                                                            {refundStatusConfig[ticket.refundStatus]?.label || ticket.refundStatus}
+                                                                                                        </Badge>
+                                                                                                    </div>
+                                                                                                )}
+                                                                                                {ticket.refundedBy && (
+                                                                                                    <div>
+                                                                                                        <p className="text-xs text-psi-dark/60 mb-1">Solicitado por</p>
+                                                                                                        <p className="text-xs font-semibold text-psi-dark font-mono">
+                                                                                                            {ticket.refundedBy}
+                                                                                                        </p>
+                                                                                                    </div>
+                                                                                                )}
+                                                                                                {ticket.refundedAt && (
+                                                                                                    <div>
+                                                                                                        <p className="text-xs text-psi-dark/60 mb-1">Concluído em</p>
+                                                                                                        <p className="text-xs font-semibold text-psi-dark">
+                                                                                                            {formatDateTime(ticket.refundedAt)}
+                                                                                                        </p>
+                                                                                                    </div>
+                                                                                                )}
+                                                                                                {ticket.refundEndToEndIndentifier && (
+                                                                                                    <div>
+                                                                                                        <p className="text-xs text-psi-dark/60 mb-1">ID de end to end</p>
+                                                                                                        <p className="text-xs font-semibold text-psi-dark">
+                                                                                                            {ticket.refundEndToEndIndentifier}
+                                                                                                        </p>
+                                                                                                    </div>
+                                                                                                )}
+                                                                                            </div>
+                                                                                            {ticket.refundReason && (
+                                                                                                <div>
+                                                                                                    <p className="text-xs text-psi-dark/60 mb-1">Motivo do reembolso</p>
+                                                                                                    <p className="text-xs text-psi-dark/70 whitespace-pre-line">
+                                                                                                        {ticket.refundReason}
+                                                                                                    </p>
+                                                                                                </div>
+                                                                                            )}
+                                                                                            {ticket.refundReceiptUrl && (
+                                                                                                <div>
+                                                                                                    <a
+                                                                                                        href={ticket.refundReceiptUrl}
+                                                                                                        target="_blank"
+                                                                                                        rel="noopener noreferrer"
+                                                                                                        className="inline-flex items-center gap-1 text-xs text-psi-primary hover:text-psi-primary/80"
+                                                                                                    >
+                                                                                                        Ver recibo do reembolso
+                                                                                                        <ExternalLink className="h-3 w-3" />
+                                                                                                    </a>
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    )}
+                                                                                    
                                                                                     {ticket.TicketDates && ticket.TicketDates.length > 0 && (
                                                                                         <div className="space-y-2 pt-3 border-t border-psi-dark/10">
                                                                                             <p className="text-xs font-medium text-psi-dark/60 uppercase tracking-wide">Datas do evento:</p>
@@ -1004,7 +1179,8 @@ const AdmPagamentosPannel = () => {
                                                                     </div>
                                                                 )}
 
-                                                                {(payment.status === "REFUND_REQUESTED" || payment.status === "REFUNDED" || payment.refundStatus || payment.refundReason || payment.refundedBy) && (
+                                                                {(payment.status === "REFUND_REQUESTED" || payment.status === "REFUNDED" || payment.refundStatus || payment.refundReason || payment.refundedBy) && 
+                                                                 !payment.Tickets?.some(ticket => ticket.refundStatus !== null && ticket.refundStatus !== undefined) && (
                                                                     <div className="space-y-4 pt-6 border-t border-psi-dark/10">
                                                                         <div className="flex items-center gap-3">
                                                                             <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
@@ -1054,20 +1230,20 @@ const AdmPagamentosPannel = () => {
                                                                                     </p>
                                                                                 </div>
                                                                             )}
-                                                                            {payment.refundReceiptUrl && (
-                                                                                <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3">
-                                                                                    <p className="text-xs text-psi-dark/60 mb-1">URL do recibo</p>
-                                                                                    <a href={payment.refundReceiptUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-psi-primary hover:text-psi-primary/80">
-                                                                                        Ver recibo
-                                                                                    </a>
-                                                                                </div>
-                                                                            )}
                                                                             {payment.refundEndToEndIdentifier && (
                                                                                 <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3">
                                                                                     <p className="text-xs text-psi-dark/60 mb-1">ID de end to end</p>
                                                                                     <p className="text-sm font-semibold text-psi-dark">
                                                                                         {payment.refundEndToEndIdentifier}
                                                                                     </p>
+                                                                                </div>
+                                                                            )}
+                                                                            {payment.refundReceiptUrl && payment.Tickets?.every(ticket => ticket.refundStatus === null) && (
+                                                                                <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3">
+                                                                                    <p className="text-xs text-psi-dark/60 mb-1">URL do recibo</p>
+                                                                                    <a href={payment.refundReceiptUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-psi-primary hover:text-psi-primary/80">
+                                                                                        Ver recibo
+                                                                                    </a>
                                                                                 </div>
                                                                             )}
                                                                         </div>
@@ -1215,6 +1391,121 @@ const AdmPagamentosPannel = () => {
                             type="button"
                             variant="destructive"
                             onClick={handleConfirmRefund}
+                            disabled={isCheckingPassword || isRefundingPayment || isRefundingCreditCard || !adminPassword.trim()}
+                        >
+                            {isCheckingPassword || isRefundingPayment || isRefundingCreditCard ? (
+                                <LoadingButton />
+                            ) : (
+                                "Confirmar Estorno"
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={refundTicketDialogOpen} onOpenChange={handleCloseRefundTicketDialog}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                                <AlertTriangle className="h-5 w-5 text-red-600" />
+                            </div>
+                            Confirmar Estorno de Ingresso
+                        </DialogTitle>
+                        <DialogDescription className="pt-2 space-y-2">
+                            <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
+                                <p className="text-sm font-semibold text-amber-900 mb-1">
+                                    ⚠️ Atenção: Esta ação é delicada e irreversível
+                                </p>
+                                <p className="text-xs text-amber-800">
+                                    O estorno de um ingresso específico estornará apenas o valor deste ingresso. Certifique-se de que esta ação é realmente necessária antes de prosseguir.
+                                </p>
+                            </div>
+                            {selectedTicketForRefund && (
+                                <div className="pt-2 space-y-1">
+                                    <p className="text-sm text-psi-dark/70">
+                                        <span className="font-semibold">Pagamento:</span> {selectedTicketForRefund.payment.code}
+                                    </p>
+                                    <p className="text-sm text-psi-dark/70">
+                                        <span className="font-semibold">Ingresso:</span> {selectedTicketForRefund.ticket.code}
+                                    </p>
+                                    <p className="text-sm text-psi-dark/70">
+                                        <span className="font-semibold">Valor do ingresso:</span> {ValueUtils.centsToCurrency(selectedTicketForRefund.ticket.price || 0)}
+                                    </p>
+                                </div>
+                            )}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
+                        <div>
+                            <label className="block text-sm font-medium text-psi-dark mb-2">
+                                Senha do Administrador *
+                            </label>
+                            <div className="relative">
+                                <Input
+                                    type={showPassword ? "text" : "password"}
+                                    value={adminPassword}
+                                    onChange={(e) => {
+                                        setAdminPassword(e.target.value)
+                                        if (passwordError) setPasswordError(null)
+                                    }}
+                                    placeholder="Digite a senha do administrador"
+                                    icon={Lock}
+                                    className="pr-10"
+                                    required
+                                    disabled={isCheckingPassword || isRefundingPayment || isRefundingCreditCard}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-psi-dark/60 hover:text-psi-dark transition-colors"
+                                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                                    disabled={isCheckingPassword || isRefundingPayment || isRefundingCreditCard}
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="size-4" />
+                                    ) : (
+                                        <Eye className="size-4" />
+                                    )}
+                                </button>
+                            </div>
+                            {passwordError && (
+                                <p className="mt-2 text-sm text-red-600">{passwordError}</p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                Motivo do Estorno (Opcional)
+                            </label>
+                            <Textarea
+                                value={refundReason}
+                                onChange={(e) => setRefundReason(e.target.value)}
+                                placeholder="Descreva o motivo do estorno..."
+                                className="min-h-[100px]"
+                                maxLength={500}
+                                disabled={isCheckingPassword || isRefundingPayment || isRefundingCreditCard}
+                            />
+                            <p className="text-xs text-psi-dark/50 mt-1">
+                                {refundReason.length}/500 caracteres
+                            </p>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleCloseRefundTicketDialog}
+                            disabled={isCheckingPassword || isRefundingPayment || isRefundingCreditCard}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={handleConfirmRefundTicket}
                             disabled={isCheckingPassword || isRefundingPayment || isRefundingCreditCard || !adminPassword.trim()}
                         >
                             {isCheckingPassword || isRefundingPayment || isRefundingCreditCard ? (

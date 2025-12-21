@@ -59,6 +59,7 @@ type TTicketValidationInfo = {
 type TTicket = {
     id: string
     code: string
+    price: number
     token: string
     status: typeof TicketStatuses[number]
     eventId: string
@@ -69,7 +70,12 @@ type TTicket = {
     form: TTicketForm | null
     validationInfo?: TTicketValidationInfo
     usedAt: string | null
-    price: number
+    refundReason: string | null
+    refundedBy: string | null
+    refundedAt: string | null
+    refundStatus: string | null
+    refundReceiptUrl: string | null
+    refundEndToEndIndentifier: string | null
     createdAt: string
     updatedAt: string | null
 
@@ -215,6 +221,12 @@ type TTicketToOrganizer = {
     validationInfo?: TTicketValidationInfo
     cancelledBy: typeof TicketCancelledBy[number] | null
     cancelledAt: string | null
+    refundReason: string | null
+    refundedBy: string | null
+    refundedAt: string | null
+    refundStatus: string | null
+    refundReceiptUrl: string | null
+    refundEndToEndIndentifier: string | null
     createdAt: string
 }
 

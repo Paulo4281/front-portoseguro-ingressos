@@ -35,7 +35,9 @@ import { useTicketOrganizerRequestRefund } from "@/hooks/Ticket/useTicketOrganiz
 import { Toast } from "@/components/Toast/Toast"
 import type { TTicketToOrganizer } from "@/types/Ticket/TTicket"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
-import { ticketCancelledByConfig } from "@/components/Pages/Private/AdmPagamentos/AdmPagamentosPannel"
+import { ticketCancelledByConfig, refundStatusConfig } from "@/components/Pages/Private/AdmPagamentos/AdmPagamentosPannel"
+import { Badge } from "@/components/ui/badge"
+import { AlertTriangle, ExternalLink } from "lucide-react"
 
 type TSheetTicketsToOrganizerProps = {
     open: boolean
@@ -50,6 +52,7 @@ const statusLabels: Record<string, string> = {
     PARTIALLY_USED: "Utilizado parcialmente",
     CANCELLED: "Cancelado",
     REFUNDED: "Reembolsado",
+    REFUND_REQUESTED: "Estorno solicitado",
     OVERDUE: "Vencido",
     EXPIRED: "Expirado",
     FAILED: "Falhou",
@@ -62,6 +65,7 @@ const statusColors: Record<string, string> = {
     PARTIALLY_USED: "bg-yellow-50 text-yellow-600 border-yellow-200",
     CANCELLED: "bg-red-50 text-red-600 border-red-200",
     REFUNDED: "bg-gray-50 text-gray-600 border-gray-200",
+    REFUND_REQUESTED: "bg-amber-50 text-amber-600 border-amber-200",
     OVERDUE: "bg-gray-50 text-gray-600 border-gray-200",
     EXPIRED: "bg-gray-50 text-gray-600 border-gray-200",
     FAILED: "bg-red-50 text-red-600 border-red-200",
@@ -76,6 +80,7 @@ const SheetTicketsToOrganizer = ({
     const [searchQuery, setSearchQuery] = useState("")
     const [statusFilter, setStatusFilter] = useState<string>("ALL")
     const [selectedTicket, setSelectedTicket] = useState<TTicketToOrganizer | null>(null)
+    const [selectedTicketsForDialog, setSelectedTicketsForDialog] = useState<TTicketToOrganizer[]>([])
     const [viewCustomerOpen, setViewCustomerOpen] = useState(false)
     const [cancelTicketOpen, setCancelTicketOpen] = useState(false)
 
@@ -98,6 +103,26 @@ const SheetTicketsToOrganizer = ({
         return data.data.data
     }, [data])
 
+    const groupedTickets = useMemo(() => {
+        const groups: Record<string, TTicketToOrganizer[]> = {}
+        
+        tickets.forEach((ticket) => {
+            const groupKey = ticket.customer.id
+            
+            if (!groups[groupKey]) {
+                groups[groupKey] = []
+            }
+            
+            groups[groupKey].push(ticket)
+        })
+        
+        return Object.values(groups).map(group => ({
+            tickets: group.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
+            customer: group[0].customer,
+            purchaseDate: group[0].createdAt
+        }))
+    }, [tickets])
+
     const total = useMemo(() => {
         return data?.data?.total || 0
     }, [data])
@@ -116,9 +141,14 @@ const SheetTicketsToOrganizer = ({
         setCurrentPage(1)
     }
 
-    const handleViewCustomer = (ticket: TTicketToOrganizer) => {
+    const handleViewCustomer = (ticket: TTicketToOrganizer, allTickets?: TTicketToOrganizer[]) => {
         setSelectedTicket(ticket)
         setViewCustomerOpen(true)
+        if (allTickets) {
+            setSelectedTicketsForDialog(allTickets)
+        } else {
+            setSelectedTicketsForDialog([ticket])
+        }
     }
 
     const handleCancelTicket = (ticket: TTicketToOrganizer) => {
@@ -222,7 +252,9 @@ const SheetTicketsToOrganizer = ({
                                     <SelectItem value="ALL">Todos os status</SelectItem>
                                     <SelectItem value="CONFIRMED">Confirmado</SelectItem>
                                     <SelectItem value="USED">Utilizado</SelectItem>
+                                    <SelectItem value="REFUND_REQUESTED">Estorno solicitado</SelectItem>
                                     <SelectItem value="REFUNDED">Reembolsado</SelectItem>
+                                    <SelectItem value="CANCELLED">Cancelado</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -234,7 +266,7 @@ const SheetTicketsToOrganizer = ({
                                         <Skeleton key={i} className="h-20 w-full" />
                                     ))}
                                 </div>
-                            ) : isError || tickets.length === 0 ? (
+                            ) : isError || groupedTickets.length === 0 ? (
                                 <div className="p-8 text-center">
                                     <p className="text-psi-dark/60">
                                         {isError 
@@ -244,110 +276,227 @@ const SheetTicketsToOrganizer = ({
                                 </div>
                             ) : (
                                 <div className="divide-y divide-psi-dark/10">
-                                    {tickets.map((ticket) => (
-                                        <div
-                                            key={ticket.id}
-                                            className="p-4 hover:bg-psi-primary/5 transition-colors"
-                                        >
-                                            <div className="flex items-start justify-between gap-4">
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-3 mb-2">
+                                    {groupedTickets.map((group) => {
+                                        const isMultipleTickets = group.tickets.length > 1
+                                        const totalValue = group.tickets.reduce((sum, t) => sum + (t.price || 0), 0)
+                                        
+                                        return (
+                                            <div
+                                                key={`group-${group.customer.id}`}
+                                                className="p-4 hover:bg-psi-primary/5 transition-colors"
+                                            >
+                                                <div className="space-y-4">
+                                                    <div className="flex items-start justify-between gap-4">
                                                         <div className="flex-1 min-w-0">
-                                                            <h4 className="font-semibold text-psi-dark truncate">
-                                                                {ticket.customer.name}
-                                                            </h4>
-                                                            <p className="text-sm text-psi-dark/60 truncate">
-                                                                {ticket.customer.email}
-                                                            </p>
-                                                            {ticket.customer.phone && (
-                                                                <p className="text-xs text-psi-dark/50">
-                                                                    {ticket.customer.phone}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex flex-col gap-2">
-                                                            <span className={`px-2 py-1 rounded-full text-xs font-semibold shrink-0 ${statusColors[ticket.status] || "bg-gray-100 text-gray-800"}`}>
-                                                                {statusLabels[ticket.status] || ticket.status}
-                                                            </span>
-                                                            {ticket.cancelledBy && (
-                                                                <span className={`px-2 py-1 rounded-full text-xs font-semibold shrink-0 ${statusColors[ticket.cancelledBy] || "bg-gray-100 text-gray-800"}`}>
-                                                                    {ticketCancelledByConfig[ticket.cancelledBy]?.label || ticket.cancelledBy}
-                                                                </span>
-                                                            )}
-                                                            {ticket.cancelledAt && (
-                                                                <span className="text-xs text-psi-dark/50">
-                                                                    Cancelado em: {DateUtils.formatDate(ticket.cancelledAt, "DD/MM/YYYY [às] HH:mm")}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-psi-dark/70">
-                                                    {
-                                                        ticket.ticketType?.name && (
-                                                            <div className="flex items-center gap-1">
-                                                                <span className="font-medium">Tipo:</span>
-                                                                <span>{ticket.ticketType.name}</span>
-                                                            </div>
-                                                        )
-                                                    }
-                                                        <div className="flex items-center gap-1">
-                                                            <span className="font-medium">Valor:</span>
-                                                            <span className="text-psi-primary font-semibold">
-                                                                {ValueUtils.centsToCurrency(ticket.price)}
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1">
-                                                            <span className="font-medium">Comprado em:</span>
-                                                            <span>
-                                                                {DateUtils.formatDate(ticket.createdAt, "DD/MM/YYYY [às] HH:mm")}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-
-                                                    {ticket.validationInfo && (
-                                                        <div className="mt-3 flex items-start gap-2 text-xs text-psi-dark/70">
-                                                            <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0 mt-px" />
-                                                            <div className="min-w-0">
-                                                                <p className="font-semibold text-psi-dark">Validação</p>
-                                                                <p className="wrap-break-word">{formatValidationAudit(ticket)}</p>
+                                                            <div className="flex items-center gap-3 mb-2">
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <h4 className="font-semibold text-psi-dark truncate">
+                                                                            {group.customer.name}
+                                                                        </h4>
+                                                                        {isMultipleTickets && (
+                                                                            <Badge className="bg-psi-primary/10 text-psi-primary border-psi-primary/20">
+                                                                                {group.tickets.length} ingressos
+                                                                            </Badge>
+                                                                        )}
+                                                                    </div>
+                                                                    <p className="text-sm text-psi-dark/60 truncate">
+                                                                        {group.customer.email}
+                                                                    </p>
+                                                                    {group.customer.phone && (
+                                                                        <p className="text-xs text-psi-dark/50">
+                                                                            {group.customer.phone}
+                                                                        </p>
+                                                                    )}
+                                                                    <p className="text-xs text-psi-dark/50 mt-1">
+                                                                        Comprado em {DateUtils.formatDate(group.purchaseDate, "DD/MM/YYYY [às] HH:mm")}
+                                                                    </p>
+                                                                    {isMultipleTickets && (
+                                                                        <p className="text-sm text-psi-primary font-semibold mt-1">
+                                                                            Total: {ValueUtils.centsToCurrency(totalValue)}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    )}
-                                                </div>
 
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            className="h-8 w-8 p-0 shrink-0"
-                                                        >
-                                                            <MoreVertical className="h-4 w-4" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end" className="w-56">
-                                                        <DropdownMenuItem
-                                                            className="cursor-pointer"
-                                                            onClick={() => handleViewCustomer(ticket)}
-                                                        >
-                                                            <User className="h-4 w-4 mr-2 text-psi-dark" />
-                                                            Visualizar cliente
-                                                        </DropdownMenuItem>
-                                                        {ticket.status === "CONFIRMED" && (
-                                                            <DropdownMenuItem
-                                                                className="cursor-pointer text-destructive"
-                                                                onClick={() => handleCancelTicket(ticket)}
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="h-8 w-8 p-0 shrink-0"
+                                                                >
+                                                                    <MoreVertical className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end" className="w-56">
+                                                                <DropdownMenuItem
+                                                                    className="cursor-pointer"
+                                                                    onClick={() => handleViewCustomer(group.tickets[0], group.tickets)}
+                                                                >
+                                                                    <User className="h-4 w-4 mr-2 text-psi-dark" />
+                                                                    Visualizar cliente
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </div>
+
+                                                    <div className="space-y-3 pl-4 border-l-2 border-psi-primary/20">
+                                                        {group.tickets.map((ticket, ticketIndex) => (
+                                                            <div
+                                                                key={ticket.id}
+                                                                className="rounded-lg border border-psi-primary/10 bg-white/50 p-3 space-y-2"
                                                             >
-                                                                <Ban className="h-4 w-4 mr-2 text-destructive" />
-                                                                Cancelar ingresso
-                                                            </DropdownMenuItem>
-                                                        )}
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
+                                                                <div className="flex items-start justify-between gap-3">
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="flex items-center gap-2 mb-2">
+                                                                            <span className="text-xs font-medium text-psi-dark/70">
+                                                                                Ingresso {ticketIndex + 1}
+                                                                            </span>
+                                                                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 ${statusColors[ticket.status] || "bg-gray-100 text-gray-800"}`}>
+                                                                                {statusLabels[ticket.status] || ticket.status}
+                                                                            </span>
+                                                                            {ticket.cancelledBy && (
+                                                                                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 ${statusColors[ticket.cancelledBy] || "bg-gray-100 text-gray-800"}`}>
+                                                                                    {ticketCancelledByConfig[ticket.cancelledBy]?.label || ticket.cancelledBy}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        
+                                                                        <div className="flex flex-wrap items-center gap-3 text-xs text-psi-dark/70">
+                                                                            {ticket.ticketType?.name && (
+                                                                                <div className="flex items-center gap-1">
+                                                                                    <span className="font-medium">Tipo:</span>
+                                                                                    <span>{ticket.ticketType.name}</span>
+                                                                                </div>
+                                                                            )}
+                                                                            <div className="flex items-center gap-1">
+                                                                                <span className="font-medium">Valor:</span>
+                                                                                <span className="text-psi-primary font-semibold">
+                                                                                    {ValueUtils.centsToCurrency(ticket.price)}
+                                                                                </span>
+                                                                            </div>
+                                                                            {ticket.code && (
+                                                                                <div className="flex items-center gap-1">
+                                                                                    <span className="font-medium">Código:</span>
+                                                                                    <span className="font-mono text-psi-dark">{ticket.code}</span>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {ticket.cancelledAt && (
+                                                                            <p className="text-xs text-psi-dark/50 mt-2">
+                                                                                Cancelado em: {DateUtils.formatDate(ticket.cancelledAt, "DD/MM/YYYY [às] HH:mm")}
+                                                                            </p>
+                                                                        )}
+
+                                                                        {ticket.validationInfo && (
+                                                                            <div className="mt-2 flex items-start gap-2 text-xs text-psi-dark/70">
+                                                                                <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0 mt-px" />
+                                                                                <div className="min-w-0">
+                                                                                    <p className="font-semibold text-psi-dark">Validação</p>
+                                                                                    <p className="wrap-break-word">{formatValidationAudit(ticket)}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+
+                                                                        {(ticket.refundStatus || ticket.refundedAt || ticket.refundReason) && (
+                                                                            <div className="mt-3 pt-3 border-t border-psi-primary/20 space-y-2">
+                                                                                <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
+                                                                                    <AlertTriangle className="h-3.5 w-3.5 text-purple-600" />
+                                                                                    Informações de Estorno Parcial
+                                                                                </div>
+                                                                                <div className="grid gap-2
+                                                                                sm:grid-cols-2">
+                                                                                    {ticket.refundStatus && (
+                                                                                        <div>
+                                                                                            <p className="text-xs text-psi-dark/60 mb-1">Status do reembolso</p>
+                                                                                            <Badge className={refundStatusConfig[ticket.refundStatus]?.badgeClass || "bg-gray-50 text-gray-600 border-gray-200"}>
+                                                                                                {refundStatusConfig[ticket.refundStatus]?.label || ticket.refundStatus}
+                                                                                            </Badge>
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {ticket.refundedBy && (
+                                                                                        <div>
+                                                                                            <p className="text-xs text-psi-dark/60 mb-1">Solicitado por</p>
+                                                                                            <p className="text-xs font-semibold text-psi-dark font-mono">
+                                                                                                {ticket.refundedBy}
+                                                                                            </p>
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {ticket.refundedAt && (
+                                                                                        <div>
+                                                                                            <p className="text-xs text-psi-dark/60 mb-1">Concluído em</p>
+                                                                                            <p className="text-xs font-semibold text-psi-dark">
+                                                                                                {DateUtils.formatDate(ticket.refundedAt, "DD/MM/YYYY [às] HH:mm")}
+                                                                                            </p>
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {ticket.refundEndToEndIndentifier && (
+                                                                                        <div>
+                                                                                            <p className="text-xs text-psi-dark/60 mb-1">ID de end to end</p>
+                                                                                            <p className="text-xs font-semibold text-psi-dark">
+                                                                                                {ticket.refundEndToEndIndentifier}
+                                                                                            </p>
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                                {ticket.refundReason && (
+                                                                                    <div>
+                                                                                        <p className="text-xs text-psi-dark/60 mb-1">Motivo do reembolso</p>
+                                                                                        <p className="text-xs text-psi-dark/70 whitespace-pre-line">
+                                                                                            {ticket.refundReason}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                )}
+                                                                                {ticket.refundReceiptUrl && (
+                                                                                    <div>
+                                                                                        <a
+                                                                                            href={ticket.refundReceiptUrl}
+                                                                                            target="_blank"
+                                                                                            rel="noopener noreferrer"
+                                                                                            className="inline-flex items-center gap-1 text-xs text-psi-primary hover:text-psi-primary/80"
+                                                                                        >
+                                                                                            Ver recibo do reembolso
+                                                                                            <ExternalLink className="h-3 w-3" />
+                                                                                        </a>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+
+                                                                    <DropdownMenu>
+                                                                        <DropdownMenuTrigger asChild>
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                className="h-7 w-7 p-0 shrink-0"
+                                                                            >
+                                                                                <MoreVertical className="h-3.5 w-3.5" />
+                                                                            </Button>
+                                                                        </DropdownMenuTrigger>
+                                                                        <DropdownMenuContent align="end" className="w-56">
+                                                                            {ticket.status === "CONFIRMED" && (
+                                                                                <DropdownMenuItem
+                                                                                    className="cursor-pointer text-destructive"
+                                                                                    onClick={() => handleCancelTicket(ticket)}
+                                                                                >
+                                                                                    <Ban className="h-4 w-4 mr-2 text-destructive" />
+                                                                                    Cancelar ingresso
+                                                                                </DropdownMenuItem>
+                                                                            )}
+                                                                        </DropdownMenuContent>
+                                                                    </DropdownMenu>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -382,6 +531,7 @@ const SheetTicketsToOrganizer = ({
                         open={viewCustomerOpen}
                         onOpenChange={setViewCustomerOpen}
                         ticket={selectedTicket}
+                        tickets={selectedTicketsForDialog}
                     />
                     <DialogCancelTicketWarning
                         open={cancelTicketOpen}

@@ -17,6 +17,7 @@ type TDialogViewCustomerProps = {
     open: boolean
     onOpenChange: (open: boolean) => void
     ticket: TTicketToOrganizer
+    tickets?: TTicketToOrganizer[]
 }
 
 const genderLabels: Record<string, string> = {
@@ -28,11 +29,13 @@ const genderLabels: Record<string, string> = {
 const DialogViewCustomer = ({
     open,
     onOpenChange,
-    ticket
+    ticket,
+    tickets
 }: TDialogViewCustomerProps) => {
     const customer = ticket.customer
-
-    console.log(ticket)
+    const allTickets = tickets && tickets.length > 0 ? tickets : [ticket]
+    const isMultipleTickets = allTickets.length > 1
+    const totalValue = allTickets.reduce((sum, t) => sum + (t.price || 0), 0)
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -153,17 +156,26 @@ const DialogViewCustomer = ({
                     </div>
 
                     <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-4 space-y-4">
-                        <h3 className="font-semibold text-psi-dark mb-3">Informações do Ingresso</h3>
+                        <h3 className="font-semibold text-psi-dark mb-3">
+                            {isMultipleTickets ? "Informações dos Ingressos" : "Informações do Ingresso"}
+                        </h3>
                         
                         <div className="grid grid-cols-1
                         sm:grid-cols-2 gap-4">
                             <div className="flex items-start gap-3">
                                 <CreditCard className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-xs text-psi-dark/60 mb-1">Valor pago</p>
-                                    <p className="text-sm font-medium text-psi-primary">
-                                        {ValueUtils.centsToCurrency(ticket.price)}
+                                    <p className="text-xs text-psi-dark/60 mb-1">
+                                        {isMultipleTickets ? "Valor total pago" : "Valor pago"}
                                     </p>
+                                    <p className="text-sm font-medium text-psi-primary">
+                                        {ValueUtils.centsToCurrency(totalValue)}
+                                    </p>
+                                    {isMultipleTickets && (
+                                        <p className="text-xs text-psi-dark/50 mt-1">
+                                            {allTickets.length} {allTickets.length === 1 ? "ingresso" : "ingressos"}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
@@ -192,11 +204,23 @@ const DialogViewCustomer = ({
                                 </div>
                             </div>
 
-                            <div className="flex items-start gap-3">
+                            <div className={`flex items-start gap-3 ${isMultipleTickets ? "sm:col-span-2" : ""}`}>
                                 <TicketCheck className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-xs text-psi-dark/60 mb-1">Código do ingresso</p>
-                                    <p className="text-sm font-medium text-psi-dark">{ticket.code}</p>
+                                    <p className="text-xs text-psi-dark/60 mb-1">
+                                        {isMultipleTickets ? "Códigos dos ingressos" : "Código do ingresso"}
+                                    </p>
+                                    {isMultipleTickets ? (
+                                        <div className="space-y-1">
+                                            {allTickets.map((t, index) => (
+                                                <p key={t.id} className="text-sm font-medium text-psi-dark font-mono">
+                                                    {index + 1}. {t.code}
+                                                </p>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm font-medium text-psi-dark">{ticket.code}</p>
+                                    )}
                                 </div>
                             </div>
                         </div>

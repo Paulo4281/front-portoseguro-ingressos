@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Ticket, QrCode, Copy, Share2, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, Eye, EyeOff, FileText, Loader2, Check, AlertTriangle } from "lucide-react"
+import { Calendar, Clock, MapPin, Ticket, QrCode, Copy, Share2, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, Eye, EyeOff, FileText, Loader2, Check, AlertTriangle, TicketCheck } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import { TicketService } from "@/services/Ticket/TicketService"
 import { Toast } from "@/components/Toast/Toast"
@@ -480,7 +480,7 @@ const MeusIngressosPannel = () => {
                     {!hasTickets && (
                         <div className="rounded-3xl border border-dashed border-psi-primary/30 bg-white p-10 text-center space-y-6 shadow-sm">
                             <div className="flex justify-center">
-                                <ShieldCheck className="h-12 w-12 text-psi-primary" />
+                                <TicketCheck className="h-12 w-12 text-psi-primary" />
                             </div>
                             <h2 className="text-2xl font-semibold text-psi-dark">Você ainda não possui ingressos</h2>
                             <p className="text-psi-dark/70 max-w-2xl mx-auto">
@@ -512,7 +512,10 @@ const MeusIngressosPannel = () => {
                                 const hasPixQrCode = group.payment?.method === "PIX" && 
                                                     group.payment?.status === "PENDING" && 
                                                     group.payment?.qrcodeData
-                                const hasRefundInfo = group.tickets.some(t => 
+                                const hasPartialRefund = group.tickets.some(t => 
+                                    t.refundStatus !== null && t.refundStatus !== undefined
+                                )
+                                const hasRefundInfo = !hasPartialRefund && group.tickets.some(t => 
                                     t.status === "REFUND_REQUESTED" || 
                                     t.status === "REFUNDED" || 
                                     t.Payment?.refundStatus
@@ -635,6 +638,14 @@ const MeusIngressosPannel = () => {
                                                                                         </p>
                                                                                     </div>
                                                                                 )}
+                                                                                {ticket.price && (
+                                                                                    <div>
+                                                                                        <p className="text-xs text-psi-dark/60">Valor</p>
+                                                                                        <p className="text-sm font-semibold text-psi-dark">
+                                                                                            {ValueUtils.centsToCurrency(ticket.price)}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
                                                                         </div>
 
@@ -716,6 +727,50 @@ const MeusIngressosPannel = () => {
                                                                                     <span className="ml-2">
                                                                                         <span className="font-medium">Tipo:</span> {ticket.TicketType.name}
                                                                                     </span>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+
+                                                                        {(ticket.refundStatus || ticket.refundedAt || ticket.refundReason) && (
+                                                                            <div className="mt-3 pt-3 border-t border-psi-primary/20 space-y-2">
+                                                                                <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
+                                                                                    <AlertTriangle className="h-3.5 w-3.5 text-purple-600" />
+                                                                                    Informações de Estorno Parcial
+                                                                                </div>
+                                                                                <div className="grid gap-2
+                                                                                sm:grid-cols-2">
+                                                                                    {ticket.refundStatus && (
+                                                                                        <div>
+                                                                                            <p className="text-xs text-psi-dark/60 mb-1">Status do reembolso</p>
+                                                                                            <Badge className={refundStatusConfig[ticket.refundStatus]?.badgeClass || "bg-gray-50 text-gray-600 border-gray-200"}>
+                                                                                                {refundStatusConfig[ticket.refundStatus]?.label || ticket.refundStatus}
+                                                                                            </Badge>
+                                                                                        </div>
+                                                                                    )}
+                                                                                    {ticket.refundedAt && (
+                                                                                        <div>
+                                                                                            <p className="text-xs text-psi-dark/60 mb-1">Concluído em</p>
+                                                                                            <p className="text-xs font-semibold text-psi-dark">
+                                                                                                {DateUtils.formatDate(ticket.refundedAt, "DD/MM/YYYY [às] HH:mm")}
+                                                                                            </p>
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                                {ticket.refundReason && (
+                                                                                    <div>
+                                                                                        <p className="text-xs text-psi-dark/60 mb-1">Motivo do reembolso</p>
+                                                                                        <p className="text-xs text-psi-dark/70 whitespace-pre-line">
+                                                                                            {ticket.refundReason}
+                                                                                        </p>
+                                                                                    </div>
+                                                                                )}
+                                                                                {ticket.refundReceiptUrl && (
+                                                                                    <div>
+                                                                                        <Link href={ticket.refundReceiptUrl} target="_blank" className="text-xs flex items-center gap-1 mt-2 text-psi-primary hover:text-psi-primary/80">
+                                                                                            <FileText className="h-3.5 w-3.5" />
+                                                                                            Ver recibo do reembolso
+                                                                                        </Link>
+                                                                                    </div>
                                                                                 )}
                                                                             </div>
                                                                         )}
