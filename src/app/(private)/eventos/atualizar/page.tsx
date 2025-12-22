@@ -1,5 +1,12 @@
 "use client"
 
+import { Metadata } from "next"
+
+export const metadata: Metadata = {
+    title: "Atualizar Evento | Porto Seguro Ingressos",
+    description: "Edite as informações do seu evento para continuar vendendo ingressos e atraindo novos clientes.",
+}
+
 import { useSearchParams } from "next/navigation"
 import { AtualizarEventoForm } from "@/components/Pages/Private/AutalizarEvento/AtualizarEventoForm"
 import { VerificationStatusGuard } from "@/components/VerificationStatus/VerificationStatusGuard"

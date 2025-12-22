@@ -1,5 +1,12 @@
 "use client"
 
+import { Metadata } from "next"
+
+export const metadata: Metadata = {
+    title: "Meu Perfil | Porto Seguro Ingressos",
+    description: "Gerencie suas informações pessoais e de contato. Atualize seu perfil, senha e muito mais.",
+}
+
 import { useAuthStore } from "@/stores/Auth/AuthStore"
 import { MeuPerfilCustomer } from "@/components/Pages/Private/MeuPerfil/MeuPerfilCustomer"
 import { MeuPerfilOrganizer } from "@/components/Pages/Private/MeuPerfil/MeuPerfilOrganizer"

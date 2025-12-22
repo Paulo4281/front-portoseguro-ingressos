@@ -133,6 +133,13 @@ type TEventBuyerValidationInfo = {
     location?: string | null
 } | null
 
+type TEventSearchResponse = {
+    id: string
+    name: string
+    slug: string
+    image: string
+}
+
 type TEventBuyerTicketStatus =
     "PENDING" |
     "CONFIRMED" |
@@ -170,5 +177,6 @@ export type {
     TEventVerifyLastTicketsResponse,
     TEventVerifySoldResponse,
     TEventSoldInValueResponse,
-    TEventListBuyers
+    TEventListBuyers,
+    TEventSearchResponse
 }

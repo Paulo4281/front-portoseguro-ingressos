@@ -20,6 +20,14 @@ class TicketHoldServiceClass {
         }))?.data
         return response
     }
+
+    async deleteByUserId(): Promise<AxiosResponse["data"]> {
+        const response = (await API.DELETE({
+            prefix: "/ticket-hold",
+            url: "",
+        }))?.data
+        return response
+    }
 }
 
 export const TicketHoldService = new TicketHoldServiceClass()

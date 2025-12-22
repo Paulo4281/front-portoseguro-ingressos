@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import Logo from "@/components/Logo/Logo"
 import { Download, Shield, HeadphonesIcon, CreditCard } from "lucide-react"
@@ -16,6 +18,13 @@ const navigation = [
         items: [
             { label: "Criar conta", href: "/cadastro" },
             { label: "Entrar", href: "/login" }
+        ]
+    },
+    {
+        title: "Legal",
+        items: [
+            { label: "Termos e Condições", href: "/termos-e-condicoes" },
+            { label: "Política de Privacidade", href: "/politica-de-privacidade" }
         ]
     }
 ]
@@ -53,7 +62,8 @@ const Footer = () => {
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-8">
+                    <div className="grid grid-cols-2 gap-8
+                    lg:grid-cols-3">
                         {navigation.map((section) => (
                             <div key={section.title} className="space-y-3">
                                 <p className="text-xs uppercase tracking-[0.3em] text-psi-dark/60">
@@ -154,12 +164,36 @@ const Footer = () => {
 
                 </div>
 
-                <div className="flex flex-col gap-4 border-t border-[#E4E6F0] pt-6 text-xs text-psi-dark/60
-                sm:flex-row
-                sm:items-center
-                sm:justify-between">
-                    <p>© {currentYear} Porto Seguro Ingressos. Todos os direitos reservados.</p>
-                    <p>Experiência transparente, pagamentos protegidos e suporte local.</p>
+                <div className="flex flex-col gap-6 border-t border-[#E4E6F0] pt-6">
+                    <div className="flex flex-col gap-4 text-xs text-psi-dark/60
+                    sm:flex-row
+                    sm:items-center
+                    sm:justify-between">
+                        <p>© {currentYear} Porto Seguro Ingressos. Todos os direitos reservados.</p>
+                        <p>Experiência transparente, pagamentos protegidos e suporte local.</p>
+                    </div>
+                    <div className="flex flex-col items-center gap-2 pt-2 border-t border-[#E4E6F0]
+                    sm:flex-row
+                    sm:justify-start">
+                        <p className="text-xs text-psi-dark/50">Desenvolvido pela</p>
+                        <a
+                            href="https://maiondigital.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity"
+                        >
+                            <img
+                                src="/images/logos/maion-digital.png"
+                                alt="Maion Digital"
+                                className="h-6 w-auto"
+                                onError={(e) => {
+                                    const target = e.target as HTMLImageElement
+                                    target.style.display = 'none'
+                                }}
+                            />
+                            <span className="text-xs font-medium text-psi-dark/70">Maion Digital</span>
+                        </a>
+                    </div>
                 </div>
             </div>
         </footer>

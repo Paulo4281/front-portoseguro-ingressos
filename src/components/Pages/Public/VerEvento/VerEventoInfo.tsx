@@ -1246,6 +1246,14 @@ const VerEventoInfo = (
                                 </div>
                             </div>
                         )}
+                        {event.maxInstallments && event.maxInstallments > 0 && (
+                            <div className="flex items-center gap-3 rounded-xl bg-psi-primary/10 p-4 mt-2">
+                                <CreditCard className="h-5 w-5 text-psi-primary" aria-label="Cartão de crédito" />
+                                <span className="text-base font-semibold text-psi-dark">
+                                    Parcele em até <span className="text-psi-primary">{event.maxInstallments}x</span> no cartão
+                                </span>
+                            </div>
+                        )}
 
                         {(activeBatches?.length > 0 || !event.EventBatches || event.EventBatches.length === 0) && (
                             <div className="space-y-4 rounded-xl border border-psi-primary/20 bg-white p-6">

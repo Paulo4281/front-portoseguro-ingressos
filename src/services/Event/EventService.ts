@@ -251,6 +251,14 @@ class EventServiceClass {
         return response
     }
 
+    async search(query: string): Promise<AxiosResponse["data"]> {
+        const response = (await API.GET({
+            prefix: "/event",
+            url: `/search/${query}`
+        }))?.data
+        return response
+    }
+
     async cache(): Promise<AxiosResponse["data"]> {
         const response = (await API.GET({
             prefix: "/event",

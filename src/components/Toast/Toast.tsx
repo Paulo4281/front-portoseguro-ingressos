@@ -1,3 +1,5 @@
+"use client"
+
 import { Slide, toast, ToastOptions } from "react-toastify"
 import { CheckCircle2, XCircle, Info, X } from "lucide-react"
 

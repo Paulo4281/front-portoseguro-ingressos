@@ -8,7 +8,7 @@ import { ArrowUpRight, Lock, ShieldCheck, Ticket, Music2, SunMedium, Waves, Part
 import { useEventFindFeatured } from "@/hooks/Event/useEventFindFeatured"
 import { CardEvent } from "@/components/Card/CardEvent/CardEvent"
 import { Carousel } from "@/components/Carousel/Carousel"
-import { Search } from "@/components/Search/Search"
+import { SearchEvent } from "@/components/Search/SearchEvent/SearchEvent"
 import { Category } from "@/components/Category/Category"
 import { Background } from "@/components/Background/Background"
 import Image from "next/image"
@@ -175,7 +175,7 @@ const HomeHero = () => {
                                 w-full flex justify-center px-8 mb-4
                                 lg:container lg:px-0 lg:mb-8
                                 ">
-                                    <Search className="w-full max-w-2xl" />
+                                    <SearchEvent className="w-full max-w-2xl" />
                                 </div>
 
                                 <div className="w-full">

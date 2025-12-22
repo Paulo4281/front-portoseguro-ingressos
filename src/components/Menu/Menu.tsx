@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge"
 import { TNotification } from "@/types/Notification/TNotification"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
+import { SearchEvent } from "../Search/SearchEvent/SearchEvent"
 
 type TSubLink = {
     href: string
@@ -126,7 +127,7 @@ const menuLinks: TMenuLink[] = [
         roles: ["ORGANIZER"]
     },
     {
-        href: "/eventos-admin",
+        href: "/adm-eventos",
         label: "Eventos",
         icon: Calendar,
         roles: ["ADMIN"]
@@ -144,7 +145,7 @@ const menuLinks: TMenuLink[] = [
         roles: ["ADMIN"]
     },
     {
-        href: "/suporte-admin",
+        href: "/adm-suporte",
         label: "Suporte",
         icon: HeartPlus,
         roles: ["ADMIN"]
@@ -173,6 +174,11 @@ const Menu = () => {
         "/redefinir-senha-log",
         "/confirmar-social"
     ]
+
+    const searchEventBlockedPages = [
+        "/"
+    ]
+    
     const pathname = usePathname()
 
     if (blockedPages.includes(pathname)) return null
@@ -277,6 +283,18 @@ const Menu = () => {
 
                     <div className="hidden items-center gap-3
                     min-[821px]:flex">
+                        {
+                            !searchEventBlockedPages.includes(pathname) && (
+                                <>
+                                <div className="hidden min-[1300px]:block">
+                                    <SearchEvent
+                                        menuMode={true}
+                                        className="w-[300px]"
+                                    />
+                                </div>
+                                </>
+                            )
+                        }
                         <CartDropdown />
                         |
                             <>

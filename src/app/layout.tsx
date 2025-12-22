@@ -6,6 +6,7 @@ import { ToastContainer } from "react-toastify"
 import { Providers } from "@/providers"
 import { Menu } from "@/components/Menu/Menu"
 import { Footer } from "@/components/Footer/Footer"
+import { LoadingScreen } from "@/components/LoadingScreen/LoadingScreen"
 
 const systemFont = Poppins({
   subsets: ["latin"],
@@ -25,6 +26,7 @@ export default function RootLayout({
         className="font-sans antialiased overflow-x-hidden"
       >
         <Providers>
+          <LoadingScreen />
           <ToastContainer
             position="top-center"
             autoClose={5000}

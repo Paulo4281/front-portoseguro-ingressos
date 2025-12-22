@@ -7,6 +7,7 @@ import { TicketFeeUtils } from "@/utils/Helpers/FeeUtils/TicketFeeUtils"
 import { CheckoutUtils } from "@/utils/Helpers/CheckoutUtils/CheckoutUtils"
 import { StoreManager } from "@/stores"
 import { useRouter } from "next/navigation"
+import { useTicketHoldDeleteByUserId } from "@/hooks/TicketHold/useTicketHoldDeleteByUserId"
 
 type TCartItemTicketType = {
     ticketTypeId: string
@@ -51,6 +52,8 @@ const loadCartItemsFromCache = (): TCartItem[] | null => {
 export const CartProvider = ({ children }: { children: ReactNode }) => {
     const cachedItems = loadCartItemsFromCache()
     const [items, setItems] = useState<TCartItem[]>(cachedItems || [])
+
+    const { mutateAsync: deleteTicketHoldByUserId } = useTicketHoldDeleteByUserId()
 
     const addItem = useCallback((item: Omit<TCartItem, "quantity">, quantity: number) => {
         setItems((prev) => {
@@ -134,6 +137,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         setItems((prev) =>
             prev.filter((item) => !(item.eventId === eventId && item.batchId === batchId))
         )
+
+        deleteTicketHoldByUserId()
     }, [])
 
     const updateQuantity = useCallback((eventId: string, batchId: string | undefined, quantity: number) => {
