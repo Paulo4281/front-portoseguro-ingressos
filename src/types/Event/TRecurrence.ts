@@ -1,15 +1,13 @@
-import { TRecurrenceDay } from "./TEvent"
-
 type TRecurrence = {
     id: string
-    type: "NONE" | "DAILY" | "WEEKLY" | "MONTHLY"
+    type: "DAILY" | "WEEKLY" | "MONTHLY"
     hourStart: string | null
     hourEnd: string | null
     endDate: string | null
+    day: number | null
     eventId: string
     createdAt: string
     updatedAt: string | null
-    RecurrenceDays: TRecurrenceDay[]
 }
 
 export type {

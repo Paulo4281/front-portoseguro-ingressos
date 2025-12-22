@@ -38,7 +38,7 @@ const formatCurrency = (value: number | null | undefined): string => {
 }
 
 const formatRecurrence = (recurrence: TEventCreate["recurrence"]) => {
-    if (!recurrence || recurrence.type === "NONE") return null
+    if (!recurrence) return null
 
     if (recurrence.type === "DAILY") {
         const timeText = recurrence.hourStart 
@@ -48,36 +48,28 @@ const formatRecurrence = (recurrence: TEventCreate["recurrence"]) => {
         return `Diário${recurrence.hourStart ? ` (${timeText})` : ""}${endDateText}`
     }
 
-    if (recurrence.type === "WEEKLY" && recurrence.daysOfWeek && recurrence.daysOfWeek.length > 0) {
-        const daysText = recurrence.daysOfWeek
-            .map((dayData) => {
-                const dayLabel = weekDayLabelsShort[dayData.day] || `Dia ${dayData.day}`
-                if (dayData.hourStart) {
-                    return dayData.hourEnd
-                        ? `${dayLabel}: ${dayData.hourStart} - ${dayData.hourEnd}`
-                        : `${dayLabel}: ${dayData.hourStart}`
-                }
-                return dayLabel
-            })
-            .join(" | ")
+    if (recurrence.type === "WEEKLY" && recurrence.day !== null && recurrence.day !== undefined) {
+        const dayLabel = weekDayLabelsShort[recurrence.day] || `Dia ${recurrence.day}`
+        let timeText = ""
+        if (recurrence.hourStart) {
+            timeText = recurrence.hourEnd
+                ? `: ${recurrence.hourStart} - ${recurrence.hourEnd}`
+                : `: ${recurrence.hourStart}`
+        }
         const endDateText = recurrence.endDate ? ` até ${formatEventDate(recurrence.endDate, "DD [de] MMMM [de] YYYY")}` : ""
-        return `Semanal (${daysText})${endDateText}`
+        return `Semanal (${dayLabel}${timeText})${endDateText}`
     }
 
-    if (recurrence.type === "MONTHLY" && recurrence.daysOfWeek && recurrence.daysOfWeek.length > 0) {
-        const daysText = recurrence.daysOfWeek
-            .map((dayData) => {
-                const dayLabel = `Dia ${dayData.day}`
-                if (dayData.hourStart) {
-                    return dayData.hourEnd
-                        ? `${dayLabel}: ${dayData.hourStart} - ${dayData.hourEnd}`
-                        : `${dayLabel}: ${dayData.hourStart}`
-                }
-                return dayLabel
-            })
-            .join(" | ")
+    if (recurrence.type === "MONTHLY" && recurrence.day !== null && recurrence.day !== undefined) {
+        const dayLabel = `Dia ${recurrence.day}`
+        let timeText = ""
+        if (recurrence.hourStart) {
+            timeText = recurrence.hourEnd
+                ? `: ${recurrence.hourStart} - ${recurrence.hourEnd}`
+                : `: ${recurrence.hourStart}`
+        }
         const endDateText = recurrence.endDate ? ` até ${formatEventDate(recurrence.endDate, "DD [de] MMMM [de] YYYY")}` : ""
-        return `Mensal (${daysText})${endDateText}`
+        return `Mensal (${dayLabel}${timeText})${endDateText}`
     }
 
     return null
@@ -101,7 +93,7 @@ const DialogEventSummary = ({
 
     const hasBatches = eventData.batches && eventData.batches.length > 0
     const hasTicketTypes = eventData.ticketTypes && eventData.ticketTypes.length > 0
-    const hasRecurrence = eventData.recurrence && eventData.recurrence.type !== "NONE"
+    const hasRecurrence = !!eventData.recurrence
     const hasDates = eventData.dates && eventData.dates.length > 0
 
     return (

@@ -142,7 +142,7 @@ const getEventSchedule = (ticket: TTicket) => {
         }
     }
 
-    if (ticket.Event.Recurrence && ticket.Event.Recurrence.type !== "NONE") {
+    if (ticket.Event.Recurrence) {
         const baseLabel = {
             DAILY: "Evento diário",
             WEEKLY: "Evento semanal",
@@ -151,18 +151,13 @@ const getEventSchedule = (ticket: TTicket) => {
 
         let detailLabel = baseLabel
 
-        if (ticket.Event.Recurrence.type === "WEEKLY" && ticket.Event.Recurrence.RecurrenceDays?.length) {
-            const days = ticket.Event.Recurrence.RecurrenceDays
-                .map((day) => recurrenceDayLabels[day.day] || `Dia ${day.day}`)
-                .join(", ")
-            detailLabel = `${baseLabel} (${days})`
+        if (ticket.Event.Recurrence.type === "WEEKLY" && ticket.Event.Recurrence.day !== null && ticket.Event.Recurrence.day !== undefined) {
+            const dayLabel = recurrenceDayLabels[ticket.Event.Recurrence.day] || `Dia ${ticket.Event.Recurrence.day}`
+            detailLabel = `${baseLabel} (${dayLabel})`
         }
 
-        if (ticket.Event.Recurrence.type === "MONTHLY" && ticket.Event.Recurrence.RecurrenceDays?.length) {
-            const days = ticket.Event.Recurrence.RecurrenceDays
-                .map((day) => `Dia ${day.day}`)
-                .join(", ")
-            detailLabel = `${baseLabel} (${days})`
+        if (ticket.Event.Recurrence.type === "MONTHLY" && ticket.Event.Recurrence.day !== null && ticket.Event.Recurrence.day !== undefined) {
+            detailLabel = `${baseLabel} (Dia ${ticket.Event.Recurrence.day})`
         }
 
         const timeLabel = formatEventTime(ticket.Event.Recurrence.hourStart, ticket.Event.Recurrence.hourEnd)

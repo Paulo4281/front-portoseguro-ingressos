@@ -54,7 +54,7 @@ const formatDate = (dateString?: string | null) => {
 }
 
 const formatRecurrence = (recurrence: TEvent["Recurrence"]) => {
-    if (!recurrence || recurrence.type === "NONE") return null
+    if (!recurrence) return null
 
     const recurrenceLabels = {
         DAILY: "Diário",
@@ -66,9 +66,13 @@ const formatRecurrence = (recurrence: TEvent["Recurrence"]) => {
 
     let label = recurrenceLabels[recurrence.type]
 
-    if (recurrence.type === "WEEKLY" && recurrence.RecurrenceDays && recurrence.RecurrenceDays.length > 0) {
-        const days = recurrence.RecurrenceDays.map(day => dayLabels[day.day]).join(", ")
-        label = `${label} (${days})`
+    if (recurrence.type === "WEEKLY" && recurrence.day !== null && recurrence.day !== undefined) {
+        const dayLabel = dayLabels[recurrence.day]
+        label = `${label} (${dayLabel})`
+    }
+
+    if (recurrence.type === "MONTHLY" && recurrence.day !== null && recurrence.day !== undefined) {
+        label = `${label} (Dia ${recurrence.day})`
     }
 
     if (recurrence.endDate) {
@@ -596,7 +600,7 @@ const EventCard = ({
                         </div>
                     </div>
                     
-                    {event.Recurrence && event.Recurrence.type !== "NONE" && (
+                    {event.Recurrence && (
                         <div className="flex items-center gap-2 text-sm text-psi-primary">
                             <Repeat className="h-4 w-4 shrink-0" />
                             <span className="font-medium">{formatRecurrence(event.Recurrence)}</span>

@@ -34,7 +34,7 @@ const formatDate = (dateString?: string | null) => {
 }
 
 const formatRecurrence = (recurrence: TEvent["Recurrence"]) => {
-    if (!recurrence || recurrence.type === "NONE") return null
+    if (!recurrence) return null
 
     const recurrenceLabels = {
         DAILY: "Diário",
@@ -46,9 +46,13 @@ const formatRecurrence = (recurrence: TEvent["Recurrence"]) => {
 
     let label = recurrenceLabels[recurrence.type]
 
-    if (recurrence.type === "WEEKLY" && recurrence.RecurrenceDays && recurrence.RecurrenceDays.length > 0) {
-        const days = recurrence.RecurrenceDays.map(day => dayLabels[day.day]).join(", ")
-        label = `${label} (${days})`
+    if (recurrence.type === "WEEKLY" && recurrence.day !== null && recurrence.day !== undefined) {
+        const dayLabel = dayLabels[recurrence.day]
+        label = `${label} (${dayLabel})`
+    }
+
+    if (recurrence.type === "MONTHLY" && recurrence.day !== null && recurrence.day !== undefined) {
+        label = `${label} (Dia ${recurrence.day})`
     }
 
     if (recurrence.endDate) {
@@ -362,7 +366,7 @@ const EventCard = ({
     isCollapsed,
     onToggleCollapse
 }: TEventCardProps) => {
-    const isRecurrent = event.Recurrence && event.Recurrence.type !== "NONE"
+    const isRecurrent = !!event.Recurrence
 
     return (
         <div className="group rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-black/10">

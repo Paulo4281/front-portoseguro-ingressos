@@ -1,7 +1,6 @@
 import type { TEventBatch } from "./TEventBatch"
 import type { TEventDate } from "./TEventDate"
 import type { TRecurrence } from "./TRecurrence"
-import type { TRecurrenceDay } from "./TRecurrenceDay"
 import type { TEventCategoryEvent } from "./TEventCategoryEvent"
 import type { TTicketType } from "@/types/TicketType/TTicketType"
 import type { TOrganizer } from "@/types/Organizer/TOrganizer"
@@ -167,7 +166,6 @@ export type {
     TEvent,
     TEventDate,
     TRecurrence,
-    TRecurrenceDay,
     TEventCategoryEvent,
     TOrganizer,
     TEventCreate,

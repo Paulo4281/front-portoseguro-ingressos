@@ -16,19 +16,12 @@ const EventDateValidator = z.object({
     ticketTypePrices: z.array(EventDateTicketTypePriceValidator).nullable().optional()
 })
 
-const RecurrenceDayValidator = z.object({
-    id: z.string().nullable().optional(),
-    day: z.number(),
-    hourStart: z.string({ error: DefaultFormErrors.required }),
-    hourEnd: z.string().nullable().optional()
-})
-
 const RecurrenceValidator = z.object({
     id: z.string().nullable().optional(),
-    type: z.enum(["NONE", "DAILY", "WEEKLY", "MONTHLY"], { error: DefaultFormErrors.required }),
+    type: z.enum(["DAILY", "WEEKLY", "MONTHLY"], { error: DefaultFormErrors.required }),
     hourStart: z.string().optional(),
     hourEnd: z.string().nullable().optional(),
-    daysOfWeek: z.array(RecurrenceDayValidator).optional(),
+    day: z.number().int().min(0).max(31).optional(),
     endDate: z.string().nullable().optional()
 }).nullable().optional()
 
@@ -121,41 +114,37 @@ const EventCreateValidator = z.object({
             message: "Adicione pelo menos uma data ou configure recorrência"
         })
     }
-    if (data.recurrence && data.recurrence.type === "WEEKLY" && (!data.recurrence.daysOfWeek || data.recurrence.daysOfWeek.length === 0)) {
+    if (data.recurrence && data.recurrence.type === "WEEKLY" && (!data.recurrence.day || data.recurrence.day === undefined)) {
         ctx.addIssue({
             code: "custom",
-            path: ["recurrence", "daysOfWeek"],
+            path: ["recurrence", "day"],
             message: "Selecione pelo menos um dia da semana"
         })
     }
-    if (data.recurrence && data.recurrence.type === "MONTHLY" && (!data.recurrence.daysOfWeek || data.recurrence.daysOfWeek.length === 0)) {
+    if (data.recurrence && data.recurrence.type === "MONTHLY" && (!data.recurrence.day || data.recurrence.day === undefined)) {
         ctx.addIssue({
             code: "custom",
-            path: ["recurrence", "daysOfWeek"],
+            path: ["recurrence", "day"],
             message: "Selecione pelo menos um dia do mês"
         })
     }
-    if (data.recurrence && data.recurrence.type === "WEEKLY" && data.recurrence.daysOfWeek) {
-        data.recurrence.daysOfWeek.forEach((day, index) => {
-            if (!day.hourStart) {
-                ctx.addIssue({
-                    code: "custom",
-                    path: ["recurrence", "daysOfWeek", index, "hourStart"],
-                    message: "Horário de início é obrigatório"
-                })
-            }
-        })
+    if (data.recurrence && data.recurrence.type === "WEEKLY" && data.recurrence.day) {
+        if (!data.recurrence.hourStart) {
+            ctx.addIssue({
+                code: "custom",
+                path: ["recurrence", "hourStart"],
+                message: "Horário de início é obrigatório"
+            })
+        }
     }
-    if (data.recurrence && data.recurrence.type === "MONTHLY" && data.recurrence.daysOfWeek) {
-        data.recurrence.daysOfWeek.forEach((day, index) => {
-            if (!day.hourStart) {
-                ctx.addIssue({
-                    code: "custom",
-                    path: ["recurrence", "daysOfWeek", index, "hourStart"],
-                    message: "Horário de início é obrigatório"
-                })
-            }
-        })
+    if (data.recurrence && data.recurrence.type === "MONTHLY" && data.recurrence.day) {
+        if (!data.recurrence.hourStart) {
+            ctx.addIssue({
+                code: "custom",
+                path: ["recurrence", "hourStart"],
+                message: "Horário de início é obrigatório"
+            })
+        }
     }
     if (data.recurrence && data.recurrence.type === "DAILY" && !data.recurrence.hourStart) {
         ctx.addIssue({
@@ -167,7 +156,7 @@ const EventCreateValidator = z.object({
 
     if (data.dates && data.dates.length > 0) {
         const datesWithSpecificPrice = data.dates.filter(date => date.hasSpecificPrice === true)
-        const datesWithoutSpecificPrice = data.dates.filter(date => !date.hasSpecificPrice || date.hasSpecificPrice === false)
+        const datesWithoutSpecificPrice = data.dates.filter(date => date.hasSpecificPrice === false)
         
         if (datesWithSpecificPrice.length > 0 && datesWithoutSpecificPrice.length > 0) {
             datesWithoutSpecificPrice.forEach((date, index) => {
@@ -294,40 +283,18 @@ const EventUpdateValidator = EventUpdateValidatorBase.superRefine((data, ctx) =>
             message: "Adicione pelo menos uma data ou configure recorrência"
         })
     }
-    if (data.recurrence && data.recurrence.type === "WEEKLY" && (!data.recurrence.daysOfWeek || data.recurrence.daysOfWeek.length === 0)) {
+    if (data.recurrence && data.recurrence.type === "WEEKLY" && (data.recurrence.day === undefined || data.recurrence.day === null)) {
         ctx.addIssue({
             code: "custom",
-            path: ["recurrence", "daysOfWeek"],
-            message: "Selecione pelo menos um dia da semana"
+            path: ["recurrence", "day"],
+            message: "Selecione um dia da semana"
         })
     }
-    if (data.recurrence && data.recurrence.type === "MONTHLY" && (!data.recurrence.daysOfWeek || data.recurrence.daysOfWeek.length === 0)) {
+    if (data.recurrence && data.recurrence.type === "MONTHLY" && (data.recurrence.day === undefined || data.recurrence.day === null)) {
         ctx.addIssue({
             code: "custom",
-            path: ["recurrence", "daysOfWeek"],
-            message: "Selecione pelo menos um dia do mês"
-        })
-    }
-    if (data.recurrence && data.recurrence.type === "WEEKLY" && data.recurrence.daysOfWeek) {
-        data.recurrence.daysOfWeek.forEach((day, index) => {
-            if (!day.hourStart) {
-                ctx.addIssue({
-                    code: "custom",
-                    path: ["recurrence", "daysOfWeek", index, "hourStart"],
-                    message: "Horário de início é obrigatório"
-                })
-            }
-        })
-    }
-    if (data.recurrence && data.recurrence.type === "MONTHLY" && data.recurrence.daysOfWeek) {
-        data.recurrence.daysOfWeek.forEach((day, index) => {
-            if (!day.hourStart) {
-                ctx.addIssue({
-                    code: "custom",
-                    path: ["recurrence", "daysOfWeek", index, "hourStart"],
-                    message: "Horário de início é obrigatório"
-                })
-            }
+            path: ["recurrence", "day"],
+            message: "Selecione um dia do mês"
         })
     }
     if (data.recurrence && data.recurrence.type === "DAILY" && !data.recurrence.hourStart) {
@@ -337,10 +304,17 @@ const EventUpdateValidator = EventUpdateValidatorBase.superRefine((data, ctx) =>
             message: "Horário de início é obrigatório para eventos diários"
         })
     }
+    if (data.recurrence && (data.recurrence.type === "WEEKLY" || data.recurrence.type === "MONTHLY") && !data.recurrence.hourStart) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["recurrence", "hourStart"],
+            message: "Horário de início é obrigatório"
+        })
+    }
 
     if (data.dates && data.dates.length > 0) {
         const datesWithSpecificPrice = data.dates.filter(date => date.hasSpecificPrice === true)
-        const datesWithoutSpecificPrice = data.dates.filter(date => !date.hasSpecificPrice || date.hasSpecificPrice === false)
+        const datesWithoutSpecificPrice = data.dates.filter(date => date.hasSpecificPrice === false)
         
         if (datesWithSpecificPrice.length > 0 && datesWithoutSpecificPrice.length > 0) {
             datesWithoutSpecificPrice.forEach((date, index) => {

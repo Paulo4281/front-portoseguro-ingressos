@@ -45,11 +45,6 @@ import { DialogPasswordConfirmation } from "@/components/Dialog/DialogPasswordCo
 
 type TEventUpdate = z.infer<typeof EventUpdateValidator>
 
-type TRecurrenceDayForm = {
-    day: number
-    hourStart: string
-    hourEnd?: string | null
-}
 
 const DESCRIPTION_MAX_LENGTH = 10000
 
@@ -267,7 +262,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     })
 
     const recurrenceType = form.watch("recurrence.type")
-    const recurrenceDaysOfWeek = form.watch("recurrence.daysOfWeek") || []
+    const recurrenceDay = form.watch("recurrence.day")
     const batches = form.watch("batches") || []
     const descriptionLength = form.watch("description")?.length || 0
     const ticketTypes = form.watch("ticketTypes") || []
@@ -613,12 +608,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                 type: event.Recurrence.type,
                 hourStart: event.Recurrence.hourStart || undefined,
                 hourEnd: event.Recurrence.hourEnd || undefined,
-                daysOfWeek: event.Recurrence.RecurrenceDays?.map(rd => ({
-                    id: rd.id,
-                    day: rd.day,
-                    hourStart: rd.hourStart,
-                    hourEnd: rd.hourEnd || undefined
-                })) || undefined,
+                day: event.Recurrence.day || undefined,
                 endDate: event.Recurrence.endDate || undefined
             } : null
 
@@ -823,51 +813,21 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     }
 
     const toggleDayOfWeek = (day: number) => {
-        const current = recurrenceDaysOfWeek as TRecurrenceDayForm[] || []
-        const existingIndex = current.findIndex(d => d.day === day)
-        
-        if (existingIndex >= 0) {
-            const newDays = current.filter((_, index) => index !== existingIndex)
-            form.setValue("recurrence.daysOfWeek", newDays)
+        const currentDay = recurrenceDay
+        if (currentDay === day) {
+            form.setValue("recurrence.day", undefined)
         } else {
-            const newDays = [...current, {
-                day,
-                hourStart: "",
-                hourEnd: null
-            }]
-            form.setValue("recurrence.daysOfWeek", newDays)
+            form.setValue("recurrence.day", day)
         }
     }
 
     const toggleMonthDay = (day: number) => {
-        const current = recurrenceDaysOfWeek as TRecurrenceDayForm[] || []
-        const existingIndex = current.findIndex(d => d.day === day)
-        
-        if (existingIndex >= 0) {
-            const newDays = current.filter((_, index) => index !== existingIndex)
-            form.setValue("recurrence.daysOfWeek", newDays)
+        const currentDay = recurrenceDay
+        if (currentDay === day) {
+            form.setValue("recurrence.day", undefined)
         } else {
-            const newDays = [...current, {
-                day,
-                hourStart: "",
-                hourEnd: null
-            }]
-            form.setValue("recurrence.daysOfWeek", newDays)
+            form.setValue("recurrence.day", day)
         }
-    }
-
-    const updateDayTime = (day: number, hourStart: string, hourEnd: string | null) => {
-        const current = recurrenceDaysOfWeek as TRecurrenceDayForm[] || []
-        const newDays = current.map(d => 
-            d.day === day ? { ...d, hourStart, hourEnd } : d
-        )
-        form.setValue("recurrence.daysOfWeek", newDays)
-    }
-
-    const getDayTime = (day: number) => {
-        const current = recurrenceDaysOfWeek as TRecurrenceDayForm[] || []
-        const dayData = current.find(d => d.day === day)
-        return dayData || { hourStart: "", hourEnd: null }
     }
 
     if (isEventLoading) {
@@ -1833,7 +1793,9 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                 form.setValue("dates", undefined)
                                                 form.setValue("recurrence", {
                                                     type: "WEEKLY",
-                                                    daysOfWeek: [],
+                                                    day: undefined,
+                                                    hourStart: "",
+                                                    hourEnd: null,
                                                     endDate: null
                                                 })
                                             }
@@ -1937,11 +1899,11 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                             <div className="space-y-4">
                                                 <div>
                                                     <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                        Dias da Semana *
+                                                        Dia da Semana *
                                                     </label>
                                                     <div className="flex flex-wrap gap-2">
                                                         {weekDays.map((day) => {
-                                                            const isSelected = recurrenceDaysOfWeek.some((d: TRecurrenceDayForm) => d.day === day.value)
+                                                            const isSelected = recurrenceDay === day.value
                                                             return (
                                                                 <Button
                                                                     key={day.value}
@@ -1956,47 +1918,50 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                             )
                                                         })}
                                                     </div>
-                                                    <FieldError message={form.formState.errors.recurrence?.daysOfWeek?.message || ""} />
+                                                    <FieldError message={form.formState.errors.recurrence?.day?.message || ""} />
                                                 </div>
 
-                                                {recurrenceDaysOfWeek.length > 0 && (
+                                                {recurrenceDay !== null && recurrenceDay !== undefined && (
                                                     <div className="space-y-3 pt-3 border-t border-[#E4E6F0]">
                                                         <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                            Horários por Dia *
+                                                            Horário *
                                                         </label>
-                                                        {recurrenceDaysOfWeek.map((dayData: TRecurrenceDayForm) => {
-                                                            const dayLabel = weekDays.find(d => d.value === dayData.day)?.label || ""
-                                                            const dayTime = getDayTime(dayData.day)
-                                                            return (
-                                                                <div key={dayData.day} className="rounded-lg border border-[#E4E6F0] bg-white p-3 space-y-3">
-                                                                    <div className="font-semibold text-sm text-psi-dark">{dayLabel}</div>
-                                                                    <div className="grid grid-cols-2 gap-4">
-                                                                        <div>
-                                                                            <label className="block text-xs text-psi-dark/60 mb-1">Início</label>
-                                                                            <TimePicker
-                                                                                value={dayTime.hourStart}
-                                                                                onChange={(value) => updateDayTime(dayData.day, value || "", null)}
-                                                                                required
-                                                                                icon={false}
-                                                                                disabled={true}
-                                                                            />
-                                                                        </div>
-                                                                        <div>
-                                                                            <label className="block text-xs text-psi-dark/60 mb-1">Fim</label>
-                                                                            <TimePicker
-                                                                                value={dayTime.hourEnd || ""}
-                                                                                onChange={(value) => {
-                                                                                    const current = getDayTime(dayData.day)
-                                                                                    updateDayTime(dayData.day, current.hourStart, value)
-                                                                                }}
-                                                                                icon={false}
-                                                                                disabled={true}
-                                                                            />
-                                                                        </div>
-                                                                    </div>
+                                                        <div className="rounded-lg border border-[#E4E6F0] bg-white p-3 space-y-3">
+                                                            <div className="font-semibold text-sm text-psi-dark">
+                                                                {weekDays.find(d => d.value === recurrenceDay)?.label || ""}
+                                                            </div>
+                                                            <div className="grid grid-cols-2 gap-4">
+                                                                <div>
+                                                                    <label className="block text-xs text-psi-dark/60 mb-1">Início</label>
+                                                                    <TimePicker
+                                                                        value={form.watch("recurrence.hourStart") || ""}
+                                                                        onChange={(value) => {
+                                                                            const current = form.getValues("recurrence")
+                                                                            if (current) {
+                                                                                form.setValue("recurrence.hourStart", value || "", { shouldValidate: true })
+                                                                            }
+                                                                        }}
+                                                                        required
+                                                                        icon={false}
+                                                                        disabled={true}
+                                                                    />
                                                                 </div>
-                                                            )
-                                                        })}
+                                                                <div>
+                                                                    <label className="block text-xs text-psi-dark/60 mb-1">Fim</label>
+                                                                    <TimePicker
+                                                                        value={form.watch("recurrence.hourEnd") || ""}
+                                                                        onChange={(value) => {
+                                                                            const current = form.getValues("recurrence")
+                                                                            if (current) {
+                                                                                form.setValue("recurrence.hourEnd", value, { shouldValidate: true })
+                                                                            }
+                                                                        }}
+                                                                        icon={false}
+                                                                        disabled={true}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
@@ -2006,11 +1971,11 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                             <div className="space-y-4">
                                                 <div>
                                                     <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                        Dias do Mês *
+                                                        Dia do Mês *
                                                     </label>
                                                     <div className="grid grid-cols-7 gap-2 max-h-48 overflow-y-auto">
                                                         {monthDays.map((day) => {
-                                                            const isSelected = recurrenceDaysOfWeek.some((d: TRecurrenceDayForm) => d.day === day)
+                                                            const isSelected = recurrenceDay === day
                                                             return (
                                                                 <Button
                                                                     key={day}
@@ -2026,46 +1991,48 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                                             )
                                                         })}
                                                     </div>
-                                                    <FieldError message={form.formState.errors.recurrence?.daysOfWeek?.message || ""} />
+                                                    <FieldError message={form.formState.errors.recurrence?.day?.message || ""} />
                                                 </div>
 
-                                                {recurrenceDaysOfWeek.length > 0 && (
+                                                {recurrenceDay !== null && recurrenceDay !== undefined && (
                                                     <div className="space-y-3 pt-3 border-t border-[#E4E6F0]">
                                                         <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                            Horários por Dia *
+                                                            Horário *
                                                         </label>
-                                                        {recurrenceDaysOfWeek.map((dayData: TRecurrenceDayForm) => {
-                                                            const dayTime = getDayTime(dayData.day)
-    return (
-                                                                <div key={dayData.day} className="rounded-lg border border-[#E4E6F0] bg-white p-3 space-y-3">
-                                                                    <div className="font-semibold text-sm text-psi-dark">Dia {dayData.day}</div>
-                                                                    <div className="grid grid-cols-2 gap-4">
-                                                                        <div>
-                                                                            <label className="block text-xs text-psi-dark/60 mb-1">Início</label>
-                                                                            <TimePicker
-                                                                                value={dayTime.hourStart}
-                                                                                onChange={(value) => updateDayTime(dayData.day, value || "", null)}
-                                                                                required
-                                                                                icon={false}
-                                                                                disabled={true}
-                                                                            />
-                                                                        </div>
-                                                                        <div>
-                                                                            <label className="block text-xs text-psi-dark/60 mb-1">Fim</label>
-                                                                            <TimePicker
-                                                                                value={dayTime.hourEnd || ""}
-                                                                                onChange={(value) => {
-                                                                                    const current = getDayTime(dayData.day)
-                                                                                    updateDayTime(dayData.day, current.hourStart, value)
-                                                                                }}
-                                                                                icon={false}
-                                                                                disabled={true}
-                                                                            />
-                                                                        </div>
-                                                                    </div>
+                                                        <div className="rounded-lg border border-[#E4E6F0] bg-white p-3 space-y-3">
+                                                            <div className="font-semibold text-sm text-psi-dark">Dia {recurrenceDay}</div>
+                                                            <div className="grid grid-cols-2 gap-4">
+                                                                <div>
+                                                                    <label className="block text-xs text-psi-dark/60 mb-1">Início</label>
+                                                                    <TimePicker
+                                                                        value={form.watch("recurrence.hourStart") || ""}
+                                                                        onChange={(value) => {
+                                                                            const current = form.getValues("recurrence")
+                                                                            if (current) {
+                                                                                form.setValue("recurrence.hourStart", value || "", { shouldValidate: true })
+                                                                            }
+                                                                        }}
+                                                                        required
+                                                                        icon={false}
+                                                                        disabled={true}
+                                                                    />
                                                                 </div>
-                                                            )
-                                                        })}
+                                                                <div>
+                                                                    <label className="block text-xs text-psi-dark/60 mb-1">Fim</label>
+                                                                    <TimePicker
+                                                                        value={form.watch("recurrence.hourEnd") || ""}
+                                                                        onChange={(value) => {
+                                                                            const current = form.getValues("recurrence")
+                                                                            if (current) {
+                                                                                form.setValue("recurrence.hourEnd", value, { shouldValidate: true })
+                                                                            }
+                                                                        }}
+                                                                        icon={false}
+                                                                        disabled={true}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>

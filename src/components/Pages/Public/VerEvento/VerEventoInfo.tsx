@@ -21,7 +21,7 @@ import { useCart } from "@/contexts/CartContext"
 import { Carousel } from "@/components/Carousel/Carousel"
 import { CardEvent } from "@/components/Card/CardEvent/CardEvent"
 import ReactMarkdown from "react-markdown"
-import { TEventVerifyLastTicketsResponse, type TEvent, type TRecurrenceDay } from "@/types/Event/TEvent"
+import { TEventVerifyLastTicketsResponse, type TEvent } from "@/types/Event/TEvent"
 import type { TEventBatch } from "@/types/Event/TEventBatch"
 import type { TEventClickCreate } from "@/types/Event/TEventClick"
 import { EventCategoryIconHandler } from "@/utils/Helpers/EventCategoryIconHandler/EventCategoryIconHandler"
@@ -170,7 +170,7 @@ const VerEventoInfo = (
     }
 
     const formatRecurrenceInfo = (recurrence: TEvent["Recurrence"]) => {
-        if (!recurrence || recurrence.type === "NONE") return null
+        if (!recurrence) return null
 
         const dayLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
 
@@ -187,43 +187,40 @@ const VerEventoInfo = (
         }
 
         if (recurrence.type === "WEEKLY") {
-            if (recurrence.RecurrenceDays && recurrence.RecurrenceDays?.length > 0) {
-                const timesText = recurrence.RecurrenceDays
-                    .map((dayData: TRecurrenceDay) => {
-                        if (dayData.hourStart) {
-                            return dayData.hourEnd 
-                                ? `${dayLabels[dayData.day]}: ${dayData.hourStart} - ${dayData.hourEnd}`
-                                : `${dayLabels[dayData.day]}: ${dayData.hourStart}`
-                        }
-                        return dayLabels[dayData.day]
-                    })
-                    .join(" | ")
-
+            if (recurrence.day !== null && recurrence.day !== undefined) {
+                const dayLabel = dayLabels[recurrence.day]
+                if (recurrence.hourStart) {
+                    const timeText = recurrence.hourEnd 
+                        ? `${dayLabel}: ${recurrence.hourStart} - ${recurrence.hourEnd}`
+                        : `${dayLabel}: ${recurrence.hourStart}`
+                    return {
+                        type: "WEEKLY",
+                        text: timeText
+                    }
+                }
                 return {
                     type: "WEEKLY",
-                    text: timesText
+                    text: dayLabel
                 }
             }
             return { type: "WEEKLY", text: "Semanal" }
         }
 
         if (recurrence.type === "MONTHLY") {
-            if (recurrence.RecurrenceDays && recurrence.RecurrenceDays?.length > 0) {
-                const daysText = recurrence.RecurrenceDays
-                    .map((dayData: TRecurrenceDay) => {
-                        const dayLabel = `Dia ${dayData.day}`
-                        if (dayData.hourStart) {
-                            return dayData.hourEnd
-                                ? `${dayLabel}: ${dayData.hourStart} - ${dayData.hourEnd}`
-                                : `${dayLabel}: ${dayData.hourStart}`
-                        }
-                        return dayLabel
-                    })
-                    .join(" | ")
-
+            if (recurrence.day !== null && recurrence.day !== undefined) {
+                const dayLabel = `Dia ${recurrence.day}`
+                if (recurrence.hourStart) {
+                    const timeText = recurrence.hourEnd
+                        ? `${dayLabel}: ${recurrence.hourStart} - ${recurrence.hourEnd}`
+                        : `${dayLabel}: ${recurrence.hourStart}`
+                    return {
+                        type: "MONTHLY",
+                        text: timeText
+                    }
+                }
                 return {
                     type: "MONTHLY",
-                    text: daysText
+                    text: dayLabel
                 }
             }
             return { type: "MONTHLY", text: "Mensal" }
@@ -689,7 +686,7 @@ const VerEventoInfo = (
     }
 
     const recurrenceInfo = formatRecurrenceInfo(event.Recurrence)
-    const isRecurrent = event.Recurrence && event.Recurrence.type !== "NONE"
+    const isRecurrent = event.Recurrence
 
     const descriptionContent = event.description ? (
         <div className="prose prose-sm max-w-none

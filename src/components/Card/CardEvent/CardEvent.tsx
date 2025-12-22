@@ -6,7 +6,7 @@ import { Calendar, Clock, Gift, Laptop, MapPin, Repeat, Tag } from "lucide-react
 import { Card } from "@/components/Card/Card"
 import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
-import type { TEvent, TRecurrenceDay } from "@/types/Event/TEvent"
+import type { TEvent } from "@/types/Event/TEvent"
 import type { TEventBatch } from "@/types/Event/TEventBatch"
 import { useEventVerifyLastTicket } from "@/hooks/Event/useEventVerifyLastTicket"
 import { useMemo } from "react"
@@ -48,7 +48,7 @@ const CardEvent = (
     }
 
     const formatRecurrenceInfo = (recurrence: TEvent["Recurrence"]) => {
-        if (!recurrence || recurrence.type === "NONE") return null
+        if (!recurrence) return null
 
         const dayLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
 
@@ -65,43 +65,40 @@ const CardEvent = (
         }
 
         if (recurrence.type === "WEEKLY") {
-            if (recurrence.RecurrenceDays && recurrence.RecurrenceDays?.length > 0) {
-                const timesText = recurrence.RecurrenceDays
-                    .map((dayData: TRecurrenceDay) => {
-                        if (dayData.hourStart) {
-                            return dayData.hourEnd 
-                                ? `${dayLabels[dayData.day]}: ${dayData.hourStart} - ${dayData.hourEnd}`
-                                : `${dayLabels[dayData.day]}: ${dayData.hourStart}`
-                        }
-                        return dayLabels[dayData.day]
-                    })
-                    .join(" | ")
-
+            if (recurrence.day !== null && recurrence.day !== undefined) {
+                const dayLabel = dayLabels[recurrence.day]
+                if (recurrence.hourStart) {
+                    const timeText = recurrence.hourEnd 
+                        ? `${dayLabel}: ${recurrence.hourStart} - ${recurrence.hourEnd}`
+                        : `${dayLabel}: ${recurrence.hourStart}`
+                    return {
+                        type: "WEEKLY",
+                        text: timeText
+                    }
+                }
                 return {
                     type: "WEEKLY",
-                    text: timesText
+                    text: dayLabel
                 }
             }
             return { type: "WEEKLY", text: "Semanal" }
         }
 
         if (recurrence.type === "MONTHLY") {
-            if (recurrence.RecurrenceDays && recurrence.RecurrenceDays?.length > 0) {
-                const daysText = recurrence.RecurrenceDays
-                    .map((dayData: TRecurrenceDay) => {
-                        const dayLabel = `Dia ${dayData.day}`
-                        if (dayData.hourStart) {
-                            return dayData.hourEnd
-                                ? `${dayLabel}: ${dayData.hourStart} - ${dayData.hourEnd}`
-                                : `${dayLabel}: ${dayData.hourStart}`
-                        }
-                        return dayLabel
-                    })
-                    .join(" | ")
-
+            if (recurrence.day !== null && recurrence.day !== undefined) {
+                const dayLabel = `Dia ${recurrence.day}`
+                if (recurrence.hourStart) {
+                    const timeText = recurrence.hourEnd
+                        ? `${dayLabel}: ${recurrence.hourStart} - ${recurrence.hourEnd}`
+                        : `${dayLabel}: ${recurrence.hourStart}`
+                    return {
+                        type: "MONTHLY",
+                        text: timeText
+                    }
+                }
                 return {
                     type: "MONTHLY",
-                    text: daysText
+                    text: dayLabel
                 }
             }
             return { type: "MONTHLY", text: "Mensal" }
@@ -143,7 +140,7 @@ const CardEvent = (
 
     const activeBatch = getActiveBatch(event.EventBatches)
     const recurrenceInfo = formatRecurrenceInfo(event.Recurrence)
-    const isRecurrent = event.Recurrence && event.Recurrence.type !== "NONE"
+    const isRecurrent = !!event.Recurrence
     const firstDate = event.EventDates && Array.isArray(event.EventDates) && event.EventDates.length > 0 ? event.EventDates[0] : null
 
     return (
