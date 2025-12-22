@@ -467,6 +467,20 @@ const VerEventoInfo = (
         return TicketFeeUtils.calculateFeeInCents(Math.round(event.price), event.isClientTaxed)
     }, [event])
 
+    const recurrenceInfo = useMemo(() => {
+        return event ? formatRecurrenceInfo(event.Recurrence) : null
+    }, [event?.Recurrence])
+
+    const isRecurrent = useMemo(() => {
+        return !!event?.Recurrence
+    }, [event?.Recurrence])
+
+    const activeEventDateId = useMemo(() => {
+        if (!isRecurrent || !event?.EventDates) return null
+        const activeEventDate = event.EventDates.find(ed => ed.isActive === true)
+        return activeEventDate?.id || null
+    }, [isRecurrent, event?.EventDates])
+
     const handleAddToCart = () => {
         if (!event) return
 
@@ -684,9 +698,6 @@ const VerEventoInfo = (
             </Background>
         )
     }
-
-    const recurrenceInfo = formatRecurrenceInfo(event.Recurrence)
-    const isRecurrent = event.Recurrence
 
     const descriptionContent = event.description ? (
         <div className="prose prose-sm max-w-none
@@ -921,7 +932,7 @@ const VerEventoInfo = (
                                     })()}
 
                                     {isRecurrent && (() => {
-                                        const nextEventDate = event.EventDates?.[0]
+                                        const activeEventDate = event.EventDates?.find(ed => ed.isActive === true)
                                         return (
                                             <div className="space-y-3">
                                                 {recurrenceInfo && (
@@ -936,17 +947,17 @@ const VerEventoInfo = (
                                                         <span>{recurrenceInfo.text}</span>
                                                     </div>
                                                 )}
-                                                {nextEventDate && (
+                                                {activeEventDate && (
                                                     <div className="space-y-2">
                                                         <div className="flex items-center gap-2">
                                                             <Calendar className="h-4 w-4 text-psi-primary shrink-0" />
                                                             <span className="font-medium">
-                                                                Próxima data: {formatDate(nextEventDate.date)}
+                                                                Próxima data: {formatDate(activeEventDate.date)}
                                                             </span>
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             <Clock className="h-4 w-4 text-psi-primary shrink-0" />
-                                                            <span>{formatTimeRange(nextEventDate.hourStart, nextEventDate.hourEnd)}</span>
+                                                            <span>{formatTimeRange(activeEventDate.hourStart, activeEventDate.hourEnd)}</span>
                                                         </div>
                                                     </div>
                                                 )}
@@ -1260,7 +1271,12 @@ const VerEventoInfo = (
                                             <span className="text-sm font-medium text-psi-dark">Selecione os dias e tipos de ingressos</span>
                                             <span className="text-xs text-psi-dark/60">Máximo {buyTicketsLimit} por pessoa</span>
                                         </div>
-                                        {event.EventDates.filter(ed => ed.hasSpecificPrice && ed.EventDateTicketTypePrices && ed.EventDateTicketTypePrices.length > 0).map((eventDate) => {
+                                        {event.EventDates.filter(ed => {
+                                            if (isRecurrent) {
+                                                return ed.isActive === true && ed.hasSpecificPrice && ed.EventDateTicketTypePrices && ed.EventDateTicketTypePrices.length > 0
+                                            }
+                                            return ed.hasSpecificPrice && ed.EventDateTicketTypePrices && ed.EventDateTicketTypePrices.length > 0
+                                        }).map((eventDate) => {
                                             const dayTypes = selectedDaysAndTypes[eventDate.id] || {}
                                             
                                             return (
@@ -1461,7 +1477,12 @@ const VerEventoInfo = (
                                                                 {event.EventDates && event.EventDates.length > 1 && hasMultipleDaysWithSpecificPrices && (
                                                                     <div className="mt-3 space-y-2">
                                                                         <p className="text-xs font-medium text-psi-dark/70">Selecione os dias:</p>
-                                                                        {event.EventDates.map((eventDate) => {
+                                                                        {event.EventDates.filter(ed => {
+                                                                            if (isRecurrent) {
+                                                                                return ed.isActive === true
+                                                                            }
+                                                                            return true
+                                                                        }).map((eventDate) => {
                                                                             const isSelected = selectedDaysForType.includes(eventDate.id)
                                                                             const priceForThisDay = getPriceForTicketTypeLocal(eventDate.id)
                                                                             const feeCents = TicketFeeUtils.calculateFeeInCents(priceForThisDay, event.isClientTaxed)
@@ -1548,7 +1569,7 @@ const VerEventoInfo = (
                                                                     ? Math.min(...selectedDaysForType.map(dayId => 
                                                                         getMaxQuantity(dayId, ebt.ticketTypeId, buyTicketsLimit)
                                                                     ))
-                                                                    : getMaxQuantity(null, ebt.ticketTypeId, buyTicketsLimit)
+                                                                    : getMaxQuantity(isRecurrent ? activeEventDateId : null, ebt.ticketTypeId, buyTicketsLimit)
                                                                 
                                                                 if (newQuantity > maxQuantity) {
                                                                     Toast.info("Não há mais ingressos disponíveis além dessa quantidade.")
@@ -1564,7 +1585,7 @@ const VerEventoInfo = (
                                                                 ? Math.min(...selectedDaysForType.map(dayId => 
                                                                     getMaxQuantity(dayId, ebt.ticketTypeId, buyTicketsLimit)
                                                                 ))
-                                                                : getMaxQuantity(null, ebt.ticketTypeId, buyTicketsLimit)
+                                                                : getMaxQuantity(isRecurrent ? activeEventDateId : null, ebt.ticketTypeId, buyTicketsLimit)
                                                             }
                                                             min={0}
                                                             // disabled={event.EventDates && event.EventDates.length > 1 && selectedDaysForType.length === 0}
@@ -1582,7 +1603,12 @@ const VerEventoInfo = (
                                                     <span className="text-sm font-medium text-psi-dark">Selecione os dias e quantidades</span>
                                                     <span className="text-xs text-psi-dark/60">Máximo {buyTicketsLimit} por pessoa</span>
                                                 </div>
-                                                {event.EventDates && event.EventDates.some((ed) => ed.hasSpecificPrice) && event.EventDates.map((eventDate) => {
+                                                {event.EventDates && event.EventDates.some((ed) => ed.hasSpecificPrice) && event.EventDates.filter(ed => {
+                                                    if (isRecurrent) {
+                                                        return ed.isActive === true && ed.hasSpecificPrice
+                                                    }
+                                                    return ed.hasSpecificPrice
+                                                }).map((eventDate) => {
                                                     const isSelected = selectedDaysWithoutTicketTypes.includes(eventDate.id)
                                                     const qty = dayQuantities[eventDate.id] || 0
                                                     const price = eventDate.price !== null ? eventDate.price : event.EventBatches?.find(eb => eb.id === selectedBatchId)?.price || 0
@@ -1684,7 +1710,7 @@ const VerEventoInfo = (
                                                 <QuantitySelector
                                                     value={currentQuantity}
                                                     onChange={(newQuantity) => {
-                                                        const maxQuantity = getMaxQuantity(null, null, buyTicketsLimit)
+                                                        const maxQuantity = getMaxQuantity(isRecurrent ? activeEventDateId : null, null, buyTicketsLimit)
                                                         if (newQuantity > maxQuantity) {
                                                             Toast.info("Não há mais ingressos disponíveis além dessa quantidade.")
                                                             newQuantity = maxQuantity
@@ -1703,7 +1729,7 @@ const VerEventoInfo = (
                                                             }, newQuantity)
                                                         }
                                                     }}
-                                                    max={getMaxQuantity(null, null, buyTicketsLimit)}
+                                                    max={getMaxQuantity(isRecurrent ? activeEventDateId : null, null, buyTicketsLimit)}
                                                     min={0}
                                                 />
                                             </div>
@@ -1896,7 +1922,7 @@ const VerEventoInfo = (
                                                 size="sm"
                                                 className="w-full group border-psi-primary/30 text-psi-primary hover:bg-psi-primary/5"
                                             >
-                                                <Users className="h-4 w-4 mr-2" />
+                                                <Users className="h-4 w-4" />
                                                 Área do Produtor
                                                 <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
                                             </Button>
@@ -1935,7 +1961,7 @@ const VerEventoInfo = (
                                             }
                                         }}
                                     >
-                                        <Share2 className="h-4 w-4 mr-2" />
+                                        <Share2 className="h-4 w-4" />
                                         Compartilhar
                                     </Button>
                                     <Button
@@ -1996,7 +2022,7 @@ const VerEventoInfo = (
                                             size="sm"
                                             className="w-full group"
                                         >
-                                            <Star className="h-4 w-4 mr-2" />
+                                            <Star className="h-4 w-4" />
                                             Criar Conta e Ganhar Benefícios
                                         </Button>
                                     </Link>

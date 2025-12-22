@@ -30,8 +30,9 @@ import { DialogConfirm } from "@/components/Dialog/DialogConfirm/DialogConfirm"
 import { Toast } from "@/components/Toast/Toast"
 import { useEventFindByUserId } from "@/hooks/Event/useEventFindByUserId"
 import { useEventListBuyers } from "@/hooks/Event/useEventListBuyers"
-import type { TEvent, TEventListBuyers } from "@/types/Event/TEvent"
+import type { TEvent, TEventCacheResponse, TEventListBuyers } from "@/types/Event/TEvent"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
+import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useEventCache } from "@/hooks/Event/useEventCache"
@@ -55,6 +56,7 @@ import {
 
 const QrScannerPannel = () => {
     const [selectedEventId, setSelectedEventId] = useState<string>("")
+    const [selectedEventDateId, setSelectedEventDateId] = useState<string>("ALL")
     const [isScanning, setIsScanning] = useState(false)
     const [scanFeedback, setScanFeedback] = useState<string>("")
     const [createLinkDialogOpen, setCreateLinkDialogOpen] = useState(false)
@@ -90,19 +92,44 @@ const QrScannerPannel = () => {
 
     const { data: eventsData, isLoading: isLoadingEvents } = useEventCache()
 
-    const { data: buyersData, isLoading: isLoadingBuyers, refetch: refetchBuyers } = useEventListBuyers({
-        eventId: selectedEventId,
-        enabled: !!selectedEventId
-    })
-
-    const [events, setEvents] = useState<TEvent[]>([])
+    const [events, setEvents] = useState<TEventCacheResponse[]>([])
     const [buyers, setBuyers] = useState<TEventListBuyers[]>([])
+    const [selectedEvent, setSelectedEvent] = useState<TEventCacheResponse | null>(null)
 
     useEffect(() => {
         if (eventsData?.data) {
             setEvents(eventsData.data)
         }
     }, [eventsData])
+
+    useEffect(() => {
+        if (selectedEventId) {
+            const event = events?.find(e => e.id === selectedEventId)
+            setSelectedEvent(event || null)
+            setSelectedEventDateId("ALL")
+        } else {
+            setSelectedEvent(null)
+            setSelectedEventDateId("ALL")
+        }
+    }, [selectedEventId, events])
+
+    const isRecurrent = useMemo(() => {
+        return !!selectedEvent?.Recurrence?.id
+    }, [selectedEvent])
+
+    const eventDates = useMemo(() => {
+        if (!selectedEvent?.EventDates || !Array.isArray(selectedEvent.EventDates)) return []
+        return [...selectedEvent.EventDates].sort((a, b) => {
+            if (!a.date || !b.date) return 0
+            return getDateOrderValue(a.date) - getDateOrderValue(b.date)
+        })
+    }, [selectedEvent])
+
+    const { data: buyersData, isLoading: isLoadingBuyers, refetch: refetchBuyers } = useEventListBuyers({
+        eventId: selectedEventId,
+        eventDateId: selectedEventDateId !== "ALL" ? selectedEventDateId : undefined,
+        enabled: !!selectedEventId
+    })
 
     useEffect(() => {
         if (buyersData?.data) {
@@ -607,15 +634,6 @@ const QrScannerPannel = () => {
         }
     }, [])
 
-    const [selectedEvent, setSelectedEvent] = useState<TEvent | null>(null)
-
-    useEffect(() => {
-        if (selectedEventId) {
-            const event = events?.find(e => e.id === selectedEventId)
-            setSelectedEvent(event || null)
-        }
-    }, [selectedEventId, events])
-
     return (
         <Background variant="light" className="min-h-screen">
             <div className="container py-8 mt-[80px]">
@@ -713,15 +731,35 @@ const QrScannerPannel = () => {
                                             {selectedEvent && (
                                                 <div className="mt-4 p-4 rounded-lg bg-psi-primary/5 border border-psi-primary/20">
                                                     <p className="text-sm font-medium text-psi-dark mb-2">{selectedEvent.name}</p>
-                                                    {selectedEvent.location && (
+                                                    {/* {selectedEvent.location && (
                                                         <p className="text-xs text-psi-dark/60 flex items-center gap-1">
                                                             <Calendar className="h-3 w-3" />
                                                             {selectedEvent.location}
                                                         </p>
-                                                    )}
+                                                    )} */}
                                                 </div>
                                             )}
                                         </div>
+
+                                        {eventDates.length > 0 && (
+                                            <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
+                                                <h2 className="text-lg font-semibold text-psi-dark mb-4">Filtrar por Data do Evento</h2>
+                                                <Select value={selectedEventDateId} onValueChange={setSelectedEventDateId}>
+                                                    <SelectTrigger className="w-full">
+                                                        <SelectValue placeholder="Selecione uma data" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="ALL">Todas as datas</SelectItem>
+                                                        {eventDates.map((eventDate) => (
+                                                            <SelectItem key={eventDate.id} value={eventDate.id}>
+                                                                {eventDate.date ? formatEventDate(eventDate.date, "DD/MM/YYYY") : "Sem data"}
+                                                                {eventDate.hourStart && ` - ${formatEventTime(eventDate.hourStart, eventDate.hourEnd)}`}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        )}
 
                                         {selectedEventId && (
                                             <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
@@ -797,28 +835,28 @@ const QrScannerPannel = () => {
                                                                             onClick={() => handleOpenManageSessions(link.id)}
                                                                             className="cursor-pointer"
                                                                         >
-                                                                            <Users className="h-4 w-4 mr-2" />
+                                                                            <Users className="h-4 w-4" />
                                                                             Ver conectados ({currentUsers})
                                                                         </DropdownMenuItem>
                                                                         <DropdownMenuItem
                                                                             onClick={() => handleOpenUpdatePassword(link.id)}
                                                                             className="cursor-pointer"
                                                                         >
-                                                                            <QrCode className="h-4 w-4 mr-2" />
+                                                                            <QrCode className="h-4 w-4" />
                                                                             Alterar senha
                                                                         </DropdownMenuItem>
                                                                         <DropdownMenuItem
                                                                             onClick={() => handleOpenUpdateExpAt(link.id, link.expiresAt)}
                                                                             className="cursor-pointer"
                                                                         >
-                                                                            <Calendar className="h-4 w-4 mr-2" />
+                                                                            <Calendar className="h-4 w-4" />
                                                                             Alterar expiração
                                                                         </DropdownMenuItem>
                                                                         <DropdownMenuItem
                                                                             onClick={() => setDeleteLinkDialog({ open: true, linkId: link.id })}
                                                                             className="cursor-pointer text-destructive"
                                                                         >
-                                                                            <Trash2 className="h-4 w-4 mr-2" />
+                                                                            <Trash2 className="h-4 w-4" />
                                                                             Excluir link
                                                                         </DropdownMenuItem>
                                                                     </DropdownMenuContent>
@@ -968,7 +1006,7 @@ const QrScannerPannel = () => {
                                                                                                 disabled={isValidatingTicketById}
                                                                                                 className="cursor-pointer"
                                                                                             >
-                                                                                                <Check className="h-4 w-4 mr-2" />
+                                                                                                <Check className="h-4 w-4" />
                                                                                                 {isValidatingTicketById ? "Validando..." : "Validar"}
                                                                                             </DropdownMenuItem>
                                                                                         )}
@@ -976,7 +1014,7 @@ const QrScannerPannel = () => {
                                                                                             onClick={() => handleViewMoreInfo(buyer)}
                                                                                             className="cursor-pointer"
                                                                                         >
-                                                                                            <Info className="h-4 w-4 mr-2" />
+                                                                                            <Info className="h-4 w-4" />
                                                                                             Conferir mais informações
                                                                                         </DropdownMenuItem>
                                                                                     </DropdownMenuContent>

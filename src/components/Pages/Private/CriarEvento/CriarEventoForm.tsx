@@ -594,7 +594,7 @@ const CriarEventoForm = () => {
                                         size="sm"
                                         onClick={addTicketType}
                                     >
-                                        <Plus className="h-4 w-4 mr-2" />
+                                        <Plus className="h-4 w-4" />
                                         Adicionar Tipo
                                     </Button>
                                 </div>
@@ -844,7 +844,7 @@ const CriarEventoForm = () => {
                                                     onClick={addBatch}
                                                     disabled={recurrenceEnabled && batchFields.length >= 1}
                                                 >
-                                                    <Plus className="h-4 w-4 mr-2" />
+                                                    <Plus className="h-4 w-4" />
                                                     Adicionar Lote
                                                 </Button>
                                                 {recurrenceEnabled && (
@@ -1448,7 +1448,7 @@ const CriarEventoForm = () => {
                                         size="sm"
                                         onClick={addDate}
                                     >
-                                        <Plus className="h-4 w-4 mr-2" />
+                                        <Plus className="h-4 w-4" />
                                         Adicionar Data
                                     </Button>
                                 </div>

@@ -42,6 +42,7 @@ import { DialogEditWarning, type TChangeItem } from "@/components/Dialog/DialogE
 import { Toast } from "@/components/Toast/Toast"
 import { DialogMarkdownInstructions } from "@/components/Dialog/DialogMarkdownInstructions/DialogMarkdownInstructions"
 import { DialogPasswordConfirmation } from "@/components/Dialog/DialogPasswordConfirmation/DialogPasswordConfirmation"
+import { useSearchParams } from "next/navigation"
 
 type TEventUpdate = z.infer<typeof EventUpdateValidator>
 
@@ -174,11 +175,7 @@ const parseFormJSONToFields = (formJSON: any): TFormField[] => {
         .map(item => item.field)
 }
 
-type TAtualizarEventoFormProps = {
-    eventId: string
-}
-
-const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
+const AtualizarEventoForm = () => {
     const [recurrenceEnabled, setRecurrenceEnabled] = useState(false)
     const [isFormInitialized, setIsFormInitialized] = useState(false)
     const [formFields, setFormFields] = useState<TFormField[]>([])
@@ -191,12 +188,15 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
     const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
     const [pendingSubmitData, setPendingSubmitData] = useState<TEventUpdate | null>(null)
 
-    const { data: eventData, isLoading: isEventLoading } = useEventFindByIdUser(eventId)
-    const { data: eventCategoriesData, isLoading: isEventCategoriesLoading } = useEventCategoryFind()
-    const { data: eventVerifySoldData } = useEventVerifySold(eventId)
+    const searchParams = useSearchParams()
+    const eventId = useMemo(() => searchParams.get("id"), [searchParams])
 
-    const { mutateAsync: updateEvent, isPending: isUpdatingEvent } = useEventUpdate(eventId)
-    const { mutateAsync: updateEventImage, isPending: isUpdatingImage } = useEventUpdateImage(eventId)
+    const { data: eventData, isLoading: isEventLoading } = useEventFindByIdUser(eventId || "")
+    const { data: eventCategoriesData, isLoading: isEventCategoriesLoading } = useEventCategoryFind()
+    const { data: eventVerifySoldData } = useEventVerifySold(eventId || "")
+
+    const { mutateAsync: updateEvent, isPending: isUpdatingEvent } = useEventUpdate(eventId || "")
+    const { mutateAsync: updateEventImage, isPending: isUpdatingImage } = useEventUpdateImage(eventId || "")
 
     const eventCategories = useMemo(() => {
         if (eventCategoriesData?.data && Array.isArray(eventCategoriesData.data)) {
@@ -1049,7 +1049,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                             size="sm"
                                             onClick={addTicketType}
                                         >
-                                            <Plus className="h-4 w-4 mr-2" />
+                                            <Plus className="h-4 w-4" />
                                             Adicionar Tipo
                                         </Button>
                                     )}
@@ -1321,7 +1321,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                             size="sm"
                                             onClick={addBatch}
                                         >
-                                            <Plus className="h-4 w-4 mr-2" />
+                                            <Plus className="h-4 w-4" />
                                             Adicionar Lote
                                         </Button>
                                     </div>
@@ -2074,7 +2074,7 @@ const AtualizarEventoForm = ({ eventId }: TAtualizarEventoFormProps) => {
                                             size="sm"
                                             onClick={addDate}
                                         >
-                                            <Plus className="h-4 w-4 mr-2" />
+                                            <Plus className="h-4 w-4" />
                                             Adicionar Data
                                         </Button>
                                     )}

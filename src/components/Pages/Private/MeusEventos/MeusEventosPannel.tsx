@@ -83,8 +83,15 @@ const formatRecurrence = (recurrence: TEvent["Recurrence"]) => {
     return label
 }
 
-const getDateRange = (dates: TEvent["EventDates"]) => {
+const getDateRange = (dates: TEvent["EventDates"], isRecurrent?: boolean) => {
     if (!dates || dates.length === 0) return formatDate()
+
+    if (isRecurrent) {
+        const activeDate = dates.find(ed => ed.isActive === true)
+        if (activeDate) {
+            return formatEventDate(activeDate.date, "DD [de] MMMM [de] YYYY")
+        }
+    }
 
     const sortedDates = [...dates].sort((a, b) =>
         getDateOrderValue(a?.date) - getDateOrderValue(b?.date)
@@ -500,7 +507,7 @@ const EventCard = ({
                                 onClick={() => onEdit(event.id)}
                                 disabled={event.isCancelled}
                             >
-                                <Edit className="h-4 w-4 mr-2 text-psi-primary" />
+                                <Edit className="h-4 w-4 text-psi-primary" />
                                 Editar evento
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-[#E4E6F0]" />
@@ -509,14 +516,14 @@ const EventCard = ({
                                 onClick={() => onExportBuyers(event.id, event)}
                                 disabled={event.isCancelled}
                             >
-                                <FileSpreadsheet className="h-4 w-4 mr-2 text-psi-primary" />
+                                <FileSpreadsheet className="h-4 w-4 text-psi-primary" />
                                 Gerar lista de compradores
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer"
                                 onClick={() => onTickets(event.id)}
                             >
-                                <TicketIcon className="h-4 w-4 mr-2 text-psi-primary" />
+                                <TicketIcon className="h-4 w-4 text-psi-primary" />
                                 Ingressos
                             </DropdownMenuItem>
                             <DropdownMenuItem 
@@ -524,12 +531,12 @@ const EventCard = ({
                                 onClick={() => onSalesReport(event.id, event.name)}
                                 disabled={event.isCancelled}
                             >
-                                <BarChart3 className="h-4 w-4 mr-2 text-psi-primary" />
+                                <BarChart3 className="h-4 w-4 text-psi-primary" />
                                 Relatório de Vendas e Estatísticas
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-[#E4E6F0]" />
                             <DropdownMenuItem className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer" disabled={event.isCancelled}>
-                                <Share2 className="h-4 w-4 mr-2 text-psi-primary" />
+                                <Share2 className="h-4 w-4 text-psi-primary" />
                                 Compartilhar evento
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-[#E4E6F0]" />
@@ -539,7 +546,7 @@ const EventCard = ({
                                         className="rounded-lg text-sm text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                                         onClick={() => onDelete(event.id, event.name)}
                                     >
-                                        <Trash2 className="h-4 w-4 mr-2 text-destructive" />
+                                        <Trash2 className="h-4 w-4 text-destructive" />
                                         Excluir evento
                                     </DropdownMenuItem>
                                 )
@@ -575,9 +582,9 @@ const EventCard = ({
                         <Calendar className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
                         <div className="flex-1 min-w-0">
                             <div className="font-medium text-psi-dark mb-1">
-                                {getDateRange(event.EventDates)}
+                                {getDateRange(event.EventDates, !!event.Recurrence)}
                             </div>
-                            {event.EventDates && event.EventDates.length > 1 && (
+                            {event.EventDates && event.EventDates.length > 1 && !event.Recurrence && (
                                 <div className="space-y-1 mt-2">
                                     {event.EventDates.map((eventDate, index) => (
                                         <div key={index} className="flex items-center gap-2 text-xs text-psi-dark/60">
@@ -597,6 +604,17 @@ const EventCard = ({
                                     </span>
                                 </div>
                             )}
+                            {event.Recurrence && event.EventDates && event.EventDates.length > 0 && (() => {
+                                const activeEventDate = event.EventDates.find(ed => ed.isActive === true)
+                                return activeEventDate ? (
+                                    <div className="flex items-center gap-2 text-xs text-psi-dark/60 mt-1">
+                                        <Clock className="h-3 w-3 text-psi-primary shrink-0" />
+                                        <span>
+                                            {formatEventTime(activeEventDate.hourStart, activeEventDate.hourEnd)}
+                                        </span>
+                                    </div>
+                                ) : null
+                            })()}
                         </div>
                     </div>
                     

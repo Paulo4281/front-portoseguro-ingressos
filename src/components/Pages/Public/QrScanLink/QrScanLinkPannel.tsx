@@ -16,8 +16,11 @@ import { useTicketScanSessionDelete } from "@/hooks/TicketScanSession/useTicketS
 import { useTicketValidateQrcodeWorker } from "@/hooks/Ticket/useTicketValidateQrcodeWorker"
 import { useTicketValidateWorker } from "@/hooks/Ticket/useTicketValidateWorker"
 import { useEventListBuyersSession } from "@/hooks/Event/useEventListBuyersSession"
+import { useEventCacheSession } from "@/hooks/Event/useEventCacheSession"
 import type { TEventListBuyers } from "@/types/Event/TEvent"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
+import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { DialogConfirm } from "@/components/Dialog/DialogConfirm/DialogConfirm"
@@ -82,6 +85,7 @@ const QrScanLinkPannel = () => {
 
     const [validatedTickets, setValidatedTickets] = useState<Set<string>>(new Set())
     const [searchQuery, setSearchQuery] = useState("")
+    const [selectedEventDateId, setSelectedEventDateId] = useState<string>("ALL")
     const [buyerInfoDialog, setBuyerInfoDialog] = useState<{ open: boolean; buyer: TEventListBuyers | null }>({ open: false, buyer: null })
     const [qrImageErrorDialog, setQrImageErrorDialog] = useState<{ open: boolean; title: string; description: string }>({
         open: false,
@@ -98,7 +102,11 @@ const QrScanLinkPannel = () => {
     const { mutateAsync: validateTicketQrCode, isPending: isValidatingTicketQrCode } = useTicketValidateQrcodeWorker()
     const { mutateAsync: validateTicketById, isPending: isValidatingTicketById } = useTicketValidateWorker()
 
-    const { data: buyersData, isLoading: isLoadingBuyers, isError: isBuyersError, refetch: refetchBuyers } = useEventListBuyersSession(isAuthenticated)
+    const { data: eventCacheData } = useEventCacheSession(isAuthenticated)
+    const { data: buyersData, isLoading: isLoadingBuyers, isError: isBuyersError, refetch: refetchBuyers } = useEventListBuyersSession(
+        isAuthenticated,
+        selectedEventDateId !== "ALL" ? selectedEventDateId : undefined
+    )
 
     const buyers = useMemo(() => {
         if (buyersData?.data && Array.isArray(buyersData.data)) {
@@ -129,6 +137,7 @@ const QrScanLinkPannel = () => {
     useEffect(() => {
         setValidatedTickets(new Set())
         setSearchQuery("")
+        setSelectedEventDateId("ALL")
     }, [pubId])
 
     useEffect(() => {
@@ -140,6 +149,14 @@ const QrScanLinkPannel = () => {
         })
         setValidatedTickets(next)
     }, [buyers])
+
+    const eventDates = useMemo(() => {
+        if (!eventCacheData?.data?.EventDates || !Array.isArray(eventCacheData.data.EventDates)) return []
+        return [...eventCacheData.data.EventDates].sort((a, b) => {
+            if (!a.date || !b.date) return 0
+            return getDateOrderValue(a.date) - getDateOrderValue(b.date)
+        })
+    }, [eventCacheData])
 
     const filteredBuyers = useMemo(() => {
         if (!searchQuery) return buyers
@@ -638,7 +655,7 @@ const QrScanLinkPannel = () => {
                                 disabled={isLoggingOut}
                                 className="w-full lg:w-auto"
                             >
-                                <LogOut className="h-4 w-4 mr-2" />
+                                <LogOut className="h-4 w-4" />
                                 Sair
                             </Button>
                             <Button
@@ -647,7 +664,7 @@ const QrScanLinkPannel = () => {
                                 disabled={isDecodingQrImage}
                                 className="w-full lg:w-auto"
                             >
-                                <ImageUp className="h-4 w-4 mr-2" />
+                                <ImageUp className="h-4 w-4" />
                                 {isDecodingQrImage ? "Lendo foto..." : "Ler pela foto"}
                             </Button>
                             {isScanning ? (
@@ -665,7 +682,7 @@ const QrScanLinkPannel = () => {
                                     disabled={isValidatingTicketQrCode}
                                     className="w-full lg:w-auto"
                                 >
-                                    <Scan className="h-4 w-4 mr-2" />
+                                    <Scan className="h-4 w-4" />
                                     Escanear QR Code
                                 </Button>
                             )}
@@ -673,6 +690,26 @@ const QrScanLinkPannel = () => {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {eventDates.length > 0 && (
+                            <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
+                                <h2 className="text-lg font-semibold text-psi-dark mb-4">Filtrar por Data do Evento</h2>
+                                <Select value={selectedEventDateId} onValueChange={setSelectedEventDateId}>
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Selecione uma data" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="ALL">Todas as datas</SelectItem>
+                                        {eventDates.map((eventDate) => (
+                                            <SelectItem key={eventDate.id} value={eventDate.id}>
+                                                {eventDate.date ? formatEventDate(eventDate.date, "DD/MM/YYYY") : "Sem data"}
+                                                {eventDate.hourStart && ` - ${formatEventTime(eventDate.hourStart, eventDate.hourEnd)}`}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+
                         <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
                             <h2 className="text-lg font-semibold text-psi-dark mb-4">Estatísticas</h2>
                             <div className="space-y-3">
@@ -830,7 +867,7 @@ const QrScanLinkPannel = () => {
                                                                         disabled={isValidatingTicketById}
                                                                         className="cursor-pointer"
                                                                     >
-                                                                        <Check className="h-4 w-4 mr-2" />
+                                                                        <Check className="h-4 w-4" />
                                                                         {isValidatingTicketById ? "Validando..." : "Validar"}
                                                                     </DropdownMenuItem>
                                                                 )}
@@ -838,7 +875,7 @@ const QrScanLinkPannel = () => {
                                                                     onClick={() => handleViewMoreInfo(buyer)}
                                                                     className="cursor-pointer"
                                                                 >
-                                                                    <Info className="h-4 w-4 mr-2" />
+                                                                    <Info className="h-4 w-4" />
                                                                     Conferir mais informações
                                                                 </DropdownMenuItem>
                                                             </DropdownMenuContent>

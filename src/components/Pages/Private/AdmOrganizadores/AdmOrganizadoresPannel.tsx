@@ -707,14 +707,14 @@ const AdmOrganizadoresPannel = () => {
                                                                             variant="destructive"
                                                                             onClick={() => handleReject(organizer)}
                                                                         >
-                                                                            <XCircle className="h-4 w-4 mr-2 shrink-0" />
+                                                                            <XCircle className="h-4 w-4 shrink-0" />
                                                                             <span className="truncate">Rejeitar organizador</span>
                                                                         </Button>
                                                                         <Button
                                                                             variant="primary"
                                                                             onClick={() => handleApprove(organizer)}
                                                                         >
-                                                                            <CheckCircle2 className="h-4 w-4 mr-2 shrink-0" />
+                                                                            <CheckCircle2 className="h-4 w-4 shrink-0" />
                                                                             <span className="truncate">Aprovar organizador</span>
                                                                         </Button>
                                                                     </div>

@@ -11,6 +11,20 @@ type TEventCreate = z.infer<typeof EventCreateValidator>
 
 type TEventUpdate = Partial<TEventCreate>
 
+type TEventCacheResponse = {
+    id: string
+    name: string
+    Recurrence: {
+        id: string
+    } | null
+    EventDates: {
+        id: string
+        date: string | null
+        hourStart: string | null
+        hourEnd: string | null
+    }[]
+}
+
 type TEvent = {
     id: string
     name: string
@@ -176,5 +190,6 @@ export type {
     TEventVerifySoldResponse,
     TEventSoldInValueResponse,
     TEventListBuyers,
-    TEventSearchResponse
+    TEventSearchResponse,
+    TEventCacheResponse
 }

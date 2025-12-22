@@ -267,6 +267,14 @@ class EventServiceClass {
         return response
     }
 
+    async cacheSession(): Promise<AxiosResponse["data"]> {
+        const response = (await API.GET({
+            prefix: "/event",
+            url: "/cache/session"
+        }))?.data
+        return response
+    }
+
     async verifySold(eventId: string): Promise<AxiosResponse["data"]> {
         const response = (await API.GET({
             prefix: "/event",
@@ -354,10 +362,15 @@ class EventServiceClass {
         return response
     }
 
-    async listBuyersSession(): Promise<AxiosResponse["data"]> {
+    async listBuyersSession(eventDateId?: string): Promise<AxiosResponse["data"]> {
+        const params: Record<string, string> = {}
+        if (eventDateId) {
+            params.eventDateId = eventDateId
+        }
         const response = (await API.GET({
             prefix: "/event",
-            url: "/list-buyers/session/client"
+            url: "/list-buyers/session/client",
+            params: Object.keys(params).length > 0 ? params : undefined
         }))?.data
         return response
     }

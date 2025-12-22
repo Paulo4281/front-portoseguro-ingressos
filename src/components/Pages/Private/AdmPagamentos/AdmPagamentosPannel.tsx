@@ -1019,7 +1019,7 @@ const AdmPagamentosPannel = () => {
                                                                                                 {ticket.code}
                                                                                             </p>
                                                                                             <p className="text-sm font-semibold text-psi-dark">
-                                                                                                {ticket.TicketType?.name || "Ingresso sem tipo"}
+                                                                                                <span className="text-psi-dark/60">Tipo: </span>{ticket.TicketType?.name || "Ingresso sem tipo"}
                                                                                             </p>
                                                                                             {ticket.TicketType?.description && (
                                                                                                 <p className="text-xs text-psi-dark/50 mt-1">

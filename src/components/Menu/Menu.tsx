@@ -353,7 +353,7 @@ const Menu = () => {
                                             size="sm"
                                         >
                                             <Link href="/login">
-                                                <LogIn className="mr-2 h-4 w-4" />
+                                                <LogIn className="h-4 w-4" />
                                                 Entrar
                                             </Link>
                                         </Button>
@@ -629,7 +629,7 @@ const Menu = () => {
                                 className="w-full justify-start rounded-xl"
                             >
                                 <Link href="/login" onClick={closeMenu}>
-                                    <LogIn className="mr-2 h-4 w-4" />
+                                    <LogIn className="h-4 w-4" />
                                     Entrar
                                 </Link>
                             </Button>
@@ -884,7 +884,7 @@ const NotificationBell = () => {
                                     disabled={isDeletingAll}
                                 >
                                     {isDeletingAll && (
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        <Loader2 className="h-4 w-4 animate-spin" />
                                     )}
                                     {isDeletingAll ? "Excluindo..." : "Excluir tudo"}
                                 </Button>

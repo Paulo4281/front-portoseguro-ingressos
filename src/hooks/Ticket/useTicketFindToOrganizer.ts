@@ -9,6 +9,7 @@ type TUseTicketFindToOrganizerParams = {
     limit?: number
     search?: string
     status?: string
+    eventDateId?: string
     enabled?: boolean
 }
 
@@ -25,6 +26,7 @@ export const useTicketFindToOrganizer = ({
     limit = 30,
     search,
     status,
+    eventDateId,
     enabled = true
 }: TUseTicketFindToOrganizerParams) => {
     const {
@@ -32,8 +34,8 @@ export const useTicketFindToOrganizer = ({
         isLoading,
         isError,
     } = useQueryHook<TApiResponse<TTicketFindToOrganizerResponse>>({
-        queryKey: ["tickets", "to-organizer", eventId, offset.toString(), limit.toString(), search || "", status || ""],
-        queryFn: () => TicketService.findByEventIdToOrganizer(eventId, offset, limit, search, status),
+        queryKey: ["tickets", "to-organizer", eventId, offset.toString(), limit.toString(), search || "", status || "", eventDateId || ""],
+        queryFn: () => TicketService.findByEventIdToOrganizer(eventId, offset, limit, search, status, eventDateId),
         enabled: enabled && !!eventId
     })
 

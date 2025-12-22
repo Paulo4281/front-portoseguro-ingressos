@@ -471,7 +471,7 @@ const CuponsPannel = () => {
 
                     <div className="flex justify-end pt-4 border-t border-psi-dark/10">
                         <Button type="submit" variant="primary" disabled={isCreating} className="min-w-[160px]">
-                            {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
                             Criar cupom
                         </Button>
                     </div>
@@ -662,7 +662,7 @@ const CuponsPannel = () => {
                                                         onClick={() => handleSaveCoupon(coupon.id)}
                                                         className="min-w-[160px]"
                                                     >
-                                                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                        {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
                                                         Salvar alterações
                                                     </Button>
                                                     <Button
@@ -671,7 +671,7 @@ const CuponsPannel = () => {
                                                         onClick={() => openDeleteDialog(coupon.id)}
                                                         className="min-w-[120px]"
                                                     >
-                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        <Trash2 className="h-4 w-4" />
                                                         Excluir
                                                     </Button>
                                                 </div>

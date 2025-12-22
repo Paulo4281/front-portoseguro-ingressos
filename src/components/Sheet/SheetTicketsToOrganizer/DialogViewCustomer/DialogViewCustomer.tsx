@@ -125,7 +125,7 @@ const DialogViewCustomer = ({
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs text-psi-dark/60 mb-1">Data de nascimento</p>
                                         <p className="text-sm font-medium text-psi-dark">
-                                            {formatEventDate(customer.birth, "DD/MM/YYYY")}
+                                            {customer.birth}
                                         </p>
                                     </div>
                                 </div>
@@ -180,17 +180,25 @@ const DialogViewCustomer = ({
                             </div>
 
                             <div className="flex items-start gap-3">
+                                <CreditCard className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
                                 <div className="flex-1 min-w-0">
-                                    {ticket.ticketType && ticket.ticketType?.name && (
-                                        <div className="flex items-center gap-1">
-                                            <CreditCard className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
-                                            <span className="font-medium">Tipo:</span>
-                                            <span>{ticket.ticketType.name}</span>
-                                        </div>
-                                    )}
-                                    {ticket.ticketType && ticket.ticketType.description && (
-                                        <p className="text-xs text-psi-dark/50 mt-1">{ticket.ticketType.description}</p>
-                                    )}
+                                    <p className="text-xs text-psi-dark/60 mb-1">
+                                        {isMultipleTickets ? "Tipos de ingresso" : "Tipo de ingresso"}
+                                    </p>
+                                    <div className="space-y-1">
+                                        {tickets?.map((t, idx) => (
+                                            <div key={t.id} className="flex flex-col">
+                                                <span className="text-sm font-medium text-psi-dark">
+                                                    {t.ticketType?.name}
+                                                </span>
+                                                {t.ticketType?.description && (
+                                                    <span className="text-xs text-psi-dark/50">
+                                                        {t.ticketType.description}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
 

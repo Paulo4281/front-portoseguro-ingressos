@@ -27,7 +27,7 @@ import {
 import { useTicketFindToOrganizer } from "@/hooks/Ticket/useTicketFindToOrganizer"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
-import { formatEventDate } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
+import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import { Pagination } from "@/components/Pagination/Pagination"
 import { DialogViewCustomer } from "./DialogViewCustomer/DialogViewCustomer"
 import { DialogCancelTicketWarning } from "./DialogCancelTicketWarning/DialogCancelTicketWarning"
@@ -37,7 +37,8 @@ import type { TTicketToOrganizer } from "@/types/Ticket/TTicket"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import { ticketCancelledByConfig, refundStatusConfig } from "@/components/Pages/Private/AdmPagamentos/AdmPagamentosPannel"
 import { Badge } from "@/components/ui/badge"
-import { AlertTriangle, ExternalLink } from "lucide-react"
+import { AlertTriangle, ExternalLink, Calendar, Clock } from "lucide-react"
+import { useEventFindByIdUser } from "@/hooks/Event/useEventFindByIdUser"
 
 type TSheetTicketsToOrganizerProps = {
     open: boolean
@@ -79,6 +80,7 @@ const SheetTicketsToOrganizer = ({
     const [currentPage, setCurrentPage] = useState(1)
     const [searchQuery, setSearchQuery] = useState("")
     const [statusFilter, setStatusFilter] = useState<string>("ALL")
+    const [eventDateIdFilter, setEventDateIdFilter] = useState<string>("ALL")
     const [selectedTicket, setSelectedTicket] = useState<TTicketToOrganizer | null>(null)
     const [selectedTicketsForDialog, setSelectedTicketsForDialog] = useState<TTicketToOrganizer[]>([])
     const [viewCustomerOpen, setViewCustomerOpen] = useState(false)
@@ -87,12 +89,23 @@ const SheetTicketsToOrganizer = ({
     const limit = 30
     const offset = (currentPage - 1) * limit
 
+    const { data: eventData } = useEventFindByIdUser(eventId)
+
+    const eventDates = useMemo(() => {
+        if (!eventData?.data?.EventDates) return []
+        return [...eventData.data.EventDates].sort((a, b) => {
+            if (!a.date || !b.date) return 0
+            return getDateOrderValue(a.date) - getDateOrderValue(b.date)
+        })
+    }, [eventData])
+
     const { data, isLoading, isError } = useTicketFindToOrganizer({
         eventId,
         offset,
         limit,
         search: searchQuery || undefined,
         status: statusFilter !== "ALL" ? statusFilter : undefined,
+        eventDateId: eventDateIdFilter !== "ALL" ? eventDateIdFilter : undefined,
         enabled: open && !!eventId
     })
 
@@ -107,7 +120,7 @@ const SheetTicketsToOrganizer = ({
         const groups: Record<string, TTicketToOrganizer[]> = {}
         
         tickets.forEach((ticket) => {
-            const groupKey = ticket.customer.id
+            const groupKey = ticket.payment?.id || ticket.payment?.code || `no-payment-${ticket.customer.id}-${ticket.id}`
             
             if (!groups[groupKey]) {
                 groups[groupKey] = []
@@ -119,7 +132,8 @@ const SheetTicketsToOrganizer = ({
         return Object.values(groups).map(group => ({
             tickets: group.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
             customer: group[0].customer,
-            purchaseDate: group[0].createdAt
+            payment: group[0].payment,
+            purchaseDate: group[0].payment?.paidAt || group[0].createdAt
         }))
     }, [tickets])
 
@@ -138,6 +152,11 @@ const SheetTicketsToOrganizer = ({
 
     const handleStatusChange = (value: string) => {
         setStatusFilter(value)
+        setCurrentPage(1)
+    }
+
+    const handleEventDateChange = (value: string) => {
+        setEventDateIdFilter(value)
         setCurrentPage(1)
     }
 
@@ -243,6 +262,23 @@ const SheetTicketsToOrganizer = ({
                                     className="w-full"
                                 />
                             </div>
+                            {eventDates.length > 0 && (
+                                <Select value={eventDateIdFilter} onValueChange={handleEventDateChange}>
+                                    <SelectTrigger className="w-full
+                                    sm:w-[200px]">
+                                        <SelectValue placeholder="Filtrar por data" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="ALL">Todas as datas</SelectItem>
+                                        {eventDates.map((eventDate) => (
+                                            <SelectItem key={eventDate.id} value={eventDate.id}>
+                                                {eventDate.date ? formatEventDate(eventDate.date, "DD/MM/YYYY") : "Sem data"}
+                                                {eventDate.hourStart && ` - ${formatEventTime(eventDate.hourStart, eventDate.hourEnd)}`}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
                             <Select value={statusFilter} onValueChange={handleStatusChange}>
                                 <SelectTrigger className="w-full
                                 sm:w-[200px]">
@@ -282,7 +318,7 @@ const SheetTicketsToOrganizer = ({
                                         
                                         return (
                                             <div
-                                                key={`group-${group.customer.id}`}
+                                                key={`group-${group.payment?.id || group.payment?.code || `no-payment-${group.customer.id}`}`}
                                                 className="p-4 hover:bg-psi-primary/5 transition-colors"
                                             >
                                                 <div className="space-y-4">
@@ -311,6 +347,36 @@ const SheetTicketsToOrganizer = ({
                                                                     <p className="text-xs text-psi-dark/50 mt-1">
                                                                         Comprado em {DateUtils.formatDate(group.purchaseDate, "DD/MM/YYYY [às] HH:mm")}
                                                                     </p>
+                                                                    {group.payment && (
+                                                                        <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
+                                                                            <Badge variant="outline" className="text-psi-dark/70 border-psi-dark/20">
+                                                                                {group.payment.method === "PIX" ? "PIX" : "Cartão de Crédito"}
+                                                                            </Badge>
+                                                                            <span className="text-psi-dark/60">
+                                                                                Código: <span className="font-mono font-semibold">{group.payment.code}</span>
+                                                                            </span>
+                                                                            {group.payment.status && (
+                                                                                <Badge 
+                                                                                    className={
+                                                                                        group.payment.status === "CONFIRMED" || group.payment.status === "RECEIVED"
+                                                                                            ? "bg-green-50 text-green-600 border-green-200"
+                                                                                            : group.payment.status === "PENDING"
+                                                                                            ? "bg-amber-50 text-amber-600 border-amber-200"
+                                                                                            : group.payment.status === "REFUNDED" || group.payment.status === "REFUND_REQUESTED"
+                                                                                            ? "bg-red-50 text-red-600 border-red-200"
+                                                                                            : "bg-gray-50 text-gray-600 border-gray-200"
+                                                                                    }
+                                                                                >
+                                                                                    {group.payment.status === "CONFIRMED" ? "Confirmado" :
+                                                                                     group.payment.status === "RECEIVED" ? "Recebido" :
+                                                                                     group.payment.status === "PENDING" ? "Pendente" :
+                                                                                     group.payment.status === "REFUNDED" ? "Reembolsado" :
+                                                                                     group.payment.status === "REFUND_REQUESTED" ? "Estorno solicitado" :
+                                                                                     group.payment.status}
+                                                                                </Badge>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
                                                                     {isMultipleTickets && (
                                                                         <p className="text-sm text-psi-primary font-semibold mt-1">
                                                                             Total: {ValueUtils.centsToCurrency(totalValue)}
@@ -335,7 +401,7 @@ const SheetTicketsToOrganizer = ({
                                                                     className="cursor-pointer"
                                                                     onClick={() => handleViewCustomer(group.tickets[0], group.tickets)}
                                                                 >
-                                                                    <User className="h-4 w-4 mr-2 text-psi-dark" />
+                                                                    <User className="h-4 w-4 text-psi-dark" />
                                                                     Visualizar cliente
                                                                 </DropdownMenuItem>
                                                             </DropdownMenuContent>
@@ -381,6 +447,15 @@ const SheetTicketsToOrganizer = ({
                                                                                 <div className="flex items-center gap-1">
                                                                                     <span className="font-medium">Código:</span>
                                                                                     <span className="font-mono text-psi-dark">{ticket.code}</span>
+                                                                                </div>
+                                                                            )}
+                                                                            {ticket.eventDate?.date && (
+                                                                                <div className="flex items-center gap-1">
+                                                                                    <Calendar className="h-3 w-3 text-psi-primary shrink-0" />
+                                                                                    <span className="font-medium">Data:</span>
+                                                                                    <span>
+                                                                                        {formatEventDate(ticket.eventDate.date, "DD/MM/YYYY")}
+                                                                                    </span>
                                                                                 </div>
                                                                             )}
                                                                         </div>
@@ -483,7 +558,7 @@ const SheetTicketsToOrganizer = ({
                                                                                     className="cursor-pointer text-destructive"
                                                                                     onClick={() => handleCancelTicket(ticket)}
                                                                                 >
-                                                                                    <Ban className="h-4 w-4 mr-2 text-destructive" />
+                                                                                    <Ban className="h-4 w-4 text-destructive" />
                                                                                     Cancelar ingresso
                                                                                 </DropdownMenuItem>
                                                                             )}

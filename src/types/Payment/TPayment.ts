@@ -1,6 +1,11 @@
 import { TicketCancelledBy } from "../Ticket/TTicket"
 
-const PaymentGatewayBillingStatuses = [
+export const PaymentMethods = [
+    "PIX",
+    "CREDIT_CARD"
+] as const
+
+export const PaymentGatewayBillingStatuses = [
     "PENDING",
     "RECEIVED",
     "CONFIRMED",
@@ -17,7 +22,7 @@ const PaymentGatewayBillingStatuses = [
     "AWAITING_RISK_ANALYSIS",
 ] as const
 
-const PaymentRefundStatuses = [
+export const PaymentRefundStatuses = [
     "PENDING",
     "DONE",
     "CANCELLED",
@@ -44,7 +49,7 @@ type TPaymentInstallment = {
 type TPaymentAdminListResponse = {
     id: string
     code: string
-    method: "CREDIT_CARD" | "PIX"
+    method: typeof PaymentMethods[number]
     type: "TICKET"
     status: "RECEIVED" | "CONFIRMED" | "PENDING" | "FAILED" | "REFUNDED" | "OVERDUE" | "REFUND_REQUESTED"
     externalPaymentId: string | null
@@ -184,7 +189,7 @@ type TPayment = {
   refundEndToEndIdentifier: string | null
   status: typeof PaymentGatewayBillingStatuses[number]
   type: "TICKET"
-  method: "PIX" | "CREDIT_CARD"
+  method: typeof PaymentMethods[number]
 }
 
 type TPaymentRefundParams = {
@@ -210,9 +215,4 @@ export type {
     TPaymentAdminListResponse,
     TPaymentInstallment,
     TPaymentRefundParams,
-    PaymentRefundStatuses
-}
-
-export {
-    PaymentGatewayBillingStatuses,
 }

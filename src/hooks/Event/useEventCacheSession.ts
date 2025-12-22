@@ -3,14 +3,15 @@ import { EventService } from "@/services/Event/EventService"
 import type { TApiResponse } from "@/types/TApiResponse"
 import type { TEventCacheResponse } from "@/types/Event/TEvent"
 
-export const useEventCache = () => {
+export const useEventCacheSession = (enabled: boolean = true) => {
     const {
         data,
         isLoading,
         isFetching
-    } = useQueryHook<TApiResponse<TEventCacheResponse[]>>({
-        queryKey: ["event-cache"],
-        queryFn: () => EventService.cache()
+    } = useQueryHook<TApiResponse<TEventCacheResponse>>({
+        queryKey: ["event-cache-session"],
+        queryFn: () => EventService.cacheSession(),
+        enabled
     })
 
     return {

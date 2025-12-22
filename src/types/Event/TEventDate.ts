@@ -19,6 +19,7 @@ type TEventDate = {
     eventId: string
     hasSpecificPrice?: boolean
     price?: number | null
+    isActive: boolean
     EventDateTicketTypePrices?: TEventDateTicketTypePrice[] | null
     createdAt: string
     updatedAt: string | null

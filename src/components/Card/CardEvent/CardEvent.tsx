@@ -28,8 +28,6 @@ const CardEvent = (
         return eventVerifyLastTicketsData.data.some(ticket => ticket.isLastTickets)
     }, [eventVerifyLastTicketsData])
 
-    console.log(isLastTickets)
-    
     const getDateRange = (dates: TEvent["EventDates"]) => {
         if (!dates || !Array.isArray(dates) || dates.length === 0) return null
 
@@ -141,7 +139,12 @@ const CardEvent = (
     const activeBatch = getActiveBatch(event.EventBatches)
     const recurrenceInfo = formatRecurrenceInfo(event.Recurrence)
     const isRecurrent = !!event.Recurrence
-    const firstDate = event.EventDates && Array.isArray(event.EventDates) && event.EventDates.length > 0 ? event.EventDates[0] : null
+    const activeEventDate = isRecurrent 
+        ? (event.EventDates && Array.isArray(event.EventDates) ? event.EventDates.find(ed => ed.isActive === true) : null)
+        : null
+    const firstDate = !isRecurrent && event.EventDates && Array.isArray(event.EventDates) && event.EventDates.length > 0 
+        ? event.EventDates[0] 
+        : activeEventDate
 
     return (
         <Link href={`/ver-evento/${event.slug}`} className="block h-full">

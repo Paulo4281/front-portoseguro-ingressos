@@ -175,7 +175,7 @@ const ConhecaInfo = () => {
                         <div className="flex flex-wrap items-center justify-center gap-4 pt-8">
                             <Button asChild size="lg" variant="primary">
                                 <Link href="/">
-                                    <ArrowLeft className="h-4 w-4 mr-2" />
+                                    <ArrowLeft className="h-4 w-4" />
                                     Voltar ao início
                                 </Link>
                             </Button>

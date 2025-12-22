@@ -394,7 +394,7 @@ const EventCard = ({
                                 className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer"
                                 onClick={() => onChangeDate(event)}
                             >
-                                <CalendarClock className="h-4 w-4 mr-2 text-psi-primary" />
+                                <CalendarClock className="h-4 w-4 text-psi-primary" />
                                 Alterar data
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-[#E4E6F0]" />
@@ -402,7 +402,7 @@ const EventCard = ({
                                 className="rounded-lg text-sm text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
                                 onClick={() => onCancel(event)}
                             >
-                                <Ban className="h-4 w-4 mr-2 text-destructive" />
+                                <Ban className="h-4 w-4 text-destructive" />
                                 Cancelar
                             </DropdownMenuItem>
                         </DropdownMenuContent>

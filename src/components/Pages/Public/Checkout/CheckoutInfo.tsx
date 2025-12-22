@@ -407,6 +407,17 @@ const CheckoutInfo = () => {
         return eventsData[0]
     }, [eventsData])
 
+    const getActiveEventDateId = useCallback((event: typeof currentEvent, eventDateId: string | null | undefined): string | null => {
+        if (event?.Recurrence?.id) {
+            return event.EventDates?.find((ed) => ed.isActive === true)?.id || null
+        }
+
+        if (!event || !eventDateId) return eventDateId || null
+        if (!event.Recurrence) return eventDateId
+        const activeEventDate = event.EventDates?.find(ed => ed.isActive === true)
+        return activeEventDate?.id || eventDateId
+    }, [])
+
     const [ticketHoldData, setTicketHoldData] = useState<TTicketHoldCreateResponse[] | null>(null)
     const hasRun = useRef(false)
 
@@ -422,11 +433,14 @@ const CheckoutInfo = () => {
                     let hasMultipleDaysWithTicketTypes = false
 
                     if (item.ticketTypes && item.ticketTypes.some((ticketType) => ticketType.days && ticketType.days.length > 0)) {
+                        console.log("AA")
                         for (const ticketType of item.ticketTypes) {
+                            const originalEventDateId = ticketType.days?.[0] || null
+                            const activeEventDateId = getActiveEventDateId(currentEvent, originalEventDateId)
                             ticketHolds.push({
                                 eventId: eventId || "",
                                 eventBatchId: item.batchId || "",
-                                eventDateId: ticketType.days?.[0] || null,
+                                eventDateId: activeEventDateId,
                                 ticketTypeId: ticketType.ticketTypeId || null,
                                 quantity: ticketType.quantity
                             })
@@ -435,11 +449,15 @@ const CheckoutInfo = () => {
                     }
 
                     if (item.ticketTypes && item.ticketTypes.length > 0 && !hasMultipleDaysWithTicketTypes) {
+                        console.log("BB")
                         for (const ticketType of item.ticketTypes) {
+                            const originalEventDateId = ticketType.days?.[0] || null
+                            const activeEventDateId = getActiveEventDateId(currentEvent, originalEventDateId)
+                            console.log(activeEventDateId)
                             ticketHolds.push({
                                 eventId: eventId || "",
                                 eventBatchId: item.batchId || "",
-                                eventDateId: ticketType.days?.[0] || null,
+                                eventDateId: activeEventDateId,
                                 ticketTypeId: ticketType.ticketTypeId || null,
                                 quantity: ticketType.quantity
                             })
@@ -851,7 +869,9 @@ const CheckoutInfo = () => {
                 }
 
                 item.ticketTypes?.forEach((ticketType) => {
-                    const eventDateId = ticketType.days?.[0] || ""
+                    const originalEventDateId = ticketType.days?.[0] || ""
+                    const event = eventsData.find(e => e?.id === item.eventId)
+                    const eventDateId = event && originalEventDateId ? getActiveEventDateId(event, originalEventDateId) || originalEventDateId : originalEventDateId
                     const amount = ticketType.quantity || 0
 
                     const existingDate = eventGroup.eventDates.find(
@@ -878,14 +898,21 @@ const CheckoutInfo = () => {
 
         const hasTicketTypes = items.some((item) => item.ticketTypes && item.ticketTypes.length > 0)
         if (hasTicketTypes) {
-            data["eventTicketTypesIds"] = items.map((item) => ({
-                eventId: item.eventId,
-                ticketTypes: item.ticketTypes?.map((ticketType) => ({
-                    ticketTypeId: ticketType.ticketTypeId || null,
-                    amount: ticketType.quantity,
-                    eventDateId: ticketType.days?.[0] || null
-                })) || []
-            })) || null
+            data["eventTicketTypesIds"] = items.map((item) => {
+                const event = eventsData.find(e => e?.id === item.eventId)
+                return {
+                    eventId: item.eventId,
+                    ticketTypes: item.ticketTypes?.map((ticketType) => {
+                        const originalEventDateId = ticketType.days?.[0] || null
+                        const activeEventDateId = event ? getActiveEventDateId(event, originalEventDateId) : originalEventDateId
+                        return {
+                            ticketTypeId: ticketType.ticketTypeId || null,
+                            amount: ticketType.quantity,
+                            eventDateId: activeEventDateId
+                        }
+                    }) || []
+                }
+            }) || null
         }
 
         const ticketTypeMap: Record<string, string> = {}
@@ -1418,7 +1445,7 @@ const CheckoutInfo = () => {
                                                             className="w-full"
                                                             onClick={() => setShowViewProfileDialog(true)}
                                                         >
-                                                            <UserCircle className="h-4 w-4 mr-2" />
+                                                            <UserCircle className="h-4 w-4" />
                                                             Conferir meus dados
                                                         </Button>
                                                     </div>
@@ -1443,7 +1470,7 @@ const CheckoutInfo = () => {
                                                             className="w-full"
                                                             onClick={() => setShowUpdateProfileDialog(true)}
                                                         >
-                                                            <UserCircle className="h-4 w-4 mr-2" />
+                                                            <UserCircle className="h-4 w-4" />
                                                             Atualizar meus dados
                                                         </Button>
                                                     </div>
@@ -1486,7 +1513,7 @@ const CheckoutInfo = () => {
                                                             className="w-full"
                                                             onClick={() => router.push("/meu-perfil")}
                                                         >
-                                                            <UserCircle className="h-4 w-4 mr-2" />
+                                                            <UserCircle className="h-4 w-4" />
                                                             Ir para Meu Perfil
                                                         </Button>
                                                     </div>
@@ -1568,23 +1595,29 @@ const CheckoutInfo = () => {
                                                                 <p className="text-sm text-psi-dark/60">Lote: {item.batchName}</p>
                                                             )}
 
-                                                            {event.EventDates && event.EventDates.length > 0 && (
-                                                                <div className="flex items-center gap-2 text-sm text-psi-dark/70">
-                                                                    <Calendar className="size-4" aria-label="Datas e horários do evento" />
-                                                                    <span>
-                                                                        {event.EventDates.map((ed, index) => (
-                                                                            <span key={ed.id}>
-                                                                                {index > 0 && <br />}
-                                                                                {formatEventDate(ed.date, "DD [de] MMMM [de] YYYY")}{" "}
-                                                                                <span className="inline-flex items-center gap-1">
-                                                                                    | <Clock className="size-3 inline" aria-label="Hora do evento" />
-                                                                                    {formatEventTime(ed.hourStart, ed.hourEnd)}
+                                                            {event.EventDates && event.EventDates.length > 0 && (() => {
+                                                                const datesToShow = event.Recurrence 
+                                                                    ? event.EventDates.filter(ed => ed.isActive === true)
+                                                                    : event.EventDates
+                                                                if (datesToShow.length === 0) return null
+                                                                return (
+                                                                    <div className="flex items-center gap-2 text-sm text-psi-dark/70">
+                                                                        <Calendar className="size-4" aria-label="Datas e horários do evento" />
+                                                                        <span>
+                                                                            {datesToShow.map((ed, index) => (
+                                                                                <span key={ed.id}>
+                                                                                    {index > 0 && <br />}
+                                                                                    {formatEventDate(ed.date, "DD [de] MMMM [de] YYYY")}{" "}
+                                                                                    <span className="inline-flex items-center gap-1">
+                                                                                        | <Clock className="size-3 inline" aria-label="Hora do evento" />
+                                                                                        {formatEventTime(ed.hourStart, ed.hourEnd)}
+                                                                                    </span>
                                                                                 </span>
-                                                                            </span>
-                                                                        ))}
-                                                                    </span>
-                                                                </div>
-                                                            )}
+                                                                            ))}
+                                                                        </span>
+                                                                    </div>
+                                                                )
+                                                            })()}
 
                                                             {item.ticketTypes && item.ticketTypes.length > 0 ? (
                                                                 <div className="space-y-3 pt-2">
@@ -1596,15 +1629,22 @@ const CheckoutInfo = () => {
                                                                             <div key={uniqueKey} className="flex items-center justify-between p-2 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
                                                                                 <div className="flex-1">
                                                                                     <p className="text-sm font-medium text-psi-dark">{tt.ticketTypeName}</p>
-                                                                                    {tt.days && tt.days.length > 0 && (
-                                                                                        <p className="text-xs text-psi-dark/60 mt-1">
-                                                                                            {isMultipleDaysWithTicketTypes && tt.days && tt.days.length > 0
-                                                                                                ? event && 'EventDates' in event && (event as any).EventDates?.find((ed: any) => ed.id === tt.days?.[0])
-                                                                                                    ? formatEventDate((event as any).EventDates.find((ed: any) => ed.id === tt.days?.[0])?.date, "DD [de] MMMM [de] YYYY")
-                                                                                                    : "Dia selecionado"
-                                                                                                : tt.days && tt.days.length === 1 ? "1 dia selecionado" : tt.days ? `${tt.days.length} dias selecionados` : ""}
-                                                                                        </p>
-                                                                                    )}
+                                                                                    {tt.days && tt.days.length > 0 && (() => {
+                                                                                        const originalEventDateId = tt.days?.[0]
+                                                                                        const activeEventDateId = event ? getActiveEventDateId(event, originalEventDateId) : originalEventDateId
+                                                                                        const eventDate = event && activeEventDateId 
+                                                                                            ? event.EventDates?.find((ed: any) => ed.id === activeEventDateId)
+                                                                                            : null
+                                                                                        return (
+                                                                                            <p className="text-xs text-psi-dark/60 mt-1">
+                                                                                                {isMultipleDaysWithTicketTypes && tt.days && tt.days.length > 0
+                                                                                                    ? eventDate
+                                                                                                        ? formatEventDate(eventDate.date, "DD [de] MMMM [de] YYYY")
+                                                                                                        : "Dia selecionado"
+                                                                                                    : tt.days && tt.days.length === 1 ? "1 dia selecionado" : tt.days ? `${tt.days.length} dias selecionados` : ""}
+                                                                                            </p>
+                                                                                        )
+                                                                                    })()}
                                                                                 </div>
                                                                                 <div className="flex items-center gap-3">
                                                                                     <QuantitySelector
@@ -1673,10 +1713,14 @@ const CheckoutInfo = () => {
                                                                                                 const newTotalQuantity = updatedTicketTypes?.reduce((sum, t) => sum + t.quantity, 0) || 0
 
                                                                                                 if (updatedTicketTypes && updatedTicketTypes.length > 0 && newTotalQuantity > 0) {
-                                                                                                    let ticketHoldId = ticketHoldData?.find((th) => th.eventDateId === (isMultipleDaysWithTicketTypes ? underlineIdentifier?.split("_")[1] : identifier) && th.ticketTypeId === (isMultipleDaysWithTicketTypes ? underlineIdentifier?.split("_")[0] : identifier))?.id || ""
+                                                                                                    const originalEventDateId = isMultipleDaysWithTicketTypes ? underlineIdentifier?.split("_")[1] : identifier
+                                                                                                    const activeEventDateId = event && originalEventDateId ? getActiveEventDateId(event, originalEventDateId) : originalEventDateId
+                                                                                                    const ticketTypeId = isMultipleDaysWithTicketTypes ? underlineIdentifier?.split("_")[0] : identifier
+                                                                                                    
+                                                                                                    let ticketHoldId = ticketHoldData?.find((th) => th.eventDateId === activeEventDateId && th.ticketTypeId === ticketTypeId)?.id || ""
 
                                                                                                     if (!ticketHoldId) {
-                                                                                                        ticketHoldId = ticketHoldData?.find((th) => th.eventDateId === (isMultipleDaysWithTicketTypes ? underlineIdentifier?.split("_")[1] : identifier))?.id || ""
+                                                                                                        ticketHoldId = ticketHoldData?.find((th) => th.eventDateId === activeEventDateId)?.id || ""
                                                                                                     }
 
                                                                                                     const success = await handleUpdateQuantity({
@@ -1703,11 +1747,13 @@ const CheckoutInfo = () => {
 
                                                                                                 return
                                                                                             }
+                                                                                            const originalEventDateId = item.ticketTypes?.[0]?.days?.[0] || null
+                                                                                            const activeEventDateId = event ? getActiveEventDateId(event, originalEventDateId) : originalEventDateId
                                                                                             const success = await handleUpdateQuantity({
                                                                                                 eventId: item.eventId,
                                                                                                 batchId: item.batchId || "",
                                                                                                 qty: qty,
-                                                                                                ticketHoldId: ticketHoldData?.find((th) => th.ticketTypeId === tt.ticketTypeId)?.id || ticketHoldData?.find((th) => th.eventDateId === item.ticketTypes?.[0]?.days?.[0] || null)?.id || ""
+                                                                                                ticketHoldId: ticketHoldData?.find((th) => th.ticketTypeId === tt.ticketTypeId)?.id || ticketHoldData?.find((th) => th.eventDateId === activeEventDateId)?.id || ""
                                                                                             }, false)
 
                                                                                             if (success) {
@@ -1728,12 +1774,16 @@ const CheckoutInfo = () => {
                                                                         <span className="text-sm text-psi-dark/60">Quantidade:</span>
                                                                         <QuantitySelector
                                                                             value={item.quantity}
-                                                                            onChange={(qty) => handleUpdateQuantity({
-                                                                                eventId: item.eventId,
-                                                                                batchId: item.batchId || "",
-                                                                                qty: qty,
-                                                                                ticketHoldId: handleFindTicketHoldId(item.eventId, item.batchId || "", item.ticketTypes?.[0]?.days?.[0] || null, item.ticketTypes?.[0]?.ticketTypeId || null)
-                                                                            })}
+                                                                            onChange={(qty) => {
+                                                                                const originalEventDateId = item.ticketTypes?.[0]?.days?.[0] || null
+                                                                                const activeEventDateId = event ? getActiveEventDateId(event, originalEventDateId) : originalEventDateId
+                                                                                handleUpdateQuantity({
+                                                                                    eventId: item.eventId,
+                                                                                    batchId: item.batchId || "",
+                                                                                    qty: qty,
+                                                                                    ticketHoldId: handleFindTicketHoldId(item.eventId, item.batchId || "", activeEventDateId, item.ticketTypes?.[0]?.ticketTypeId || null)
+                                                                                })
+                                                                            }}
                                                                             disabled={isUpdatingTicketHold}
                                                                             min={1}
                                                                             max={event?.buyTicketsLimit || 10}
@@ -2116,7 +2166,7 @@ const CheckoutInfo = () => {
                                                                                     setSelectedCardId(null)
                                                                                 }}
                                                                             >
-                                                                                <CreditCard className="h-4 w-4 mr-2" />
+                                                                                <CreditCard className="h-4 w-4" />
                                                                                 Novo Cartão
                                                                             </Button>
                                                                         </div>
@@ -2478,8 +2528,10 @@ const CheckoutInfo = () => {
 
                                         if (item.ticketTypes && item.ticketTypes.length > 0) {
                                             return item.ticketTypes.map((tt, ttIndex) => {
-                                                const eventDate = tt.days && tt.days.length > 0 && event?.EventDates
-                                                    ? event.EventDates.find(ed => ed.id === tt.days?.[0])
+                                                const originalEventDateId = tt.days && tt.days.length > 0 ? tt.days[0] : null
+                                                const activeEventDateId = event ? getActiveEventDateId(event, originalEventDateId) : originalEventDateId
+                                                const eventDate = activeEventDateId && event?.EventDates
+                                                    ? event.EventDates.find(ed => ed.id === activeEventDateId)
                                                     : null
 
                                                 const dayLabel = eventDate

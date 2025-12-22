@@ -518,7 +518,7 @@ const SupportAdminPannel = () => {
                                     <LoadingButton message="Enviando..." />
                                 ) : (
                                     <>
-                                        <Send className="h-4 w-4 mr-2" />
+                                        <Send className="h-4 w-4" />
                                         Enviar Resposta
                                     </>
                                 )}

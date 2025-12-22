@@ -2,7 +2,7 @@ import type { TEvent } from "@/types/Event/TEvent"
 import type { TEventBatch } from "@/types/Event/TEventBatch"
 import { UserGenres } from "../User/TUser"
 import { TTicketDate } from "./TTicketDate"
-import type { TPayment } from "@/types/Payment/TPayment"
+import type { PaymentGatewayBillingStatuses, PaymentMethods, TPayment } from "@/types/Payment/TPayment"
 
 const TicketCancelledBy = [
     "ORGANIZER",
@@ -210,12 +210,23 @@ type TTicketToOrganizer = {
         birth: string | null
         image: string | null
     }
+    payment: {
+        id: string
+        code: string
+        method: typeof PaymentMethods[number]
+        status: typeof PaymentGatewayBillingStatuses[number]
+        paidAt: string | null
+    } | null
     status: typeof TicketStatuses[number]
     ticketType: {
         id: string
         name: string
         description: string | null
     }
+    eventDate: {
+        id: string | null
+        date: string | null
+    } | null
     price: number
     form: TTicketForm | null
     validationInfo?: TTicketValidationInfo

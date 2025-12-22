@@ -198,7 +198,7 @@ const RecursosInfo = () => {
                             </Button>
                             <Button asChild size="lg" variant="ghost">
                                 <Link href="/">
-                                    <ArrowLeft className="h-4 w-4 mr-2" />
+                                    <ArrowLeft className="h-4 w-4" />
                                     Voltar ao início
                                 </Link>
                             </Button>
