@@ -82,10 +82,25 @@ class EventServiceClass {
         if (data.location) {
             formData.append("location", data.location)
         }
-        formData.append("isClientTaxed", String(data.isClientTaxed || false))
-        
         if (data.image) {
             formData.append("image", data.image)
+        }
+
+        formData.append("isClientTaxed", String(data.isClientTaxed || false))
+
+        if (data.buyTicketsLimit !== undefined && data.buyTicketsLimit !== null) {
+            formData.append("buyTicketsLimit", String(data.buyTicketsLimit))
+        }
+
+        if (data.maxInstallments !== undefined && data.maxInstallments !== null) {
+            formData.append("maxInstallments", String(data.maxInstallments))
+        }
+
+        if (data.isFree !== undefined && data.isFree !== null) {
+            formData.append("isFree", String(data.isFree))
+        }
+        if (data.isOnline !== undefined && data.isOnline !== null) {
+            formData.append("isOnline", String(data.isOnline))
         }
 
         if (data.form) {
@@ -94,15 +109,6 @@ class EventServiceClass {
 
         if (data.isFormForEachTicket) {
             formData.append("isFormForEachTicket", String(data.isFormForEachTicket))
-        }
-        if (data.isFree !== undefined && data.isFree !== null) {
-            formData.append("isFree", String(data.isFree))
-        }
-        if (data.isOnline !== undefined && data.isOnline !== null) {
-            formData.append("isOnline", String(data.isOnline))
-        }
-        if (data.maxInstallments !== undefined && data.maxInstallments !== null) {
-            formData.append("maxInstallments", String(data.maxInstallments))
         }
         
         if (data.categories && data.categories.length > 0) {

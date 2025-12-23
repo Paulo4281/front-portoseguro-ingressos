@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Ticket, QrCode, Copy, Share2, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, Eye, EyeOff, FileText, Loader2, Check, AlertTriangle, TicketCheck } from "lucide-react"
+import { Calendar, Clock, MapPin, Ticket, QrCode, Copy, Share2, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, Eye, EyeOff, FileText, Loader2, Check, AlertTriangle, TicketCheck, RefreshCw } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import { TicketService } from "@/services/Ticket/TicketService"
 import { Toast } from "@/components/Toast/Toast"
@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { useAuthStore } from "@/stores/Auth/AuthStore"
 import { useTicketFindByUserId } from "@/hooks/Ticket/useTicketFindByUserId"
+import { useTicketCustomerRequestRefund } from "@/hooks/Ticket/useTicketCustomerRequestRefund"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
@@ -190,6 +191,10 @@ const MeusIngressosPannel = () => {
     const [copiedPayload, setCopiedPayload] = useState(false)
     const [qrCodeZoomOpen, setQrCodeZoomOpen] = useState(false)
     const [selectedTicketForZoom, setSelectedTicketForZoom] = useState<TTicket | null>(null)
+    const [postponedRefundDialogOpen, setPostponedRefundDialogOpen] = useState(false)
+    const [selectedTicketForRefund, setSelectedTicketForRefund] = useState<TTicket | null>(null)
+
+    const { mutateAsync: requestRefund, isPending: isRequestingRefund } = useTicketCustomerRequestRefund()
 
     const [tickets, setTickets] = useState<TTicket[]>([])
 
@@ -333,6 +338,58 @@ const MeusIngressosPannel = () => {
         } catch {
             return dateString
         }
+    }
+
+    const handleRequestRefund = async (ticket: TTicket) => {
+        if (ticket.Event.isPostponed && !ticket.Event.isCancelled) {
+            setSelectedTicketForRefund(ticket)
+            setPostponedRefundDialogOpen(true)
+            return
+        }
+
+        try {
+            await requestRefund({ ticketId: ticket.id })
+            Toast.success("Solicitação de reembolso enviada com sucesso!")
+            window.location.reload()
+        } catch (error) {
+            Toast.error("Erro ao solicitar reembolso. Tente novamente.")
+        }
+    }
+
+    const handleConfirmPostponedRefund = async () => {
+        if (!selectedTicketForRefund) return
+
+        try {
+            await requestRefund({ ticketId: selectedTicketForRefund.id })
+            Toast.success("Solicitação de reembolso enviada com sucesso!")
+            setPostponedRefundDialogOpen(false)
+            setSelectedTicketForRefund(null)
+            window.location.reload()
+        } catch (error) {
+            Toast.error("Erro ao solicitar reembolso. Tente novamente.")
+        }
+    }
+
+    const wasPurchasedBeforePostponement = (ticket: TTicket): boolean => {
+        if (!ticket.Event.isPostponed || ticket.Event.isCancelled) return false
+        if (!ticket.Event.postponedAt || !ticket.Payment?.paidAt) return false
+        
+        const postponedDate = new Date(ticket.Event.postponedAt)
+        const paidDate = new Date(ticket.Payment.paidAt)
+        
+        return paidDate < postponedDate
+    }
+
+    const canRequestRefund = (ticket: TTicket) => {
+        if (!ticket.Event.isCancelled && !ticket.Event.isPostponed) return false
+        if (ticket.status === "REFUNDED" || ticket.status === "REFUND_REQUESTED") return false
+        if (ticket.Payment?.refundStatus === "DONE" || ticket.Payment?.refundStatus === "PENDING") return false
+        
+        if (ticket.Event.isPostponed && !ticket.Event.isCancelled) {
+            if (!wasPurchasedBeforePostponement(ticket)) return false
+        }
+        
+        return true
     }
 
     if (!isAuthenticated || !user) {
@@ -497,6 +554,8 @@ const MeusIngressosPannel = () => {
                             {groupedTickets.map((group, groupIndex) => {
                                 const firstTicket = group.tickets[0]
                                 const isMultipleTickets = group.tickets.length > 1
+                                const isCancelled = group.event.isCancelled
+                                const isPostponed = group.event.isPostponed && wasPurchasedBeforePostponement(firstTicket)
                                 const hasForm = firstTicket.form && (
                                     (firstTicket.form.text && firstTicket.form.text.length > 0) ||
                                     (firstTicket.form.email && firstTicket.form.email.length > 0) ||
@@ -517,13 +576,21 @@ const MeusIngressosPannel = () => {
                                 )
                                 const totalPaid = group.payment?.totalPaidByCustomer || 
                                     group.tickets.reduce((sum, t) => sum + (t.price || 0), 0)
+                                const showRefundButton = group.tickets.some(t => canRequestRefund(t))
 
                                 return (
                                     <div
                                         key={`group-${groupIndex}`}
-                                        className="relative overflow-visible rounded-3xl border border-white/40 bg-linear-to-br from-white to-psi-primary/5 p-6 shadow-lg shadow-psi-primary/5 hover:shadow-xl hover:shadow-psi-primary/20 transition-all duration-500
-                                        before:content-[''] before:absolute before:top-1/2 before:-left-6 before:-translate-y-1/2 before:w-12 before:h-12 before:rounded-full before:bg-[#F4F6FB]
-                                        after:content-[''] after:absolute after:top-1/2 after:-right-6 after:-translate-y-1/2 after:w-12 after:h-12 after:rounded-full after:bg-[#F4F6FB]"
+                                        className={`relative overflow-visible rounded-3xl border p-6 shadow-lg transition-all duration-500
+                                        before:content-[''] before:absolute before:top-1/2 before:-left-6 before:-translate-y-1/2 before:w-12 before:h-12 before:rounded-full
+                                        after:content-[''] after:absolute after:top-1/2 after:-right-6 after:-translate-y-1/2 after:w-12 after:h-12 after:rounded-full
+                                        ${
+                                            isCancelled 
+                                                ? "border-rose-300/50 bg-linear-to-br from-rose-50/80 to-rose-100/40 shadow-rose-200/20 hover:shadow-rose-300/30 before:bg-rose-50 after:bg-rose-50"
+                                                : isPostponed
+                                                ? "border-amber-300/50 bg-linear-to-br from-amber-50/80 to-amber-100/40 shadow-amber-200/20 hover:shadow-amber-300/30 before:bg-amber-50 after:bg-amber-50"
+                                                : "border-white/40 bg-linear-to-br from-white to-psi-primary/5 shadow-psi-primary/5 hover:shadow-xl hover:shadow-psi-primary/20 before:bg-[#F4F6FB] after:bg-[#F4F6FB]"
+                                        }`}
                                     >
                                         <div className="flex flex-col gap-6">
                                             <div className="flex flex-col gap-4
@@ -550,17 +617,45 @@ const MeusIngressosPannel = () => {
                                                 <div className="flex-1 space-y-4">
                                                     <div className="flex flex-wrap items-start gap-3 justify-between">
                                                         <div className="space-y-1">
-                                                            <div className="flex items-center gap-2">
+                                                            <div className="flex items-center gap-2 flex-wrap">
                                                                 <h3 className="text-2xl font-semibold text-psi-dark">{group.event.name}</h3>
                                                                 {isMultipleTickets && (
                                                                     <Badge className="bg-psi-primary/10 text-psi-primary border-psi-primary/20">
                                                                         {group.tickets.length} ingressos
                                                                     </Badge>
                                                                 )}
+                                                                {isCancelled && (
+                                                                    <Badge className="bg-rose-100 text-rose-700 border-rose-300 font-semibold">
+                                                                        <AlertCircle className="h-3.5 w-3.5 mr-1" />
+                                                                        Evento Cancelado
+                                                                    </Badge>
+                                                                )}
+                                                                {isPostponed && !isCancelled && (
+                                                                    <Badge className="bg-amber-100 text-amber-700 border-amber-300 font-semibold">
+                                                                        <AlertCircle className="h-3.5 w-3.5 mr-1" />
+                                                                        Evento Adiado
+                                                                    </Badge>
+                                                                )}
                                                             </div>
                                                             <p className="text-sm text-psi-dark/60">
                                                                 Comprado em {formatPurchaseDate(group.purchaseDate)}
                                                             </p>
+                                                            {(isCancelled || isPostponed) && (
+                                                                <div className={`mt-3 p-3 rounded-lg border ${
+                                                                    isCancelled 
+                                                                        ? "bg-rose-50 border-rose-200"
+                                                                        : "bg-amber-50 border-amber-200"
+                                                                }`}>
+                                                                    <p className={`text-sm font-medium ${
+                                                                        isCancelled ? "text-rose-800" : "text-amber-800"
+                                                                    }`}>
+                                                                        {isCancelled 
+                                                                            ? "Este evento foi cancelado. O reembolso será processado automaticamente ou você pode solicitar manualmente."
+                                                                            : "Este evento foi adiado. Se você não puder comparecer na nova data, pode solicitar o reembolso."
+                                                                        }
+                                                                    </p>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
 
@@ -898,6 +993,28 @@ const MeusIngressosPannel = () => {
                                                             </Button>
                                                         )}
 
+                                                        {showRefundButton && (
+                                                            <Button
+                                                                variant={isCancelled ? "destructive" : "outline"}
+                                                                size="lg"
+                                                                className="flex-1 min-w-[200px]"
+                                                                onClick={() => handleRequestRefund(firstTicket)}
+                                                                disabled={isRequestingRefund}
+                                                            >
+                                                                {isRequestingRefund ? (
+                                                                    <>
+                                                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                                        Processando...
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <RefreshCw className="h-4 w-4 mr-2" />
+                                                                        Solicitar reembolso
+                                                                    </>
+                                                                )}
+                                                            </Button>
+                                                        )}
+
                                                         <Button
                                                             variant="outline"
                                                             size="lg"
@@ -1051,6 +1168,71 @@ const MeusIngressosPannel = () => {
                             </div>
                         </div>
                     )}
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={postponedRefundDialogOpen} onOpenChange={setPostponedRefundDialogOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <AlertCircle className="h-5 w-5 text-amber-600" />
+                            Evento Adiado - Reembolso
+                        </DialogTitle>
+                        <DialogDescription>
+                            Informações sobre o reembolso para eventos adiados
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 mt-4">
+                        <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4 space-y-3">
+                            <p className="text-sm text-amber-800 leading-relaxed">
+                                Este evento foi <strong>adiado</strong> para uma nova data. O reembolso é <strong>facultativo</strong>.
+                            </p>
+                            <div className="space-y-2 text-sm text-amber-800">
+                                <p className="font-semibold">Você tem duas opções:</p>
+                                <ul className="list-disc list-inside space-y-1 ml-2">
+                                    <li>Se você <strong>conseguir comparecer</strong> na nova data, não há necessidade de solicitar reembolso. Seu ingresso continuará válido.</li>
+                                    <li>Se você <strong>não puder comparecer</strong> na nova data, pode solicitar o reembolso agora.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        {selectedTicketForRefund && (
+                            <div className="space-y-2">
+                                <p className="text-sm font-medium text-psi-dark">Evento:</p>
+                                <p className="text-sm text-psi-dark">{selectedTicketForRefund.Event.name}</p>
+                            </div>
+                        )}
+
+                        <div className="flex items-center justify-end gap-3 pt-2">
+                            <Button
+                                variant="ghost"
+                                onClick={() => {
+                                    setPostponedRefundDialogOpen(false)
+                                    setSelectedTicketForRefund(null)
+                                }}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                variant="primary"
+                                onClick={handleConfirmPostponedRefund}
+                                disabled={isRequestingRefund}
+                            >
+                                {isRequestingRefund ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                        Processando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <RefreshCw className="h-4 w-4 mr-2" />
+                                        Solicitar reembolso
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </div>
                 </DialogContent>
             </Dialog>
         </Background>

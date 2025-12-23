@@ -83,6 +83,14 @@ class TicketServiceClass {
         return response
     }
 
+    async customerRequestRefund(ticketId: string): Promise<AxiosResponse["data"]> {
+        const response = (await API.POST({
+            prefix: "/ticket",
+            url: `/customer/request-refund/${encodeURIComponent(ticketId)}`
+        }))?.data
+        return response
+    }
+
     async organizerRequestRefund(ticketId: string, reason: string): Promise<AxiosResponse["data"]> {
         const response = (await API.POST({
             prefix: "/ticket",

@@ -241,6 +241,11 @@ type TTicketToOrganizer = {
     createdAt: string
 }
 
+type TTicketCustomerRequestRefundResponse = {
+    refunded: boolean
+    reason?: string
+}
+
 type TTicketOrganizerRequestRefundResponse = {
     refunded: boolean
     reason?: string
@@ -276,7 +281,8 @@ export type {
     TTicketForm,
     TTicketValidationInfo,
     TTicketToOrganizer,
-    TTicketOrganizerRequestRefundResponse
+    TTicketOrganizerRequestRefundResponse,
+    TTicketCustomerRequestRefundResponse
 }
 
 export {

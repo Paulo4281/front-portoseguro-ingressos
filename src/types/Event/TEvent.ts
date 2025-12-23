@@ -44,6 +44,7 @@ type TEvent = {
     isDeleted: boolean
     isCancelled: boolean
     isPostponed: boolean
+    postponedAt: string | null
     createdAt: string
     updatedAt: string | null
     form: any | null

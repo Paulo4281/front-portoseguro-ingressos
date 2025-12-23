@@ -2480,9 +2480,11 @@ const CheckoutInfo = () => {
                                                     {isBuyingTicket ? (
                                                         <LoadingButton />
                                                     ) : (
+                                                        <>
                                                         <Check className="size-4" />
+                                                        Finalizar Compra
+                                                        </>
                                                     )}
-                                                    Finalizar Compra
                                                 </Button>
                                             </div>
                                         )}

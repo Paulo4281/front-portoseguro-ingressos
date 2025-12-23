@@ -43,7 +43,7 @@ const QuantitySelector = (
                 size="icon"
                 onClick={handleDecrement}
                 disabled={disabled || value <= min}
-                className="h-9 w-9 shrink-0"
+                className="h-9 w-9 shrink-0 bg-psi-primary text-white border-psi-primary hover:bg-psi-secondary hover:border-psi-secondary hover:text-white"
             >
                 <Minus className="h-4 w-4" />
             </Button>
@@ -58,7 +58,7 @@ const QuantitySelector = (
                 size="icon"
                 onClick={handleIncrement}
                 disabled={disabled || value >= max}
-                className="h-9 w-9 shrink-0"
+                className="h-9 w-9 shrink-0 bg-psi-primary text-white border-psi-primary hover:bg-psi-secondary hover:border-psi-secondary hover:text-white"
             >
                 <Plus className="h-4 w-4" />
             </Button>
