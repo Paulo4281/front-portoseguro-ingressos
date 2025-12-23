@@ -433,7 +433,6 @@ const CheckoutInfo = () => {
                     let hasMultipleDaysWithTicketTypes = false
 
                     if (item.ticketTypes && item.ticketTypes.some((ticketType) => ticketType.days && ticketType.days.length > 0)) {
-                        console.log("AA")
                         for (const ticketType of item.ticketTypes) {
                             const originalEventDateId = ticketType.days?.[0] || null
                             const activeEventDateId = getActiveEventDateId(currentEvent, originalEventDateId)
@@ -449,7 +448,6 @@ const CheckoutInfo = () => {
                     }
 
                     if (item.ticketTypes && item.ticketTypes.length > 0 && !hasMultipleDaysWithTicketTypes) {
-                        console.log("BB")
                         for (const ticketType of item.ticketTypes) {
                             const originalEventDateId = ticketType.days?.[0] || null
                             const activeEventDateId = getActiveEventDateId(currentEvent, originalEventDateId)
@@ -478,7 +476,7 @@ const CheckoutInfo = () => {
 
                 if (isAuthenticated) {
                     const response = await createTicketHold(ticketHolds)
-    
+
                     if (response?.success && response?.data) {
                         setTicketHoldData(response.data)
                         hasRun.current = true

@@ -275,10 +275,15 @@ class EventServiceClass {
         return response
     }
 
-    async verifySold(eventId: string): Promise<AxiosResponse["data"]> {
+    async verifySold(eventId: string, allDates?: boolean): Promise<AxiosResponse["data"]> {
+        const params: Record<string, string> = {}
+        if (allDates === true) {
+            params.allDates = "true"
+        }
         const response = (await API.GET({
             prefix: "/event",
-            url: `/verify-sold/${eventId}`
+            url: `/verify-sold/${eventId}`,
+            params: Object.keys(params).length > 0 ? params : undefined
         }))?.data
         return response
     }

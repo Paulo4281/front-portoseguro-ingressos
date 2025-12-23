@@ -186,14 +186,21 @@ const DialogViewCustomer = ({
                                         {isMultipleTickets ? "Tipos de ingresso" : "Tipo de ingresso"}
                                     </p>
                                     <div className="space-y-1">
-                                        {tickets?.map((t, idx) => (
-                                            <div key={t.id} className="flex flex-col">
+                                        {Array.from(
+                                            new Map(
+                                                (tickets || []).map(t => [
+                                                    `${t.ticketType?.name || ""}||${t.ticketType?.description || ""}`,
+                                                    t.ticketType,
+                                                ])
+                                            ).values()
+                                        ).map((ticketType, idx) => (
+                                            <div key={`${ticketType?.name || ""}-${ticketType?.description || ""}-${idx}`} className="flex flex-col">
                                                 <span className="text-sm font-medium text-psi-dark">
-                                                    {t.ticketType?.name}
+                                                    {ticketType?.name}
                                                 </span>
-                                                {t.ticketType?.description && (
+                                                {ticketType?.description && (
                                                     <span className="text-xs text-psi-dark/50">
-                                                        {t.ticketType.description}
+                                                        {ticketType.description}
                                                     </span>
                                                 )}
                                             </div>

@@ -337,22 +337,30 @@ class CheckoutUtilsClass {
 
     getTicketTypePriceFromEventDates(
         ebt: TEventBatchTicketType | any,
-        event: TEvent | null | undefined
+        event: TEvent | null | undefined,
+        activeEventDateId?: string | null
     ): number | null {
         if (!event?.EventDates || event.EventDates.length === 0) {
             return null
         }
 
-        const eventDateWithSpecificPrice = event.EventDates.find(ed => ed.hasSpecificPrice)
-        if (eventDateWithSpecificPrice) {
-            if (eventDateWithSpecificPrice.EventDateTicketTypePrices && eventDateWithSpecificPrice.EventDateTicketTypePrices.length > 0) {
+        let eventDateToCheck: TEventDate | undefined
+
+        if (activeEventDateId) {
+            eventDateToCheck = event.EventDates.find(ed => ed.id === activeEventDateId)
+        } else {
+            eventDateToCheck = event.EventDates.find(ed => ed.hasSpecificPrice)
+        }
+
+        if (eventDateToCheck) {
+            if (eventDateToCheck.EventDateTicketTypePrices && eventDateToCheck.EventDateTicketTypePrices.length > 0) {
                 const ticketTypeIdToMatch = ebt.TicketType?.id || ebt.ticketTypeId
-                const dayPrice = (eventDateWithSpecificPrice.EventDateTicketTypePrices as TEventDateTicketTypePrice[]).find(
+                const dayPrice = (eventDateToCheck.EventDateTicketTypePrices as TEventDateTicketTypePrice[]).find(
                     (ttp) => ttp.ticketTypeId === ticketTypeIdToMatch
                 )
                 if (dayPrice) return dayPrice.price
-            } else if (eventDateWithSpecificPrice.price !== null && eventDateWithSpecificPrice.price !== undefined) {
-                return eventDateWithSpecificPrice.price
+            } else if (eventDateToCheck.price !== null && eventDateToCheck.price !== undefined) {
+                return eventDateToCheck.price
             }
         }
 
@@ -430,7 +438,8 @@ class CheckoutUtilsClass {
         ticketTypeQuantities: Record<string, number>,
         selectedDays: Record<string, string[]>,
         event: TEvent | null | undefined,
-        isClientTaxed: boolean | undefined
+        isClientTaxed: boolean | undefined,
+        activeEventDateId?: string | null
     ): number {
         if (!event) return 0
 
@@ -448,7 +457,7 @@ class CheckoutUtilsClass {
                 return sum + (daysTotal * qty)
             }
 
-            const priceFromEventDate = this.getTicketTypePriceFromEventDates(ebt, event)
+            const priceFromEventDate = this.getTicketTypePriceFromEventDates(ebt, event, activeEventDateId)
             if (priceFromEventDate !== null) {
                 return sum + this.calculateTotalWithFees(priceFromEventDate, qty, isClientTaxed)
             }
@@ -491,7 +500,8 @@ class CheckoutUtilsClass {
         selectedDaysForType: string[],
         qty: number,
         event: TEvent | null | undefined,
-        isClientTaxed: boolean | undefined
+        isClientTaxed: boolean | undefined,
+        activeEventDateId?: string | null
     ): number {
         if (selectedDaysForType.length > 0) {
             const daysTotal = selectedDaysForType.reduce((sum, eventDateId) => {
@@ -501,7 +511,7 @@ class CheckoutUtilsClass {
             return daysTotal * qty
         }
 
-        const priceFromEventDate = this.getTicketTypePriceFromEventDates(ebt, event)
+        const priceFromEventDate = this.getTicketTypePriceFromEventDates(ebt, event, activeEventDateId)
         if (priceFromEventDate !== null) {
             return this.calculateTotalWithFees(priceFromEventDate, qty, isClientTaxed)
         }
@@ -515,7 +525,8 @@ class CheckoutUtilsClass {
     getDisplayPrice(
         ebt: TEventBatchTicketType | any,
         selectedDaysForType: string[],
-        event: TEvent | null | undefined
+        event: TEvent | null | undefined,
+        activeEventDateId?: string | null
     ): number | { min: number; max: number } {
         if (selectedDaysForType.length > 0) {
             const firstDayPrice = this.getPriceForTicketType(ebt, selectedDaysForType[0], event)
@@ -531,7 +542,7 @@ class CheckoutUtilsClass {
             return { min: minPrice, max: maxPrice }
         }
 
-        const priceFromEventDate = this.getTicketTypePriceFromEventDates(ebt, event)
+        const priceFromEventDate = this.getTicketTypePriceFromEventDates(ebt, event, activeEventDateId)
         if (priceFromEventDate !== null) {
             return priceFromEventDate
         }

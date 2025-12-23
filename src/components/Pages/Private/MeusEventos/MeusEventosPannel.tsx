@@ -465,7 +465,7 @@ const EventCard = ({
     const {
         data: verifySoldData,
         isLoading: isLoadingVerifySold
-    } = useEventVerifySold(event.id)
+    } = useEventVerifySold(event.id, !!event.Recurrence)
 
     const {
         data: soldInValueData,
