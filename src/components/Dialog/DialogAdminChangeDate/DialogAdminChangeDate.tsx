@@ -166,6 +166,7 @@ const DialogAdminChangeDate = ({
                                                     onChange={(value) => field.onChange(value || "")}
                                                     required
                                                     minDate={new Date().toISOString().split("T")[0]}
+                                                    absoluteClassName={true}
                                                 />
                                             )}
                                         />

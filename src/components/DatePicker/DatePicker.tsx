@@ -13,6 +13,7 @@ type TDatePickerProps = {
     minDate?: string
     maxDate?: string
     disabled?: boolean
+    absoluteClassName?: boolean
 }
 
 const monthNames = [
@@ -31,7 +32,8 @@ const DatePicker = (
         icon = true,
         minDate,
         maxDate,
-        disabled = false
+        disabled = false,
+        absoluteClassName = false
     }: TDatePickerProps
 ) => {
     const [isOpen, setIsOpen] = useState(false)
@@ -204,7 +206,7 @@ const DatePicker = (
 
             {isOpen && (
                 <div className={cn(
-                    "relative z-10 mt-2 w-[320px] rounded-xl border border-[#E4E6F0] bg-white shadow-lg shadow-black/10 p-4",
+                    `${ absoluteClassName ? "absolute" : "relative" } z-10 mt-2 w-[320px] rounded-xl border border-[#E4E6F0] bg-white shadow-lg shadow-black/10 p-4`,
                     "animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200"
                 )}>
                     {viewMode === "date" && (

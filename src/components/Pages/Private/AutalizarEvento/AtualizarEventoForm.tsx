@@ -1653,6 +1653,7 @@ const AtualizarEventoForm = () => {
                                                                                 minDate={new Date().toISOString().split("T")[0]}
                                                                                 maxDate={maxDate}
                                                                                 disabled={isBatchDisabled || isActiveBatch}
+                                                                                absoluteClassName={true}
                                                                             />
                                                                             {maxDate && field.value && new Date(field.value) > new Date(maxDate) && (
                                                                                 <p className="text-xs text-destructive mt-1">
@@ -1704,6 +1705,7 @@ const AtualizarEventoForm = () => {
                                                                                 minDate={minDate}
                                                                                 maxDate={maxDate}
                                                                                 disabled={isBatchDisabled}
+                                                                                absoluteClassName={true}
                                                                             />
                                                                             {maxDate && field.value && new Date(field.value) > new Date(maxDate) && (
                                                                                 <p className="text-xs text-destructive mt-1">
@@ -2050,6 +2052,7 @@ const AtualizarEventoForm = () => {
                                                         value={field.value || ""}
                                                         onChange={(value) => field.onChange(value)}
                                                         minDate={new Date().toISOString().split("T")[0]}
+                                                        absoluteClassName={true}
                                                     />
                                                 )}
                                             />
@@ -2135,6 +2138,7 @@ const AtualizarEventoForm = () => {
                                                                 required
                                                                 minDate={new Date().toISOString().split("T")[0]}
                                                                 disabled={hasAnySoldTicketsForDates}
+                                                                absoluteClassName={true}
                                                             />
                                                         )}
                                                     />

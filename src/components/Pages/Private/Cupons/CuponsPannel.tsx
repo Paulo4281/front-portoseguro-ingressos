@@ -446,6 +446,7 @@ const CuponsPannel = () => {
                                             value={field.value || null}
                                             onChange={(date) => field.onChange(date ?? "")}
                                             minDate={new Date().toISOString().split("T")[0]}
+                                            absoluteClassName={true}
                                         />
                                     )}
                                 />
@@ -616,6 +617,7 @@ const CuponsPannel = () => {
                                                             value ? new Date(`${value}T00:00:00`).toISOString() : null
                                                         )}
                                                         minDate={new Date().toISOString().split("T")[0]}
+                                                        absoluteClassName={true}
                                                     />
                                                 </div>
                                             </div>

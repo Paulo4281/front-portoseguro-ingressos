@@ -124,7 +124,7 @@ const TimePicker = (
 
             {isOpen && (
                 <div className={cn(
-                    "relative z-50 mt-2 w-full rounded-xl border border-[#E4E6F0] bg-white shadow-lg shadow-black/10 p-4",
+                    "absolute z-50 mt-2 w-full rounded-xl border border-[#E4E6F0] bg-white shadow-lg shadow-black/10 p-4",
                     "transition-all duration-200 ease-out",
                     isAnimating 
                         ? "animate-in fade-in-0 zoom-in-95 slide-in-from-top-2" 

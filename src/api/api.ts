@@ -20,7 +20,8 @@ type Prefixes =
     "/support" |
     "/payment" |
     "/payment-gateway" |
-    "/card"
+    "/card" |
+    "/dashboard"
 
 type TAPIParams = {
     prefix: Prefixes

@@ -5,7 +5,7 @@ import { useForm, Controller, useFieldArray, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, FileText, Repeat, Tag, Sparkles, Rocket, HelpCircle } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, FileText, Repeat, Tag, Sparkles, Rocket, HelpCircle, Megaphone } from "lucide-react"
 import { EventCreateValidator } from "@/validators/Event/EventValidator"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -428,7 +428,7 @@ const CriarEventoForm = () => {
                     </div>
 
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
-                        <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 p-6
+                        <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 shadow-lg shadow-black/5 p-6
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <FileText className="h-5 w-5 text-psi-primary" />
@@ -574,7 +574,7 @@ const CriarEventoForm = () => {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 p-6
+                        <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 shadow-lg shadow-black/5 p-6
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <Tag className="h-5 w-5 text-psi-primary" />
@@ -663,7 +663,485 @@ const CriarEventoForm = () => {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 p-6
+                        <div className="rounded-2xl border z-0 border-[#E4E6F0] bg-white/95 shadow-lg shadow-black/5 p-6
+                        sm:p-8 space-y-6">
+                            <div className="flex items-center gap-3 mb-4">
+                                <Repeat className="h-5 w-5 text-psi-primary" />
+                                <h2 className="text-2xl font-bold text-psi-dark">Recorrência (Opcional)</h2>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <Checkbox
+                                        id="recurrence-enabled"
+                                        checked={recurrenceEnabled}
+                                        onCheckedChange={(checked) => {
+                                            const isChecked = checked === true
+                                            setRecurrenceEnabled(isChecked)
+                                            if (!isChecked) {
+                                                form.setValue("recurrence", null)
+                                            } else {
+                                                form.setValue("dates", undefined)
+                                                form.setValue("recurrence", {
+                                                    type: "WEEKLY",
+                                                    day: undefined,
+                                                    hourStart: "",
+                                                    hourEnd: null,
+                                                    endDate: null
+                                                })
+                                            }
+                                        }}
+                                    />
+                                    <label htmlFor="recurrence-enabled" className="text-sm font-medium text-psi-dark cursor-pointer">
+                                        Este evento é recorrente
+                                    </label>
+                                </div>
+
+                                {recurrenceEnabled && (
+                                    <div className="rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4 space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                                Tipo de Recorrência *
+                                            </label>
+                                            <Controller
+                                                name="recurrence.type"
+                                                control={form.control}
+                                                render={({ field }) => (
+                                                    <Select
+                                                        value={field.value}
+                                                        onValueChange={field.onChange}
+                                                    >
+                                                        <SelectTrigger className="w-full">
+                                                            <SelectValue placeholder="Selecione o tipo..." />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="DAILY">Diário</SelectItem>
+                                                            <SelectItem value="WEEKLY">Semanal</SelectItem>
+                                                            <SelectItem value="MONTHLY">Mensal</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                )}
+                                            />
+                                        </div>
+
+                                        {recurrenceType === "DAILY" && (
+                                            <div>
+                                                <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                                    Horário *
+                                                </label>
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-xs text-psi-dark/60 mb-1">Início</label>
+                                                        <TimePicker
+                                                            value={form.watch("recurrence.hourStart") || ""}
+                                                            onChange={(value) => {
+                                                                const current = form.getValues("recurrence")
+                                                                if (current) {
+                                                                    form.setValue("recurrence.hourStart", value || "", { shouldValidate: true })
+                                                                }
+                                                            }}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs text-psi-dark/60 mb-1">Fim</label>
+                                                        <TimePicker
+                                                            value={form.watch("recurrence.hourEnd") || ""}
+                                                            onChange={(value) => {
+                                                                const current = form.getValues("recurrence")
+                                                                if (current) {
+                                                                    form.setValue("recurrence.hourEnd", value, { shouldValidate: true })
+                                                                }
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {recurrenceType === "WEEKLY" && (
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                                        Dia da Semana * <span className="text-xs font-normal text-psi-dark/60">(selecione apenas 1 dia)</span>
+                                                    </label>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {weekDays.map((day) => {
+                                                            const isSelected = recurrenceDay === day.value
+                                                            return (
+                                                                <Button
+                                                                    key={day.value}
+                                                                    type="button"
+                                                                    variant={isSelected ? "primary" : "outline"}
+                                                                    size="sm"
+                                                                    onClick={() => toggleDayOfWeek(day.value)}
+                                                                >
+                                                                    {day.label}
+                                                                </Button>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                    <FieldError message={form.formState.errors.recurrence?.day?.message || ""} />
+                                                </div>
+
+                                                {recurrenceDay !== null && recurrenceDay !== undefined && (
+                                                    <div className="space-y-3 pt-3 border-t border-[#E4E6F0]">
+                                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                                            Horário *
+                                                        </label>
+                                                        <div className="rounded-lg border border-[#E4E6F0] bg-white p-3 space-y-3">
+                                                            <div className="font-semibold text-sm text-psi-dark">
+                                                                {weekDays.find(d => d.value === recurrenceDay)?.label || ""}
+                                                            </div>
+                                                            <div className="grid grid-cols-2 gap-4">
+                                                                <div>
+                                                                    <label className="block text-xs text-psi-dark/60 mb-1">Início</label>
+                                                                    <TimePicker
+                                                                        value={form.watch("recurrence.hourStart") || ""}
+                                                                        onChange={(value) => {
+                                                                            const current = form.getValues("recurrence")
+                                                                            if (current) {
+                                                                                form.setValue("recurrence.hourStart", value || "", { shouldValidate: true })
+                                                                            }
+                                                                        }}
+                                                                        required
+                                                                        icon={false}
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-xs text-psi-dark/60 mb-1">Fim</label>
+                                                                    <TimePicker
+                                                                        value={form.watch("recurrence.hourEnd") || ""}
+                                                                        onChange={(value) => {
+                                                                            const current = form.getValues("recurrence")
+                                                                            if (current) {
+                                                                                form.setValue("recurrence.hourEnd", value, { shouldValidate: true })
+                                                                            }
+                                                                        }}
+                                                                        icon={false}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {recurrenceType === "MONTHLY" && (
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                                        Dia do Mês * <span className="text-xs font-normal text-psi-dark/60">(selecione apenas 1 dia)</span>
+                                                    </label>
+                                                    <div className="grid grid-cols-7 gap-2 max-h-48 overflow-y-auto">
+                                                        {monthDays.map((day) => {
+                                                            const isSelected = recurrenceDay === day
+                                                            return (
+                                                                <Button
+                                                                    key={day}
+                                                                    type="button"
+                                                                    variant={isSelected ? "primary" : "outline"}
+                                                                    size="sm"
+                                                                    onClick={() => toggleMonthDay(day)}
+                                                                    className="min-w-[40px]"
+                                                                >
+                                                                    {day}
+                                                                </Button>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                    <FieldError message={form.formState.errors.recurrence?.day?.message || ""} />
+                                                </div>
+
+                                                {recurrenceDay !== null && recurrenceDay !== undefined && (
+                                                    <div className="space-y-3 pt-3 border-t border-[#E4E6F0]">
+                                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                                            Horário *
+                                                        </label>
+                                                        <div className="rounded-lg border border-[#E4E6F0] bg-white p-3 space-y-3">
+                                                            <div className="font-semibold text-sm text-psi-dark">Dia {recurrenceDay}</div>
+                                                            <div className="grid grid-cols-2 gap-4">
+                                                                <div>
+                                                                    <label className="block text-xs text-psi-dark/60 mb-1">Início</label>
+                                                                    <TimePicker
+                                                                        value={form.watch("recurrence.hourStart") || ""}
+                                                                        onChange={(value) => {
+                                                                            const current = form.getValues("recurrence")
+                                                                            if (current) {
+                                                                                form.setValue("recurrence.hourStart", value || "", { shouldValidate: true })
+                                                                            }
+                                                                        }}
+                                                                        required
+                                                                        icon={false}
+                                                                    />
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-xs text-psi-dark/60 mb-1">Fim</label>
+                                                                    <TimePicker
+                                                                        value={form.watch("recurrence.hourEnd") || ""}
+                                                                        onChange={(value) => {
+                                                                            const current = form.getValues("recurrence")
+                                                                            if (current) {
+                                                                                form.setValue("recurrence.hourEnd", value, { shouldValidate: true })
+                                                                            }
+                                                                        }}
+                                                                        icon={false}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                                Data de Término (Opcional)
+                                            </label>
+                                            <Controller
+                                                name="recurrence.endDate"
+                                                control={form.control}
+                                                render={({ field }) => (
+                                                    <DatePicker
+                                                        value={field.value || ""}
+                                                        onChange={(value) => field.onChange(value)}
+                                                        minDate={new Date().toISOString().split("T")[0]}
+                                                        absoluteClassName={true}
+                                                    />
+                                                )}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {!recurrenceEnabled && (
+                            <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 shadow-lg shadow-black/5 p-6
+                            sm:p-8 space-y-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <Calendar className="h-5 w-5 text-psi-primary" />
+                                        <h2 className="text-2xl font-bold text-psi-dark">Datas e Horários</h2>
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={addDate}
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                        Adicionar Data
+                                    </Button>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {dateFields.map((field, index) => (
+                                        <div
+                                            key={field.id}
+                                            className="rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4 space-y-4"
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-sm font-semibold text-psi-dark">
+                                                    Data {index + 1}
+                                                </span>
+                                                {dateFields.length > 1 && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => removeDate(index)}
+                                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
+
+                                            <div className="grid grid-cols-1
+                                            sm:grid-cols-3 gap-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                                        Data *
+                                                    </label>
+                                                    <Controller
+                                                        name={`dates.${index}.date`}
+                                                        control={form.control}
+                                                        render={({ field }) => (
+                                                            <DatePicker
+                                                                value={field.value}
+                                                                onChange={(value) => field.onChange(value || "")}
+                                                                required
+                                                                minDate={new Date().toISOString().split("T")[0]}
+                                                                absoluteClassName={true}
+                                                            />
+                                                        )}
+                                                    />
+                                                    <FieldError message={form.formState.errors.dates?.[index]?.date?.message || ""} />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                                        Horário Início *
+                                                    </label>
+                                                    <Controller
+                                                        name={`dates.${index}.hourStart`}
+                                                        control={form.control}
+                                                        render={({ field }) => (
+                                                            <TimePicker
+                                                                value={field.value}
+                                                                onChange={field.onChange}
+                                                                required
+                                                            />
+                                                        )}
+                                                    />
+                                                    <FieldError message={form.formState.errors.dates?.[index]?.hourStart?.message || ""} />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
+                                                        Horário Fim
+                                                    </label>
+                                                    <Controller
+                                                        name={`dates.${index}.hourEnd`}
+                                                        control={form.control}
+                                                        render={({ field }) => (
+                                                            <TimePicker
+                                                                value={field.value || ""}
+                                                                onChange={field.onChange}
+                                                            />
+                                                        )}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-3 rounded-lg border border-[#E4E6F0] bg-[#F3F4FB] p-3">
+                                                    <Checkbox
+                                                        id={`has-specific-price-${index}`}
+                                                        checked={form.watch(`dates.${index}.hasSpecificPrice`) || false}
+                                                        onCheckedChange={(checked) => {
+                                                            const isChecked = checked === true
+                                                            const allDates = form.getValues("dates") || []
+                                                            
+                                                            if (isChecked) {
+                                                                allDates.forEach((_, dateIdx) => {
+                                                                    form.setValue(`dates.${dateIdx}.hasSpecificPrice`, true)
+                                                                    if (ticketTypes.length > 0) {
+                                                                        const currentPrices = form.getValues(`dates.${dateIdx}.ticketTypePrices`) || []
+                                                                        const initialPrices = ticketTypes.map((_, typeIdx) => {
+                                                                            const existingPrice = currentPrices.find(ttp => ttp.ticketTypeId === typeIdx.toString())
+                                                                            return existingPrice || {
+                                                                                ticketTypeId: typeIdx.toString(),
+                                                                                price: 0
+                                                                            }
+                                                                        })
+                                                                        form.setValue(`dates.${dateIdx}.ticketTypePrices`, initialPrices)
+                                                                    } else {
+                                                                        const currentPrice = form.getValues(`dates.${dateIdx}.price`)
+                                                                        if (currentPrice === null || currentPrice === undefined || currentPrice === 0) {
+                                                                            form.setValue(`dates.${dateIdx}.price`, 0)
+                                                                        }
+                                                                    }
+                                                                })
+                                                            } else {
+                                                                allDates.forEach((_, dateIdx) => {
+                                                                    form.setValue(`dates.${dateIdx}.hasSpecificPrice`, false)
+                                                                    form.setValue(`dates.${dateIdx}.price`, null)
+                                                                    form.setValue(`dates.${dateIdx}.ticketTypePrices`, null)
+                                                                })
+                                                            }
+                                                        }}
+                                                    />
+                                                    <label htmlFor={`has-specific-price-${index}`} className="text-sm font-medium text-psi-dark cursor-pointer">
+                                                        Definir preço específico para este dia
+                                                    </label>
+                                                </div>
+                                                {form.watch(`dates.${index}.hasSpecificPrice`) && (
+                                                    <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3">
+                                                        <p className="text-xs text-amber-800 leading-relaxed">
+                                                            <strong>Importante:</strong> Ao utilizar preços específicos por data, o preço definido pelos lotes será desconsiderado. Todas as datas devem ter preço específico quando esta opção estiver ativada.
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {form.watch(`dates.${index}.hasSpecificPrice`) && (
+                                                <div className="space-y-3 rounded-lg border border-[#E4E6F0] bg-white p-3">
+                                                    {ticketTypes.length === 0 ? (
+                                                        <div>
+                                                            <label className="block text-xs text-psi-dark/60 mb-1">Preço para este dia *</label>
+                                                            <Controller
+                                                                name={`dates.${index}.price`}
+                                                                control={form.control}
+                                                                render={({ field }) => (
+                                                                    <InputCurrency
+                                                                        value={field.value || 0}
+                                                                        onChangeValue={(value) => {
+                                                                            if (!value || value === "") {
+                                                                                field.onChange(0)
+                                                                            } else {
+                                                                                const numValue = parseCurrencyToNumber(value)
+                                                                                field.onChange(numValue)
+                                                                            }
+                                                                        }}
+                                                                        required
+                                                                        className="w-full"
+                                                                    />
+                                                                )}
+                                                            />
+                                                            <FieldError message={form.formState.errors.dates?.[index]?.price?.message || ""} />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="space-y-3">
+                                                            <p className="text-xs text-psi-dark/60 mb-2">Defina o preço para cada tipo de ingresso neste dia:</p>
+                                                            {ticketTypes.map((ticketType, typeIdx) => {
+                                                                const currentPrices = form.watch(`dates.${index}.ticketTypePrices`) || []
+                                                                const priceIndex = currentPrices.findIndex(ttp => ttp.ticketTypeId === typeIdx.toString())
+                                                                
+                                                                return (
+                                                                    <div key={typeIdx} className="flex items-center gap-3">
+                                                                        <div className="flex-1">
+                                                                            <label className="block text-xs text-psi-dark/60 mb-1">{ticketType.name}</label>
+                                                                            {priceIndex >= 0 && (
+                                                                                <Controller
+                                                                                    name={`dates.${index}.ticketTypePrices.${priceIndex}.price`}
+                                                                                    control={form.control}
+                                                                                    render={({ field }) => (
+                                                                                        <InputCurrency
+                                                                                            value={field.value || 0}
+                                                                                            onChangeValue={(value) => {
+                                                                                                if (!value || value === "") {
+                                                                                                    field.onChange(0)
+                                                                                                } else {
+                                                                                                    const numValue = parseCurrencyToNumber(value)
+                                                                                                    field.onChange(numValue)
+                                                                                                }
+                                                                                            }}
+                                                                                            required
+                                                                                            className="w-full"
+                                                                                        />
+                                                                                    )}
+                                                                                />
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                    <FieldError message={form.formState.errors.dates?.message || ""} />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 shadow-lg shadow-black/5 p-6
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <Tag className="h-5 w-5 text-psi-primary" />
@@ -1077,6 +1555,7 @@ const CriarEventoForm = () => {
                                                                                 required
                                                                                 minDate={new Date().toISOString().split("T")[0]}
                                                                                 maxDate={maxDate}
+                                                                                absoluteClassName={true}
                                                                             />
                                                                             {maxDate && field.value && new Date(field.value) > new Date(maxDate) && (
                                                                                 <p className="text-xs text-destructive mt-1">
@@ -1128,6 +1607,7 @@ const CriarEventoForm = () => {
                                                                                     onChange={(value) => field.onChange(value)}
                                                                                     minDate={minDate}
                                                                                     maxDate={maxDate}
+                                                                                    absoluteClassName={true}
                                                                                 />
                                                                                 {maxDate && field.value && new Date(field.value) > new Date(maxDate) && (
                                                                                     <p className="text-xs text-destructive mt-1">
@@ -1180,483 +1660,7 @@ const CriarEventoForm = () => {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border z-0 border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 p-6
-                        sm:p-8 space-y-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <Repeat className="h-5 w-5 text-psi-primary" />
-                                <h2 className="text-2xl font-bold text-psi-dark">Recorrência (Opcional)</h2>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <Checkbox
-                                        id="recurrence-enabled"
-                                        checked={recurrenceEnabled}
-                                        onCheckedChange={(checked) => {
-                                            const isChecked = checked === true
-                                            setRecurrenceEnabled(isChecked)
-                                            if (!isChecked) {
-                                                form.setValue("recurrence", null)
-                                            } else {
-                                                form.setValue("dates", undefined)
-                                                form.setValue("recurrence", {
-                                                    type: "WEEKLY",
-                                                    day: undefined,
-                                                    hourStart: "",
-                                                    hourEnd: null,
-                                                    endDate: null
-                                                })
-                                            }
-                                        }}
-                                    />
-                                    <label htmlFor="recurrence-enabled" className="text-sm font-medium text-psi-dark cursor-pointer">
-                                        Este evento é recorrente
-                                    </label>
-                                </div>
-
-                                {recurrenceEnabled && (
-                                    <div className="rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4 space-y-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                Tipo de Recorrência *
-                                            </label>
-                                            <Controller
-                                                name="recurrence.type"
-                                                control={form.control}
-                                                render={({ field }) => (
-                                                    <Select
-                                                        value={field.value}
-                                                        onValueChange={field.onChange}
-                                                    >
-                                                        <SelectTrigger className="w-full">
-                                                            <SelectValue placeholder="Selecione o tipo..." />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="DAILY">Diário</SelectItem>
-                                                            <SelectItem value="WEEKLY">Semanal</SelectItem>
-                                                            <SelectItem value="MONTHLY">Mensal</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                )}
-                                            />
-                                        </div>
-
-                                        {recurrenceType === "DAILY" && (
-                                            <div>
-                                                <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                    Horário *
-                                                </label>
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div>
-                                                        <label className="block text-xs text-psi-dark/60 mb-1">Início</label>
-                                                        <TimePicker
-                                                            value={form.watch("recurrence.hourStart") || ""}
-                                                            onChange={(value) => {
-                                                                const current = form.getValues("recurrence")
-                                                                if (current) {
-                                                                    form.setValue("recurrence.hourStart", value || "", { shouldValidate: true })
-                                                                }
-                                                            }}
-                                                            required
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-xs text-psi-dark/60 mb-1">Fim</label>
-                                                        <TimePicker
-                                                            value={form.watch("recurrence.hourEnd") || ""}
-                                                            onChange={(value) => {
-                                                                const current = form.getValues("recurrence")
-                                                                if (current) {
-                                                                    form.setValue("recurrence.hourEnd", value, { shouldValidate: true })
-                                                                }
-                                                            }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {recurrenceType === "WEEKLY" && (
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                        Dia da Semana * <span className="text-xs font-normal text-psi-dark/60">(selecione apenas 1 dia)</span>
-                                                    </label>
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {weekDays.map((day) => {
-                                                            const isSelected = recurrenceDay === day.value
-                                                            return (
-                                                                <Button
-                                                                    key={day.value}
-                                                                    type="button"
-                                                                    variant={isSelected ? "primary" : "outline"}
-                                                                    size="sm"
-                                                                    onClick={() => toggleDayOfWeek(day.value)}
-                                                                >
-                                                                    {day.label}
-                                                                </Button>
-                                                            )
-                                                        })}
-                                                    </div>
-                                                    <FieldError message={form.formState.errors.recurrence?.day?.message || ""} />
-                                                </div>
-
-                                                {recurrenceDay !== null && recurrenceDay !== undefined && (
-                                                    <div className="space-y-3 pt-3 border-t border-[#E4E6F0]">
-                                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                            Horário *
-                                                        </label>
-                                                        <div className="rounded-lg border border-[#E4E6F0] bg-white p-3 space-y-3">
-                                                            <div className="font-semibold text-sm text-psi-dark">
-                                                                {weekDays.find(d => d.value === recurrenceDay)?.label || ""}
-                                                            </div>
-                                                            <div className="grid grid-cols-2 gap-4">
-                                                                <div>
-                                                                    <label className="block text-xs text-psi-dark/60 mb-1">Início</label>
-                                                                    <TimePicker
-                                                                        value={form.watch("recurrence.hourStart") || ""}
-                                                                        onChange={(value) => {
-                                                                            const current = form.getValues("recurrence")
-                                                                            if (current) {
-                                                                                form.setValue("recurrence.hourStart", value || "", { shouldValidate: true })
-                                                                            }
-                                                                        }}
-                                                                        required
-                                                                        icon={false}
-                                                                    />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="block text-xs text-psi-dark/60 mb-1">Fim</label>
-                                                                    <TimePicker
-                                                                        value={form.watch("recurrence.hourEnd") || ""}
-                                                                        onChange={(value) => {
-                                                                            const current = form.getValues("recurrence")
-                                                                            if (current) {
-                                                                                form.setValue("recurrence.hourEnd", value, { shouldValidate: true })
-                                                                            }
-                                                                        }}
-                                                                        icon={false}
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {recurrenceType === "MONTHLY" && (
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                        Dia do Mês * <span className="text-xs font-normal text-psi-dark/60">(selecione apenas 1 dia)</span>
-                                                    </label>
-                                                    <div className="grid grid-cols-7 gap-2 max-h-48 overflow-y-auto">
-                                                        {monthDays.map((day) => {
-                                                            const isSelected = recurrenceDay === day
-                                                            return (
-                                                                <Button
-                                                                    key={day}
-                                                                    type="button"
-                                                                    variant={isSelected ? "primary" : "outline"}
-                                                                    size="sm"
-                                                                    onClick={() => toggleMonthDay(day)}
-                                                                    className="min-w-[40px]"
-                                                                >
-                                                                    {day}
-                                                                </Button>
-                                                            )
-                                                        })}
-                                                    </div>
-                                                    <FieldError message={form.formState.errors.recurrence?.day?.message || ""} />
-                                                </div>
-
-                                                {recurrenceDay !== null && recurrenceDay !== undefined && (
-                                                    <div className="space-y-3 pt-3 border-t border-[#E4E6F0]">
-                                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                            Horário *
-                                                        </label>
-                                                        <div className="rounded-lg border border-[#E4E6F0] bg-white p-3 space-y-3">
-                                                            <div className="font-semibold text-sm text-psi-dark">Dia {recurrenceDay}</div>
-                                                            <div className="grid grid-cols-2 gap-4">
-                                                                <div>
-                                                                    <label className="block text-xs text-psi-dark/60 mb-1">Início</label>
-                                                                    <TimePicker
-                                                                        value={form.watch("recurrence.hourStart") || ""}
-                                                                        onChange={(value) => {
-                                                                            const current = form.getValues("recurrence")
-                                                                            if (current) {
-                                                                                form.setValue("recurrence.hourStart", value || "", { shouldValidate: true })
-                                                                            }
-                                                                        }}
-                                                                        required
-                                                                        icon={false}
-                                                                    />
-                                                                </div>
-                                                                <div>
-                                                                    <label className="block text-xs text-psi-dark/60 mb-1">Fim</label>
-                                                                    <TimePicker
-                                                                        value={form.watch("recurrence.hourEnd") || ""}
-                                                                        onChange={(value) => {
-                                                                            const current = form.getValues("recurrence")
-                                                                            if (current) {
-                                                                                form.setValue("recurrence.hourEnd", value, { shouldValidate: true })
-                                                                            }
-                                                                        }}
-                                                                        icon={false}
-                                                                    />
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                Data de Término (Opcional)
-                                            </label>
-                                            <Controller
-                                                name="recurrence.endDate"
-                                                control={form.control}
-                                                render={({ field }) => (
-                                                    <DatePicker
-                                                        value={field.value || ""}
-                                                        onChange={(value) => field.onChange(value)}
-                                                        minDate={new Date().toISOString().split("T")[0]}
-                                                    />
-                                                )}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {!recurrenceEnabled && (
-                            <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 p-6
-                            sm:p-8 space-y-6">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <Calendar className="h-5 w-5 text-psi-primary" />
-                                        <h2 className="text-2xl font-bold text-psi-dark">Datas e Horários</h2>
-                                    </div>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={addDate}
-                                    >
-                                        <Plus className="h-4 w-4" />
-                                        Adicionar Data
-                                    </Button>
-                                </div>
-
-                                <div className="space-y-4">
-                                    {dateFields.map((field, index) => (
-                                        <div
-                                            key={field.id}
-                                            className="rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4 space-y-4"
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm font-semibold text-psi-dark">
-                                                    Data {index + 1}
-                                                </span>
-                                                {dateFields.length > 1 && (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => removeDate(index)}
-                                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                )}
-                                            </div>
-
-                                            <div className="grid grid-cols-1
-                                            sm:grid-cols-3 gap-4">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                        Data *
-                                                    </label>
-                                                    <Controller
-                                                        name={`dates.${index}.date`}
-                                                        control={form.control}
-                                                        render={({ field }) => (
-                                                            <DatePicker
-                                                                value={field.value}
-                                                                onChange={(value) => field.onChange(value || "")}
-                                                                required
-                                                                minDate={new Date().toISOString().split("T")[0]}
-                                                            />
-                                                        )}
-                                                    />
-                                                    <FieldError message={form.formState.errors.dates?.[index]?.date?.message || ""} />
-                                                </div>
-
-                                                <div>
-                                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                        Horário Início *
-                                                    </label>
-                                                    <Controller
-                                                        name={`dates.${index}.hourStart`}
-                                                        control={form.control}
-                                                        render={({ field }) => (
-                                                            <TimePicker
-                                                                value={field.value}
-                                                                onChange={field.onChange}
-                                                                required
-                                                            />
-                                                        )}
-                                                    />
-                                                    <FieldError message={form.formState.errors.dates?.[index]?.hourStart?.message || ""} />
-                                                </div>
-
-                                                <div>
-                                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                                        Horário Fim
-                                                    </label>
-                                                    <Controller
-                                                        name={`dates.${index}.hourEnd`}
-                                                        control={form.control}
-                                                        render={({ field }) => (
-                                                            <TimePicker
-                                                                value={field.value || ""}
-                                                                onChange={field.onChange}
-                                                            />
-                                                        )}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-3">
-                                                <div className="flex items-center gap-3 rounded-lg border border-[#E4E6F0] bg-[#F3F4FB] p-3">
-                                                    <Checkbox
-                                                        id={`has-specific-price-${index}`}
-                                                        checked={form.watch(`dates.${index}.hasSpecificPrice`) || false}
-                                                        onCheckedChange={(checked) => {
-                                                            const isChecked = checked === true
-                                                            const allDates = form.getValues("dates") || []
-                                                            
-                                                            if (isChecked) {
-                                                                allDates.forEach((_, dateIdx) => {
-                                                                    form.setValue(`dates.${dateIdx}.hasSpecificPrice`, true)
-                                                                    if (ticketTypes.length > 0) {
-                                                                        const currentPrices = form.getValues(`dates.${dateIdx}.ticketTypePrices`) || []
-                                                                        const initialPrices = ticketTypes.map((_, typeIdx) => {
-                                                                            const existingPrice = currentPrices.find(ttp => ttp.ticketTypeId === typeIdx.toString())
-                                                                            return existingPrice || {
-                                                                                ticketTypeId: typeIdx.toString(),
-                                                                                price: 0
-                                                                            }
-                                                                        })
-                                                                        form.setValue(`dates.${dateIdx}.ticketTypePrices`, initialPrices)
-                                                                    } else {
-                                                                        const currentPrice = form.getValues(`dates.${dateIdx}.price`)
-                                                                        if (currentPrice === null || currentPrice === undefined || currentPrice === 0) {
-                                                                            form.setValue(`dates.${dateIdx}.price`, 0)
-                                                                        }
-                                                                    }
-                                                                })
-                                                            } else {
-                                                                allDates.forEach((_, dateIdx) => {
-                                                                    form.setValue(`dates.${dateIdx}.hasSpecificPrice`, false)
-                                                                    form.setValue(`dates.${dateIdx}.price`, null)
-                                                                    form.setValue(`dates.${dateIdx}.ticketTypePrices`, null)
-                                                                })
-                                                            }
-                                                        }}
-                                                    />
-                                                    <label htmlFor={`has-specific-price-${index}`} className="text-sm font-medium text-psi-dark cursor-pointer">
-                                                        Definir preço específico para este dia
-                                                    </label>
-                                                </div>
-                                                {form.watch(`dates.${index}.hasSpecificPrice`) && (
-                                                    <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3">
-                                                        <p className="text-xs text-amber-800 leading-relaxed">
-                                                            <strong>Importante:</strong> Ao utilizar preços específicos por data, o preço definido pelos lotes será desconsiderado. Todas as datas devem ter preço específico quando esta opção estiver ativada.
-                                                        </p>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {form.watch(`dates.${index}.hasSpecificPrice`) && (
-                                                <div className="space-y-3 rounded-lg border border-[#E4E6F0] bg-white p-3">
-                                                    {ticketTypes.length === 0 ? (
-                                                        <div>
-                                                            <label className="block text-xs text-psi-dark/60 mb-1">Preço para este dia *</label>
-                                                            <Controller
-                                                                name={`dates.${index}.price`}
-                                                                control={form.control}
-                                                                render={({ field }) => (
-                                                                    <InputCurrency
-                                                                        value={field.value || 0}
-                                                                        onChangeValue={(value) => {
-                                                                            if (!value || value === "") {
-                                                                                field.onChange(0)
-                                                                            } else {
-                                                                                const numValue = parseCurrencyToNumber(value)
-                                                                                field.onChange(numValue)
-                                                                            }
-                                                                        }}
-                                                                        required
-                                                                        className="w-full"
-                                                                    />
-                                                                )}
-                                                            />
-                                                            <FieldError message={form.formState.errors.dates?.[index]?.price?.message || ""} />
-                                                        </div>
-                                                    ) : (
-                                                        <div className="space-y-3">
-                                                            <p className="text-xs text-psi-dark/60 mb-2">Defina o preço para cada tipo de ingresso neste dia:</p>
-                                                            {ticketTypes.map((ticketType, typeIdx) => {
-                                                                const currentPrices = form.watch(`dates.${index}.ticketTypePrices`) || []
-                                                                const priceIndex = currentPrices.findIndex(ttp => ttp.ticketTypeId === typeIdx.toString())
-                                                                
-                                                                return (
-                                                                    <div key={typeIdx} className="flex items-center gap-3">
-                                                                        <div className="flex-1">
-                                                                            <label className="block text-xs text-psi-dark/60 mb-1">{ticketType.name}</label>
-                                                                            {priceIndex >= 0 && (
-                                                                                <Controller
-                                                                                    name={`dates.${index}.ticketTypePrices.${priceIndex}.price`}
-                                                                                    control={form.control}
-                                                                                    render={({ field }) => (
-                                                                                        <InputCurrency
-                                                                                            value={field.value || 0}
-                                                                                            onChangeValue={(value) => {
-                                                                                                if (!value || value === "") {
-                                                                                                    field.onChange(0)
-                                                                                                } else {
-                                                                                                    const numValue = parseCurrencyToNumber(value)
-                                                                                                    field.onChange(numValue)
-                                                                                                }
-                                                                                            }}
-                                                                                            required
-                                                                                            className="w-full"
-                                                                                        />
-                                                                                    )}
-                                                                                />
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                )
-                                                            })}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                    <FieldError message={form.formState.errors.dates?.message || ""} />
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 p-6
+                        <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 shadow-lg shadow-black/5 p-6
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <FileText className="h-5 w-5 text-psi-primary" />
@@ -1714,9 +1718,9 @@ const CriarEventoForm = () => {
                                     <LoadingButton message="Criando evento..." />
                                 ) : (
                                     <>
-                                    <Rocket
+                                    <Megaphone
                                         className="
-                                        h-4 w-4 group-hover:rotate-12 group-hover:scale-120 transition-transform duration-300
+                                        h-4 w-4 group-hover:rotate-[-20deg] group-hover:scale-120 transition-transform duration-300
                                         "
                                     />
                                     Publicar Evento
