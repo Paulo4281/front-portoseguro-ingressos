@@ -289,7 +289,7 @@ const CuponsPannel = () => {
             lg:px-8">
             <div className="space-y-4">
                 <div className="space-y-3">
-                    <h1 className="text-3xl font-semibold text-psi-primary
+                    <h1 className="text-3xl font-medium text-psi-primary
                     sm:text-4xl">
                         Cupons e incentivos
                     </h1>
@@ -324,7 +324,7 @@ const CuponsPannel = () => {
 
             <div className="rounded-3xl border border-[#E4E6F0] bg-white/90 p-8 space-y-8 shadow-lg shadow-black/5">
                 <div className="flex flex-col gap-2">
-                    <h2 className="text-xl font-semibold text-psi-dark flex items-center gap-2">
+                    <h2 className="text-xl font-medium text-psi-dark flex items-center gap-2">
                         <Percent className="h-5 w-5 text-psi-primary" />
                         Criar novo cupom
                     </h2>
@@ -384,7 +384,7 @@ const CuponsPannel = () => {
                     </div>
 
                     <div className="border-t border-psi-dark/10 pt-6">
-                        <h3 className="text-sm font-semibold text-psi-dark mb-4">Configuração de desconto</h3>
+                        <h3 className="text-sm font-medium text-psi-dark mb-4">Configuração de desconto</h3>
                         <div className="grid gap-6
                         md:grid-cols-2">
                             <div className="space-y-2">
@@ -433,7 +433,7 @@ const CuponsPannel = () => {
                     </div>
 
                     <div className="border-t border-psi-dark/10 pt-6">
-                        <h3 className="text-sm font-semibold text-psi-dark mb-4">Regras e limites</h3>
+                        <h3 className="text-sm font-medium text-psi-dark mb-4">Regras e limites</h3>
                         <div className="grid gap-6
                         md:grid-cols-2">
                             <div className="space-y-2">
@@ -482,7 +482,7 @@ const CuponsPannel = () => {
             <div className="space-y-6">
                 <div className="flex items-center justify-between gap-4 flex-wrap">
                     <div>
-                        <h2 className="text-2xl font-semibold text-psi-dark">Cupons configurados</h2>
+                        <h2 className="text-2xl font-medium text-psi-dark">Cupons configurados</h2>
                         <p className="text-sm text-psi-dark/60">
                             Gerencie status, valores e regras de utilização
                         </p>
@@ -509,13 +509,13 @@ const CuponsPannel = () => {
                                     <div className="flex flex-wrap items-start justify-between gap-4 pb-6 border-b border-psi-dark/10">
                                         <div className="space-y-2">
                                             <div className="flex items-center gap-3">
-                                                <span className="text-2xl font-semibold text-psi-dark">{coupon.code}</span>
+                                                <span className="text-2xl font-medium text-psi-dark">{coupon.code}</span>
                                                 <Badge variant={coupon.isActive ? "default" : "secondary"} className={coupon.isActive ? "bg-emerald-100 text-emerald-700" : "bg-psi-dark/10 text-psi-dark"}>
                                                     {coupon.isActive ? "Ativo" : "Inativo"}
                                                 </Badge>
                                             </div>
                                             <hr />
-                                            <p className="text-lg font-bold text-psi-primary/80">
+                                            <p className="text-lg font-semibold text-psi-primary/80">
                                                 {coupon.eventName}
                                             </p>
                                         </div>
@@ -547,7 +547,7 @@ const CuponsPannel = () => {
 
                                     <div className="space-y-6">
                                         <div>
-                                            <h3 className="text-sm font-semibold text-psi-dark mb-4">Configuração de desconto</h3>
+                                            <h3 className="text-sm font-medium text-psi-dark mb-4">Configuração de desconto</h3>
                                             <div className="grid gap-4
                                             md:grid-cols-2">
                                                 <div className="space-y-2">
@@ -590,7 +590,7 @@ const CuponsPannel = () => {
                                         </div>
 
                                         <div className="border-t border-psi-dark/10 pt-6">
-                                            <h3 className="text-sm font-semibold text-psi-dark mb-4">Regras e limites</h3>
+                                            <h3 className="text-sm font-medium text-psi-dark mb-4">Regras e limites</h3>
                                             <div className="grid gap-4
                                             md:grid-cols-2">
                                                 <div className="space-y-2">
@@ -628,14 +628,14 @@ const CuponsPannel = () => {
                                                 <div className="flex items-center gap-6">
                                                     <div className="space-y-1">
                                                         <p className="text-xs text-psi-dark/50">Utilizações</p>
-                                                        <p className="text-lg font-semibold text-psi-dark">
+                                                        <p className="text-lg font-medium text-psi-dark">
                                                             {coupon.usageCount}{coupon.usageLimit ? ` / ${coupon.usageLimit}` : " (ilimitado)"}
                                                         </p>
                                                     </div>
                                                     <div className="h-12 w-px bg-psi-dark/10" />
                                                     <div className="space-y-1">
                                                         <p className="text-xs text-psi-dark/50">Desconto</p>
-                                                        <p className="text-lg font-semibold text-psi-primary">
+                                                        <p className="text-lg font-medium text-psi-primary">
                                                             {renderDiscountValue(coupon)}
                                                         </p>
                                                     </div>
@@ -644,7 +644,7 @@ const CuponsPannel = () => {
                                                             <div className="h-12 w-px bg-psi-dark/10" />
                                                             <div className="space-y-1">
                                                                 <p className="text-xs text-psi-dark/50">Expira em</p>
-                                                                <p className="text-lg font-semibold text-psi-dark">
+                                                                <p className="text-lg font-medium text-psi-dark">
                                                                     {new Date(coupon.expirationDate).toLocaleDateString("pt-BR")}
                                                                 </p>
                                                             </div>
@@ -687,7 +687,7 @@ const CuponsPannel = () => {
                         {coupons.length === 0 && (
                             <div className="rounded-3xl border border-dashed border-psi-dark/20 bg-white/60 p-8 text-center space-y-3">
                                 <Gift className="h-10 w-10 text-psi-primary mx-auto" />
-                                <p className="text-lg font-semibold text-psi-dark">Nenhum cupom disponível</p>
+                                <p className="text-lg font-medium text-psi-dark">Nenhum cupom disponível</p>
                                 <p className="text-sm text-psi-dark/60">Crie sua primeira campanha para aumentar a conversão dos seus eventos.</p>
                             </div>
                         )}
@@ -730,7 +730,7 @@ const StatCard = ({ icon: Icon, title, value, subtitle }: TStatCardProps) => {
                     <p className="text-sm font-medium text-psi-dark/70">{title}</p>
                 </div>
             </div>
-            <p className="text-3xl font-semibold text-psi-dark">{value}</p>
+            <p className="text-3xl font-medium text-psi-dark">{value}</p>
         </div>
     )
 }

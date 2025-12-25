@@ -11,13 +11,13 @@ const PoliticaDePrivacidadeInfo = () => {
             lg:px-8">
                 <div className="max-w-4xl mx-auto space-y-12">
                     <div className="text-center space-y-6">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-psi-primary/10 text-psi-primary text-sm font-semibold uppercase tracking-wide">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-psi-primary/10 text-psi-primary text-sm font-medium uppercase tracking-wide">
                             <Shield className="h-4 w-4" />
                             Privacidade e Segurança
                         </div>
                         <h1 className="text-4xl
                         sm:text-5xl
-                        lg:text-6xl font-bold text-psi-dark leading-tight">
+                        lg:text-6xl font-semibold text-psi-dark leading-tight">
                             Política de <span className="text-psi-primary">Privacidade</span>
                         </h1>
                         <p className="text-lg
@@ -37,7 +37,7 @@ const PoliticaDePrivacidadeInfo = () => {
                                     <Database className="h-6 w-6 text-psi-primary" />
                                 </div>
                                 <div className="flex-1 space-y-3">
-                                    <h2 className="text-2xl font-bold text-psi-dark">Dados Coletados</h2>
+                                    <h2 className="text-2xl font-semibold text-psi-dark">Dados Coletados</h2>
                                     <p className="text-psi-dark/70 leading-relaxed">
                                         Coletamos apenas os dados necessários para proporcionar uma experiência completa e segura em nossa plataforma. 
                                         Os dados coletados incluem:
@@ -71,7 +71,7 @@ const PoliticaDePrivacidadeInfo = () => {
                                     <Eye className="h-6 w-6 text-psi-primary" />
                                 </div>
                                 <div className="flex-1 space-y-3">
-                                    <h2 className="text-2xl font-bold text-psi-dark">Como Utilizamos Seus Dados</h2>
+                                    <h2 className="text-2xl font-semibold text-psi-dark">Como Utilizamos Seus Dados</h2>
                                     <p className="text-psi-dark/70 leading-relaxed">
                                         Utilizamos seus dados exclusivamente para:
                                     </p>
@@ -115,7 +115,7 @@ const PoliticaDePrivacidadeInfo = () => {
                                     <Lock className="h-6 w-6 text-psi-primary" />
                                 </div>
                                 <div className="flex-1 space-y-3">
-                                    <h2 className="text-2xl font-bold text-psi-dark">Segurança dos Dados</h2>
+                                    <h2 className="text-2xl font-semibold text-psi-dark">Segurança dos Dados</h2>
                                     <p className="text-psi-dark/70 leading-relaxed">
                                         Implementamos medidas técnicas e organizacionais rigorosas para proteger seus dados pessoais:
                                     </p>
@@ -148,7 +148,7 @@ const PoliticaDePrivacidadeInfo = () => {
                                     <UserCheck className="h-6 w-6 text-psi-primary" />
                                 </div>
                                 <div className="flex-1 space-y-3">
-                                    <h2 className="text-2xl font-bold text-psi-dark">Seus Direitos</h2>
+                                    <h2 className="text-2xl font-semibold text-psi-dark">Seus Direitos</h2>
                                     <p className="text-psi-dark/70 leading-relaxed">
                                         De acordo com a Lei Geral de Proteção de Dados (LGPD), você tem direito a:
                                     </p>
@@ -188,7 +188,7 @@ const PoliticaDePrivacidadeInfo = () => {
                                     <FileText className="h-6 w-6 text-psi-primary" />
                                 </div>
                                 <div className="flex-1 space-y-3">
-                                    <h2 className="text-2xl font-bold text-psi-dark">Alterações nesta Política</h2>
+                                    <h2 className="text-2xl font-semibold text-psi-dark">Alterações nesta Política</h2>
                                     <p className="text-psi-dark/70 leading-relaxed">
                                         Podemos atualizar esta Política de Privacidade periodicamente para refletir mudanças em nossas práticas ou por outros motivos operacionais, legais ou regulatórios. 
                                         Quando houver alterações significativas, notificaremos você através dos canais de comunicação da plataforma.
@@ -202,7 +202,7 @@ const PoliticaDePrivacidadeInfo = () => {
 
                         <section className="bg-psi-primary/5 rounded-xl border border-psi-primary/20 p-6
                         sm:p-8 text-center space-y-4">
-                            <h2 className="text-xl font-bold text-psi-dark">Dúvidas sobre Privacidade?</h2>
+                            <h2 className="text-xl font-semibold text-psi-dark">Dúvidas sobre Privacidade?</h2>
                             <p className="text-psi-dark/70">
                                 Se você tiver dúvidas sobre esta Política de Privacidade ou sobre como tratamos seus dados pessoais, 
                                 entre em contato conosco através dos canais de suporte disponíveis na plataforma.

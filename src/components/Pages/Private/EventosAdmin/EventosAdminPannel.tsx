@@ -204,7 +204,7 @@ const EventosAdminPannel = () => {
                 lg:px-8">
                     <div className="max-w-7xl mx-auto">
                         <div className="flex flex-col items-center justify-start py-20">
-                            <h2 className="text-2xl text-center font-bold text-psi-primary mb-2">
+                            <h2 className="text-2xl text-center font-semibold text-psi-primary mb-2">
                                 Nenhum evento encontrado
                             </h2>
                             <p className="text-base text-center text-psi-dark/60 max-w-md">
@@ -225,7 +225,7 @@ const EventosAdminPannel = () => {
                 <div className="max-w-7xl mx-auto">
                     <div className="mb-8">
                         <h1 className="text-4xl
-                        sm:text-5xl font-bold text-psi-primary mb-2">
+                        sm:text-5xl font-semibold text-psi-primary mb-2">
                             Eventos - Administração
                         </h1>
                         <p className="text-base
@@ -412,7 +412,7 @@ const EventCard = ({
 
             <div className="p-6 space-y-4">
                 <div>
-                    <h3 className="text-xl font-bold text-psi-dark mb-2 line-clamp-1">
+                    <h3 className="text-xl font-semibold text-psi-dark mb-2 line-clamp-1">
                         {event.name}
                     </h3>
                 </div>
@@ -462,7 +462,7 @@ const EventCard = ({
                         <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-3">
                             <div className="flex items-center gap-2">
                                 <Tag className="h-4 w-4 text-psi-primary shrink-0" />
-                                <span className="text-sm font-semibold text-psi-dark">
+                                <span className="text-sm font-medium text-psi-dark">
                                     {event.EventBatches.length} {event.EventBatches.length === 1 ? "lote" : "lotes"}
                                 </span>
                             </div>
@@ -535,7 +535,7 @@ const EventCard = ({
                                             <div className="flex items-center justify-between">
                                                 <span className="text-xs font-medium text-psi-dark">{batch.name}</span>
                                                 {batch.isActive && (
-                                                    <span className="text-xs text-psi-primary font-semibold">Ativo</span>
+                                                    <span className="text-xs text-psi-primary font-medium">Ativo</span>
                                                 )}
                                             </div>
                                             {batch.price !== null && batch.price !== undefined && (

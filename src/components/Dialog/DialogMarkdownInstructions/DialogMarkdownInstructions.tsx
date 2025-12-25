@@ -212,7 +212,7 @@ const DialogMarkdownInstructions = ({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold text-psi-dark">
+                    <DialogTitle className="text-2xl font-semibold text-psi-dark">
                         Guia de Markdown
                     </DialogTitle>
                     <DialogDescription className="text-base text-psi-dark/70">
@@ -233,7 +233,7 @@ const DialogMarkdownInstructions = ({
                                     <div className="h-10 w-10 rounded-lg bg-psi-primary/10 flex items-center justify-center">
                                         <Icon className="h-5 w-5 text-psi-primary" />
                                     </div>
-                                    <h3 className="text-lg font-semibold text-psi-dark">
+                                    <h3 className="text-lg font-medium text-psi-dark">
                                         {section.title}
                                     </h3>
                                 </div>
@@ -285,7 +285,7 @@ const DialogMarkdownInstructions = ({
                     <div className="rounded-xl border-2 border-psi-primary/30 bg-linear-to-br from-psi-primary/10 via-white to-psi-tertiary/10 p-6 space-y-3">
                         <div className="flex items-center gap-2">
                             <Minus className="h-5 w-5 text-psi-primary" />
-                            <h3 className="text-lg font-semibold text-psi-dark">
+                            <h3 className="text-lg font-medium text-psi-dark">
                                 Dicas Extras
                             </h3>
                         </div>

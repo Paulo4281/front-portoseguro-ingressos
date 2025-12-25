@@ -114,7 +114,7 @@ const ClientsPannel = () => {
             lg:px-8">
                 <div className="space-y-4">
                     <div className="space-y-3">
-                        <h1 className="text-3xl font-semibold text-psi-primary
+                        <h1 className="text-3xl font-medium text-psi-primary
                         sm:text-4xl">
                             Clientes
                         </h1>
@@ -167,10 +167,10 @@ const ClientsPannel = () => {
                         <Table>
                             <TableHeader>
                                 <TableRow className="border-b border-psi-dark/10 hover:bg-transparent bg-psi-dark/2">
-                                    <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider">Cliente</TableHead>
-                                    <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider">Contato</TableHead>
-                                    <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider">Eventos</TableHead>
-                                    <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider text-right">Ações</TableHead>
+                                    <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider">Cliente</TableHead>
+                                    <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider">Contato</TableHead>
+                                    <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider">Eventos</TableHead>
+                                    <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider text-right">Ações</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -182,7 +182,7 @@ const ClientsPannel = () => {
                                                     <Users className="h-8 w-8 text-psi-primary/60" />
                                                 </div>
                                                 <div className="space-y-1">
-                                                    <p className="text-base font-semibold text-psi-dark">Nenhum lead encontrado</p>
+                                                    <p className="text-base font-medium text-psi-dark">Nenhum lead encontrado</p>
                                                     <p className="text-sm text-psi-dark/50">Os clientes que comprarem ingressos aparecerão aqui.</p>
                                                 </div>
                                             </div>
@@ -198,12 +198,12 @@ const ClientsPannel = () => {
                                                     <TableCell className="py-5 px-6">
                                                         <div className="flex items-center gap-4">
                                                             <div className="h-12 w-12 rounded-full bg-gradient-to-br from-psi-primary/20 to-psi-primary/10 flex items-center justify-center shrink-0">
-                                                                <span className="text-sm font-semibold text-psi-primary">
+                                                                <span className="text-sm font-medium text-psi-primary">
                                                                     {initials}
                                                                 </span>
                                                             </div>
                                                             <div className="space-y-1 min-w-0">
-                                                                <p className="font-semibold text-psi-dark text-base">
+                                                                <p className="font-medium text-psi-dark text-base">
                                                                     {client.firstName} {client.lastName}
                                                                 </p>
                                                                 <p className="text-xs text-psi-dark/50 flex items-center gap-1.5">
@@ -265,7 +265,7 @@ const ClientsPannel = () => {
                                                                                 <Calendar className="h-4 w-4 text-psi-primary" />
                                                                                 Data de nascimento
                                                                             </div>
-                                                                            <p className="text-base font-semibold text-psi-dark">
+                                                                            <p className="text-base font-medium text-psi-dark">
                                                                                 {formatDate(client.birth)}
                                                                             </p>
                                                                         </div>
@@ -278,7 +278,7 @@ const ClientsPannel = () => {
                                                                                 <MapPin className="h-4 w-4 text-psi-primary" />
                                                                                 Endereço
                                                                             </div>
-                                                                            <p className="text-base font-semibold text-psi-dark leading-relaxed">
+                                                                            <p className="text-base font-medium text-psi-dark leading-relaxed">
                                                                                 {formatAddress(client.address)}
                                                                             </p>
                                                                         </div>
@@ -292,7 +292,7 @@ const ClientsPannel = () => {
                                                                                 <Ticket className="h-5 w-5 text-psi-primary" />
                                                                             </div>
                                                                             <div>
-                                                                                <h3 className="text-base font-semibold text-psi-dark">
+                                                                                <h3 className="text-base font-medium text-psi-dark">
                                                                                     Eventos adquiridos
                                                                                 </h3>
                                                                                 <p className="text-xs text-psi-dark/50">
@@ -309,7 +309,7 @@ const ClientsPannel = () => {
                                                                                 >
                                                                                     <div className="flex items-start justify-between gap-4">
                                                                                         <div className="flex-1 space-y-2 min-w-0">
-                                                                                            <p className="font-semibold text-psi-dark text-base group-hover:text-psi-primary transition-colors">
+                                                                                            <p className="font-medium text-psi-dark text-base group-hover:text-psi-primary transition-colors">
                                                                                                 {event.eventName}
                                                                                             </p>
                                                                                             <div className="flex items-center gap-2 text-xs text-psi-dark/50">
@@ -322,7 +322,7 @@ const ClientsPannel = () => {
                                                                                         <Badge variant="secondary" className="bg-psi-primary/10 text-psi-primary border-psi-primary/20 font-medium">
                                                                                             {event.ticketsCount} {event.ticketsCount === 1 ? "ingresso" : "ingressos"}
                                                                                         </Badge>
-                                                                                        <p className="text-base font-bold text-psi-primary">
+                                                                                        <p className="text-base font-semibold text-psi-primary">
                                                                                             {ValueUtils.centsToCurrency(event.paymentValue)}
                                                                                         </p>
                                                                                     </div>

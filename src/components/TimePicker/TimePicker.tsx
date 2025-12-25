@@ -139,7 +139,7 @@ const TimePicker = (
                             >
                                 <ChevronUp className="h-4 w-4 text-psi-primary" />
                             </button>
-                            <div className="text-3xl font-bold text-psi-dark min-w-[60px] text-center">
+                            <div className="text-3xl font-semibold text-psi-dark min-w-[60px] text-center">
                                 {hours}
                             </div>
                             <button
@@ -152,7 +152,7 @@ const TimePicker = (
                             <span className="text-xs text-psi-dark/60">Horas</span>
                         </div>
 
-                        <div className="text-2xl font-bold text-psi-primary">:</div>
+                        <div className="text-2xl font-semibold text-psi-primary">:</div>
 
                         <div className="flex flex-col items-center gap-2">
                             <button
@@ -162,7 +162,7 @@ const TimePicker = (
                             >
                                 <ChevronUp className="h-4 w-4 text-psi-primary" />
                             </button>
-                            <div className="text-3xl font-bold text-psi-dark min-w-[60px] text-center">
+                            <div className="text-3xl font-semibold text-psi-dark min-w-[60px] text-center">
                                 {minutes}
                             </div>
                             <button

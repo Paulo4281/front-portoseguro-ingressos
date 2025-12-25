@@ -82,7 +82,7 @@ const Avatar = (
                     <AvatarImage src={src} alt={name} className="object-cover" />
                 )}
                 <AvatarFallback className={cn(
-                    "bg-psi-primary text-white font-semibold",
+                    "bg-psi-primary text-white font-medium",
                     textSizeClasses[size]
                 )}>
                     {initials}

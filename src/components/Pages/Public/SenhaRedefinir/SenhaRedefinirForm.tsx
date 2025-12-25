@@ -36,7 +36,7 @@ const SenhaRedefinirForm = () => {
     return (
         <AuthLayout>
             <div className="mb-8 text-center">
-                <h1 className="text-3xl font-bold text-psi-dark dark:text-white mb-2">
+                <h1 className="text-3xl font-semibold text-psi-dark dark:text-white mb-2">
                     Esqueceu sua senha?
                 </h1>
                 <p className="text-muted-foreground">

@@ -55,7 +55,7 @@ const Footer = () => {
                         <div className="flex items-center gap-2">
                             <Logo className="h-16 w-auto" variant="black" /> 
                             <span className="text-xl font-extrabold text-psi-dark">Porto Seguro</span> 
-                            <span className="text-xl font-bold text-psi-dark/90">Ingressos</span>
+                            <span className="text-xl font-semibold text-psi-dark/90">Ingressos</span>
                         </div>
                         <p className="text-sm text-psi-dark/70 max-w-md">
                             Plataforma oficial para viver os eventos de Porto Seguro com curadoria local, taxas justas e atendimento humano.
@@ -90,7 +90,7 @@ const Footer = () => {
                 sm:grid-cols-2
                 lg:grid-cols-4">
                     <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-psi-dark">
+                        <div className="flex items-center gap-2 text-sm font-medium text-psi-dark">
                             <CreditCard className="size-8 text-psi-primary" />
                             Formas de Pagamento
                         </div>
@@ -126,7 +126,7 @@ const Footer = () => {
                     </div>
 
                     <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-psi-dark">
+                        <div className="flex items-center gap-2 text-sm font-medium text-psi-dark">
                             <Shield className="size-8 text-psi-primary" />
                             Segurança
                         </div>
@@ -143,7 +143,7 @@ const Footer = () => {
                     </div>
 
                     <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-psi-dark">
+                        <div className="flex items-center gap-2 text-sm font-medium text-psi-dark">
                             <HeadphonesIcon className="size-8 text-psi-primary" />
                             Suporte
                         </div>
@@ -153,7 +153,7 @@ const Footer = () => {
                     </div>
 
                     <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-psi-dark">
+                        <div className="flex items-center gap-2 text-sm font-medium text-psi-dark">
                             <Download className="size-8 text-psi-primary" />
                             Baixe o App
                         </div>

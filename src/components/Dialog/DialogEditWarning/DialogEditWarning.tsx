@@ -53,7 +53,7 @@ const DialogEditWarning = ({ changes, riskScore, isOpen, onClose }: TDialogEditW
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <AlertTriangle className={cn("h-5 w-5", riskLevel.color)} />
-                    <h3 className="text-sm font-semibold text-psi-dark">Alterações Detectadas</h3>
+                    <h3 className="text-sm font-medium text-psi-dark">Alterações Detectadas</h3>
                 </div>
                 <Button
                     variant="ghost"
@@ -68,7 +68,7 @@ const DialogEditWarning = ({ changes, riskScore, isOpen, onClose }: TDialogEditW
             <div className={cn("rounded-lg p-3 border", riskLevel.bg, riskLevel.border)}>
                 <div className="flex items-center gap-2 mb-2">
                     <SeverityIcon className={cn("h-4 w-4", riskLevel.color)} />
-                    <span className={cn("text-xs font-semibold", riskLevel.color)}>
+                    <span className={cn("text-xs font-medium", riskLevel.color)}>
                         {riskLevel.label}
                     </span>
                 </div>

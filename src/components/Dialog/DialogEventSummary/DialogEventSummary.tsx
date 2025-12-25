@@ -130,7 +130,7 @@ const DialogEventSummary = ({
                         <div className="border-b border-psi-dark/10 pb-4">
                             <div className="flex items-center gap-2 mb-2">
                                 <FileText className="h-4 w-4 text-psi-primary" />
-                                <h3 className="font-semibold text-psi-dark">Informações Básicas</h3>
+                                <h3 className="font-medium text-psi-dark">Informações Básicas</h3>
                             </div>
                             <div className="space-y-2 text-sm">
                                 <div>
@@ -170,7 +170,7 @@ const DialogEventSummary = ({
                             <div className="border-b border-psi-dark/10 pb-4">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Repeat className="h-4 w-4 text-psi-primary" />
-                                    <h3 className="font-semibold text-psi-dark">Recorrência</h3>
+                                    <h3 className="font-medium text-psi-dark">Recorrência</h3>
                                 </div>
                                 <div className="text-sm text-psi-dark">
                                     {formatRecurrence(eventData.recurrence)}
@@ -182,7 +182,7 @@ const DialogEventSummary = ({
                             <div className="border-b border-psi-dark/10 pb-4">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Calendar className="h-4 w-4 text-psi-primary" />
-                                    <h3 className="font-semibold text-psi-dark">Datas e Horários</h3>
+                                    <h3 className="font-medium text-psi-dark">Datas e Horários</h3>
                                 </div>
                                 <div className="space-y-2 text-sm">
                                     {eventData.dates?.map((date, index) => (
@@ -211,7 +211,7 @@ const DialogEventSummary = ({
                             <div className="border-b border-psi-dark/10 pb-4">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Ticket className="h-4 w-4 text-psi-primary" />
-                                    <h3 className="font-semibold text-psi-dark">Tipos de Ingresso</h3>
+                                    <h3 className="font-medium text-psi-dark">Tipos de Ingresso</h3>
                                 </div>
                                 <div className="space-y-2 text-sm">
                                     {eventData.ticketTypes?.map((type, index) => (
@@ -232,7 +232,7 @@ const DialogEventSummary = ({
                             <div className="border-b border-psi-dark/10 pb-4">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Ticket className="h-4 w-4 text-psi-primary" />
-                                    <h3 className="font-semibold text-psi-dark">Lotes</h3>
+                                    <h3 className="font-medium text-psi-dark">Lotes</h3>
                                 </div>
                                 <div className="space-y-4 text-sm">
                                     {eventData.batches?.map((batch, index) => (
@@ -290,7 +290,7 @@ const DialogEventSummary = ({
                             <div className="border-b border-psi-dark/10 pb-4">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Ticket className="h-4 w-4 text-psi-primary" />
-                                    <h3 className="font-semibold text-psi-dark">Ingressos</h3>
+                                    <h3 className="font-medium text-psi-dark">Ingressos</h3>
                                 </div>
                                 <div className="space-y-2 text-sm">
                                     <div>

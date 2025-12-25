@@ -134,7 +134,7 @@ const FormBuilder = ({ fields: initialFields = [], onChange }: TFormBuilderProps
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <div>
-                    <h3 className="text-lg font-semibold text-psi-dark">Campos do Formulário</h3>
+                    <h3 className="text-lg font-medium text-psi-dark">Campos do Formulário</h3>
                     <p className="text-sm text-psi-dark/60 mt-1">
                         Crie perguntas personalizadas para os compradores
                     </p>

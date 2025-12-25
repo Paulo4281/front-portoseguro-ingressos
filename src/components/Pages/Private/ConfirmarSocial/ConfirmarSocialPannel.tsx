@@ -87,7 +87,7 @@ const ConfirmarSocialPannel = () => {
             <AuthLayout>
                 <div className="mb-8 text-center">
                     <h1 className="text-3xl
-                    font-bold
+                    font-semibold
                     text-psi-dark
                     dark:text-white
                     mb-2">
@@ -107,7 +107,7 @@ const ConfirmarSocialPannel = () => {
                     >
                         <User className="size-8" />
                         <div className="text-left">
-                            <div className="font-semibold text-lg">Cliente</div>
+                            <div className="font-medium text-lg">Cliente</div>
                             <div className="text-sm text-muted-foreground">
                                 Compre ingressos para eventos
                             </div>
@@ -122,7 +122,7 @@ const ConfirmarSocialPannel = () => {
                     >
                         <Building2 className="size-8" />
                         <div className="text-left">
-                            <div className="font-semibold text-lg">Organizador de Eventos</div>
+                            <div className="font-medium text-lg">Organizador de Eventos</div>
                             <div className="text-sm text-muted-foreground">
                                 Crie e gerencie seus eventos
                             </div>
@@ -151,7 +151,7 @@ const ConfirmarSocialPannel = () => {
             <div className="mb-8">
                 <div className="flex items-center justify-between mb-2">
                     <h1 className="text-3xl
-                    font-bold
+                    font-semibold
                     text-psi-dark
                     dark:text-white">
                         Complete seu Cadastro

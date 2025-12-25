@@ -121,7 +121,7 @@ const LoginForm = () => {
         <AuthLayout>
             <div className="mb-8">
                 <h1 className="text-3xl
-                font-bold
+                font-semibold
                 text-psi-dark
                 dark:text-white
                 mb-2">

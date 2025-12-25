@@ -500,7 +500,7 @@ const QrScanLinkPannel = () => {
                                 <div className="mx-auto w-16 h-16 rounded-full bg-psi-primary/10 flex items-center justify-center">
                                     <Lock className="h-8 w-8 text-psi-primary" />
                                 </div>
-                                <h1 className="text-2xl font-bold text-psi-dark">Link inválido</h1>
+                                <h1 className="text-2xl font-semibold text-psi-dark">Link inválido</h1>
                                 <p className="text-sm text-psi-dark/60">
                                     Verifique se o link foi copiado corretamente.
                                 </p>
@@ -522,7 +522,7 @@ const QrScanLinkPannel = () => {
                                 <div className="mx-auto w-16 h-16 rounded-full bg-psi-primary/10 flex items-center justify-center">
                                     <Lock className="h-8 w-8 text-psi-primary" />
                                 </div>
-                                <h1 className="text-2xl font-bold text-psi-dark">Acesso Restrito</h1>
+                                <h1 className="text-2xl font-semibold text-psi-dark">Acesso Restrito</h1>
                                 <p className="text-sm text-psi-dark/60">
                                     Insira a senha fornecida pelo organizador para acessar o escaneamento
                                 </p>
@@ -632,7 +632,7 @@ const QrScanLinkPannel = () => {
                 <div className="mx-auto space-y-6">
                     <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                         <div>
-                            <h1 className="text-3xl font-bold text-psi-primary">Validar Ingressos</h1>
+                            <h1 className="text-3xl font-semibold text-psi-primary">Validar Ingressos</h1>
                             <p className="text-sm text-psi-dark/60 mt-1">Escaneie os QR codes dos ingressos para validar a entrada dos participantes</p>
                             <p className="text-xs text-psi-dark/50 mt-1">Código: {pubId}</p>
                         </div>
@@ -692,7 +692,7 @@ const QrScanLinkPannel = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {eventDates.length > 0 && (
                             <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
-                                <h2 className="text-lg font-semibold text-psi-dark mb-4">Filtrar por Data do Evento</h2>
+                                <h2 className="text-lg font-medium text-psi-dark mb-4">Filtrar por Data do Evento</h2>
                                 <Select value={selectedEventDateId} onValueChange={setSelectedEventDateId}>
                                     <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Selecione uma data" />
@@ -711,25 +711,25 @@ const QrScanLinkPannel = () => {
                         )}
 
                         <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
-                            <h2 className="text-lg font-semibold text-psi-dark mb-4">Estatísticas</h2>
+                            <h2 className="text-lg font-medium text-psi-dark mb-4">Estatísticas</h2>
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between p-3 rounded-lg bg-psi-primary/5">
                                     <span className="text-sm text-psi-dark/70">Total de ingressos</span>
-                                    <span className="text-lg font-semibold text-psi-primary">{validationStats.total}</span>
+                                    <span className="text-lg font-medium text-psi-primary">{validationStats.total}</span>
                                 </div>
                                 <div className="flex items-center justify-between p-3 rounded-lg bg-green-50">
                                     <span className="text-sm text-psi-dark/70 flex items-center gap-2">
                                         <CheckCircle2 className="h-4 w-4 text-green-600" />
                                         Validados
                                     </span>
-                                    <span className="text-lg font-semibold text-green-600">{validationStats.validated}</span>
+                                    <span className="text-lg font-medium text-green-600">{validationStats.validated}</span>
                                 </div>
                                 <div className="flex items-center justify-between p-3 rounded-lg bg-orange-50">
                                     <span className="text-sm text-psi-dark/70 flex items-center gap-2">
                                         <XCircle className="h-4 w-4 text-orange-600" />
                                         Pendentes
                                     </span>
-                                    <span className="text-lg font-semibold text-orange-600">{validationStats.remaining}</span>
+                                    <span className="text-lg font-medium text-orange-600">{validationStats.remaining}</span>
                                 </div>
                             </div>
                         </div>
@@ -737,7 +737,7 @@ const QrScanLinkPannel = () => {
                         {isScanning && (
                             <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
                                 <div className="mb-4">
-                                    <p className="text-sm font-semibold text-psi-dark">Leitura do QR Code</p>
+                                    <p className="text-sm font-medium text-psi-dark">Leitura do QR Code</p>
                                     <p className="text-xs text-psi-dark/60">
                                         {scanFeedback || "Aponte a câmera para o QR Code. Chegue mais perto e mantenha o celular firme."}
                                     </p>
@@ -753,7 +753,7 @@ const QrScanLinkPannel = () => {
 
                     <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-                            <h2 className="text-lg font-semibold text-psi-dark">Lista de Compradores</h2>
+                            <h2 className="text-lg font-medium text-psi-dark">Lista de Compradores</h2>
                             <div className="relative w-full sm:w-64">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-psi-dark/40" />
                                 <Input
@@ -950,7 +950,7 @@ const QrScanLinkPannel = () => {
                                             </div>
 
                                             <div className="text-xs text-psi-dark/70">
-                                                <span className="font-semibold text-psi-dark">Método:</span>{" "}
+                                                <span className="font-medium text-psi-dark">Método:</span>{" "}
                                                 {buyerInfoDialog.buyer.validationInfo.method === "qr-scan"
                                                     ? "Câmera"
                                                     : buyerInfoDialog.buyer.validationInfo.method === "qr-image"
@@ -963,19 +963,19 @@ const QrScanLinkPannel = () => {
                                             {!buyerInfoDialog.buyer.validationInfo.validatedByOrganizer && (
                                                 <div className="grid gap-3 sm:grid-cols-2 text-xs text-psi-dark/70">
                                                     <div>
-                                                        <span className="font-semibold text-psi-dark">Nome:</span>{" "}
+                                                        <span className="font-medium text-psi-dark">Nome:</span>{" "}
                                                         {buyerInfoDialog.buyer.validationInfo.name || "-"}
                                                     </div>
                                                     <div>
-                                                        <span className="font-semibold text-psi-dark">Local:</span>{" "}
+                                                        <span className="font-medium text-psi-dark">Local:</span>{" "}
                                                         {buyerInfoDialog.buyer.validationInfo.location || "-"}
                                                     </div>
                                                     <div>
-                                                        <span className="font-semibold text-psi-dark">IP:</span>{" "}
+                                                        <span className="font-medium text-psi-dark">IP:</span>{" "}
                                                         {buyerInfoDialog.buyer.validationInfo.ip || "-"}
                                                     </div>
                                                     <div>
-                                                        <span className="font-semibold text-psi-dark">Código do link de validação:</span>{" "}
+                                                        <span className="font-medium text-psi-dark">Código do link de validação:</span>{" "}
                                                         {buyerInfoDialog.buyer.validationInfo.code || "-"}
                                                     </div>
                                                 </div>

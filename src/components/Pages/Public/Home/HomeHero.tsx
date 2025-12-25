@@ -123,7 +123,7 @@ const HomeHero = () => {
                         <div className="space-y-8">
                             <div className="container flex items-center justify-between">
                                 <div className="space-y-2">
-                                    <h2 className="text-5xl font-bold text-psi-dark
+                                    <h2 className="text-5xl font-semibold text-psi-dark
                                     sm:text-3xl
                                     lg:text-4xl tracking-tight">
                                         Eventos em <span className="text-psi-primary">destaque</span>
@@ -179,10 +179,10 @@ const HomeHero = () => {
                                 </div>
 
                                 <div className="w-full">
-                                    <h2 className="text-3xl font-semibold text-center text-psi-dark tracking-tight
+                                    <h2 className="text-3xl font-medium text-center text-psi-dark tracking-tight
                                     sm:text-4xl
                                     lg:text-5xl">
-                                        <span className="text-psi-primary font-bold">+50 categorias</span><br className="lg:hidden" /> para todos os estilos
+                                        <span className="text-psi-primary font-semibold">+50 categorias</span><br className="lg:hidden" /> para todos os estilos
                                     </h2>
                                     <p className="text-sm text-center text-psi-dark/60 container
                                     sm:text-base">
@@ -224,7 +224,7 @@ const HomeHero = () => {
                     lg:grid-cols-[1.1fr_0.9fr]">
                         <div className="space-y-10 w-full relative">
                             <div className="space-y-6">
-                                <h1 className="text-4xl font-semibold leading-tight text-psi-dark
+                                <h1 className="text-4xl font-medium leading-tight text-psi-dark
                                 md:text-5xl
                                 lg:text-6xl">
                                     A forma mais sofisticada de viver os eventos da capital do descobrimento.
@@ -296,7 +296,7 @@ const HomeHero = () => {
                                 </span>
                                 <h2 className="text-3xl
                                 sm:text-4xl
-                                lg:text-5xl font-semibold text-psi-dark leading-tight">
+                                lg:text-5xl font-medium text-psi-dark leading-tight">
                                     Evolua sua bilheteria
                                 </h2>
                                 <p className="text-sm text-psi-dark/75
@@ -368,10 +368,10 @@ const HomeHero = () => {
             lg:py-20">
                 <div className="container space-y-10">
                     <div className="space-y-3 text-center max-w-3xl mx-auto">
-                        <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-psi-primary/10 text-psi-primary text-xs font-semibold uppercase tracking-wide">
+                        <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-psi-primary/10 text-psi-primary text-xs font-medium uppercase tracking-wide">
                             Confiança em cada etapa
                         </span>
-                        <h2 className="text-3xl font-bold text-psi-dark
+                        <h2 className="text-3xl font-semibold text-psi-dark
                         sm:text-4xl">
                             Experiências de compra seguras e transparentes
                         </h2>
@@ -393,7 +393,7 @@ const HomeHero = () => {
                                         <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${isFirst ? "bg-psi-light/90 text-psi-primary" : "bg-psi-primary/10 text-psi-primary"}`}>
                                             <Icon className="h-5 w-5" />
                                         </div>
-                                        <h3 className={`text-lg font-semibold text-psi-dark ${isFirst ? "text-psi-light" : ""}`}>{highlight.title}</h3>
+                                        <h3 className={`text-lg font-medium text-psi-dark ${isFirst ? "text-psi-light" : ""}`}>{highlight.title}</h3>
                                     </div>
                                     <p className={`text-sm text-psi-dark/70 flex-1 ${isFirst ? "text-psi-light text-shadow-2xs" : ""}`}>
                                         {highlight.description}
@@ -412,10 +412,10 @@ const HomeHero = () => {
                     <div className="grid gap-8
                     lg:grid-cols-[1.2fr_0.8fr] items-start">
                         <div className="space-y-4">
-                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold uppercase tracking-wide">
+                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-medium uppercase tracking-wide">
                                 Plataforma para organizadores
                             </span>
-                            <h2 className="text-3xl font-bold
+                            <h2 className="text-3xl font-semibold
                             sm:text-4xl">
                                 Conte sua história em uma plataforma independente, autêntica e tecnológica.
                             </h2>
@@ -458,7 +458,7 @@ const HomeHero = () => {
                                     />
                                 </div>
                             <div className="space-y-3">
-                                <h3 className="text-2xl font-semibold">Assuma o controle da sua bilheteria</h3>
+                                <h3 className="text-2xl font-medium">Assuma o controle da sua bilheteria</h3>
                                 <p className="text-white/80 text-sm">
                                     Tenha visibilidade de vendas, libere lotes com automações inteligentes e receba relatórios que ajudam nas decisões.
                                 </p>
@@ -469,14 +469,14 @@ const HomeHero = () => {
                                         <DollarSign className="mb-2 lg:mb-0 size-4 text-white/60" />
                                         <p className="text-xs text-white/60 uppercase tracking-widest">Tempo médio de repasse</p>
                                     </div>
-                                    <p className="text-3xl font-bold text-psi-tertiary mt-2">48h</p>
+                                    <p className="text-3xl font-semibold text-psi-tertiary mt-2">48h</p>
                                 </div>
                                 <div className="rounded-2xl bg-white/10 p-4">
                                     <div className="flex-col lg:flex items-start gap-2">
                                         <Star className="mb-2 lg:mb-0 size-4 text-white/60" />
                                         <p className="text-xs text-white/60 uppercase tracking-widest">Satisfação dos produtores</p>
                                     </div>
-                                    <p className="text-3xl font-bold text-emerald-300 mt-2">5/5</p>
+                                    <p className="text-3xl font-semibold text-emerald-300 mt-2">5/5</p>
                                 </div>
                             </div>
                             <div className="flex flex-col gap-3">
@@ -527,10 +527,10 @@ const HomeHero = () => {
                         lg:grid-cols-2 lg:gap-16 items-center">
                             <div className="space-y-6 text-white">
                                 <div className="space-y-3">
-                                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-sm text-white text-xs font-semibold uppercase tracking-wider border border-white/30">
+                                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-sm text-white text-xs font-medium uppercase tracking-wider border border-white/30">
                                         Capital do Descobrimento
                                     </span>
-                                    <h2 className="text-4xl font-bold leading-tight
+                                    <h2 className="text-4xl font-semibold leading-tight
                                     sm:text-5xl
                                     lg:text-6xl">
                                         O coração pulsante da <span className="text-psi-tertiary">cultura baiana</span>
@@ -547,7 +547,7 @@ const HomeHero = () => {
                                 ">
                                     {["Porto Seguro", "Arraial D'Ajuda", "Trancoso", "Caraíva", "Cabrália", "Coroa Vermelha"].map((city) => (
                                         <div key={city} className="rounded-xl bg-white/90 backdrop-blur-sm border border-white/20 p-3 text-center">
-                                            <p className="text-sm font-semibold text-psi-dark">{city}</p>
+                                            <p className="text-sm font-medium text-psi-dark">{city}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -574,7 +574,7 @@ const HomeHero = () => {
                                                 <Users className="w-6 h-6 text-psi-primary" />
                                             </div>
                                             <div>
-                                                <h3 className="text-lg font-semibold text-psi-dark">Para Organizadores</h3>
+                                                <h3 className="text-lg font-medium text-psi-dark">Para Organizadores</h3>
                                                 <p className="text-sm text-psi-dark/60">Conecte-se com o público local</p>
                                             </div>
                                         </div>
@@ -605,7 +605,7 @@ const HomeHero = () => {
                                                 <Ticket className="w-6 h-6 text-psi-secondary" />
                                             </div>
                                             <div>
-                                                <h3 className="text-lg font-semibold text-psi-dark">Para Compradores</h3>
+                                                <h3 className="text-lg font-medium text-psi-dark">Para Compradores</h3>
                                                 <p className="text-sm text-psi-dark/60">Descubra os melhores eventos</p>
                                             </div>
                                         </div>

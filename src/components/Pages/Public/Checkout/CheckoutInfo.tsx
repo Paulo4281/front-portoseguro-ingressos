@@ -1347,7 +1347,7 @@ const CheckoutInfo = () => {
             <Background variant="light" className="min-h-screen">
                 <div className="container py-12 mt-[100px]">
                     <div className="max-w-2xl mx-auto text-center space-y-4">
-                        <h1 className="text-2xl font-semibold text-psi-dark">Carrinho vazio</h1>
+                        <h1 className="text-2xl font-medium text-psi-dark">Carrinho vazio</h1>
                         <p className="text-psi-dark/60">Adicione ingressos ao carrinho antes de finalizar a compra.</p>
                         <Button onClick={() => router.push("/")} variant="primary">
                             Voltar para eventos
@@ -1364,7 +1364,7 @@ const CheckoutInfo = () => {
             sm:py-12">
                 <div className="max-w-5xl mx-auto">
                     <div className="mb-8">
-                        <h1 className="text-3xl font-bold text-psi-primary mb-2
+                        <h1 className="text-3xl font-semibold text-psi-primary mb-2
                         sm:text-4xl">
                             Checkout
                         </h1>
@@ -1435,7 +1435,7 @@ const CheckoutInfo = () => {
                             {currentStep === 1 && (
                                 <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
                                 sm:p-8 shadow-sm">
-                                    <h2 className="text-xl font-semibold text-psi-dark mb-6">Dados do Comprador</h2>
+                                    <h2 className="text-xl font-medium text-psi-dark mb-6">Dados do Comprador</h2>
 
                                     {isAuthenticated ? (
                                         <div className="space-y-6">
@@ -1446,7 +1446,7 @@ const CheckoutInfo = () => {
                                                             <div className="flex items-start gap-3">
                                                                 <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
                                                                 <div>
-                                                                    <p className="text-sm font-semibold text-emerald-900 mb-1">
+                                                                    <p className="text-sm font-medium text-emerald-900 mb-1">
                                                                         Dados completos
                                                                     </p>
                                                                     <p className="text-sm text-emerald-700">
@@ -1471,7 +1471,7 @@ const CheckoutInfo = () => {
                                                             <div className="flex items-start gap-3">
                                                                 <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
                                                                 <div>
-                                                                    <p className="text-sm font-semibold text-amber-900 mb-1">
+                                                                    <p className="text-sm font-medium text-amber-900 mb-1">
                                                                         Dados incompletos
                                                                     </p>
                                                                     <p className="text-sm text-amber-700">
@@ -1498,7 +1498,7 @@ const CheckoutInfo = () => {
                                                             <div className="flex items-start gap-3">
                                                                 <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
                                                                 <div>
-                                                                    <p className="text-sm font-semibold text-emerald-900 mb-1">
+                                                                    <p className="text-sm font-medium text-emerald-900 mb-1">
                                                                         Dados completos
                                                                     </p>
                                                                     <p className="text-sm text-emerald-700">
@@ -1514,7 +1514,7 @@ const CheckoutInfo = () => {
                                                             <div className="flex items-start gap-3">
                                                                 <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
                                                                 <div>
-                                                                    <p className="text-sm font-semibold text-amber-900 mb-1">
+                                                                    <p className="text-sm font-medium text-amber-900 mb-1">
                                                                         Dados incompletos
                                                                     </p>
                                                                     <p className="text-sm text-amber-700">
@@ -1580,7 +1580,7 @@ const CheckoutInfo = () => {
                             {currentStep === 2 && (
                                 <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6 grid grid-cols-1
                                 sm:p-8 shadow-sm">
-                                    <h2 className="text-xl font-semibold text-psi-dark mb-6">Resumo da Compra</h2>
+                                    <h2 className="text-xl font-medium text-psi-dark mb-6">Resumo da Compra</h2>
 
                                     <div className="space-y-4">
                                         {items.map((item) => {
@@ -1600,7 +1600,7 @@ const CheckoutInfo = () => {
 
                                                         <div className="flex-1 space-y-2">
                                                             <div className="flex items-center justify-between">
-                                                                <h3 className="font-semibold text-psi-dark">{event.name}</h3>
+                                                                <h3 className="font-medium text-psi-dark">{event.name}</h3>
                                                             </div>
 
                                                             <div className="animate-pulse transition-opacity duration-700">
@@ -1820,7 +1820,7 @@ const CheckoutInfo = () => {
                                                                             <div className="flex items-center gap-2">
                                                                                 <CheckCircle2 className="size-5 text-emerald-600" />
                                                                                 <div>
-                                                                                    <p className="text-sm font-semibold text-emerald-900">
+                                                                                    <p className="text-sm font-medium text-emerald-900">
                                                                                         Cupom {couponCodes[event.id]} aplicado
                                                                                     </p>
                                                                                     <p className="text-xs text-emerald-700">
@@ -1906,7 +1906,7 @@ const CheckoutInfo = () => {
                                                                 )}
                                                                 <div className="flex items-center justify-between">
                                                                     <span className="text-sm font-medium text-psi-dark">Total:</span>
-                                                                    <p className="text-lg font-semibold text-psi-primary">
+                                                                    <p className="text-lg font-medium text-psi-primary">
                                                                         {ValueUtils.centsToCurrency(
                                                                             CheckoutUtils.calculateItemTotal(item, event) -
                                                                             (currentEventCoupon ? totalDiscount : 0)
@@ -1925,7 +1925,7 @@ const CheckoutInfo = () => {
                                         <div className="flex items-start gap-3">
                                             <MailCheck className="size-5 text-psi-primary shrink-0 mt-0.5" />
                                             <div className="space-y-1">
-                                                <p className="font-semibold text-psi-dark">Importante</p>
+                                                <p className="font-medium text-psi-dark">Importante</p>
                                                 <p className="text-sm text-psi-dark/70">
                                                     Os ingressos serão enviados para o seu e-mail juntamente com o comprovante de pagamento após a confirmação.
                                                 </p>
@@ -1953,11 +1953,11 @@ const CheckoutInfo = () => {
                                                         <div key={`${eventId}-${ticketIndex}`} className="rounded-2xl border border-[#E4E6F0] bg-white p-6
                                                         sm:p-8 shadow-sm">
                                                             <div className="mb-6">
-                                                                <h2 className="text-xl font-semibold text-psi-dark mb-1">{eventName}</h2>
+                                                                <h2 className="text-xl font-medium text-psi-dark mb-1">{eventName}</h2>
                                                                 {isForEachTicket && (
                                                                     <div className="space-y-1">
                                                                         <p className="text-sm font-medium text-psi-primary">Ingresso {ticketNumber} de {currentTicketQuantity}</p>
-                                                                        <p className="text-sm font-semibold text-psi-dark">{currentTicketTypeName !== "Ingresso" ? currentTicketTypeName : ""}</p>
+                                                                        <p className="text-sm font-medium text-psi-dark">{currentTicketTypeName !== "Ingresso" ? currentTicketTypeName : ""}</p>
                                                                         {currentTicketTypeDescription && (
                                                                             <p className="text-xs text-psi-dark/60 mt-1">{currentTicketTypeDescription}</p>
                                                                         )}
@@ -2085,7 +2085,7 @@ const CheckoutInfo = () => {
                                         <div className="inline-flex items-center justify-center size-16 rounded-full bg-psi-primary/10">
                                             <CheckCircle2 className="size-8 text-psi-primary" />
                                         </div>
-                                        <h2 className="text-2xl font-semibold text-psi-dark">Finalizar Compra</h2>
+                                        <h2 className="text-2xl font-medium text-psi-dark">Finalizar Compra</h2>
                                         <p className="text-psi-dark/60">
                                             {
                                                 items?.[0]?.isFree
@@ -2111,7 +2111,7 @@ const CheckoutInfo = () => {
                                                 :
                                                 (
                                                     <div>
-                                                        <h3 className="text-lg font-semibold text-psi-dark mb-4">Forma de Pagamento</h3>
+                                                        <h3 className="text-lg font-medium text-psi-dark mb-4">Forma de Pagamento</h3>
 
                                                         <div className="space-y-4 mb-6">
                                                             <button
@@ -2136,7 +2136,7 @@ const CheckoutInfo = () => {
                                                                             src="/icons/payment/pix.png"
                                                                             width={25}
                                                                         />
-                                                                        <span className="font-semibold text-psi-dark">PIX</span>
+                                                                        <span className="font-medium text-psi-dark">PIX</span>
                                                                     </div>
                                                                 </div>
                                                             </button>
@@ -2163,7 +2163,7 @@ const CheckoutInfo = () => {
                                                                             src="/icons/payment/credit-card.png"
                                                                             width={25}
                                                                         />
-                                                                        <span className="font-semibold text-psi-dark">Cartão de Crédito</span>
+                                                                        <span className="font-medium text-psi-dark">Cartão de Crédito</span>
                                                                     </div>
                                                                 </div>
                                                             </button>
@@ -2181,7 +2181,7 @@ const CheckoutInfo = () => {
                                                                 {!isLoadingCards && cards.length > 0 && !showNewCardForm && (
                                                                     <div className="space-y-3">
                                                                         <div className="flex items-center justify-between">
-                                                                            <h4 className="text-sm font-semibold text-psi-dark">Cartões Cadastrados</h4>
+                                                                            <h4 className="text-sm font-medium text-psi-dark">Cartões Cadastrados</h4>
                                                                             <Button
                                                                                 type="button"
                                                                                 variant="outline"
@@ -2239,7 +2239,7 @@ const CheckoutInfo = () => {
                                                                                             </div>
                                                                                             <div>
                                                                                                 <p className="text-xs text-psi-dark/60 mb-1">Número do Cartão</p>
-                                                                                                <p className="text-lg font-semibold text-psi-dark font-mono">
+                                                                                                <p className="text-lg font-medium text-psi-dark font-mono">
                                                                                                     •••• •••• •••• {card.last4}
                                                                                                 </p>
                                                                                             </div>
@@ -2267,7 +2267,7 @@ const CheckoutInfo = () => {
                                                                     <div className="space-y-4">
                                                                         {cards.length > 0 && (
                                                                             <div className="flex items-center justify-between">
-                                                                                <h4 className="text-sm font-semibold text-psi-dark">Novo Cartão</h4>
+                                                                                <h4 className="text-sm font-medium text-psi-dark">Novo Cartão</h4>
                                                                                 <Button
                                                                                     type="button"
                                                                                     variant="ghost"
@@ -2360,7 +2360,7 @@ const CheckoutInfo = () => {
                                                         {buyTicketResponse?.pixData && (
                                                             <div className="space-y-6 pt-6 border-t border-psi-dark/10">
                                                                 <div>
-                                                                    <h3 className="text-lg font-semibold text-psi-dark mb-4">Pagamento via PIX</h3>
+                                                                    <h3 className="text-lg font-medium text-psi-dark mb-4">Pagamento via PIX</h3>
                                                                     <p className="text-sm text-psi-dark/70 mb-6">
                                                                         Escaneie o QR Code ou copie o código para realizar o pagamento
                                                                     </p>
@@ -2398,7 +2398,7 @@ const CheckoutInfo = () => {
                                                                     <div className="flex items-start gap-3">
                                                                         <Clock className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
                                                                         <div>
-                                                                            <p className="text-sm font-semibold text-amber-900 mb-1">
+                                                                            <p className="text-sm font-medium text-amber-900 mb-1">
                                                                                 Válido até
                                                                             </p>
                                                                             <p className="text-sm text-amber-700">
@@ -2418,7 +2418,7 @@ const CheckoutInfo = () => {
                                                                     <div className="flex items-start gap-3">
                                                                         <QrCode className="h-5 w-5 text-psi-primary shrink-0 mt-0.5" />
                                                                         <div>
-                                                                            <p className="text-sm font-semibold text-psi-dark mb-1">
+                                                                            <p className="text-sm font-medium text-psi-dark mb-1">
                                                                                 {buyTicketResponse.pixData.description}
                                                                             </p>
                                                                             <p className="text-xs text-psi-dark/70">
@@ -2455,7 +2455,7 @@ const CheckoutInfo = () => {
                                         }
 
                                         <div className="p-4 rounded-xl bg-psi-dark/5">
-                                            <h3 className="font-semibold text-psi-dark mb-2">Resumo</h3>
+                                            <h3 className="font-medium text-psi-dark mb-2">Resumo</h3>
                                             <div className="space-y-2 text-sm">
                                                 {totalDiscount > 0 && (
                                                     <>
@@ -2465,7 +2465,7 @@ const CheckoutInfo = () => {
                                                         </div>
                                                     </>
                                                 )}
-                                                <div className="flex items-center justify-between font-semibold text-psi-dark pt-2 border-t border-psi-dark/10">
+                                                <div className="flex items-center justify-between font-medium text-psi-dark pt-2 border-t border-psi-dark/10">
                                                     <span>Total:</span>
                                                     {
                                                         items?.[0]?.isFree
@@ -2547,7 +2547,7 @@ const CheckoutInfo = () => {
 
                         <div className="lg:sticky lg:top-[100px] lg:h-fit">
                             <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6 shadow-sm">
-                                <h3 className="font-semibold text-psi-dark mb-4">Resumo do Pedido</h3>
+                                <h3 className="font-medium text-psi-dark mb-4">Resumo do Pedido</h3>
 
                                 <div className="space-y-3 mb-4">
                                     {items.flatMap((item) => {
@@ -2580,7 +2580,7 @@ const CheckoutInfo = () => {
                                                         <span className="text-psi-dark/70">
                                                             {ticketTypeLabel} x{tt.quantity}
                                                         </span>
-                                                        <span className="font-semibold text-psi-dark">
+                                                        <span className="font-medium text-psi-dark">
                                                             {ValueUtils.centsToCurrency(CheckoutUtils.calculateItemTotal(itemForThisTicketType, event || null))}
                                                         </span>
                                                     </div>
@@ -2593,7 +2593,7 @@ const CheckoutInfo = () => {
                                                 <span className="text-psi-dark/70">
                                                     {item.eventName} x{item.quantity}
                                                 </span>
-                                                <span className="font-semibold text-psi-dark">
+                                                <span className="font-medium text-psi-dark">
                                                     {ValueUtils.centsToCurrency(CheckoutUtils.calculateItemTotal(item, event || null))}
                                                 </span>
                                             </div>
@@ -2627,8 +2627,8 @@ const CheckoutInfo = () => {
                                         </div>
                                     )}
                                     <div className="flex items-center justify-between pt-2 border-t border-psi-dark/10">
-                                        <span className="font-semibold text-psi-dark">Total</span>
-                                        <span className="text-2xl font-bold text-psi-primary">
+                                        <span className="font-medium text-psi-dark">Total</span>
+                                        <span className="text-2xl font-semibold text-psi-primary">
                                             {ValueUtils.centsToCurrency(total)}
                                         </span>
                                     </div>
@@ -2922,7 +2922,7 @@ const CheckoutInfo = () => {
                     <DialogHeader>
                         <DialogTitle>Confirmar Cadastro</DialogTitle>
                         <DialogDescription>
-                            Olá, <span className="font-semibold">{cadastroName}</span>! Digite o código de 6 dígitos enviado para <span className="font-semibold">{cadastroEmail}</span>
+                            Olá, <span className="font-medium">{cadastroName}</span>! Digite o código de 6 dígitos enviado para <span className="font-medium">{cadastroEmail}</span>
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={confirmacaoForm.handleSubmit(handleConfirmacao)} className="space-y-4">
@@ -3016,7 +3016,7 @@ const CheckoutInfo = () => {
                     </DialogHeader>
                     <form onSubmit={updateProfileForm.handleSubmit(handleUpdateProfile)} className="space-y-6">
                         <div className="space-y-4 pt-6 border-t border-psi-dark/10">
-                            <h2 className="text-xl font-semibold text-psi-dark">Informações Pessoais</h2>
+                            <h2 className="text-xl font-medium text-psi-dark">Informações Pessoais</h2>
 
                             <div className="grid gap-4
                             sm:grid-cols-3">
@@ -3196,7 +3196,7 @@ const CheckoutInfo = () => {
                         </div>
 
                         <div className="space-y-4 pt-6 border-t border-psi-dark/10">
-                            <h2 className="text-xl font-semibold text-psi-dark">Endereço</h2>
+                            <h2 className="text-xl font-medium text-psi-dark">Endereço</h2>
 
                             <div className="grid gap-4
                             sm:grid-cols-2">
@@ -3435,7 +3435,7 @@ const CheckoutInfo = () => {
                     </DialogHeader>
                     <div className="space-y-6">
                         <div className="space-y-4 pt-6 border-t border-psi-dark/10">
-                            <h2 className="text-xl font-semibold text-psi-dark">Informações Pessoais</h2>
+                            <h2 className="text-xl font-medium text-psi-dark">Informações Pessoais</h2>
 
                             <div className="grid gap-4
                             sm:grid-cols-3">
@@ -3527,7 +3527,7 @@ const CheckoutInfo = () => {
 
                         {user?.Address && (
                             <div className="space-y-4 pt-6 border-t border-psi-dark/10">
-                                <h2 className="text-xl font-semibold text-psi-dark">Endereço</h2>
+                                <h2 className="text-xl font-medium text-psi-dark">Endereço</h2>
 
                                 <div className="grid gap-4
                                 sm:grid-cols-2">

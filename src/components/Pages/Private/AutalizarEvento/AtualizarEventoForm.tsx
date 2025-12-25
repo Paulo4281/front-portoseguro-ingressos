@@ -885,7 +885,7 @@ const AtualizarEventoForm = () => {
                             <span>Voltar para meus eventos</span>
                         </Link>
                         <h1 className="text-4xl
-                        sm:text-5xl font-bold text-psi-primary mb-2">
+                        sm:text-5xl font-semibold text-psi-primary mb-2">
                             Atualizar Evento
                         </h1>
                         <p className="text-base
@@ -899,7 +899,7 @@ const AtualizarEventoForm = () => {
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <FileText className="h-5 w-5 text-psi-primary" />
-                                <h2 className="text-2xl font-bold text-psi-dark">Informações Básicas</h2>
+                                <h2 className="text-2xl font-semibold text-psi-dark">Informações Básicas</h2>
                             </div>
 
                             <div className="space-y-4">
@@ -1032,7 +1032,7 @@ const AtualizarEventoForm = () => {
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <Tag className="h-5 w-5 text-psi-primary" />
-                                <h2 className="text-2xl font-bold text-psi-dark">Tipos de Ingressos (Opcional)</h2>
+                                <h2 className="text-2xl font-semibold text-psi-dark">Tipos de Ingressos (Opcional)</h2>
                             </div>
 
                             <div className="space-y-4">
@@ -1041,7 +1041,7 @@ const AtualizarEventoForm = () => {
                                 </p>
 
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-lg font-semibold text-psi-dark">Tipos</h3>
+                                    <h3 className="text-lg font-medium text-psi-dark">Tipos</h3>
                                     {!hasAnySoldTicketsForDates && (
                                         <Button
                                             type="button"
@@ -1060,7 +1060,7 @@ const AtualizarEventoForm = () => {
                                         <div className="flex items-start gap-3">
                                             <Info className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
                                             <div>
-                                                <p className="text-sm font-semibold text-amber-900 mb-1">
+                                                <p className="text-sm font-medium text-amber-900 mb-1">
                                                     Adição de tipos de ingressos bloqueada
                                                 </p>
                                                 <p className="text-sm text-amber-700">
@@ -1077,7 +1077,7 @@ const AtualizarEventoForm = () => {
                                         className={`rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4 space-y-4 ${hasAnySoldTicketsForDates ? "opacity-60" : ""}`}
                                     >
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm font-semibold text-psi-dark">
+                                            <span className="text-sm font-medium text-psi-dark">
                                                 Tipo {index + 1}
                                             </span>
                                             {!hasAnySoldTicketsForDates && (
@@ -1143,7 +1143,7 @@ const AtualizarEventoForm = () => {
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <Tag className="h-5 w-5 text-psi-primary" />
-                                <h2 className="text-2xl font-bold text-psi-dark">Ingressos</h2>
+                                <h2 className="text-2xl font-semibold text-psi-dark">Ingressos</h2>
                             </div>
 
                             <div className="space-y-4">
@@ -1308,10 +1308,10 @@ const AtualizarEventoForm = () => {
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <h3 className="text-lg font-semibold text-psi-dark">Lotes</h3>
+                                            <h3 className="text-lg font-medium text-psi-dark">Lotes</h3>
                                             {totalTickets > 0 && (
                                                 <p className="text-sm text-psi-dark/60 mt-1">
-                                                    Total de ingressos: <span className="font-semibold text-psi-primary">{totalTickets}</span>
+                                                    Total de ingressos: <span className="font-medium text-psi-primary">{totalTickets}</span>
                                                 </p>
                                             )}
                                         </div>
@@ -1348,16 +1348,16 @@ const AtualizarEventoForm = () => {
                                                     )}
                                                 >
                                                     <div className="flex items-center justify-between">
-                                                        <span className="text-sm font-semibold text-psi-dark">
+                                                        <span className="text-sm font-medium text-psi-dark">
                                                             Lote {index + 1}
                                                             {isActiveBatch && !isFinishedBatch && (
-                                                                <span className="ml-2 inline-flex items-center gap-1 text-xs font-semibold text-psi-primary">
+                                                                <span className="ml-2 inline-flex items-center gap-1 text-xs font-medium text-psi-primary">
                                                                     <CheckCircle className="h-3 w-3" />
                                                                     Lote ativo
                                                                 </span>
                                                             )}
                                                             {isFinishedBatch && (
-                                                                <span className="ml-2 inline-flex items-center gap-1 text-xs font-semibold text-psi-dark/60">
+                                                                <span className="ml-2 inline-flex items-center gap-1 text-xs font-medium text-psi-dark/60">
                                                                     <Info className="h-3 w-3" />
                                                                     Lote finalizado
                                                                 </span>
@@ -1453,7 +1453,7 @@ const AtualizarEventoForm = () => {
                                                                             if (sold > 0) {
                                                                                 return (
                                                                                     <span className="text-xs text-psi-dark/60">
-                                                                                        Vendidos: <span className="font-semibold text-psi-primary">{sold}</span>
+                                                                                        Vendidos: <span className="font-medium text-psi-primary">{sold}</span>
                                                                                     </span>
                                                                                 )
                                                                             }
@@ -1519,7 +1519,7 @@ const AtualizarEventoForm = () => {
                                                                 return (
                                                                     <div key={typeIdx} className="rounded-lg border border-[#E4E6F0] bg-white p-3 space-y-3">
                                                                         <div className="flex items-center justify-between">
-                                                                            <span className="text-sm font-semibold text-psi-dark">
+                                                                            <span className="text-sm font-medium text-psi-dark">
                                                                                 {ticketType.name}
                                                                                 {ticketType.description && (
                                                                                     <span className="text-xs text-psi-dark/60 ml-2">| {ticketType.description}</span>
@@ -1566,7 +1566,7 @@ const AtualizarEventoForm = () => {
                                                                                             if (sold > 0) {
                                                                                                 return (
                                                                                                     <span className="text-xs text-psi-dark/60">
-                                                                                                        Vendidos: <span className="font-semibold text-psi-primary">{sold}</span>
+                                                                                                        Vendidos: <span className="font-medium text-psi-primary">{sold}</span>
                                                                                                     </span>
                                                                                                 )
                                                                                             }
@@ -1777,7 +1777,7 @@ const AtualizarEventoForm = () => {
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <Repeat className="h-5 w-5 text-psi-primary" />
-                                <h2 className="text-2xl font-bold text-psi-dark">Recorrência (Opcional)</h2>
+                                <h2 className="text-2xl font-semibold text-psi-dark">Recorrência (Opcional)</h2>
                             </div>
 
                             <div className="space-y-4">
@@ -1929,7 +1929,7 @@ const AtualizarEventoForm = () => {
                                                             Horário *
                                                         </label>
                                                         <div className="rounded-lg border border-[#E4E6F0] bg-white p-3 space-y-3">
-                                                            <div className="font-semibold text-sm text-psi-dark">
+                                                            <div className="font-medium text-sm text-psi-dark">
                                                                 {weekDays.find(d => d.value === recurrenceDay)?.label || ""}
                                                             </div>
                                                             <div className="grid grid-cols-2 gap-4">
@@ -2002,7 +2002,7 @@ const AtualizarEventoForm = () => {
                                                             Horário *
                                                         </label>
                                                         <div className="rounded-lg border border-[#E4E6F0] bg-white p-3 space-y-3">
-                                                            <div className="font-semibold text-sm text-psi-dark">Dia {recurrenceDay}</div>
+                                                            <div className="font-medium text-sm text-psi-dark">Dia {recurrenceDay}</div>
                                                             <div className="grid grid-cols-2 gap-4">
                                                                 <div>
                                                                     <label className="block text-xs text-psi-dark/60 mb-1">Início</label>
@@ -2068,7 +2068,7 @@ const AtualizarEventoForm = () => {
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="flex items-center gap-3">
                                         <Calendar className="h-5 w-5 text-psi-primary" />
-                                        <h2 className="text-2xl font-bold text-psi-dark">Datas e Horários</h2>
+                                        <h2 className="text-2xl font-semibold text-psi-dark">Datas e Horários</h2>
                                     </div>
                                     {!hasAnySoldTicketsForDates && (
                                         <Button
@@ -2088,7 +2088,7 @@ const AtualizarEventoForm = () => {
                                         <div className="flex items-start gap-3">
                                             <Info className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
                                             <div>
-                                                <p className="text-sm font-semibold text-amber-900 mb-1">
+                                                <p className="text-sm font-medium text-amber-900 mb-1">
                                                     Alteração de datas e horários bloqueada
                                                 </p>
                                                 <p className="text-sm text-amber-700">
@@ -2106,7 +2106,7 @@ const AtualizarEventoForm = () => {
                                             className={`rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4 space-y-4 ${hasAnySoldTicketsForDates ? "opacity-60 pointer-events-none" : ""}`}
                                         >
                                             <div className="flex items-center justify-between">
-                                                <span className="text-sm font-semibold text-psi-dark">
+                                                <span className="text-sm font-medium text-psi-dark">
                                                     Data {index + 1}
                                                 </span>
                                                 {dateFields.length > 1 && !hasAnySoldTicketsForDates && (
@@ -2248,7 +2248,7 @@ const AtualizarEventoForm = () => {
                                                                         if (sold > 0) {
                                                                             return (
                                                                                 <span className="text-xs text-psi-dark/60">
-                                                                                    Vendidos: <span className="font-semibold text-psi-primary">{sold}</span>
+                                                                                    Vendidos: <span className="font-medium text-psi-primary">{sold}</span>
                                                                                 </span>
                                                                             )
                                                                         }
@@ -2311,7 +2311,7 @@ const AtualizarEventoForm = () => {
                                                                                         if (sold > 0) {
                                                                                             return (
                                                                                                 <span className="text-xs text-psi-dark/60">
-                                                                                                    Vendidos: <span className="font-semibold text-psi-primary">{sold}</span>
+                                                                                                    Vendidos: <span className="font-medium text-psi-primary">{sold}</span>
                                                                                                 </span>
                                                                                             )
                                                                                         }
@@ -2361,7 +2361,7 @@ const AtualizarEventoForm = () => {
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <FileText className="h-5 w-5 text-psi-primary" />
-                                <h2 className="text-2xl font-bold text-psi-dark">Formulário Personalizado (Opcional)</h2>
+                                <h2 className="text-2xl font-semibold text-psi-dark">Formulário Personalizado (Opcional)</h2>
                             </div>
 
                             <div className="space-y-4">

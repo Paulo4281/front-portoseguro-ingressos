@@ -50,7 +50,7 @@ const CheckoutTimer = ({ expiresAt, onExpire }: TCheckoutTimerProps) => {
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-center gap-3">
                 <AlertCircle className="size-5 text-amber-600 shrink-0" />
                 <div className="flex-1">
-                    <p className="text-sm font-semibold text-amber-900">
+                    <p className="text-sm font-medium text-amber-900">
                         Tempo esgotado
                     </p>
                     <p className="text-xs text-amber-700">
@@ -65,7 +65,7 @@ const CheckoutTimer = ({ expiresAt, onExpire }: TCheckoutTimerProps) => {
         <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-4 flex items-center gap-3">
             <Clock className="size-5 text-psi-primary shrink-0" />
             <div className="flex-1">
-                <p className="text-sm font-semibold text-psi-dark">
+                <p className="text-sm font-medium text-psi-dark">
                     Seus ingressos estão reservados
                 </p>
                 <p className="text-sm text-psi-dark/70">

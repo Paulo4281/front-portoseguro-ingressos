@@ -43,7 +43,7 @@ const DialogAdminChangeDateWarning = ({
 
                 <div className="space-y-4 py-4">
                     <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4">
-                        <p className="text-base font-bold text-amber-900 mb-2">
+                        <p className="text-base font-semibold text-amber-900 mb-2">
                             ⚠️ ALTERAR DATA/HORÁRIO É UMA AÇÃO CRÍTICA
                         </p>
                         <p className="text-sm text-psi-dark">
@@ -53,7 +53,7 @@ const DialogAdminChangeDateWarning = ({
 
                     <div className="space-y-3">
                         <div className="rounded-lg border border-red-200 bg-red-50 p-3">
-                            <p className="text-sm font-semibold text-red-900 mb-2">
+                            <p className="text-sm font-medium text-red-900 mb-2">
                                 Consequências para os Compradores:
                             </p>
                             <ul className="list-disc list-inside space-y-1 text-sm text-red-800 ml-2">
@@ -65,7 +65,7 @@ const DialogAdminChangeDateWarning = ({
                         </div>
 
                         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-                            <p className="text-sm font-semibold text-amber-900 mb-2">
+                            <p className="text-sm font-medium text-amber-900 mb-2">
                                 Consequências para o Organizador:
                             </p>
                             <ul className="list-disc list-inside space-y-1 text-sm text-amber-800 ml-2">
@@ -77,7 +77,7 @@ const DialogAdminChangeDateWarning = ({
                         </div>
 
                         <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-4">
-                            <p className="text-sm font-semibold text-psi-dark mb-2">
+                            <p className="text-sm font-medium text-psi-dark mb-2">
                                 Informações do Evento:
                             </p>
                             <div className="space-y-2 text-sm text-psi-dark/70">
@@ -98,7 +98,7 @@ const DialogAdminChangeDateWarning = ({
                         </div>
 
                         <div className="rounded-xl border-2 border-destructive bg-destructive/5 p-4">
-                            <p className="text-sm font-bold text-destructive mb-2">
+                            <p className="text-sm font-semibold text-destructive mb-2">
                                 IMPORTANTE - Recomendações:
                             </p>
                             <ul className="list-disc list-inside space-y-1 text-sm text-psi-dark ml-2">

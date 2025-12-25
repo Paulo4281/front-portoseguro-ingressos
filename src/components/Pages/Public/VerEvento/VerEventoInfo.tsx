@@ -755,7 +755,7 @@ const VerEventoInfo = (
             <Background variant="light" className="min-h-screen">
                 <div className="container py-12 mt-[80px]">
                     <div className="text-center space-y-4">
-                        <h1 className="text-2xl font-semibold text-psi-dark">Evento não encontrado</h1>
+                        <h1 className="text-2xl font-medium text-psi-dark">Evento não encontrado</h1>
                         <p className="text-psi-dark/60">O evento que você está procurando não existe ou foi removido.</p>
                     </div>
                 </div>
@@ -766,7 +766,7 @@ const VerEventoInfo = (
     const descriptionContent = event.description ? (
         <div className="prose prose-sm max-w-none
         sm:prose-base">
-            <div className="text-psi-dark [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:mb-4 [&>h1]:mt-6 [&>h2]:text-xl [&>h2]:font-bold [&>h2]:mb-3 [&>h2]:mt-5 [&>h3]:text-lg [&>h3]:font-semibold [&>h3]:mb-2 [&>h3]:mt-4 [&>p]:mb-4 [&>p]:leading-relaxed [&>ul]:list-disc [&>ul]:ml-6 [&>ul]:mb-4 [&>ol]:list-decimal [&>ol]:ml-6 [&>ol]:mb-4 [&>li]:mb-2 [&>strong]:font-bold [&>em]:italic [&>code]:bg-psi-primary/10 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded [&>code]:text-sm [&>pre]:bg-psi-dark/5 [&>pre]:p-4 [&>pre]:rounded-lg [&>pre]:overflow-x-auto [&>pre]:mb-4 [&>blockquote]:border-l-4 [&>blockquote]:border-psi-primary/30 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:mb-4 [&>a]:text-psi-primary [&>a]:underline [&>a:hover]:text-psi-primary/80">
+            <div className="text-psi-dark [&>h1]:text-2xl [&>h1]:font-semibold [&>h1]:mb-4 [&>h1]:mt-6 [&>h2]:text-xl [&>h2]:font-semibold [&>h2]:mb-3 [&>h2]:mt-5 [&>h3]:text-lg [&>h3]:font-medium [&>h3]:mb-2 [&>h3]:mt-4 [&>p]:mb-4 [&>p]:leading-relaxed [&>ul]:list-disc [&>ul]:ml-6 [&>ul]:mb-4 [&>ol]:list-decimal [&>ol]:ml-6 [&>ol]:mb-4 [&>li]:mb-2 [&>strong]:font-semibold [&>em]:italic [&>code]:bg-psi-primary/10 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded [&>code]:text-sm [&>pre]:bg-psi-dark/5 [&>pre]:p-4 [&>pre]:rounded-lg [&>pre]:overflow-x-auto [&>pre]:mb-4 [&>blockquote]:border-l-4 [&>blockquote]:border-psi-primary/30 [&>blockquote]:pl-4 [&>blockquote]:italic [&>blockquote]:mb-4 [&>a]:text-psi-primary [&>a]:underline [&>a:hover]:text-psi-primary/80">
                 <ReactMarkdown>{event.description}</ReactMarkdown>
             </div>
         </div>
@@ -799,7 +799,7 @@ const VerEventoInfo = (
                         </div>
                     )}
                     <div className="flex-1">
-                        <h3 className="font-semibold text-psi-dark">Organizador do Evento</h3>
+                        <h3 className="font-medium text-psi-dark">Organizador do Evento</h3>
                         <p className="text-xs text-psi-dark/60">Informações de contato e redes sociais</p>
                     </div>
                 </div>
@@ -905,7 +905,7 @@ const VerEventoInfo = (
 
                         <div className="space-y-6">
                             <div>
-                                <h1 className="text-3xl font-bold text-psi-dark mb-4
+                                <h1 className="text-3xl font-semibold text-psi-dark mb-4
                                 sm:text-4xl
                                 lg:text-5xl leading-tight">
                                     {event.name}
@@ -918,7 +918,7 @@ const VerEventoInfo = (
                                             return (
                                                 <div key={category.id} className="flex items-center gap-1">
                                                     <span
-                                                        className="px-3 py-1 flex items-center gap-2 rounded-full bg-psi-primary/10 text-psi-primary text-xs font-semibold uppercase tracking-wide"
+                                                        className="px-3 py-1 flex items-center gap-2 rounded-full bg-psi-primary/10 text-psi-primary text-xs font-medium uppercase tracking-wide"
                                                     >
                                                         <Icon
                                                             className="h-4 w-4 text-psi-primary"
@@ -931,7 +931,7 @@ const VerEventoInfo = (
                                         })}
                                         {
                                             event.isPostponed && (
-                                                <span className="px-3 py-1 flex items-center gap-2 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold">
+                                                <span className="px-3 py-1 flex items-center gap-2 rounded-full bg-amber-100 text-amber-800 text-xs font-medium">
                                                     <AlertCircle className="h-4 w-4" />
                                                     Adiado
                                                 </span>
@@ -979,7 +979,7 @@ const VerEventoInfo = (
                                                     <div className="space-y-2 text-xs text-psi-dark/70">
                                                         {sortedDates.map((eventDate) => (
                                                             <div key={eventDate.id || eventDate.date} className="flex flex-wrap items-center gap-2">
-                                                                <span className="font-semibold text-psi-dark">{formatEventDate(eventDate.date, "DD[/]MMM")}</span>
+                                                                <span className="font-medium text-psi-dark">{formatEventDate(eventDate.date, "DD[/]MMM")}</span>
                                                                 <span className="text-psi-dark/40">•</span>
                                                                 <span>{formatTimeRange(eventDate.hourStart, eventDate.hourEnd)}</span>
                                                             </div>
@@ -1002,7 +1002,7 @@ const VerEventoInfo = (
                                                 {recurrenceInfo && (
                                                     <div className="flex items-center gap-2">
                                                         <Repeat className="h-4 w-4 text-psi-primary shrink-0" />
-                                                        <span className="font-semibold text-psi-primary">
+                                                        <span className="font-medium text-psi-primary">
                                                             {recurrenceInfo.type === "DAILY" && "Diário"}
                                                             {recurrenceInfo.type === "WEEKLY" && "Semanal"}
                                                             {recurrenceInfo.type === "MONTHLY" && "Mensal"}
@@ -1059,7 +1059,7 @@ const VerEventoInfo = (
                                 ?
                                 (
                                     <div className="space-y-4">
-                                        <h2 className="text-xl font-semibold text-psi-dark">Lotes Disponíveis</h2>
+                                        <h2 className="text-xl font-medium text-psi-dark">Lotes Disponíveis</h2>
                                         <div className="space-y-3">
                                             {activeBatches.map((batch) => {
                                                 const hasTicketTypes = batch.EventBatchTicketTypes && batch.EventBatchTicketTypes.length > 0
@@ -1078,7 +1078,7 @@ const VerEventoInfo = (
                                                         <div className="flex-1">
                                                             <div className="flex items-center gap-2 mb-1">
                                                                 <Tag className="h-4 w-4 text-psi-primary" />
-                                                                <span className="font-semibold text-psi-dark">{batch.name}</span>
+                                                                <span className="font-medium text-psi-dark">{batch.name}</span>
                                                                 <span className="px-2 py-0.5 bg-psi-primary/80 text-psi-light text-xs font-medium rounded-full">
                                                                     Disponível
                                                                 </span>
@@ -1102,7 +1102,7 @@ const VerEventoInfo = (
                                                                                     const minFeeCents = TicketFeeUtils.calculateFeeInCents(minPrice, event.isClientTaxed)
                                                                                     return (
                                                                                         <>
-                                                                                            <p className="text-psi-primary font-semibold mt-1">
+                                                                                            <p className="text-psi-primary font-medium mt-1">
                                                                                                 {event.isFree ? "Gratuito" : `A partir de ${ValueUtils.centsToCurrency(minPrice)}`}
                                                                                             </p>
                                                                                             {!event.isFree && (
@@ -1142,7 +1142,7 @@ const VerEventoInfo = (
                                                                                     <div className="flex items-center gap-2 mb-1">
                                                                                         <p className="font-medium text-psi-dark">{ticketTypeName}</p>
                                                                                     </div>
-                                                                                    <p className="text-psi-primary font-semibold">
+                                                                                    <p className="text-psi-primary font-medium">
                                                                                         {hasPricePerDay ? "Preço por dia" : (displayPrice !== null && displayPrice !== undefined ? ValueUtils.formatPrice(displayPrice) : "Preço não definido")}
                                                                                     </p>
                                                                                     {!hasPricePerDay && displayPrice && displayPrice > 0 && (
@@ -1158,7 +1158,7 @@ const VerEventoInfo = (
                                                             ) : (
                                                                 <>
                                                                     <div className="flex items-center gap-2 mt-2">
-                                                                        <p className="text-3xl font-bold text-psi-primary">
+                                                                        <p className="text-3xl font-semibold text-psi-primary">
                                                                             {(() => {
                                                                                 if (hasMultipleDaysWithSpecificPrices && event.EventDates) {
                                                                                     const daysWithTicketTypePrices = event.EventDates.filter(
@@ -1233,7 +1233,7 @@ const VerEventoInfo = (
                                 :
                                 (
                                     <div className="space-y-1">
-                                        <h2 className="text-xl text-psi-primary/90 font-bold">As vendas começarão em breve</h2>
+                                        <h2 className="text-xl text-psi-primary/90 font-semibold">As vendas começarão em breve</h2>
                                         <p className="text-sm text-psi-dark/70">Fique atento, os ingressos serão disponibilizados em breve nesta página.</p>
                                     </div>
                                 )
@@ -1241,7 +1241,7 @@ const VerEventoInfo = (
 
                                 {endedBatches?.length > 0 && (
                                     <div className="space-y-4">
-                                        <h2 className="text-xl font-semibold text-psi-dark/60">Lotes Encerrados</h2>
+                                        <h2 className="text-xl font-medium text-psi-dark/60">Lotes Encerrados</h2>
                                         <div className="space-y-3">
                                             {endedBatches.map((batch) => {
                                                 const batchPrice = getBatchPrice(batch)
@@ -1255,12 +1255,12 @@ const VerEventoInfo = (
                                                         <div className="flex-1">
                                                             <div className="flex items-center gap-2 mb-1">
                                                                 <Tag className="h-4 w-4 text-psi-dark/30" />
-                                                                <span className="font-semibold text-psi-dark/40">{batch.name}</span>
+                                                                <span className="font-medium text-psi-dark/40">{batch.name}</span>
                                                                 <span className="px-2 py-0.5 bg-psi-dark/5 text-psi-dark/40 text-xs font-medium rounded-full">
                                                                     Encerrado
                                                                 </span>
                                                             </div>
-                                                            <p className="text-2xl font-bold text-psi-dark/40 mt-2">
+                                                            <p className="text-2xl font-semibold text-psi-dark/40 mt-2">
                                                                 {event.isFree ? "Gratuito" : ValueUtils.formatPrice(Math.round(batchPrice))}
                                                             </p>
                                                             {!event.isFree && Math.round(batchPrice) > 0 && (
@@ -1297,11 +1297,11 @@ const VerEventoInfo = (
                                         return (
                                             <>
                                                 <div className="flex items-center gap-2">
-                                                    <p className="text-3xl font-bold text-psi-primary">
+                                                    <p className="text-3xl font-semibold text-psi-primary">
                                                         {event.isFree ? "Gratuito" : (displayPrice !== null && displayPrice !== undefined ? ValueUtils.formatPrice(Math.round(displayPrice)) : "Preço não definido")}
                                                     </p>
                                                     {hasLastTickets && (
-                                                        <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-semibold rounded-full">
+                                                        <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-medium rounded-full">
                                                             Últimos ingressos
                                                         </span>
                                                     )}
@@ -1321,7 +1321,7 @@ const VerEventoInfo = (
                         {event.maxInstallments && event.maxInstallments > 0 && (
                             <div className="flex items-center gap-3 rounded-xl bg-psi-primary/10 p-4 mt-2">
                                 <CreditCard className="h-5 w-5 text-psi-primary" aria-label="Cartão de crédito" />
-                                <span className="text-base font-semibold text-psi-dark">
+                                <span className="text-base font-medium text-psi-dark">
                                     Parcele em até <span className="text-psi-primary">{event.maxInstallments}x</span> no cartão
                                 </span>
                             </div>
@@ -1348,13 +1348,13 @@ const VerEventoInfo = (
                                                     <div className="flex items-start justify-between">
                                                         <div className="flex-1">
                                                             <div className="flex items-center gap-2 mb-2">
-                                                                <div className="text-sm font-semibold text-psi-dark">
+                                                                <div className="text-sm font-medium text-psi-dark">
                                                                     {formatDate(eventDate.date)}
                                                                 </div>
                                                                 {eventDate.EventDateTicketTypePrices?.some((edttp: any) => 
                                                                     isLastTicketsForDayAndType(eventDate.id, edttp.ticketTypeId)
                                                                 ) && (
-                                                                    <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-semibold rounded-full">
+                                                                    <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-medium rounded-full">
                                                                         Últimos ingressos
                                                                     </span>
                                                                 )}
@@ -1381,12 +1381,12 @@ const VerEventoInfo = (
                                                                                     <div className="flex items-center gap-2 mb-1">
                                                                                         <p className="text-sm font-medium text-psi-dark">{ticketType?.name || "Tipo desconhecido"}</p>
                                                                                         {isSoldOut && (
-                                                                                            <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-semibold rounded-full">
+                                                                                            <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-medium rounded-full">
                                                                                                 Esgotado
                                                                                             </span>
                                                                                         )}
                                                                                     </div>
-                                                                                    <p className="text-xs text-psi-primary font-semibold mt-1">
+                                                                                    <p className="text-xs text-psi-primary font-medium mt-1">
                                                                                         {event.isFree ? "Gratuito" : `${ValueUtils.formatPrice(edttp.price)} por ingresso`}
                                                                                     </p>
                                                                                     {!event.isFree && edttp.price > 0 && (
@@ -1395,7 +1395,7 @@ const VerEventoInfo = (
                                                                                         </p>
                                                                                     )}
                                                                                     {qty > 0 && (
-                                                                                        <p className="text-xs font-semibold text-psi-dark mt-1">
+                                                                                        <p className="text-xs font-medium text-psi-dark mt-1">
                                                                                             Subtotal: {ValueUtils.centsToCurrency((edttp.price + feeCents) * qty)}
                                                                                         </p>
                                                                                     )}
@@ -1492,7 +1492,7 @@ const VerEventoInfo = (
                                                         <div className="flex items-start justify-between">
                                                             <div className="flex-1">
                                                                 <div className="flex items-center gap-2 mb-1">
-                                                                    <h4 className="font-semibold text-psi-dark">{ticketTypeName}</h4>
+                                                                    <h4 className="font-medium text-psi-dark">{ticketTypeName}</h4>
                                                                     {(() => {
                                                                         if (selectedDaysForType.length > 0) {
                                                                             const hasLastTickets = selectedDaysForType.some(dayId => 
@@ -1500,7 +1500,7 @@ const VerEventoInfo = (
                                                                             )
                                                                             if (hasLastTickets) {
                                                                                 return (
-                                                                                    <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-semibold rounded-full">
+                                                                                    <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-medium rounded-full">
                                                                                         Últimos ingressos
                                                                                     </span>
                                                                                 )
@@ -1512,7 +1512,7 @@ const VerEventoInfo = (
                                                                             const hasLastTicketsForType = isLastTicketsForTicketType(ebt.ticketTypeId)
                                                                             if (hasLastTicketsInAnyDay || hasLastTicketsForType) {
                                                                                 return (
-                                                                                    <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-semibold rounded-full">
+                                                                                    <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-medium rounded-full">
                                                                                         Últimos ingressos
                                                                                     </span>
                                                                                 )
@@ -1606,7 +1606,7 @@ const VerEventoInfo = (
                                                                                                 {formatDate(eventDate.date)}
                                                                                             </div>
                                                                                             {isLastTicketsForDayAndType(eventDate.id, ebt.ticketTypeId) && (
-                                                                                                <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-semibold rounded-full">
+                                                                                                <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-medium rounded-full">
                                                                                                     Últimos ingressos
                                                                                                 </span>
                                                                                             )}
@@ -1618,7 +1618,7 @@ const VerEventoInfo = (
                                                                                         )}
                                                                                     </div>
                                                                                     <div className="text-right">
-                                                                                        <div className="text-sm font-semibold text-psi-primary">
+                                                                                        <div className="text-sm font-medium text-psi-primary">
                                                                                             {ValueUtils.formatPrice(priceForThisDay)}
                                                                                         </div>
                                                                                         {priceForThisDay > 0 && (
@@ -1633,7 +1633,7 @@ const VerEventoInfo = (
                                                                     </div>
                                                                 )}
                                                                 {qty > 0 && (
-                                                                    <p className="text-sm font-semibold text-psi-dark mt-2">
+                                                                    <p className="text-sm font-medium text-psi-dark mt-2">
                                                                         Subtotal: {ValueUtils.centsToCurrency(getTotalForType())}
                                                                     </p>
                                                                 )}
@@ -1740,7 +1740,7 @@ const VerEventoInfo = (
                                                                                     {formatDate(eventDate.date)}
                                                                                 </div>
                                                                                 {isLastTicketsForDay(eventDate.id) && (
-                                                                                    <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-semibold rounded-full">
+                                                                                    <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-medium rounded-full">
                                                                                         Últimos ingressos
                                                                                     </span>
                                                                                 )}
@@ -1763,7 +1763,7 @@ const VerEventoInfo = (
                                                                                 </p>
                                                                             )}
                                                                             {qty > 0 && (
-                                                                                <p className="text-sm font-semibold text-psi-dark mt-2">
+                                                                                <p className="text-sm font-medium text-psi-dark mt-2">
                                                                                     Subtotal: {ValueUtils.centsToCurrency(((price || 0) + feeCents) * qty)}
                                                                                 </p>
                                                                             )}
@@ -1812,7 +1812,7 @@ const VerEventoInfo = (
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-sm font-medium text-psi-dark">Quantidade</span>
                                                         {isLastTicketsForEvent() && (
-                                                            <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-semibold rounded-full">
+                                                            <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-medium rounded-full">
                                                                 Últimos ingressos
                                                             </span>
                                                         )}
@@ -1870,7 +1870,7 @@ const VerEventoInfo = (
                                             <span className="text-sm text-psi-dark/70">Total</span>
                                             <span 
                                                 key={totalAnimationKey}
-                                                className={`text-2xl font-bold text-psi-primary ${totalAnimationKey > 0 ? 'total-animate' : ''}`}
+                                                className={`text-2xl font-semibold text-psi-primary ${totalAnimationKey > 0 ? 'total-animate' : ''}`}
                                             >
                                                 {ValueUtils.centsToCurrency(totalValue)}
                                             </span>
@@ -1915,7 +1915,7 @@ const VerEventoInfo = (
                                         <ShieldCheck className="h-5 w-5 text-psi-primary" />
                                     </div>
                                     <div>
-                                        <h3 className="font-semibold text-psi-dark">Compra 100% Segura</h3>
+                                        <h3 className="font-medium text-psi-dark">Compra 100% Segura</h3>
                                         <p className="text-xs text-psi-dark/60">Plataforma confiável e protegida</p>
                                     </div>
                                 </div>
@@ -1994,7 +1994,7 @@ const VerEventoInfo = (
                             <div className="pt-4 border-t border-psi-primary/10">
                                 <div className="space-y-3">
                                     <div>
-                                        <h4 className="font-semibold text-psi-dark mb-2">Por que escolher nossa plataforma?</h4>
+                                        <h4 className="font-medium text-psi-dark mb-2">Por que escolher nossa plataforma?</h4>
                                         <div className="space-y-2">
                                             <div className="flex items-start gap-2">
                                                 <CheckCircle2 className="h-3.5 w-3.5 text-psi-primary shrink-0 mt-0.5" />
@@ -2020,7 +2020,7 @@ const VerEventoInfo = (
                             <div className="pt-4 border-t border-psi-primary/10">
                                 <div className="space-y-3">
                                     <div>
-                                        <h4 className="font-semibold text-psi-dark mb-1">Ainda não tem conta?</h4>
+                                        <h4 className="font-medium text-psi-dark mb-1">Ainda não tem conta?</h4>
                                         <p className="text-xs text-psi-dark/60">
                                             Cadastre-se gratuitamente e agilize suas compras futuras. Perfil completo acelera o checkout.
                                         </p>
@@ -2041,7 +2041,7 @@ const VerEventoInfo = (
                             <div className="pt-4 border-t border-psi-primary/10">
                                 <div className="space-y-3">
                                     <div>
-                                        <h4 className="font-semibold text-psi-dark mb-1">É organizador de eventos?</h4>
+                                        <h4 className="font-medium text-psi-dark mb-1">É organizador de eventos?</h4>
                                         <p className="text-xs text-psi-dark/60 mb-3">
                                             Cadastre seus eventos e venda ingressos com taxas reduzidas. Suporte personalizado para produtores locais.
                                         </p>
@@ -2068,7 +2068,7 @@ const VerEventoInfo = (
                                         <Share2 className="h-5 w-5 text-psi-primary" />
                                     </div>
                                     <div>
-                                        <h3 className="font-semibold text-psi-dark">Compartilhe este evento</h3>
+                                        <h3 className="font-medium text-psi-dark">Compartilhe este evento</h3>
                                         <p className="text-xs text-psi-dark/60">Ajude a divulgar para seus amigos</p>
                                     </div>
                                 </div>
@@ -2110,7 +2110,7 @@ const VerEventoInfo = (
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-2">
                                         <TrendingUp className="h-4 w-4 text-psi-primary" />
-                                        <h4 className="font-semibold text-psi-dark text-sm">Se tornando a referência</h4>
+                                        <h4 className="font-medium text-psi-dark text-sm">Se tornando a referência</h4>
                                     </div>
                                     <p className="text-xs text-psi-dark/70 leading-relaxed">
                                         Estamos construindo a principal plataforma de ingressos de Porto Seguro, com foco em:
@@ -2140,7 +2140,7 @@ const VerEventoInfo = (
                                 <div className="rounded-lg bg-linear-to-br from-psi-primary/10 via-psi-primary/5 to-psi-primary/10 p-4 space-y-3">
                                     <div className="flex items-center gap-2">
                                         <Gift className="h-4 w-4 text-psi-primary" />
-                                        <h4 className="font-semibold text-psi-dark text-sm">Dica especial</h4>
+                                        <h4 className="font-medium text-psi-dark text-sm">Dica especial</h4>
                                     </div>
                                     <p className="text-xs text-psi-dark/70 leading-relaxed">
                                         Complete seu cadastro e ganhe acesso a ofertas exclusivas, descontos em eventos futuros e muito mais!
@@ -2162,7 +2162,7 @@ const VerEventoInfo = (
                                 <div className="space-y-3">
                                     <div className="flex items-center gap-2">
                                         <MessageCircle className="h-4 w-4 text-psi-primary" />
-                                        <h4 className="font-semibold text-psi-dark text-sm">Dúvidas sobre o evento?</h4>
+                                        <h4 className="font-medium text-psi-dark text-sm">Dúvidas sobre o evento?</h4>
                                     </div>
                                     <p className="text-xs text-psi-dark/70 leading-relaxed">
                                         Entre em contato com o organizador através da plataforma ou consulte nossa central de ajuda.
@@ -2204,7 +2204,7 @@ const VerEventoInfo = (
                 {similarEvents?.length > 0 && (
                     <div className="mt-16 space-y-6">
                         <div className="space-y-2 container">
-                            <h2 className="text-2xl font-semibold text-psi-dark
+                            <h2 className="text-2xl font-medium text-psi-dark
                             sm:text-3xl
                             lg:text-4xl tracking-tight">
                                 Eventos <span className="text-psi-primary">semelhantes</span>

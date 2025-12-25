@@ -43,7 +43,7 @@ const DialogAdminCancelEventWarning = ({
 
                 <div className="space-y-4 py-4">
                     <div className="rounded-xl border-2 border-destructive/50 bg-destructive/10 p-4">
-                        <p className="text-base font-bold text-destructive mb-2">
+                        <p className="text-base font-semibold text-destructive mb-2">
                             ⚠️ CANCELAR UM EVENTO É EXTREMAMENTE PREJUDICIAL
                         </p>
                         <p className="text-sm text-psi-dark">
@@ -53,7 +53,7 @@ const DialogAdminCancelEventWarning = ({
 
                     <div className="space-y-3">
                         <div className="rounded-lg border border-red-200 bg-red-50 p-3">
-                            <p className="text-sm font-semibold text-red-900 mb-2">
+                            <p className="text-sm font-medium text-red-900 mb-2">
                                 Consequências Imediatas:
                             </p>
                             <ul className="list-disc list-inside space-y-1 text-sm text-red-800 ml-2">
@@ -66,7 +66,7 @@ const DialogAdminCancelEventWarning = ({
                         </div>
 
                         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-                            <p className="text-sm font-semibold text-amber-900 mb-2">
+                            <p className="text-sm font-medium text-amber-900 mb-2">
                                 Consequências Financeiras:
                             </p>
                             <ul className="list-disc list-inside space-y-1 text-sm text-amber-800 ml-2">
@@ -79,7 +79,7 @@ const DialogAdminCancelEventWarning = ({
                         </div>
 
                         <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-4">
-                            <p className="text-sm font-semibold text-psi-dark mb-2">
+                            <p className="text-sm font-medium text-psi-dark mb-2">
                                 Informações do Evento:
                             </p>
                             <div className="space-y-2 text-sm text-psi-dark/70">
@@ -103,7 +103,7 @@ const DialogAdminCancelEventWarning = ({
                         </div>
 
                         <div className="rounded-xl border-2 border-destructive bg-destructive/5 p-4">
-                            <p className="text-sm font-bold text-destructive mb-2">
+                            <p className="text-sm font-semibold text-destructive mb-2">
                                 IMPORTANTE - Termos e Condições:
                             </p>
                             <p className="text-sm text-psi-dark">
@@ -114,7 +114,7 @@ const DialogAdminCancelEventWarning = ({
                         </div>
 
                         <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-4">
-                            <p className="text-sm font-semibold text-psi-dark mb-1">
+                            <p className="text-sm font-medium text-psi-dark mb-1">
                                 Alternativas Recomendadas:
                             </p>
                             <ul className="list-disc list-inside space-y-1 text-sm text-psi-dark/70 ml-2">

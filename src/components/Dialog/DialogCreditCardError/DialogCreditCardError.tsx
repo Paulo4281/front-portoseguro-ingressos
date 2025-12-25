@@ -48,7 +48,7 @@ const DialogCreditCardError = ({
                     </div>
 
                     <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-4 space-y-3">
-                        <h3 className="font-semibold text-psi-dark flex items-center gap-2">
+                        <h3 className="font-medium text-psi-dark flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-psi-primary" />
                             O que você pode fazer:
                         </h3>
@@ -73,7 +73,7 @@ const DialogCreditCardError = ({
                     </div>
 
                     <div className="rounded-xl border border-psi-dark/10 bg-psi-dark/5 p-4 space-y-2">
-                        <h3 className="font-semibold text-psi-dark text-sm">
+                        <h3 className="font-medium text-psi-dark text-sm">
                             Possíveis motivos para a não autorização:
                         </h3>
                         <ul className="space-y-1.5 text-sm text-psi-dark/70 ml-4">

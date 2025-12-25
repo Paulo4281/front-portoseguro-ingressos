@@ -418,7 +418,7 @@ const CriarEventoForm = () => {
                             <span>Voltar para meus eventos</span>
                         </Link>
                         <h1 className="text-4xl
-                        sm:text-5xl font-bold text-psi-primary mb-2">
+                        sm:text-5xl font-semibold text-psi-primary mb-2">
                             Publicar Novo Evento
                         </h1>
                         <p className="text-base
@@ -432,7 +432,7 @@ const CriarEventoForm = () => {
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <FileText className="h-5 w-5 text-psi-primary" />
-                                <h2 className="text-2xl font-bold text-psi-dark">Informações Básicas</h2>
+                                <h2 className="text-2xl font-semibold text-psi-dark">Informações Básicas</h2>
                             </div>
 
                             <div className="space-y-4">
@@ -578,7 +578,7 @@ const CriarEventoForm = () => {
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <Tag className="h-5 w-5 text-psi-primary" />
-                                <h2 className="text-2xl font-bold text-psi-dark">Tipos de Ingressos (Opcional)</h2>
+                                <h2 className="text-2xl font-semibold text-psi-dark">Tipos de Ingressos (Opcional)</h2>
                             </div>
 
                             <div className="space-y-4">
@@ -587,7 +587,7 @@ const CriarEventoForm = () => {
                                 </p>
 
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-lg font-semibold text-psi-dark">Tipos</h3>
+                                    <h3 className="text-lg font-medium text-psi-dark">Tipos</h3>
                                     <Button
                                         type="button"
                                         variant="outline"
@@ -605,7 +605,7 @@ const CriarEventoForm = () => {
                                         className="rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4 space-y-4"
                                     >
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm font-semibold text-psi-dark">
+                                            <span className="text-sm font-medium text-psi-dark">
                                                 Tipo {index + 1}
                                             </span>
                                             <Button
@@ -667,7 +667,7 @@ const CriarEventoForm = () => {
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <Repeat className="h-5 w-5 text-psi-primary" />
-                                <h2 className="text-2xl font-bold text-psi-dark">Recorrência (Opcional)</h2>
+                                <h2 className="text-2xl font-semibold text-psi-dark">Recorrência (Opcional)</h2>
                             </div>
 
                             <div className="space-y-4">
@@ -790,7 +790,7 @@ const CriarEventoForm = () => {
                                                             Horário *
                                                         </label>
                                                         <div className="rounded-lg border border-[#E4E6F0] bg-white p-3 space-y-3">
-                                                            <div className="font-semibold text-sm text-psi-dark">
+                                                            <div className="font-medium text-sm text-psi-dark">
                                                                 {weekDays.find(d => d.value === recurrenceDay)?.label || ""}
                                                             </div>
                                                             <div className="grid grid-cols-2 gap-4">
@@ -860,7 +860,7 @@ const CriarEventoForm = () => {
                                                             Horário *
                                                         </label>
                                                         <div className="rounded-lg border border-[#E4E6F0] bg-white p-3 space-y-3">
-                                                            <div className="font-semibold text-sm text-psi-dark">Dia {recurrenceDay}</div>
+                                                            <div className="font-medium text-sm text-psi-dark">Dia {recurrenceDay}</div>
                                                             <div className="grid grid-cols-2 gap-4">
                                                                 <div>
                                                                     <label className="block text-xs text-psi-dark/60 mb-1">Início</label>
@@ -924,7 +924,7 @@ const CriarEventoForm = () => {
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="flex items-center gap-3">
                                         <Calendar className="h-5 w-5 text-psi-primary" />
-                                        <h2 className="text-2xl font-bold text-psi-dark">Datas e Horários</h2>
+                                        <h2 className="text-2xl font-semibold text-psi-dark">Datas e Horários</h2>
                                     </div>
                                     <Button
                                         type="button"
@@ -944,7 +944,7 @@ const CriarEventoForm = () => {
                                             className="rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4 space-y-4"
                                         >
                                             <div className="flex items-center justify-between">
-                                                <span className="text-sm font-semibold text-psi-dark">
+                                                <span className="text-sm font-medium text-psi-dark">
                                                     Data {index + 1}
                                                 </span>
                                                 {dateFields.length > 1 && (
@@ -1145,7 +1145,7 @@ const CriarEventoForm = () => {
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <Tag className="h-5 w-5 text-psi-primary" />
-                                <h2 className="text-2xl font-bold text-psi-dark">Ingressos</h2>
+                                <h2 className="text-2xl font-semibold text-psi-dark">Ingressos</h2>
                             </div>
 
                             <div className="space-y-4">
@@ -1307,10 +1307,10 @@ const CriarEventoForm = () => {
                                 <div className="space-y-4">
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <h3 className="text-lg font-semibold text-psi-dark">Lotes</h3>
+                                                <h3 className="text-lg font-medium text-psi-dark">Lotes</h3>
                                                 {totalTickets > 0 && (
                                                     <p className="text-sm text-psi-dark/60 mt-1">
-                                                        Total de ingressos: <span className="font-semibold text-psi-primary">{totalTickets}</span>
+                                                        Total de ingressos: <span className="font-medium text-psi-primary">{totalTickets}</span>
                                                     </p>
                                                 )}
                                             </div>
@@ -1341,7 +1341,7 @@ const CriarEventoForm = () => {
                                                     className="rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4 space-y-4"
                                                 >
                                                     <div className="flex items-center justify-between">
-                                                        <span className="text-sm font-semibold text-psi-dark">
+                                                        <span className="text-sm font-medium text-psi-dark">
                                                             Lote {index + 1}
                                                         </span>
                                                         {batchFields.length > 1 && (
@@ -1454,7 +1454,7 @@ const CriarEventoForm = () => {
                                                                 return (
                                                                     <div key={typeIdx} className="rounded-lg border border-[#E4E6F0] bg-white p-3 space-y-3">
                                                                         <div className="flex items-center justify-between">
-                                                                            <span className="text-sm font-semibold text-psi-dark">
+                                                                            <span className="text-sm font-medium text-psi-dark">
                                                                                 {ticketType.name}
                                                                                 {ticketType.description && (
                                                                                     <span className="text-xs text-psi-dark/60 ml-2">| {ticketType.description}</span>
@@ -1520,7 +1520,7 @@ const CriarEventoForm = () => {
                                                             Data Início *
                                                         </label>
                                                         {recurrenceEnabled && (
-                                                            <p className="text-sm font-bold text-psi-primary mb-2">
+                                                            <p className="text-sm font-semibold text-psi-primary mb-2">
                                                                 * Para o primeiro ciclo o lote começa nesta data. Nos próximos ciclos ele será reativado automaticamente assim que o evento terminar.
                                                             </p>
                                                         )}
@@ -1664,7 +1664,7 @@ const CriarEventoForm = () => {
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <FileText className="h-5 w-5 text-psi-primary" />
-                                <h2 className="text-2xl font-bold text-psi-dark">Formulário Personalizado (Opcional)</h2>
+                                <h2 className="text-2xl font-semibold text-psi-dark">Formulário Personalizado (Opcional)</h2>
                             </div>
 
                             <div className="space-y-4">

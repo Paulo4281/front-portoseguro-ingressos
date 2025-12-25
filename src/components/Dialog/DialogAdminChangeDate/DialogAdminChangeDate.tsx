@@ -135,7 +135,7 @@ const DialogAdminChangeDate = ({
                                 className="rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4 space-y-4"
                             >
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm font-semibold text-psi-dark">
+                                    <span className="text-sm font-medium text-psi-dark">
                                         Data {index + 1}
                                     </span>
                                     {fields.length > 1 && (

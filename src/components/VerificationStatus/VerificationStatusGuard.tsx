@@ -30,7 +30,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                 <AlertCircle className="h-8 w-8 text-amber-600" />
                             </div>
                             <div className="space-y-2">
-                                <h2 className="text-2xl font-semibold text-amber-900">
+                                <h2 className="text-2xl font-medium text-amber-900">
                                     Documentação pendente
                                 </h2>
                                 <p className="text-amber-800">
@@ -44,7 +44,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
 
                         <div className="space-y-6">
                             <div className="text-center space-y-2">
-                                <h3 className="text-2xl font-bold text-psi-primary flex items-center justify-center gap-2">
+                                <h3 className="text-2xl font-semibold text-psi-primary flex items-center justify-center gap-2">
                                     <Sparkles className="h-6 w-6" />
                                     Prepare-se para uma experiência incrível!
                                 </h3>
@@ -60,7 +60,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                     <div className="h-12 w-12 rounded-xl bg-green-100 flex items-center justify-center mb-4">
                                         <TrendingDown className="h-6 w-6 text-green-600" />
                                     </div>
-                                    <h4 className="text-lg font-semibold text-psi-dark mb-2">
+                                    <h4 className="text-lg font-medium text-psi-dark mb-2">
                                         Taxas Altamente Competitivas
                                     </h4>
                                     <p className="text-sm text-psi-dark/70">
@@ -72,7 +72,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                     <div className="h-12 w-12 rounded-xl bg-psi-primary/10 flex items-center justify-center mb-4">
                                         <Zap className="h-6 w-6 text-psi-primary" />
                                     </div>
-                                    <h4 className="text-lg font-semibold text-psi-dark mb-2">
+                                    <h4 className="text-lg font-medium text-psi-dark mb-2">
                                         Tecnologia de Ponta
                                     </h4>
                                     <p className="text-sm text-psi-dark/70">
@@ -84,7 +84,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                     <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center mb-4">
                                         <Shield className="h-6 w-6 text-blue-600" />
                                     </div>
-                                    <h4 className="text-lg font-semibold text-psi-dark mb-2">
+                                    <h4 className="text-lg font-medium text-psi-dark mb-2">
                                         Segurança e Confiança
                                     </h4>
                                     <p className="text-sm text-psi-dark/70">
@@ -96,7 +96,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                     <div className="h-12 w-12 rounded-xl bg-purple-100 flex items-center justify-center mb-4">
                                         <Users className="h-6 w-6 text-purple-600" />
                                     </div>
-                                    <h4 className="text-lg font-semibold text-psi-dark mb-2">
+                                    <h4 className="text-lg font-medium text-psi-dark mb-2">
                                         Foco Regional
                                     </h4>
                                     <p className="text-sm text-psi-dark/70">
@@ -108,7 +108,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                     <div className="h-12 w-12 rounded-xl bg-amber-100 flex items-center justify-center mb-4">
                                         <Star className="h-6 w-6 text-amber-600" />
                                     </div>
-                                    <h4 className="text-lg font-semibold text-psi-dark mb-2">
+                                    <h4 className="text-lg font-medium text-psi-dark mb-2">
                                         Gestão Completa
                                     </h4>
                                     <p className="text-sm text-psi-dark/70">
@@ -120,7 +120,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                     <div className="h-12 w-12 rounded-xl bg-psi-secondary/10 flex items-center justify-center mb-4">
                                         <Sparkles className="h-6 w-6 text-psi-secondary" />
                                     </div>
-                                    <h4 className="text-lg font-semibold text-psi-dark mb-2">
+                                    <h4 className="text-lg font-medium text-psi-dark mb-2">
                                         Experiência Excepcional
                                     </h4>
                                     <p className="text-sm text-psi-dark/70">
@@ -148,7 +148,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                 <Clock className="h-8 w-8 text-amber-600" />
                             </div>
                             <div className="space-y-2">
-                                <h2 className="text-2xl font-semibold text-amber-900">
+                                <h2 className="text-2xl font-medium text-amber-900">
                                     Verificação em andamento
                                 </h2>
                                 <p className="text-amber-800">
@@ -162,7 +162,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
 
                         <div className="space-y-6">
                             <div className="text-center space-y-2">
-                                <h3 className="text-2xl font-bold text-psi-primary flex items-center justify-center gap-2">
+                                <h3 className="text-2xl font-semibold text-psi-primary flex items-center justify-center gap-2">
                                     <Sparkles className="h-6 w-6" />
                                     Prepare-se para uma experiência incrível!
                                 </h3>
@@ -178,7 +178,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                     <div className="h-12 w-12 rounded-xl bg-green-100 flex items-center justify-center mb-4">
                                         <TrendingDown className="h-6 w-6 text-green-600" />
                                     </div>
-                                    <h4 className="text-lg font-semibold text-psi-dark mb-2">
+                                    <h4 className="text-lg font-medium text-psi-dark mb-2">
                                         Taxas Altamente Competitivas
                                     </h4>
                                     <p className="text-sm text-psi-dark/70">
@@ -190,7 +190,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                     <div className="h-12 w-12 rounded-xl bg-psi-primary/10 flex items-center justify-center mb-4">
                                         <Zap className="h-6 w-6 text-psi-primary" />
                                     </div>
-                                    <h4 className="text-lg font-semibold text-psi-dark mb-2">
+                                    <h4 className="text-lg font-medium text-psi-dark mb-2">
                                         Tecnologia de Ponta
                                     </h4>
                                     <p className="text-sm text-psi-dark/70">
@@ -202,7 +202,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                     <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center mb-4">
                                         <Shield className="h-6 w-6 text-blue-600" />
                                     </div>
-                                    <h4 className="text-lg font-semibold text-psi-dark mb-2">
+                                    <h4 className="text-lg font-medium text-psi-dark mb-2">
                                         Segurança e Confiança
                                     </h4>
                                     <p className="text-sm text-psi-dark/70">
@@ -214,7 +214,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                     <div className="h-12 w-12 rounded-xl bg-purple-100 flex items-center justify-center mb-4">
                                         <Users className="h-6 w-6 text-purple-600" />
                                     </div>
-                                    <h4 className="text-lg font-semibold text-psi-dark mb-2">
+                                    <h4 className="text-lg font-medium text-psi-dark mb-2">
                                         Foco Regional
                                     </h4>
                                     <p className="text-sm text-psi-dark/70">
@@ -226,7 +226,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                     <div className="h-12 w-12 rounded-xl bg-amber-100 flex items-center justify-center mb-4">
                                         <Star className="h-6 w-6 text-amber-600" />
                                     </div>
-                                    <h4 className="text-lg font-semibold text-psi-dark mb-2">
+                                    <h4 className="text-lg font-medium text-psi-dark mb-2">
                                         Gestão Completa
                                     </h4>
                                     <p className="text-sm text-psi-dark/70">
@@ -238,7 +238,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                     <div className="h-12 w-12 rounded-xl bg-psi-secondary/10 flex items-center justify-center mb-4">
                                         <Sparkles className="h-6 w-6 text-psi-secondary" />
                                     </div>
-                                    <h4 className="text-lg font-semibold text-psi-dark mb-2">
+                                    <h4 className="text-lg font-medium text-psi-dark mb-2">
                                         Experiência Excepcional
                                     </h4>
                                     <p className="text-sm text-psi-dark/70">
@@ -266,7 +266,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                 <XCircle className="h-8 w-8 text-red-600" />
                             </div>
                             <div className="space-y-2">
-                                <h2 className="text-2xl font-semibold text-red-900">
+                                <h2 className="text-2xl font-medium text-red-900">
                                     Conta rejeitada
                                 </h2>
                                 <p className="text-red-800">
@@ -280,7 +280,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
 
                         <div className="space-y-6">
                             <div className="text-center space-y-2">
-                                <h3 className="text-2xl font-bold text-psi-primary flex items-center justify-center gap-2">
+                                <h3 className="text-2xl font-semibold text-psi-primary flex items-center justify-center gap-2">
                                     <Sparkles className="h-6 w-6" />
                                     Não desista! Aproveite o que temos a oferecer
                                 </h3>
@@ -296,7 +296,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                     <div className="h-12 w-12 rounded-xl bg-green-100 flex items-center justify-center mb-4">
                                         <TrendingDown className="h-6 w-6 text-green-600" />
                                     </div>
-                                    <h4 className="text-lg font-semibold text-psi-dark mb-2">
+                                    <h4 className="text-lg font-medium text-psi-dark mb-2">
                                         Taxas Altamente Competitivas
                                     </h4>
                                     <p className="text-sm text-psi-dark/70">
@@ -308,7 +308,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                     <div className="h-12 w-12 rounded-xl bg-psi-primary/10 flex items-center justify-center mb-4">
                                         <Zap className="h-6 w-6 text-psi-primary" />
                                     </div>
-                                    <h4 className="text-lg font-semibold text-psi-dark mb-2">
+                                    <h4 className="text-lg font-medium text-psi-dark mb-2">
                                         Tecnologia de Ponta
                                     </h4>
                                     <p className="text-sm text-psi-dark/70">
@@ -320,7 +320,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                     <div className="h-12 w-12 rounded-xl bg-blue-100 flex items-center justify-center mb-4">
                                         <Shield className="h-6 w-6 text-blue-600" />
                                     </div>
-                                    <h4 className="text-lg font-semibold text-psi-dark mb-2">
+                                    <h4 className="text-lg font-medium text-psi-dark mb-2">
                                         Segurança e Confiança
                                     </h4>
                                     <p className="text-sm text-psi-dark/70">
@@ -332,7 +332,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                     <div className="h-12 w-12 rounded-xl bg-purple-100 flex items-center justify-center mb-4">
                                         <Users className="h-6 w-6 text-purple-600" />
                                     </div>
-                                    <h4 className="text-lg font-semibold text-psi-dark mb-2">
+                                    <h4 className="text-lg font-medium text-psi-dark mb-2">
                                         Foco Regional
                                     </h4>
                                     <p className="text-sm text-psi-dark/70">
@@ -344,7 +344,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                     <div className="h-12 w-12 rounded-xl bg-amber-100 flex items-center justify-center mb-4">
                                         <Star className="h-6 w-6 text-amber-600" />
                                     </div>
-                                    <h4 className="text-lg font-semibold text-psi-dark mb-2">
+                                    <h4 className="text-lg font-medium text-psi-dark mb-2">
                                         Gestão Completa
                                     </h4>
                                     <p className="text-sm text-psi-dark/70">
@@ -356,7 +356,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                     <div className="h-12 w-12 rounded-xl bg-psi-secondary/10 flex items-center justify-center mb-4">
                                         <Sparkles className="h-6 w-6 text-psi-secondary" />
                                     </div>
-                                    <h4 className="text-lg font-semibold text-psi-dark mb-2">
+                                    <h4 className="text-lg font-medium text-psi-dark mb-2">
                                         Experiência Excepcional
                                     </h4>
                                     <p className="text-sm text-psi-dark/70">

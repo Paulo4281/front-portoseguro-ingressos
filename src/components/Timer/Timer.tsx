@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const timerVariants = cva(
-    "font-mono font-semibold transition-all",
+    "font-mono font-medium transition-all",
     {
         variants: {
             variant: {

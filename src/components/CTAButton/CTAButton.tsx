@@ -51,7 +51,7 @@ const CTAButton = (
             href={href}
             className={cn(
                 "group relative inline-flex items-center justify-center gap-2 sm:gap-3",
-                "font-semibold rounded-full",
+                "font-medium rounded-full",
                 "transition-all duration-300 ease-out",
                 "overflow-hidden",
                 "shadow-lg shadow-black/10",

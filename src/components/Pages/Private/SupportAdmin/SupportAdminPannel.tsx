@@ -208,7 +208,7 @@ const SupportAdminPannel = () => {
                 lg:px-8">
                     <div className="space-y-4">
                         <div className="space-y-3">
-                            <h1 className="text-3xl font-semibold text-psi-primary
+                            <h1 className="text-3xl font-medium text-psi-primary
                             sm:text-4xl">
                                 Gerenciar Suporte
                             </h1>
@@ -287,13 +287,13 @@ const SupportAdminPannel = () => {
                                 <Table className="w-full">
                                     <TableHeader>
                                         <TableRow className="border-b border-psi-dark/10 hover:bg-transparent bg-psi-dark/2">
-                                            <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider w-[50px]"></TableHead>
-                                            <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider">Código</TableHead>
-                                            <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider">Usuário</TableHead>
-                                            <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider">Assunto</TableHead>
-                                            <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider">Status</TableHead>
-                                            <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider">Data</TableHead>
-                                            <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider text-right">Ações</TableHead>
+                                            <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider w-[50px]"></TableHead>
+                                            <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider">Código</TableHead>
+                                            <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider">Usuário</TableHead>
+                                            <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider">Assunto</TableHead>
+                                            <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider">Status</TableHead>
+                                            <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider">Data</TableHead>
+                                            <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider text-right">Ações</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -305,7 +305,7 @@ const SupportAdminPannel = () => {
                                                             <MessageSquare className="h-8 w-8 text-psi-primary/60" />
                                                         </div>
                                                         <div className="space-y-1">
-                                                            <p className="text-base font-semibold text-psi-dark">Nenhum chamado encontrado</p>
+                                                            <p className="text-base font-medium text-psi-dark">Nenhum chamado encontrado</p>
                                                             <p className="text-sm text-psi-dark/50">Tente ajustar os filtros de busca.</p>
                                                         </div>
                                                     </div>
@@ -334,14 +334,14 @@ const SupportAdminPannel = () => {
                                                                 </Button>
                                                             </TableCell>
                                                             <TableCell className="py-4 px-6">
-                                                                <span className="font-mono text-sm font-semibold text-psi-primary">
+                                                                <span className="font-mono text-sm font-medium text-psi-primary">
                                                                     #{support.code}
                                                                 </span>
                                                             </TableCell>
                                                             <TableCell className="py-4 px-6">
                                                                 {user ? (
                                                                     <div className="space-y-1">
-                                                                        <p className="font-semibold text-psi-dark text-sm">
+                                                                        <p className="font-medium text-psi-dark text-sm">
                                                                             {user.firstName} {user.lastName}
                                                                         </p>
                                                                         <p className="text-xs text-psi-dark/50">
@@ -566,14 +566,14 @@ const SupportDetails = ({ support, parseAdditionalInfo, setImageModal }: TSuppor
     return (
         <div className="space-y-4">
             <div>
-                <h4 className="text-sm font-semibold text-psi-dark mb-2">Descrição</h4>
+                <h4 className="text-sm font-medium text-psi-dark mb-2">Descrição</h4>
                 <p className="text-sm text-psi-dark/70 whitespace-pre-wrap">
                     {support.description}
                 </p>
             </div>
             {additionalInfo && Object.keys(additionalInfo).length > 0 && (
                 <div className="p-3 rounded-lg border border-psi-primary/20 bg-psi-primary/5">
-                    <h4 className="text-sm font-semibold text-psi-dark mb-2">Informações Adicionais</h4>
+                    <h4 className="text-sm font-medium text-psi-dark mb-2">Informações Adicionais</h4>
                     <div className="space-y-1">
                         {eventId && eventId !== "temp" && (
                             <div className="text-xs text-psi-dark/70">
@@ -605,7 +605,7 @@ const SupportDetails = ({ support, parseAdditionalInfo, setImageModal }: TSuppor
             )}
             {support.image && (
                 <div>
-                    <h4 className="text-sm font-semibold text-psi-dark mb-2">Imagem</h4>
+                    <h4 className="text-sm font-medium text-psi-dark mb-2">Imagem</h4>
                     <div className="relative inline-block">
                         <img
                             src={ImageUtils.getSupportImageUrl(support.image)}
@@ -636,7 +636,7 @@ const SupportDetails = ({ support, parseAdditionalInfo, setImageModal }: TSuppor
                 <div className="pt-4 border-t border-psi-dark/10">
                     <div className="flex items-center gap-2 mb-2">
                         <CheckCircle2 className="h-4 w-4 text-green-600" />
-                        <h4 className="text-sm font-semibold text-psi-dark">Resposta do Suporte</h4>
+                        <h4 className="text-sm font-medium text-psi-dark">Resposta do Suporte</h4>
                     </div>
                     <p className="text-sm text-psi-dark/70 whitespace-pre-wrap">
                         {support.answer}

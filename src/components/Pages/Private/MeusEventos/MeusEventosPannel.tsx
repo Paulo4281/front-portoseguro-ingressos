@@ -253,7 +253,7 @@ const MeusEventosPannel = () => {
                             <div className="mb-6">
                                 <Sparkle className="h-12 w-12 text-psi-primary/40" aria-label="Sem eventos" />
                             </div>
-                            <h2 className="text-2xl text-center font-bold text-psi-primary mb-2">
+                            <h2 className="text-2xl text-center font-semibold text-psi-primary mb-2">
                                 Nenhum evento cadastrado ainda
                             </h2>
                             <p className="text-base text-center text-psi-dark/60 max-w-md mb-6">
@@ -291,7 +291,7 @@ const MeusEventosPannel = () => {
                 <div className="max-w-7xl mx-auto">
                     <div className="mb-8">
                         <h1 className="text-4xl
-                        sm:text-5xl font-bold text-psi-primary mb-2">
+                        sm:text-5xl font-semibold text-psi-primary mb-2">
                             Meus Eventos
                         </h1>
                         <p className="text-base
@@ -559,17 +559,17 @@ const EventCard = ({
             <div className="p-6 space-y-4">
                 <div>
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <h3 className="text-xl font-bold text-psi-dark line-clamp-1">
+                        <h3 className="text-xl font-semibold text-psi-dark line-clamp-1">
                             {event.name}
                         </h3>
                         {event.isCancelled && (
-                            <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-semibold rounded-full flex items-center gap-1">
+                            <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-medium rounded-full flex items-center gap-1">
                                 <XCircle className="h-3 w-3" />
                                 Cancelado
                             </span>
                         )}
                         {event.isPostponed && !event.isCancelled && (
-                            <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full flex items-center gap-1">
+                            <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-medium rounded-full flex items-center gap-1">
                                 <AlertCircle className="h-3 w-3" />
                                 Adiado
                             </span>
@@ -640,13 +640,13 @@ const EventCard = ({
                             <div className="rounded-xl border flex items-center border-psi-primary/20 bg-psi-primary/5 p-3">
                                 <div className="flex items-center gap-2 ">
                                     <Tag className="h-4 w-4 text-psi-primary shrink-0" />
-                                    <span className="text-sm font-semibold text-psi-dark">
+                                    <span className="text-sm font-medium text-psi-dark">
                                         Lote Atual: {activeBatch.name}
                                     </span>
                                 </div>
                                 {/* <div className="flex items-center justify-between text-xs">
                                     <span className="text-psi-dark/70">
-                                        Disponível: <span className="font-semibold text-psi-dark">{activeBatch.tickets}</span>
+                                        Disponível: <span className="font-medium text-psi-dark">{activeBatch.tickets}</span>
                                     </span>
                                 </div> */}
                             </div>
@@ -663,7 +663,7 @@ const EventCard = ({
                         {isLoadingClickCount ? (
                             <Skeleton className="h-6 w-12 mx-auto" />
                         ) : (
-                            <p className="text-lg font-bold text-psi-dark">{totalClicks}</p>
+                            <p className="text-lg font-semibold text-psi-dark">{totalClicks}</p>
                         )}
                     </div>
                     <div className="text-center">
@@ -674,7 +674,7 @@ const EventCard = ({
                         {isLoadingVerifySold ? (
                             <Skeleton className="h-6 w-12 mx-auto" />
                         ) : (
-                            <p className="text-lg font-bold text-psi-dark">{totalSales}</p>
+                            <p className="text-lg font-semibold text-psi-dark">{totalSales}</p>
                         )}
                     </div>
                     <div className="text-center">
@@ -685,7 +685,7 @@ const EventCard = ({
                         {isLoadingSoldInValue ? (
                             <Skeleton className="h-6 w-16 mx-auto" />
                         ) : (
-                            <p className="text-lg font-bold text-psi-primary">{ValueUtils.centsToCurrency(totalRevenue)}</p>
+                            <p className="text-lg font-semibold text-psi-primary">{ValueUtils.centsToCurrency(totalRevenue)}</p>
                         )}
                     </div>
                 </div>

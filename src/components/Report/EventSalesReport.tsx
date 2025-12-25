@@ -82,7 +82,7 @@ const EventSalesReport = ({
                     justify-between"
                 >
                     <DialogTitle className="text-2xl
-                        font-bold
+                        font-semibold
                         text-psi-dark"
                     >
                         Relatório de Vendas
@@ -148,7 +148,7 @@ const EventSalesReport = ({
                                         </div>
                                     </div>
                                     <p className="text-sm text-psi-dark/60 mb-1">Ingressos Vendidos</p>
-                                    <p className="text-2xl font-bold text-psi-dark/80">
+                                    <p className="text-2xl font-semibold text-psi-dark/80">
                                         <span className="text-psi-primary text-4xl">{reportData.totalTicketsSold}</span>/{reportData.totalTickets}
                                     </p>
                                 </div>
@@ -160,7 +160,7 @@ const EventSalesReport = ({
                                         </div>
                                     </div>
                                     <p className="text-sm text-psi-dark/60 mb-1">Receita Total</p>
-                                    <p className="text-3xl font-bold text-psi-primary">{formatCurrency(reportData.totalRevenue)}</p>
+                                    <p className="text-3xl font-semibold text-psi-primary">{formatCurrency(reportData.totalRevenue)}</p>
                                 </div>
 
                                 <div className="rounded-xl border border-[#E4E6F0] bg-white p-6 shadow-sm">
@@ -170,7 +170,7 @@ const EventSalesReport = ({
                                         </div>
                                     </div>
                                     <p className="text-sm text-psi-dark/60 mb-1">Visualizações</p>
-                                    <p className="text-3xl font-bold text-psi-dark">{reportData.totalViews}</p>
+                                    <p className="text-3xl font-semibold text-psi-dark">{reportData.totalViews}</p>
                                 </div>
 
                                 <div className="rounded-xl border border-[#E4E6F0] bg-white p-6 shadow-sm">
@@ -180,14 +180,14 @@ const EventSalesReport = ({
                                         </div>
                                     </div>
                                     <p className="text-sm text-psi-dark/60 mb-1">Taxa de Conversão</p>
-                                    <p className="text-3xl font-bold text-psi-dark">{reportData.conversionRate.toFixed(1)}%</p>
+                                    <p className="text-3xl font-semibold text-psi-dark">{reportData.conversionRate.toFixed(1)}%</p>
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1
                             lg:grid-cols-2 gap-6">
                                 <div className="rounded-xl border border-[#E4E6F0] bg-white p-6 shadow-sm">
-                                    <h3 className="text-lg font-semibold text-psi-dark mb-4">Vendas por Lote</h3>
+                                    <h3 className="text-lg font-medium text-psi-dark mb-4">Vendas por Lote</h3>
                                     <ResponsiveContainer width="100%" height={300}>
                                         <BarChart data={reportData.salesByBatch}>
                                             <CartesianGrid strokeDasharray="3 3" stroke="#E4E6F0" />
@@ -210,7 +210,7 @@ const EventSalesReport = ({
                                 </div>
 
                                 <div className="rounded-xl border border-[#E4E6F0] bg-white p-6 shadow-sm">
-                                    <h3 className="text-lg font-semibold text-psi-dark mb-4">Vendas por Tipo de Ingresso</h3>
+                                    <h3 className="text-lg font-medium text-psi-dark mb-4">Vendas por Tipo de Ingresso</h3>
                                     <ResponsiveContainer width="100%" height={300}>
                                         <PieChart>
                                             <Pie
@@ -244,7 +244,7 @@ const EventSalesReport = ({
                             </div>
 
                             <div className="rounded-xl border border-[#E4E6F0] bg-white p-6 shadow-sm">
-                                <h3 className="text-lg font-semibold text-psi-dark mb-4">Evolução das Vendas</h3>
+                                <h3 className="text-lg font-medium text-psi-dark mb-4">Evolução das Vendas</h3>
                                 <ResponsiveContainer width="100%" height={300}>
                                     <LineChart data={reportData.salesOverTime}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#E4E6F0" />
@@ -283,7 +283,7 @@ const EventSalesReport = ({
                             <div className="grid grid-cols-1
                             lg:grid-cols-2 gap-6">
                                 <div className="rounded-xl border border-[#E4E6F0] bg-white p-6 shadow-sm">
-                                    <h3 className="text-lg font-semibold text-psi-dark mb-4 flex items-center gap-2">
+                                    <h3 className="text-lg font-medium text-psi-dark mb-4 flex items-center gap-2">
                                         <Users className="h-5 w-5 text-psi-primary" />
                                         Compradores por Faixa Etária
                                     </h3>
@@ -309,7 +309,7 @@ const EventSalesReport = ({
                                 </div>
 
                                 <div className="rounded-xl border border-[#E4E6F0] bg-white p-6 shadow-sm">
-                                    <h3 className="text-lg font-semibold text-psi-dark mb-4 flex items-center gap-2">
+                                    <h3 className="text-lg font-medium text-psi-dark mb-4 flex items-center gap-2">
                                         <MapPin className="h-5 w-5 text-psi-primary" />
                                         Compradores por Origem
                                     </h3>
@@ -348,7 +348,7 @@ const EventSalesReport = ({
                             <div className="grid grid-cols-1
                             lg:grid-cols-2 gap-6">
                                 <div className="rounded-xl border border-[#E4E6F0] bg-white p-6 shadow-sm">
-                                    <h3 className="text-lg font-semibold text-psi-dark mb-4 flex items-center gap-2">
+                                    <h3 className="text-lg font-medium text-psi-dark mb-4 flex items-center gap-2">
                                         <Award className="h-5 w-5 text-psi-primary" />
                                         Top Compradores
                                     </h3>
@@ -360,7 +360,7 @@ const EventSalesReport = ({
                                             >
                                                 <div className="flex items-center gap-3">
                                                     <div className={cn(
-                                                        "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white",
+                                                        "w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold text-white",
                                                         index === 0 && "bg-psi-primary",
                                                         index === 1 && "bg-psi-secondary",
                                                         index === 2 && "bg-psi-tertiary",
@@ -369,41 +369,41 @@ const EventSalesReport = ({
                                                         {index + 1}
                                                     </div>
                                                     <div>
-                                                        <p className="text-sm font-semibold text-psi-dark">{buyer.buyerName}</p>
+                                                        <p className="text-sm font-medium text-psi-dark">{buyer.buyerName}</p>
                                                         <p className="text-xs text-psi-dark/60">{buyer.ticketsBought} ingressos</p>
                                                     </div>
                                                 </div>
-                                                <p className="text-sm font-bold text-psi-primary">{formatCurrency(buyer.totalSpent)}</p>
+                                                <p className="text-sm font-semibold text-psi-primary">{formatCurrency(buyer.totalSpent)}</p>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
 
                                 <div className="rounded-xl border border-[#E4E6F0] bg-white p-6 shadow-sm">
-                                    <h3 className="text-lg font-semibold text-psi-dark mb-4">Insights</h3>
+                                    <h3 className="text-lg font-medium text-psi-dark mb-4">Insights</h3>
                                     <div className="space-y-4">
                                         <div className="p-4 rounded-lg bg-psi-primary/5 border border-psi-primary/20">
                                             <div className="flex items-center gap-2 mb-2">
                                                 <DollarSign className="h-4 w-4 text-psi-primary" />
-                                                <p className="text-sm font-semibold text-psi-dark">Preço Médio do Ingresso</p>
+                                                <p className="text-sm font-medium text-psi-dark">Preço Médio do Ingresso</p>
                                             </div>
-                                            <p className="text-2xl font-bold text-psi-primary">{formatCurrency(reportData.averageTicketPrice)}</p>
+                                            <p className="text-2xl font-semibold text-psi-primary">{formatCurrency(reportData.averageTicketPrice)}</p>
                                         </div>
 
                                         <div className="p-4 rounded-lg bg-psi-secondary/5 border border-psi-secondary/20">
                                             <div className="flex items-center gap-2 mb-2">
                                                 <Calendar className="h-4 w-4 text-psi-secondary" />
-                                                <p className="text-sm font-semibold text-psi-dark">Dia de Pico de Vendas</p>
+                                                <p className="text-sm font-medium text-psi-dark">Dia de Pico de Vendas</p>
                                             </div>
-                                            <p className="text-xl font-bold text-psi-secondary">{reportData.peakSalesDay}</p>
+                                            <p className="text-xl font-semibold text-psi-secondary">{reportData.peakSalesDay}</p>
                                         </div>
 
                                         <div className="p-4 rounded-lg bg-psi-tertiary/5 border border-psi-tertiary/20">
                                             <div className="flex items-center gap-2 mb-2">
                                                 <Clock className="h-4 w-4 text-psi-dark" />
-                                                <p className="text-sm font-semibold text-psi-dark">Horário de Pico de Vendas</p>
+                                                <p className="text-sm font-medium text-psi-dark">Horário de Pico de Vendas</p>
                                             </div>
-                                            <p className="text-xl font-bold text-psi-dark">{reportData.peakSalesHour}</p>
+                                            <p className="text-xl font-semibold text-psi-dark">{reportData.peakSalesHour}</p>
                                         </div>
                                     </div>
                                 </div>

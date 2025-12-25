@@ -434,7 +434,7 @@ const AdmPagamentosPannel = () => {
             lg:px-8">
                 <div className="space-y-4">
                     <div className="space-y-3">
-                        <h1 className="text-3xl font-semibold text-psi-primary
+                        <h1 className="text-3xl font-medium text-psi-primary
                         sm:text-4xl">
                             Pagamentos
                         </h1>
@@ -475,12 +475,12 @@ const AdmPagamentosPannel = () => {
                         <Table>
                             <TableHeader>
                                 <TableRow className="border-b border-psi-dark/10 hover:bg-transparent bg-psi-dark/2">
-                                    <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider">Pagamento</TableHead>
-                                    <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider">Cliente</TableHead>
-                                    <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider">Evento</TableHead>
-                                    <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider">Valor</TableHead>
-                                    <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider">Status</TableHead>
-                                    <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider text-right">Ações</TableHead>
+                                    <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider">Pagamento</TableHead>
+                                    <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider">Cliente</TableHead>
+                                    <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider">Evento</TableHead>
+                                    <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider">Valor</TableHead>
+                                    <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider">Status</TableHead>
+                                    <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider text-right">Ações</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -492,7 +492,7 @@ const AdmPagamentosPannel = () => {
                                                     <DollarSign className="h-8 w-8 text-psi-primary/60" />
                                                 </div>
                                                 <div className="space-y-1">
-                                                    <p className="text-base font-semibold text-psi-dark">Nenhum pagamento encontrado</p>
+                                                    <p className="text-base font-medium text-psi-dark">Nenhum pagamento encontrado</p>
                                                     <p className="text-sm text-psi-dark/50">Os pagamentos aparecerão aqui.</p>
                                                 </div>
                                             </div>
@@ -524,7 +524,7 @@ const AdmPagamentosPannel = () => {
                                                                     />
                                                                 )}
                                                                 <div>
-                                                                    <p className="font-semibold text-psi-dark text-sm">
+                                                                    <p className="font-medium text-psi-dark text-sm">
                                                                         {payment.method === "PIX" ? "PIX" : "Cartão de Crédito"}
                                                                     </p>
                                                                     <p className="text-sm text-psi-dark/80">
@@ -536,7 +536,7 @@ const AdmPagamentosPannel = () => {
                                                     </TableCell>
                                                     <TableCell className="py-5 px-6">
                                                         <div className="space-y-1">
-                                                            <p className="font-semibold text-psi-dark text-sm">
+                                                            <p className="font-medium text-psi-dark text-sm">
                                                                 {user.firstName} {user.lastName}
                                                             </p>
                                                             <p className="text-xs text-psi-dark/50">
@@ -551,7 +551,7 @@ const AdmPagamentosPannel = () => {
                                                     </TableCell>
                                                     <TableCell className="py-5 px-6">
                                                         <div className="space-y-1">
-                                                            <p className="font-semibold text-psi-dark text-sm">
+                                                            <p className="font-medium text-psi-dark text-sm">
                                                                 {payment.Event.name}
                                                             </p>
                                                             <p className="text-xs text-psi-dark/50">
@@ -561,7 +561,7 @@ const AdmPagamentosPannel = () => {
                                                     </TableCell>
                                                     <TableCell className="py-5 px-6">
                                                         <div className="space-y-1">
-                                                            <p className="font-semibold text-psi-dark text-sm">
+                                                            <p className="font-medium text-psi-dark text-sm">
                                                                 {ValueUtils.centsToCurrency(payment.totalPaidByCustomer || payment.grossValue)}
                                                             </p>
                                                             {payment.creditCardInstallments && payment.creditCardInstallments > 1 && (
@@ -600,7 +600,7 @@ const AdmPagamentosPannel = () => {
                                                                             Cliente
                                                                         </div>
                                                                         <div className="space-y-1">
-                                                                            <p className="text-base font-semibold text-psi-dark">
+                                                                            <p className="text-base font-medium text-psi-dark">
                                                                                 {user.firstName} {user.lastName}
                                                                             </p>
                                                                             <p className="text-sm text-psi-dark/70">
@@ -625,7 +625,7 @@ const AdmPagamentosPannel = () => {
                                                                             Organizador
                                                                         </div>
                                                                         <div className="space-y-1">
-                                                                            <p className="text-base font-semibold text-psi-dark">
+                                                                            <p className="text-base font-medium text-psi-dark">
                                                                                 {payment.Event.Organizer.companyName}
                                                                             </p>
                                                                             <p className="text-sm text-psi-dark/70">
@@ -640,7 +640,7 @@ const AdmPagamentosPannel = () => {
                                                                             Evento
                                                                         </div>
                                                                         <div className="space-y-1">
-                                                                            <p className="text-base font-semibold text-psi-dark">
+                                                                            <p className="text-base font-medium text-psi-dark">
                                                                                 {payment.Event.name}
                                                                             </p>
                                                                             {payment.Event.location && (
@@ -664,14 +664,14 @@ const AdmPagamentosPannel = () => {
                                                                         <div className="space-y-2">
                                                                             <div className="flex justify-between items-center">
                                                                                 <span className="text-sm text-psi-dark/70">Valor bruto:</span>
-                                                                                <span className="text-sm font-semibold text-psi-dark">
+                                                                                <span className="text-sm font-medium text-psi-dark">
                                                                                     {ValueUtils.centsToCurrency(payment.grossValue)}
                                                                                 </span>
                                                                             </div>
                                                                             {payment.discountedValue !== null && payment.discountedValue !== undefined && payment.discountedValue > 0 && (
                                                                                 <div className="flex justify-between items-center">
                                                                                     <span className="text-sm text-psi-dark/70">Desconto:</span>
-                                                                                    <span className="text-sm font-semibold text-emerald-600">
+                                                                                    <span className="text-sm font-medium text-emerald-600">
                                                                                         -{ValueUtils.centsToCurrency(payment.discountedValue)}
                                                                                     </span>
                                                                                 </div>
@@ -679,7 +679,7 @@ const AdmPagamentosPannel = () => {
                                                                             {payment.customerFee !== null && payment.customerFee !== undefined && payment.customerFee > 0 && (
                                                                                 <div className="flex justify-between items-center">
                                                                                     <span className="text-sm text-psi-dark/70">Taxa do cliente:</span>
-                                                                                    <span className="text-sm font-semibold text-psi-dark">
+                                                                                    <span className="text-sm font-medium text-psi-dark">
                                                                                         {ValueUtils.centsToCurrency(payment.customerFee)}
                                                                                     </span>
                                                                                 </div>
@@ -687,7 +687,7 @@ const AdmPagamentosPannel = () => {
                                                                             {payment.organizerFee !== null && payment.organizerFee !== undefined && payment.organizerFee > 0 && (
                                                                                 <div className="flex justify-between items-center">
                                                                                     <span className="text-sm text-psi-dark/70">Taxa do organizador:</span>
-                                                                                    <span className="text-sm font-semibold text-psi-dark">
+                                                                                    <span className="text-sm font-medium text-psi-dark">
                                                                                         {ValueUtils.centsToCurrency(payment.organizerFee)}
                                                                                     </span>
                                                                                 </div>
@@ -695,22 +695,22 @@ const AdmPagamentosPannel = () => {
                                                                             {payment.platformPaymentFee !== null && payment.platformPaymentFee !== undefined && payment.platformPaymentFee > 0 && (
                                                                                 <div className="flex justify-between items-center">
                                                                                     <span className="text-sm text-psi-dark/70">Taxa da plataforma:</span>
-                                                                                    <span className="text-sm font-semibold text-psi-dark">
+                                                                                    <span className="text-sm font-medium text-psi-dark">
                                                                                         {ValueUtils.centsToCurrency(payment.platformPaymentFee)}
                                                                                     </span>
                                                                                 </div>
                                                                             )}
                                                                             {payment.organizerPayout !== null && payment.organizerPayout !== undefined && payment.organizerPayout > 0 && (
                                                                                 <div className="flex justify-between items-center pt-2 border-t border-psi-dark/10">
-                                                                                    <span className="text-sm font-semibold text-psi-dark">Repasse organizador:</span>
-                                                                                    <span className="text-sm font-semibold text-emerald-600">
+                                                                                    <span className="text-sm font-medium text-psi-dark">Repasse organizador:</span>
+                                                                                    <span className="text-sm font-medium text-emerald-600">
                                                                                         {ValueUtils.centsToCurrency(payment.organizerPayout)}
                                                                                     </span>
                                                                                 </div>
                                                                             )}
                                                                             <div className="flex justify-between items-center pt-2 border-t border-psi-dark/10">
-                                                                                <span className="text-sm font-semibold text-psi-dark">Total pago:</span>
-                                                                                <span className="text-base font-bold text-psi-primary">
+                                                                                <span className="text-sm font-medium text-psi-dark">Total pago:</span>
+                                                                                <span className="text-base font-semibold text-psi-primary">
                                                                                     {ValueUtils.centsToCurrency(payment.totalPaidByCustomer || payment.grossValue)}
                                                                                 </span>
                                                                             </div>
@@ -749,7 +749,7 @@ const AdmPagamentosPannel = () => {
                                                                                 {payment.couponInfo.couponCode && (
                                                                                     <div>
                                                                                         <span className="text-xs text-psi-dark/60">Código: </span>
-                                                                                        <span className="text-sm font-semibold text-psi-dark">
+                                                                                        <span className="text-sm font-medium text-psi-dark">
                                                                                             {payment.couponInfo.couponCode}
                                                                                         </span>
                                                                                     </div>
@@ -757,7 +757,7 @@ const AdmPagamentosPannel = () => {
                                                                                 {payment.couponInfo.discountValue !== null && payment.couponInfo.discountValue !== undefined && (
                                                                                     <div>
                                                                                         <span className="text-xs text-psi-dark/60">Desconto aplicado: </span>
-                                                                                        <span className="text-sm font-semibold text-emerald-600">
+                                                                                        <span className="text-sm font-medium text-emerald-600">
                                                                                             {payment.couponInfo.discountType === "PERCENTAGE" 
                                                                                                 ? `${payment.couponInfo.discountValue}%`
                                                                                                 : ValueUtils.centsToCurrency(payment.couponInfo.discountValue)
@@ -768,7 +768,7 @@ const AdmPagamentosPannel = () => {
                                                                                 {payment.couponInfo.discountType && (
                                                                                     <div>
                                                                                         <span className="text-xs text-psi-dark/60">Tipo: </span>
-                                                                                        <span className="text-sm font-semibold text-psi-dark">
+                                                                                        <span className="text-sm font-medium text-psi-dark">
                                                                                             {payment.couponInfo.discountType === "PERCENTAGE" ? "Porcentagem" : "Valor fixo"}
                                                                                         </span>
                                                                                     </div>
@@ -784,7 +784,7 @@ const AdmPagamentosPannel = () => {
                                                                         </div>
                                                                         <div className="space-y-2">
                                                                             <hr />
-                                                                            <p className="text-xs text-psi-dark/60">Código: <span className="font-semibold text-psi-dark text-sm">{payment.code}</span></p>
+                                                                            <p className="text-xs text-psi-dark/60">Código: <span className="font-medium text-psi-dark text-sm">{payment.code}</span></p>
                                                                             <hr />
                                                                             {payment.externalPaymentId && (
                                                                                 <p className="text-xs text-psi-dark/50">
@@ -794,7 +794,7 @@ const AdmPagamentosPannel = () => {
                                                                             {payment.invoiceNumber && (
                                                                                 <div>
                                                                                     <span className="text-xs text-psi-dark/60">Número da fatura: </span>
-                                                                                    <span className="text-sm font-semibold text-psi-dark">
+                                                                                    <span className="text-sm font-medium text-psi-dark">
                                                                                         {payment.invoiceNumber}
                                                                                     </span>
                                                                                 </div>
@@ -857,7 +857,7 @@ const AdmPagamentosPannel = () => {
                                                                                 <CreditCard className="h-5 w-5 text-psi-primary" />
                                                                             </div>
                                                                             <div>
-                                                                                <h3 className="text-base font-semibold text-psi-dark">
+                                                                                <h3 className="text-base font-medium text-psi-dark">
                                                                                     Cartão de Crédito
                                                                                 </h3>
                                                                                 <p className="text-xs text-psi-dark/50">
@@ -870,13 +870,13 @@ const AdmPagamentosPannel = () => {
                                                                         lg:grid-cols-4">
                                                                             <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3">
                                                                                 <p className="text-xs text-psi-dark/60 mb-1">Nome no cartão</p>
-                                                                                <p className="text-sm font-semibold text-psi-dark">
+                                                                                <p className="text-sm font-medium text-psi-dark">
                                                                                     {payment.Card.name}
                                                                                 </p>
                                                                             </div>
                                                                             <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3">
                                                                                 <p className="text-xs text-psi-dark/60 mb-1">Últimos 4 dígitos</p>
-                                                                                <p className="text-sm font-semibold text-psi-dark">
+                                                                                <p className="text-sm font-medium text-psi-dark">
                                                                                     **** {payment.Card.last4}
                                                                                 </p>
                                                                             </div>
@@ -895,7 +895,7 @@ const AdmPagamentosPannel = () => {
                                                                             </div>
                                                                             <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3">
                                                                                 <p className="text-xs text-psi-dark/60 mb-1">Validade</p>
-                                                                                <p className="text-sm font-semibold text-psi-dark">
+                                                                                <p className="text-sm font-medium text-psi-dark">
                                                                                     {payment.Card.expMonth}/{payment.Card.expYear}
                                                                                 </p>
                                                                             </div>
@@ -910,7 +910,7 @@ const AdmPagamentosPannel = () => {
                                                                                 <CreditCard className="h-5 w-5 text-psi-primary" />
                                                                             </div>
                                                                             <div>
-                                                                                <h3 className="text-base font-semibold text-psi-dark">
+                                                                                <h3 className="text-base font-medium text-psi-dark">
                                                                                     Parcelas
                                                                                 </h3>
                                                                                 <p className="text-xs text-psi-dark/50">
@@ -928,7 +928,7 @@ const AdmPagamentosPannel = () => {
                                                                                                 <Badge className={installmentStatus.badgeClass}>
                                                                                                     {installmentStatus.label}
                                                                                                 </Badge>
-                                                                                                <span className="text-sm font-semibold text-psi-dark">
+                                                                                                <span className="text-sm font-medium text-psi-dark">
                                                                                                     Parcela {installment.installmentNumber} de {payment.creditCardInstallments}
                                                                                                 </span>
                                                                                             </div>
@@ -937,20 +937,20 @@ const AdmPagamentosPannel = () => {
                                                                                         md:grid-cols-3">
                                                                                             <div>
                                                                                                 <p className="text-xs text-psi-dark/60 mb-1">Valor bruto</p>
-                                                                                                <p className="text-sm font-semibold text-psi-dark">
+                                                                                                <p className="text-sm font-medium text-psi-dark">
                                                                                                     {ValueUtils.centsToCurrency(installment.grossValue)}
                                                                                                 </p>
                                                                                             </div>
                                                                                             <div>
                                                                                                 <p className="text-xs text-psi-dark/60 mb-1">Valor líquido</p>
-                                                                                                <p className="text-sm font-semibold text-psi-dark">
+                                                                                                <p className="text-sm font-medium text-psi-dark">
                                                                                                     {ValueUtils.centsToCurrency(installment.netValue)}
                                                                                                 </p>
                                                                                             </div>
                                                                                             {installment.dueDate && (
                                                                                                 <div>
                                                                                                     <p className="text-xs text-psi-dark/60 mb-1">Vencimento</p>
-                                                                                                    <p className="text-sm font-semibold text-psi-dark">
+                                                                                                    <p className="text-sm font-medium text-psi-dark">
                                                                                                         {formatDate(installment.dueDate)}
                                                                                                     </p>
                                                                                                 </div>
@@ -958,7 +958,7 @@ const AdmPagamentosPannel = () => {
                                                                                             {installment.paidAt && (
                                                                                                 <div>
                                                                                                     <p className="text-xs text-psi-dark/60 mb-1">Pago em</p>
-                                                                                                    <p className="text-sm font-semibold text-psi-dark">
+                                                                                                    <p className="text-sm font-medium text-psi-dark">
                                                                                                         {formatDateTime(installment.paidAt)}
                                                                                                     </p>
                                                                                                 </div>
@@ -966,7 +966,7 @@ const AdmPagamentosPannel = () => {
                                                                                             {installment.receivedAt && (
                                                                                                 <div>
                                                                                                     <p className="text-xs text-psi-dark/60 mb-1">Recebido em</p>
-                                                                                                    <p className="text-sm font-semibold text-psi-dark">
+                                                                                                    <p className="text-sm font-medium text-psi-dark">
                                                                                                         {formatDateTime(installment.receivedAt)}
                                                                                                     </p>
                                                                                                 </div>
@@ -974,7 +974,7 @@ const AdmPagamentosPannel = () => {
                                                                                             {installment.estimatedCreditDate && (
                                                                                                 <div>
                                                                                                     <p className="text-xs text-psi-dark/60 mb-1">Data de crédito estimada</p>
-                                                                                                    <p className="text-sm font-semibold text-psi-dark">
+                                                                                                    <p className="text-sm font-medium text-psi-dark">
                                                                                                         {DateUtils.formatDate(installment.estimatedCreditDate)}
                                                                                                     </p>
                                                                                                 </div>
@@ -982,7 +982,7 @@ const AdmPagamentosPannel = () => {
                                                                                             {installment.externalPaymentId && (
                                                                                                 <div>
                                                                                                     <p className="text-xs text-psi-dark/60 mb-1">ID externo</p>
-                                                                                                    <p className="text-sm font-semibold text-psi-dark">
+                                                                                                    <p className="text-sm font-medium text-psi-dark">
                                                                                                         {installment.externalPaymentId}
                                                                                                     </p>
                                                                                                 </div>
@@ -1002,7 +1002,7 @@ const AdmPagamentosPannel = () => {
                                                                                 <Ticket className="h-5 w-5 text-psi-primary" />
                                                                             </div>
                                                                             <div>
-                                                                                <h3 className="text-base font-semibold text-psi-dark">
+                                                                                <h3 className="text-base font-medium text-psi-dark">
                                                                                     Ingressos
                                                                                 </h3>
                                                                                 <p className="text-xs text-psi-dark/50">
@@ -1018,7 +1018,7 @@ const AdmPagamentosPannel = () => {
                                                                                             <p className="text-xs text-psi-dark/80 mb-2">
                                                                                                 {ticket.code}
                                                                                             </p>
-                                                                                            <p className="text-sm font-semibold text-psi-dark">
+                                                                                            <p className="text-sm font-medium text-psi-dark">
                                                                                                 <span className="text-psi-dark/60">Tipo: </span>{ticket.TicketType?.name || "Ingresso sem tipo"}
                                                                                             </p>
                                                                                             {ticket.TicketType?.description && (
@@ -1028,13 +1028,13 @@ const AdmPagamentosPannel = () => {
                                                                                             )}
                                                                                             {ticket.code && (
                                                                                                 <p className="text-xs text-psi-dark/60 mt-1">
-                                                                                                    Código: <span className="font-mono font-semibold text-psi-dark">{ticket.code}</span>
+                                                                                                    Código: <span className="font-mono font-medium text-psi-dark">{ticket.code}</span>
                                                                                                 </p>
                                                                                             )}
                                                                                             {ticket.price && (
                                                                                                 <div className="flex gap-1">
                                                                                                     <p className="text-xs text-psi-dark/60">Valor:</p>
-                                                                                                    <p className="text-sm font-semibold text-psi-dark">
+                                                                                                    <p className="text-sm font-medium text-psi-dark">
                                                                                                         {ValueUtils.centsToCurrency(ticket.price)}
                                                                                                     </p>
                                                                                                 </div>
@@ -1088,7 +1088,7 @@ const AdmPagamentosPannel = () => {
                                                                                                 {ticket.refundedBy && (
                                                                                                     <div>
                                                                                                         <p className="text-xs text-psi-dark/60 mb-1">Solicitado por</p>
-                                                                                                        <p className="text-xs font-semibold text-psi-dark font-mono">
+                                                                                                        <p className="text-xs font-medium text-psi-dark font-mono">
                                                                                                             {ticket.refundedBy}
                                                                                                         </p>
                                                                                                     </div>
@@ -1096,7 +1096,7 @@ const AdmPagamentosPannel = () => {
                                                                                                 {ticket.refundedAt && (
                                                                                                     <div>
                                                                                                         <p className="text-xs text-psi-dark/60 mb-1">Concluído em</p>
-                                                                                                        <p className="text-xs font-semibold text-psi-dark">
+                                                                                                        <p className="text-xs font-medium text-psi-dark">
                                                                                                             {formatDateTime(ticket.refundedAt)}
                                                                                                         </p>
                                                                                                     </div>
@@ -1104,7 +1104,7 @@ const AdmPagamentosPannel = () => {
                                                                                                 {ticket.refundEndToEndIndentifier && (
                                                                                                     <div>
                                                                                                         <p className="text-xs text-psi-dark/60 mb-1">ID de end to end</p>
-                                                                                                        <p className="text-xs font-semibold text-psi-dark">
+                                                                                                        <p className="text-xs font-medium text-psi-dark">
                                                                                                             {ticket.refundEndToEndIndentifier}
                                                                                                         </p>
                                                                                                     </div>
@@ -1160,7 +1160,7 @@ const AdmPagamentosPannel = () => {
                                                                                 <FileText className="h-5 w-5 text-psi-primary" />
                                                                             </div>
                                                                             <div>
-                                                                                <h3 className="text-base font-semibold text-psi-dark">
+                                                                                <h3 className="text-base font-medium text-psi-dark">
                                                                                     Dados PIX
                                                                                 </h3>
                                                                                 <p className="text-xs text-psi-dark/50">
@@ -1171,7 +1171,7 @@ const AdmPagamentosPannel = () => {
                                                                         {payment.qrcodeData.expirationDate && (
                                                                             <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3">
                                                                                 <p className="text-xs text-psi-dark/60 mb-1">Data de expiração</p>
-                                                                                <p className="text-sm font-semibold text-psi-dark">
+                                                                                <p className="text-sm font-medium text-psi-dark">
                                                                                     {formatDateTime(payment.qrcodeData.expirationDate)}
                                                                                 </p>
                                                                             </div>
@@ -1187,7 +1187,7 @@ const AdmPagamentosPannel = () => {
                                                                                 <AlertTriangle className="h-5 w-5 text-purple-600" />
                                                                             </div>
                                                                             <div>
-                                                                                <h3 className="text-base font-semibold text-psi-dark">
+                                                                                <h3 className="text-base font-medium text-psi-dark">
                                                                                     Informações de Reembolso
                                                                                 </h3>
                                                                                 <p className="text-xs text-psi-dark/50">
@@ -1208,7 +1208,7 @@ const AdmPagamentosPannel = () => {
                                                                             {payment.refundedBy && (
                                                                                 <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3">
                                                                                     <p className="text-xs text-psi-dark/60 mb-1">Solicitado por</p>
-                                                                                    <p className="text-sm font-semibold text-psi-dark font-mono">
+                                                                                    <p className="text-sm font-medium text-psi-dark font-mono">
                                                                                         {payment.refundedBy}
                                                                                     </p>
                                                                                 </div>
@@ -1216,7 +1216,7 @@ const AdmPagamentosPannel = () => {
                                                                             {payment.refundedAt && (
                                                                                 <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3">
                                                                                     <p className="text-xs text-psi-dark/60 mb-1">Concluído em</p>
-                                                                                    <p className="text-sm font-semibold text-psi-dark">
+                                                                                    <p className="text-sm font-medium text-psi-dark">
                                                                                         {formatDateTime(payment.refundedAt)}
                                                                                     </p>
                                                                                 </div>
@@ -1233,7 +1233,7 @@ const AdmPagamentosPannel = () => {
                                                                             {payment.refundEndToEndIdentifier && (
                                                                                 <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3">
                                                                                     <p className="text-xs text-psi-dark/60 mb-1">ID de end to end</p>
-                                                                                    <p className="text-sm font-semibold text-psi-dark">
+                                                                                    <p className="text-sm font-medium text-psi-dark">
                                                                                         {payment.refundEndToEndIdentifier}
                                                                                     </p>
                                                                                 </div>
@@ -1241,7 +1241,7 @@ const AdmPagamentosPannel = () => {
                                                                             {payment.refundReceiptUrl && payment.Tickets?.every(ticket => ticket.refundStatus === null) && (
                                                                                 <div className="rounded-xl border border-psi-dark/10 bg-white/80 p-3">
                                                                                     <p className="text-xs text-psi-dark/60 mb-1">URL do recibo</p>
-                                                                                    <a href={payment.refundReceiptUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-psi-primary hover:text-psi-primary/80">
+                                                                                    <a href={payment.refundReceiptUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-psi-primary hover:text-psi-primary/80">
                                                                                         Ver recibo
                                                                                     </a>
                                                                                 </div>
@@ -1302,7 +1302,7 @@ const AdmPagamentosPannel = () => {
                         </DialogTitle>
                         <DialogDescription className="pt-2 space-y-2">
                             <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
-                                <p className="text-sm font-semibold text-amber-900 mb-1">
+                                <p className="text-sm font-medium text-amber-900 mb-1">
                                     ⚠️ Atenção: Esta ação é delicada e irreversível
                                 </p>
                                 <p className="text-xs text-amber-800">
@@ -1312,10 +1312,10 @@ const AdmPagamentosPannel = () => {
                             {selectedPaymentForRefund && (
                                 <div className="pt-2 space-y-1">
                                     <p className="text-sm text-psi-dark/70">
-                                        <span className="font-semibold">Pagamento:</span> {selectedPaymentForRefund.code}
+                                        <span className="font-medium">Pagamento:</span> {selectedPaymentForRefund.code}
                                     </p>
                                     <p className="text-sm text-psi-dark/70">
-                                        <span className="font-semibold">Valor:</span> {ValueUtils.centsToCurrency(selectedPaymentForRefund.grossValue)}
+                                        <span className="font-medium">Valor:</span> {ValueUtils.centsToCurrency(selectedPaymentForRefund.grossValue)}
                                     </p>
                                 </div>
                             )}
@@ -1414,7 +1414,7 @@ const AdmPagamentosPannel = () => {
                         </DialogTitle>
                         <DialogDescription className="pt-2 space-y-2">
                             <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
-                                <p className="text-sm font-semibold text-amber-900 mb-1">
+                                <p className="text-sm font-medium text-amber-900 mb-1">
                                     ⚠️ Atenção: Esta ação é delicada e irreversível
                                 </p>
                                 <p className="text-xs text-amber-800">
@@ -1424,13 +1424,13 @@ const AdmPagamentosPannel = () => {
                             {selectedTicketForRefund && (
                                 <div className="pt-2 space-y-1">
                                     <p className="text-sm text-psi-dark/70">
-                                        <span className="font-semibold">Pagamento:</span> {selectedTicketForRefund.payment.code}
+                                        <span className="font-medium">Pagamento:</span> {selectedTicketForRefund.payment.code}
                                     </p>
                                     <p className="text-sm text-psi-dark/70">
-                                        <span className="font-semibold">Ingresso:</span> {selectedTicketForRefund.ticket.code}
+                                        <span className="font-medium">Ingresso:</span> {selectedTicketForRefund.ticket.code}
                                     </p>
                                     <p className="text-sm text-psi-dark/70">
-                                        <span className="font-semibold">Valor do ingresso:</span> {ValueUtils.centsToCurrency(selectedTicketForRefund.ticket.price || 0)}
+                                        <span className="font-medium">Valor do ingresso:</span> {ValueUtils.centsToCurrency(selectedTicketForRefund.ticket.price || 0)}
                                     </p>
                                 </div>
                             )}

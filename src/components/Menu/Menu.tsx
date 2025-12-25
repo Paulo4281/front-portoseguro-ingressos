@@ -275,7 +275,7 @@ const Menu = () => {
                             <span className="bg-linear-to-r from-psi-tertiary via-psi-secondary to-psi-primary bg-clip-text text-transparent">
                                 Seguro
                             </span>{" "}
-                            <span className="inline-block font-bold text-psi-dark">
+                            <span className="inline-block font-semibold text-psi-dark">
                                 Ingressos
                             </span>
                         </span>
@@ -379,7 +379,7 @@ const Menu = () => {
                                     <DropdownMenuContent align="end" className="w-64 rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/10 p-2 z-55 overflow-visible!">
                                         <DropdownMenuLabel className="px-3 py-2">
                                             <div className="flex flex-col">
-                                                <span className="text-sm font-semibold text-psi-dark">{fullName}</span>
+                                                <span className="text-sm font-medium text-psi-dark">{fullName}</span>
                                                 <span className="text-xs text-psi-dark/60 font-normal truncate">
                                                     {user?.email}
                                                 </span>
@@ -484,7 +484,7 @@ const Menu = () => {
                                 <DropdownMenuContent align="end" className="w-64 rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/10 p-2 z-55 overflow-visible!">
                                     <DropdownMenuLabel className="px-3 py-2">
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-semibold text-psi-dark">{fullName}</span>
+                                            <span className="text-sm font-medium text-psi-dark">{fullName}</span>
                                             <span className="text-xs text-psi-dark/60 font-normal truncate">
                                                 {user?.email}
                                             </span>
@@ -879,7 +879,7 @@ const NotificationBell = () => {
                 >
                     <Bell className="h-5 w-5" />
                     {unreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-psi-secondary text-xs font-bold text-white">
+                        <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-psi-secondary text-xs font-semibold text-white">
                             {unreadCount > 9 ? "9+" : unreadCount}
                         </span>
                     )}
@@ -888,7 +888,7 @@ const NotificationBell = () => {
             <DropdownMenuContent align="end" className="w-96 rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/10 p-2 z-55 max-h-[600px] overflow-y-auto">
                 <DropdownMenuLabel className="px-3 py-2 sticky top-0 bg-white/95 backdrop-blur-sm z-10">
                     <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-semibold text-psi-dark">Notificações</span>
+                        <span className="text-sm font-medium text-psi-dark">Notificações</span>
                         <div className="flex items-center gap-2">
                             {unreadCount > 0 && (
                                 <Badge variant="secondary" className="bg-psi-secondary text-white">
@@ -943,7 +943,7 @@ const NotificationBell = () => {
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between gap-2 mb-1">
                                                 <div className="flex items-center gap-2">
-                                                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full`}>
+                                                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full`}>
                                                         {getSubjectLabel(notification.subject)}
                                                     </span>
                                                 </div>

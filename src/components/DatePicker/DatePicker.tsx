@@ -222,14 +222,14 @@ const DatePicker = (
                                 <button
                                     type="button"
                                     onClick={() => setViewMode("month")}
-                                    className="px-3 py-1 font-semibold text-psi-dark hover:bg-[#F3F4FB] rounded-lg transition-colors"
+                                    className="px-3 py-1 font-medium text-psi-dark hover:bg-[#F3F4FB] rounded-lg transition-colors"
                                 >
                                     {currentMonthName}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setViewMode("year")}
-                                    className="px-3 py-1 font-semibold text-psi-dark hover:bg-[#F3F4FB] rounded-lg transition-colors"
+                                    className="px-3 py-1 font-medium text-psi-dark hover:bg-[#F3F4FB] rounded-lg transition-colors"
                                 >
                                     {currentYear}
                                 </button>
@@ -298,7 +298,7 @@ const DatePicker = (
                                 <button
                                     type="button"
                                     onClick={() => setViewMode("year")}
-                                    className="px-3 py-1 font-semibold text-psi-dark hover:bg-[#F3F4FB] rounded-lg transition-colors"
+                                    className="px-3 py-1 font-medium text-psi-dark hover:bg-[#F3F4FB] rounded-lg transition-colors"
                                 >
                                     {currentYear}
                                 </button>
@@ -347,7 +347,7 @@ const DatePicker = (
                                 >
                                     <ChevronLeft className="h-4 w-4 text-psi-primary" />
                                 </button>
-                                <div className="font-semibold text-psi-dark">
+                                <div className="font-medium text-psi-dark">
                                     {currentMonth.getFullYear() - 10} - {currentMonth.getFullYear() + 10}
                                 </div>
                                 <button

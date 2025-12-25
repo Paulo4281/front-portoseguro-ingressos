@@ -29,7 +29,7 @@ const CartDropdown = () => {
                 >
                     <ShoppingCart className="h-5 w-5" />
                     {itemCount > 0 && (
-                        <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-psi-primary text-xs font-bold text-white">
+                        <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-psi-primary text-xs font-semibold text-white">
                             {itemCount > 9 ? "9+" : itemCount}
                         </span>
                     )}
@@ -42,7 +42,7 @@ const CartDropdown = () => {
                 <div className="p-5 pb-4 border-b border-[#E4E6F0] bg-linear-to-br from-psi-primary/5 via-white to-psi-secondary/5">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h3 className="text-lg font-bold text-psi-dark">
+                            <h3 className="text-lg font-semibold text-psi-dark">
                                 Carrinho
                             </h3>
                         </div>
@@ -90,7 +90,7 @@ const CartDropdown = () => {
                                             </div>
                                         )}
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-semibold text-psi-dark line-clamp-2 leading-snug mb-1">
+                                            <p className="text-sm font-medium text-psi-dark line-clamp-2 leading-snug mb-1">
                                                 {item.eventName}
                                             </p>
                                             {item.batchName && (
@@ -102,7 +102,7 @@ const CartDropdown = () => {
                                                 <span className="text-xs font-medium text-psi-dark/60">
                                                     {item.quantity} {item.quantity === 1 ? "ingresso" : "ingressos"}
                                                 </span>
-                                                <span className="text-sm font-bold text-psi-primary">
+                                                <span className="text-sm font-semibold text-psi-primary">
                                                     {ValueUtils.formatPrice(itemTotal)}
                                                 </span>
                                             </div>
@@ -121,10 +121,10 @@ const CartDropdown = () => {
 
                         <div className="p-5 pt-4 border-t border-[#E4E6F0] bg-linear-to-br from-psi-dark/5 via-white to-psi-dark/5 space-y-4">
                             <div className="flex items-center justify-between">
-                                <span className="text-base font-semibold text-psi-dark">
+                                <span className="text-base font-medium text-psi-dark">
                                     Total
                                 </span>
-                                <span className="text-2xl font-bold text-psi-primary">
+                                <span className="text-2xl font-semibold text-psi-primary">
                                     {ValueUtils.centsToCurrency(total)}
                                 </span>
                             </div>

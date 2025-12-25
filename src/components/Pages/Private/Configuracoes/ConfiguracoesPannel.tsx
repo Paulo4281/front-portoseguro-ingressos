@@ -19,7 +19,7 @@ const ConfiguracoesPannel = () => {
             <div className="container py-12 mt-[80px]">
                 <div className="max-w-3xl mx-auto space-y-8">
                     <div className="space-y-2">
-                        <h1 className="text-3xl font-bold text-psi-primary
+                        <h1 className="text-3xl font-semibold text-psi-primary
                         sm:text-4xl">Configurações</h1>
                         <p className="text-sm text-psi-dark/60">Gerencie as configurações da sua conta e integrações</p>
                     </div>
@@ -32,7 +32,7 @@ const ConfiguracoesPannel = () => {
                                     <Facebook className="w-5 h-5 text-blue-600" />
                                 </div>
                                 <div>
-                                    <h2 className="text-lg font-semibold text-psi-dark">Meta Ads (Facebook)</h2>
+                                    <h2 className="text-lg font-medium text-psi-dark">Meta Ads (Facebook)</h2>
                                     <p className="text-sm text-psi-dark/60">Configure o Facebook Pixel e Access Token para criar campanhas no Meta Ads</p>
                                 </div>
                             </div>

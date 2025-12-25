@@ -180,13 +180,13 @@ const CasosDeUsoInfo = () => {
             lg:px-8">
                 <div className="max-w-7xl mx-auto space-y-16">
                     <div className="text-center space-y-6">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-psi-primary/10 text-psi-primary text-sm font-semibold uppercase tracking-wide">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-psi-primary/10 text-psi-primary text-sm font-medium uppercase tracking-wide">
                             <Sparkles className="h-4 w-4" />
                             Casos de Uso
                         </div>
                         <h1 className="text-4xl
                         sm:text-5xl
-                        lg:text-6xl font-bold text-psi-dark leading-tight">
+                        lg:text-6xl font-semibold text-psi-dark leading-tight">
                             Uma Plataforma para <span className="text-psi-primary">Todos os Eventos</span>
                         </h1>
                         <p className="text-lg
@@ -231,7 +231,7 @@ const CasosDeUsoInfo = () => {
                                     </div>
                                     
                                     <div className="p-6 space-y-4 flex-1">
-                                        <h3 className="text-xl font-bold text-psi-dark">
+                                        <h3 className="text-xl font-semibold text-psi-dark">
                                             {useCase.title}
                                         </h3>
                                         <p className="text-sm text-psi-dark/70 leading-relaxed">
@@ -239,7 +239,7 @@ const CasosDeUsoInfo = () => {
                                         </p>
                                         
                                         <div className="pt-2 border-t border-psi-primary/10 space-y-2">
-                                            <p className="text-xs font-semibold text-psi-primary uppercase tracking-wide">
+                                            <p className="text-xs font-medium text-psi-primary uppercase tracking-wide">
                                                 Funcionalidades
                                             </p>
                                             <ul className="space-y-1.5">
@@ -265,7 +265,7 @@ const CasosDeUsoInfo = () => {
                             <div className="text-center space-y-4">
                                 <h2 className="text-3xl
                                 sm:text-4xl
-                                lg:text-5xl font-bold text-psi-dark">
+                                lg:text-5xl font-semibold text-psi-dark">
                                     Funcionalidades que <span className="text-psi-primary">Impulsionam</span> seus Eventos
                                 </h2>
                                 <p className="text-lg text-psi-dark/70 max-w-2xl mx-auto">
@@ -286,7 +286,7 @@ const CasosDeUsoInfo = () => {
                                             <div className="w-12 h-12 rounded-xl bg-linear-to-br from-psi-primary to-psi-primary/80 flex items-center justify-center text-white shadow-lg shadow-psi-primary/20">
                                                 <IconComponent className="h-6 w-6" />
                                             </div>
-                                            <h3 className="text-lg font-bold text-psi-dark">
+                                            <h3 className="text-lg font-semibold text-psi-dark">
                                                 {feature.title}
                                             </h3>
                                             <p className="text-sm text-psi-dark/70 leading-relaxed">
@@ -302,7 +302,7 @@ const CasosDeUsoInfo = () => {
                     <div className="text-center space-y-8">
                         <div className="space-y-4">
                             <h2 className="text-3xl
-                            sm:text-4xl font-bold text-psi-dark">
+                            sm:text-4xl font-semibold text-psi-dark">
                                 Pronto para <span className="text-psi-primary">Começar</span>?
                             </h2>
                             <p className="text-lg text-psi-dark/70 max-w-2xl mx-auto">

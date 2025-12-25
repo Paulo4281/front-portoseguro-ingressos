@@ -83,7 +83,7 @@ const CadastroConfirmarForm = () => {
                         <CheckCircle2 className="size-16 text-green-500" />
                     </div>
                     <h1 className="text-3xl
-                    font-bold
+                    font-semibold
                     text-psi-dark
                     dark:text-white
                     mb-2">
@@ -114,7 +114,7 @@ const CadastroConfirmarForm = () => {
             <AuthLayout>
                 <div className="mb-8 text-center">
                     <h1 className="text-3xl
-                    font-bold
+                    font-semibold
                     text-psi-dark
                     dark:text-white
                     mb-2">
@@ -122,7 +122,7 @@ const CadastroConfirmarForm = () => {
                     </h1>
                     <div className="space-y-2">
                         <p className="text-muted-foreground">
-                            Olá, <span className="font-semibold text-foreground">{firstName}</span>!
+                            Olá, <span className="font-medium text-foreground">{firstName}</span>!
                         </p>
                         <p className="text-sm text-muted-foreground mt-4">
                             Verificando o link de confirmação...
@@ -152,7 +152,7 @@ const CadastroConfirmarForm = () => {
         <AuthLayout>
             <div className="mb-8 text-center">
                 <h1 className="text-3xl
-                font-bold
+                font-semibold
                 text-psi-dark
                 dark:text-white
                 mb-2">
@@ -160,10 +160,10 @@ const CadastroConfirmarForm = () => {
                 </h1>
                 <div className="space-y-2">
                     <p className="text-muted-foreground">
-                        Olá, <span className="font-semibold text-foreground">{firstName}</span>!
+                        Olá, <span className="font-medium text-foreground">{firstName}</span>!
                     </p>
                     <p className="text-sm text-muted-foreground mt-4">
-                        Digite o código de 6 dígitos enviado para seu e-mail <span className="font-semibold text-foreground">{searchParams.email}</span> para confirmar seu cadastro.
+                        Digite o código de 6 dígitos enviado para seu e-mail <span className="font-medium text-foreground">{searchParams.email}</span> para confirmar seu cadastro.
                     </p>
                 </div>
             </div>

@@ -176,13 +176,13 @@ const RecursosInfo = () => {
             lg:px-8">
                 <div className="max-w-7xl mx-auto space-y-20">
                     <div className="text-center space-y-6 max-w-4xl mx-auto">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-psi-primary/10 text-psi-primary text-sm font-semibold uppercase tracking-wide">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-psi-primary/10 text-psi-primary text-sm font-medium uppercase tracking-wide">
                             <Sparkles className="h-4 w-4" />
                             Recursos da Plataforma
                         </div>
                         <h1 className="text-4xl
                         sm:text-5xl
-                        lg:text-6xl font-bold text-psi-dark leading-tight">
+                        lg:text-6xl font-semibold text-psi-dark leading-tight">
                             Tecnologia que <span className="text-psi-primary">impulsiona</span> suas vendas
                         </h1>
                         <p className="text-lg
@@ -208,7 +208,7 @@ const RecursosInfo = () => {
                     <section className="space-y-12">
                         <div className="text-center space-y-3">
                             <h2 className="text-3xl
-                            sm:text-4xl font-bold text-psi-dark">
+                            sm:text-4xl font-semibold text-psi-dark">
                                 Recursos <span className="text-psi-primary">Principais</span>
                             </h2>
                             <p className="text-psi-dark/60 text-base
@@ -230,7 +230,7 @@ const RecursosInfo = () => {
                                             <Icon className="h-7 w-7" />
                                         </div>
                                         <h3 className="text-xl
-                                        sm:text-2xl font-bold text-psi-dark">
+                                        sm:text-2xl font-semibold text-psi-dark">
                                             {feature.title}
                                         </h3>
                                         <p className="text-sm
@@ -248,7 +248,7 @@ const RecursosInfo = () => {
                     lg:p-16 space-y-12">
                         <div className="text-center space-y-3">
                             <h2 className="text-3xl
-                            sm:text-4xl font-bold text-psi-dark">
+                            sm:text-4xl font-semibold text-psi-dark">
                                 Vantagens <span className="text-psi-primary">Competitivas</span>
                             </h2>
                             <p className="text-psi-dark/60 text-base
@@ -270,11 +270,11 @@ const RecursosInfo = () => {
                                             <div className="w-12 h-12 rounded-xl bg-psi-primary/10 flex items-center justify-center text-psi-primary">
                                                 <Icon className="h-6 w-6" />
                                             </div>
-                                            <span className="text-xs font-semibold text-psi-secondary bg-psi-secondary/10 px-2 py-1 rounded-full">
+                                            <span className="text-xs font-medium text-psi-secondary bg-psi-secondary/10 px-2 py-1 rounded-full">
                                                 {advantage.stat}
                                             </span>
                                         </div>
-                                        <h3 className="text-lg font-bold text-psi-dark">
+                                        <h3 className="text-lg font-semibold text-psi-dark">
                                             {advantage.title}
                                         </h3>
                                         <p className="text-sm text-psi-dark/70">
@@ -288,12 +288,12 @@ const RecursosInfo = () => {
 
                     <section className="space-y-12">
                         <div className="text-center space-y-3">
-                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-psi-secondary/10 text-psi-secondary text-sm font-semibold uppercase tracking-wide">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-psi-secondary/10 text-psi-secondary text-sm font-medium uppercase tracking-wide">
                                 <ShieldCheck className="h-4 w-4" />
                                 Compliance e Segurança
                             </div>
                             <h2 className="text-3xl
-                            sm:text-4xl font-bold text-psi-dark">
+                            sm:text-4xl font-semibold text-psi-dark">
                                 Plataforma <span className="text-psi-primary">Verificada</span>
                             </h2>
                             <p className="text-psi-dark/60 text-base
@@ -313,7 +313,7 @@ const RecursosInfo = () => {
                                         <div className="w-12 h-12 rounded-xl bg-psi-primary/20 flex items-center justify-center text-psi-primary">
                                             <Icon className="h-6 w-6" />
                                         </div>
-                                        <h3 className="text-lg font-bold text-psi-dark">
+                                        <h3 className="text-lg font-semibold text-psi-dark">
                                             {feature.title}
                                         </h3>
                                         <p className="text-sm text-psi-dark/70">
@@ -328,7 +328,7 @@ const RecursosInfo = () => {
                     <section className="space-y-12">
                         <div className="text-center space-y-3">
                             <h2 className="text-3xl
-                            sm:text-4xl font-bold text-psi-dark">
+                            sm:text-4xl font-semibold text-psi-dark">
                                 Ferramentas <span className="text-psi-primary">Completas</span>
                             </h2>
                             <p className="text-psi-dark/60 text-base
@@ -349,7 +349,7 @@ const RecursosInfo = () => {
                                         <div className="w-12 h-12 rounded-xl bg-psi-primary/10 flex items-center justify-center text-psi-primary">
                                             <Icon className="h-6 w-6" />
                                         </div>
-                                        <h3 className="text-lg font-bold text-psi-dark">
+                                        <h3 className="text-lg font-semibold text-psi-dark">
                                             {feature.title}
                                         </h3>
                                         <p className="text-sm text-psi-dark/70">
@@ -365,12 +365,12 @@ const RecursosInfo = () => {
                     sm:p-12
                     lg:p-16 space-y-12">
                         <div className="text-center space-y-3">
-                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white text-sm font-semibold uppercase tracking-wide">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white text-sm font-medium uppercase tracking-wide">
                                 <Lock className="h-4 w-4" />
                                 Segurança da Informação
                             </div>
                             <h2 className="text-3xl
-                            sm:text-4xl font-bold">
+                            sm:text-4xl font-semibold">
                                 Seus Dados <span className="text-psi-tertiary">Protegidos</span>
                             </h2>
                             <p className="text-white/80 text-base
@@ -391,7 +391,7 @@ const RecursosInfo = () => {
                                         <div className="w-12 h-12 rounded-xl bg-psi-tertiary/20 flex items-center justify-center text-psi-tertiary">
                                             <Icon className="h-6 w-6" />
                                         </div>
-                                        <h3 className="text-lg font-bold">
+                                        <h3 className="text-lg font-semibold">
                                             {feature.title}
                                         </h3>
                                         <p className="text-sm text-white/80">
@@ -405,12 +405,12 @@ const RecursosInfo = () => {
 
                     <section className="space-y-12">
                         <div className="text-center space-y-3">
-                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-psi-secondary/10 text-psi-secondary text-sm font-semibold uppercase tracking-wide">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-psi-secondary/10 text-psi-secondary text-sm font-medium uppercase tracking-wide">
                                 <Globe2 className="h-4 w-4" />
                                 Porto Seguro
                             </div>
                             <h2 className="text-3xl
-                            sm:text-4xl font-bold text-psi-dark">
+                            sm:text-4xl font-semibold text-psi-dark">
                                 Feito para <span className="text-psi-primary">Porto Seguro</span>
                             </h2>
                             <p className="text-psi-dark/60 text-base
@@ -430,7 +430,7 @@ const RecursosInfo = () => {
                                         <div className="w-12 h-12 rounded-xl bg-psi-secondary/10 flex items-center justify-center text-psi-secondary">
                                             <Icon className="h-6 w-6" />
                                         </div>
-                                        <h3 className="text-lg font-bold text-psi-dark">
+                                        <h3 className="text-lg font-semibold text-psi-dark">
                                             {item.title}
                                         </h3>
                                         <p className="text-sm text-psi-dark/70">
@@ -448,7 +448,7 @@ const RecursosInfo = () => {
                         <div className="space-y-4 max-w-3xl mx-auto">
                             <h2 className="text-3xl
                             sm:text-4xl
-                            lg:text-5xl font-bold text-psi-dark">
+                            lg:text-5xl font-semibold text-psi-dark">
                                 Pronto para <span className="text-psi-primary">impulsionar</span> suas vendas?
                             </h2>
                             <p className="text-lg

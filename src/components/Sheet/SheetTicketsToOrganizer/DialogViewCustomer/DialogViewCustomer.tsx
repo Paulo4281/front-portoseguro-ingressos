@@ -52,7 +52,7 @@ const DialogViewCustomer = ({
 
                 <div className="space-y-6 py-4">
                     <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-4 space-y-4">
-                        <h3 className="font-semibold text-psi-dark mb-3">Dados Pessoais</h3>
+                        <h3 className="font-medium text-psi-dark mb-3">Dados Pessoais</h3>
                         
                         <div className="grid grid-cols-1
                         sm:grid-cols-2 gap-4">
@@ -156,7 +156,7 @@ const DialogViewCustomer = ({
                     </div>
 
                     <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-4 space-y-4">
-                        <h3 className="font-semibold text-psi-dark mb-3">
+                        <h3 className="font-medium text-psi-dark mb-3">
                             {isMultipleTickets ? "Informações dos Ingressos" : "Informações do Ingresso"}
                         </h3>
                         
@@ -243,7 +243,7 @@ const DialogViewCustomer = ({
 
                     {ticket.form && (
                         <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-4 space-y-4">
-                            <h3 className="font-semibold text-psi-dark mb-3">Respostas do Formulário</h3>
+                            <h3 className="font-medium text-psi-dark mb-3">Respostas do Formulário</h3>
                             
                             <div className="space-y-3">
                                 {ticket.form.text && ticket.form.text.length > 0 && (

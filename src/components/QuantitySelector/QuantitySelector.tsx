@@ -48,7 +48,7 @@ const QuantitySelector = (
                 <Minus className="h-4 w-4" />
             </Button>
             
-            <span className="w-12 text-center font-semibold text-psi-dark text-lg">
+            <span className="w-12 text-center font-medium text-psi-dark text-lg">
                 {value}
             </span>
             

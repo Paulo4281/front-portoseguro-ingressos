@@ -171,7 +171,7 @@ const SearchEvent = ({
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <h3 className={cn(
-                                            "font-semibold text-psi-dark group-hover:text-psi-primary transition-colors truncate",
+                                            "font-medium text-psi-dark group-hover:text-psi-primary transition-colors truncate",
                                             menuMode ? "text-sm" : "text-base"
                                         )}>
                                             {event.name}

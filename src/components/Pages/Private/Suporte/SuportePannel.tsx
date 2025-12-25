@@ -283,7 +283,7 @@ const SuportePannel = () => {
                     lg:px-8">
                         <div className="mb-8">
                             <h1 className="text-4xl
-                            sm:text-5xl font-bold text-psi-primary mb-2">
+                            sm:text-5xl font-semibold text-psi-primary mb-2">
                                 Suporte
                             </h1>
                             <p className="text-base
@@ -296,7 +296,7 @@ const SuportePannel = () => {
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <MessageSquare className="h-5 w-5 text-psi-primary" />
-                                <h2 className="text-2xl font-bold text-psi-dark">Criar Chamado</h2>
+                                <h2 className="text-2xl font-semibold text-psi-dark">Criar Chamado</h2>
                             </div>
 
                             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
@@ -505,7 +505,7 @@ const SuportePannel = () => {
                     className="w-[90vw] sm:w-[90vw] overflow-y-auto"
                 >
                     <SheetHeader>
-                        <SheetTitle className="text-2xl font-bold text-psi-primary">
+                        <SheetTitle className="text-2xl font-semibold text-psi-primary">
                             Meus Chamados
                         </SheetTitle>
                         <SheetDescription>
@@ -607,21 +607,21 @@ const SupportCard = ({ support, additionalInfo, eventId }: TSupportCardProps) =>
             <div className="flex items-start justify-between">
                 <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold text-psi-dark">
+                        <h3 className="font-medium text-psi-dark">
                             {subjectLabels[support.subject]}
                         </h3>
                         {support.status === "SOLVED" ? (
-                            <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-semibold rounded-full flex items-center gap-1">
+                            <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded-full flex items-center gap-1">
                                 <CheckCircle2 className="h-3 w-3" />
                                 Resolvido
                             </span>
                         ) : support.status === "NOT_SOLVED" ? (
-                            <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-semibold rounded-full flex items-center gap-1">
+                            <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-medium rounded-full flex items-center gap-1">
                                 <XCircle className="h-3 w-3" />
                                 Não Resolvido
                             </span>
                         ) : (
-                            <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full flex items-center gap-1">
+                            <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-medium rounded-full flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
                                 Pendente
                             </span>
@@ -632,7 +632,7 @@ const SupportCard = ({ support, additionalInfo, eventId }: TSupportCardProps) =>
                     </p>
                     {additionalInfo && Object.keys(additionalInfo).length > 0 && (
                         <div className="mb-2 p-3 rounded-lg border border-psi-primary/20 bg-psi-primary/5">
-                            <h4 className="text-xs font-semibold text-psi-dark mb-2">Informações Adicionais</h4>
+                            <h4 className="text-xs font-medium text-psi-dark mb-2">Informações Adicionais</h4>
                             <div className="space-y-1">
                                 {eventId && eventId !== "temp" && (
                                     <div className="text-xs text-psi-dark/70">
@@ -675,7 +675,7 @@ const SupportCard = ({ support, additionalInfo, eventId }: TSupportCardProps) =>
                         <div className="mt-3 pt-3 border-t border-psi-primary/10">
                             <div className="flex items-center gap-2 mb-2">
                                 <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                <span className="text-sm font-semibold text-psi-dark">
+                                <span className="text-sm font-medium text-psi-dark">
                                     Resposta do Suporte
                                 </span>
                             </div>

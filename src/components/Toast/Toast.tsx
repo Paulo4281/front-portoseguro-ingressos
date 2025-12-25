@@ -25,7 +25,7 @@ class ToastComponent {
                     <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-psi-dark leading-tight">{message}</p>
+                    <p className="text-sm font-medium text-psi-dark leading-tight">{message}</p>
                 </div>
             </div>,
             {
@@ -43,7 +43,7 @@ class ToastComponent {
                     <XCircle className="w-5 h-5 text-red-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-psi-dark leading-tight">{message}</p>
+                    <p className="text-sm font-medium text-psi-dark leading-tight">{message}</p>
                 </div>
             </div>,
             {
@@ -61,7 +61,7 @@ class ToastComponent {
                     <Info className="w-5 h-5 text-psi-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-psi-dark leading-tight">{message}</p>
+                    <p className="text-sm font-medium text-psi-dark leading-tight">{message}</p>
                 </div>
             </div>,
             {

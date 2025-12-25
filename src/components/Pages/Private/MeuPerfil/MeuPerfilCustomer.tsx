@@ -193,7 +193,7 @@ const MeuPerfilCustomer = () => {
                 <div className="max-w-6xl mx-auto">
                     <div className="space-y-8">
                         <div>
-                            <h1 className="text-3xl font-bold text-psi-primary mb-2
+                            <h1 className="text-3xl font-semibold text-psi-primary mb-2
                             sm:text-4xl">
                                 Meu Perfil
                             </h1>
@@ -206,7 +206,7 @@ const MeuPerfilCustomer = () => {
                         sm:p-8 shadow-sm">
                             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
                                 <div className="space-y-4">
-                                    <h2 className="text-xl font-semibold text-psi-dark">Foto de Perfil</h2>
+                                    <h2 className="text-xl font-medium text-psi-dark">Foto de Perfil</h2>
                                     
                                     <div className="flex items-center gap-6">
                                         <Controller
@@ -243,7 +243,7 @@ const MeuPerfilCustomer = () => {
                                 </div>
 
                                 <div className="space-y-4 pt-6 border-t border-psi-dark/10">
-                                    <h2 className="text-xl font-semibold text-psi-dark">Informações Pessoais</h2>
+                                    <h2 className="text-xl font-medium text-psi-dark">Informações Pessoais</h2>
 
                                     <div className="grid gap-4
                                     sm:grid-cols-3">
@@ -424,7 +424,7 @@ const MeuPerfilCustomer = () => {
                                 </div>
 
                                 <div className="space-y-4 pt-6 border-t border-psi-dark/10">
-                                    <h2 className="text-xl font-semibold text-psi-dark">Endereço</h2>
+                                    <h2 className="text-xl font-medium text-psi-dark">Endereço</h2>
 
                                     <div className="grid gap-4
                                     sm:grid-cols-2">

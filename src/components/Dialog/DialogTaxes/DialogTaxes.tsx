@@ -66,7 +66,7 @@ const DialogTaxes = ({
         <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-4 space-y-3">
           <div className="flex items-center gap-2">
             <TrendingDown className="h-5 w-5 text-psi-primary" />
-            <h3 className="font-semibold text-psi-dark">Taxa do Cliente (Comprador)</h3>
+            <h3 className="font-medium text-psi-dark">Taxa do Cliente (Comprador)</h3>
           </div>
           
           <div className="space-y-2 text-sm text-psi-dark/70">
@@ -78,7 +78,7 @@ const DialogTaxes = ({
               <p className="text-xs font-medium text-psi-dark mb-1">
                 Taxa do cliente:
               </p>
-              <p className="text-lg font-semibold text-psi-primary">
+              <p className="text-lg font-medium text-psi-primary">
                 {ValueUtils.centsToCurrency(TAX_FIXED_CLIENT)} por ingresso
               </p>
               <p className="text-xs text-psi-dark/60 mt-1">
@@ -99,7 +99,7 @@ const DialogTaxes = ({
                       />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-bold text-psi-dark mb-1.5">
+                      <p className="text-sm font-semibold text-psi-dark mb-1.5">
                         Uma das menores taxas do Brasil
                       </p>
                       <p className="text-xs text-psi-dark/70 leading-relaxed">
@@ -125,7 +125,7 @@ const DialogTaxes = ({
             <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-psi-primary" />
-                <h3 className="font-semibold text-psi-dark">Taxa do Organizador (Vendedor)</h3>
+                <h3 className="font-medium text-psi-dark">Taxa do Organizador (Vendedor)</h3>
               </div>
               
               <div className="space-y-2 text-sm text-psi-dark/70">
@@ -171,7 +171,7 @@ const DialogTaxes = ({
             <div className="rounded-xl border border-psi-primary/20 bg-white p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Info className="h-5 w-5 text-psi-primary" />
-                <h3 className="font-semibold text-psi-dark">Exemplo de Cálculo</h3>
+                <h3 className="font-medium text-psi-dark">Exemplo de Cálculo</h3>
               </div>
               
               <div className="space-y-3">
@@ -211,7 +211,7 @@ const DialogTaxes = ({
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 rounded-lg bg-psi-primary/5 border border-psi-primary/20">
                     <p className="text-xs text-psi-dark/60 mb-1">Taxa do Cliente</p>
-                    <p className="text-lg font-semibold text-psi-primary">
+                    <p className="text-lg font-medium text-psi-primary">
                       {ValueUtils.centsToCurrency(clientFee)}
                     </p>
                     <p className="text-xs text-psi-dark/60 mt-1">
@@ -221,7 +221,7 @@ const DialogTaxes = ({
                   
                   <div className="p-3 rounded-lg bg-psi-primary/5 border border-psi-primary/20">
                     <p className="text-xs text-psi-dark/60 mb-1">Taxa do Organizador</p>
-                    <p className="text-lg font-semibold text-psi-primary">
+                    <p className="text-lg font-medium text-psi-primary">
                       {ValueUtils.centsToCurrency(organizerFee)}
                     </p>
                     <p className="text-xs text-psi-dark/60 mt-1">
@@ -243,7 +243,7 @@ const DialogTaxes = ({
 
                       return (
                         <>
-                          <p className="text-xl font-bold text-psi-primary">
+                          <p className="text-xl font-semibold text-psi-primary">
                             {ValueUtils.centsToCurrency(totalClientPaid)} {installments > 1 ? ` | ${installments}x ${ValueUtils.centsToCurrency(perInstallment)} (total ${ValueUtils.centsToCurrency(totalWithInstallments)})` : ""}
                           </p>
                           <p className="text-xs text-psi-dark/60 mt-1">
@@ -259,7 +259,7 @@ const DialogTaxes = ({
                 {!isClientTaxed && (
                   <div className="p-3 rounded-lg bg-psi-primary/5 border border-psi-primary/20">
                     <p className="text-xs text-psi-dark/60 mb-1">Taxa do organizador (absorvida pelo organizador)</p>
-                    <p className="text-lg font-semibold text-psi-primary">
+                    <p className="text-lg font-medium text-psi-primary">
                       {ValueUtils.centsToCurrency(organizerFee)}
                     </p>
                     <p className="text-xs text-psi-dark/60 mt-1">
@@ -288,7 +288,7 @@ const DialogTaxes = ({
                         key={key}
                         className="border-b border-psi-primary/10 last:border-none hover:bg-psi-primary/5"
                       >
-                        <td className="p-2 font-semibold">{key}x</td>
+                        <td className="p-2 font-medium">{key}x</td>
                         <td className="p-2">
                           {data.percentage}% + {ValueUtils.centsToCurrency(data.fixed)}
                         </td>

@@ -200,7 +200,7 @@ const VerEventosPannel = () => {
                 <div className="max-w-7xl mx-auto">
                     <div className="mb-8">
                         <h1 className="text-4xl
-                        sm:text-5xl font-bold text-psi-primary mb-2">
+                        sm:text-5xl font-semibold text-psi-primary mb-2">
                             Todos os Eventos
                         </h1>
                         <p className="text-base
@@ -357,7 +357,7 @@ const VerEventosPannel = () => {
 
                                     <div className="p-6 space-y-4">
                                         <div>
-                                            <h3 className="text-xl font-bold text-psi-dark mb-2 line-clamp-2">
+                                            <h3 className="text-xl font-semibold text-psi-dark mb-2 line-clamp-2">
                                                 {event.name}
                                             </h3>
                                         </div>
@@ -414,7 +414,7 @@ const VerEventosPannel = () => {
                                             {activeBatch && (
                                                 <div className="flex items-center gap-2 mb-2">
                                                     <Tag className="h-4 w-4 text-psi-primary shrink-0" />
-                                                    <span className="text-sm font-semibold text-psi-dark">
+                                                    <span className="text-sm font-medium text-psi-dark">
                                                         {activeBatch.name}
                                                     </span>
                                                 </div>

@@ -14,13 +14,13 @@ const ConhecaInfo = () => {
             lg:px-8">
                 <div className="max-w-5xl mx-auto space-y-16">
                     <div className="text-center space-y-8">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-psi-primary/10 text-psi-primary text-sm font-semibold uppercase tracking-wide">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-psi-primary/10 text-psi-primary text-sm font-medium uppercase tracking-wide">
                             <Sparkles className="h-4 w-4" />
                             Sobre Nós
                         </div>
                         <h1 className="text-4xl
                         sm:text-5xl
-                        lg:text-6xl font-bold text-psi-dark leading-tight">
+                        lg:text-6xl font-semibold text-psi-dark leading-tight">
                             Conheça a <span className="text-psi-primary">Maion Digital</span>
                         </h1>
                         <p className="text-lg
@@ -85,18 +85,18 @@ const ConhecaInfo = () => {
                                     <Sparkles className="h-7 w-7" />
                                 </div>
                                 <h2 className="text-3xl
-                                sm:text-4xl font-bold text-psi-dark">
+                                sm:text-4xl font-semibold text-psi-dark">
                                     Nossa História
                                 </h2>
                             </div>
                             <div className="space-y-6 text-psi-dark/80 leading-relaxed max-w-3xl">
                                 <p className="text-lg
                                 sm:text-xl">
-                                    Fundada em 2024 por dois jovens visionários em Porto Seguro, a <strong className="text-psi-dark font-semibold">Maion Digital</strong> nasceu para transformar o mercado de eventos e entretenimento. Especializados em estratégias digitais e desenvolvimento de plataformas, oferecemos soluções abrangentes para destacar seus eventos e impulsionar suas vendas no mercado online.
+                                    Fundada em 2024 por dois jovens visionários em Porto Seguro, a <strong className="text-psi-dark font-medium">Maion Digital</strong> nasceu para transformar o mercado de eventos e entretenimento. Especializados em estratégias digitais e desenvolvimento de plataformas, oferecemos soluções abrangentes para destacar seus eventos e impulsionar suas vendas no mercado online.
                                 </p>
                                 <p className="text-lg
                                 sm:text-xl">
-                                    Nosso compromisso é com a <strong className="text-psi-dark font-semibold">transparência</strong>, a <strong className="text-psi-dark font-semibold">inovação</strong> e a <strong className="text-psi-dark font-semibold">excelência</strong> em cada projeto. Confie na Maion para transformar a presença online dos seus eventos e impulsionar seus negócios. Juntos, vamos destacar seus eventos no mercado digital e alcançar resultados extraordinários.
+                                    Nosso compromisso é com a <strong className="text-psi-dark font-medium">transparência</strong>, a <strong className="text-psi-dark font-medium">inovação</strong> e a <strong className="text-psi-dark font-medium">excelência</strong> em cada projeto. Confie na Maion para transformar a presença online dos seus eventos e impulsionar seus negócios. Juntos, vamos destacar seus eventos no mercado digital e alcançar resultados extraordinários.
                                 </p>
                             </div>
                         </div>
@@ -108,7 +108,7 @@ const ConhecaInfo = () => {
                         sm:pr-12 space-y-8 text-right">
                             <div className="flex items-center gap-4 justify-end">
                                 <h2 className="text-3xl
-                                sm:text-4xl font-bold text-psi-dark">
+                                sm:text-4xl font-semibold text-psi-dark">
                                     Plataforma de Venda de Ingressos
                                 </h2>
                                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-psi-secondary to-psi-secondary/80 flex items-center justify-center text-white shadow-lg shadow-psi-secondary/30">
@@ -139,18 +139,18 @@ const ConhecaInfo = () => {
                                 </div>
                                 <h2 className="text-3xl
                                 sm:text-4xl
-                                lg:text-5xl font-bold text-psi-dark text-center">
+                                lg:text-5xl font-semibold text-psi-dark text-center">
                                     Iluminando Projetos
                                 </h2>
                             </div>
                             <div className="space-y-6 text-psi-dark/80 leading-relaxed max-w-4xl mx-auto text-center">
                                 <p className="text-lg
                                 sm:text-xl">
-                                    Na <strong className="text-psi-dark font-semibold">Maion Digital</strong>, nosso compromisso com o slogan <strong className="text-psi-primary font-semibold">"Iluminando Projetos"</strong> reflete a dedicação em clarear caminhos e concretizar sonhos no setor de eventos e entretenimento. Acreditamos que cada evento é mais do que uma simples ocasião; é um projeto de vida, seja para os organizadores em busca de sucesso, seja para o público que deseja vivenciar experiências únicas.
+                                    Na <strong className="text-psi-dark font-medium">Maion Digital</strong>, nosso compromisso com o slogan <strong className="text-psi-primary font-medium">"Iluminando Projetos"</strong> reflete a dedicação em clarear caminhos e concretizar sonhos no setor de eventos e entretenimento. Acreditamos que cada evento é mais do que uma simples ocasião; é um projeto de vida, seja para os organizadores em busca de sucesso, seja para o público que deseja vivenciar experiências únicas.
                                 </p>
                                 <p className="text-lg
                                 sm:text-xl">
-                                    Com <strong className="text-psi-dark font-semibold">transparência</strong>, <strong className="text-psi-dark font-semibold">inovação</strong> e <strong className="text-psi-dark font-semibold">excelência</strong>, a Maion Digital ilumina as etapas do processo, conectando pessoas e oportunidades. Estamos aqui para ouvir, entender e agir, transformando aspirações em realizações. Confie em quem ilumina o caminho para que seu projeto se torne uma conquista.
+                                    Com <strong className="text-psi-dark font-medium">transparência</strong>, <strong className="text-psi-dark font-medium">inovação</strong> e <strong className="text-psi-dark font-medium">excelência</strong>, a Maion Digital ilumina as etapas do processo, conectando pessoas e oportunidades. Estamos aqui para ouvir, entender e agir, transformando aspirações em realizações. Confie em quem ilumina o caminho para que seu projeto se torne uma conquista.
                                 </p>
                             </div>
                         </div>
@@ -158,13 +158,13 @@ const ConhecaInfo = () => {
 
                     <section className="space-y-12 text-center">
                         <div className="space-y-6 max-w-3xl mx-auto">
-                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-psi-primary/10 to-psi-secondary/10 text-psi-primary text-sm font-semibold uppercase tracking-wide">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-psi-primary/10 to-psi-secondary/10 text-psi-primary text-sm font-medium uppercase tracking-wide">
                                 <Heart className="h-4 w-4" />
                                 Nossa Missão
                             </div>
                             <h2 className="text-4xl
                             sm:text-5xl
-                            lg:text-6xl font-bold text-psi-dark leading-tight">
+                            lg:text-6xl font-semibold text-psi-dark leading-tight">
                                 Transformando <span className="bg-gradient-to-r from-psi-primary to-psi-secondary bg-clip-text text-transparent">sonhos</span> em realidade
                             </h2>
                             <p className="text-xl

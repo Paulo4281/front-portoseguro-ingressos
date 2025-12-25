@@ -125,14 +125,14 @@ const CardEvent = (
     const onlineBadge = event.isOnline ? (
         <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full border border-psi-primary/20 shadow-sm">
             <Laptop className="h-3 w-3 text-psi-primary" />
-            <span className="text-xs font-semibold text-psi-dark">Online</span>
+            <span className="text-xs font-medium text-psi-dark">Online</span>
         </div>
     ) : null
 
     const freeBadge = event.isFree ? (
         <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full border border-psi-primary/20 shadow-sm">
             <Gift className="h-3 w-3 text-psi-primary" />
-            <span className="text-xs font-semibold text-psi-dark">Gratuito</span>
+            <span className="text-xs font-medium text-psi-dark">Gratuito</span>
         </div>
     ) : null
 
@@ -159,7 +159,7 @@ const CardEvent = (
                         <div className="absolute top-3 right-3">
                             <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full border border-psi-primary/20 shadow-sm">
                                 <Tag className="h-3 w-3 text-psi-primary" />
-                                <span className="text-xs font-semibold text-psi-dark">
+                                <span className="text-xs font-medium text-psi-dark">
                                     {activeBatch.name}
                                 </span>
                             </div>
@@ -171,11 +171,11 @@ const CardEvent = (
                     {isLastTickets && (
                         <div className="inline-flex mb-2 animate-pulse items-center gap-1.5 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full border border-psi-primary/20 shadow-sm">
                             <Tag className="h-3 w-3 text-psi-primary" />
-                            <span className="text-xs font-semibold text-psi-dark">Últimos ingressos!</span>
+                            <span className="text-xs font-medium text-psi-dark">Últimos ingressos!</span>
                         </div>
                     )}
 
-                    <h3 className="text-lg font-bold text-psi-dark mb-3 line-clamp-2 leading-tight group-hover:text-psi-primary transition-colors">
+                    <h3 className="text-lg font-semibold text-psi-dark mb-3 line-clamp-2 leading-tight group-hover:text-psi-primary transition-colors">
                         {event.name} {onlineBadge} {freeBadge}
                     </h3>
 
@@ -208,7 +208,7 @@ const CardEvent = (
                                 <Clock className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="font-semibold text-psi-primary">
+                                        <span className="font-medium text-psi-primary">
                                             {recurrenceInfo.type === "DAILY" && "Diário"}
                                             {recurrenceInfo.type === "WEEKLY" && "Semanal"}
                                             {recurrenceInfo.type === "MONTHLY" && "Mensal"}

@@ -242,7 +242,7 @@ const SheetTicketsToOrganizer = ({
                     className="w-[90vw] sm:w-[90vw] overflow-y-auto"
                 >
                     <SheetHeader>
-                        <SheetTitle className="text-2xl font-bold text-psi-primary">
+                        <SheetTitle className="text-2xl font-semibold text-psi-primary">
                             Ingressos Vendidos
                         </SheetTitle>
                         <SheetDescription>
@@ -327,7 +327,7 @@ const SheetTicketsToOrganizer = ({
                                                             <div className="flex items-center gap-3 mb-2">
                                                                 <div className="flex-1 min-w-0">
                                                                     <div className="flex items-center gap-2">
-                                                                        <h4 className="font-semibold text-psi-dark truncate">
+                                                                        <h4 className="font-medium text-psi-dark truncate">
                                                                             {group.customer.name}
                                                                         </h4>
                                                                         {isMultipleTickets && (
@@ -353,7 +353,7 @@ const SheetTicketsToOrganizer = ({
                                                                                 {group.payment.method === "PIX" ? "PIX" : "Cartão de Crédito"}
                                                                             </Badge>
                                                                             <span className="text-psi-dark/60">
-                                                                                Código: <span className="font-mono font-semibold">{group.payment.code}</span>
+                                                                                Código: <span className="font-mono font-medium">{group.payment.code}</span>
                                                                             </span>
                                                                             {group.payment.status && (
                                                                                 <Badge 
@@ -378,7 +378,7 @@ const SheetTicketsToOrganizer = ({
                                                                         </div>
                                                                     )}
                                                                     {isMultipleTickets && (
-                                                                        <p className="text-sm text-psi-primary font-semibold mt-1">
+                                                                        <p className="text-sm text-psi-primary font-medium mt-1">
                                                                             Total: {ValueUtils.centsToCurrency(totalValue)}
                                                                         </p>
                                                                     )}
@@ -420,11 +420,11 @@ const SheetTicketsToOrganizer = ({
                                                                             <span className="text-xs font-medium text-psi-dark/70">
                                                                                 Ingresso {ticketIndex + 1}
                                                                             </span>
-                                                                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 ${statusColors[ticket.status] || "bg-gray-100 text-gray-800"}`}>
+                                                                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${statusColors[ticket.status] || "bg-gray-100 text-gray-800"}`}>
                                                                                 {statusLabels[ticket.status] || ticket.status}
                                                                             </span>
                                                                             {ticket.cancelledBy && (
-                                                                                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 ${statusColors[ticket.cancelledBy] || "bg-gray-100 text-gray-800"}`}>
+                                                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${statusColors[ticket.cancelledBy] || "bg-gray-100 text-gray-800"}`}>
                                                                                     {ticketCancelledByConfig[ticket.cancelledBy]?.label || ticket.cancelledBy}
                                                                                 </span>
                                                                             )}
@@ -439,7 +439,7 @@ const SheetTicketsToOrganizer = ({
                                                                             )}
                                                                             <div className="flex items-center gap-1">
                                                                                 <span className="font-medium">Valor:</span>
-                                                                                <span className="text-psi-primary font-semibold">
+                                                                                <span className="text-psi-primary font-medium">
                                                                                     {ValueUtils.centsToCurrency(ticket.price)}
                                                                                 </span>
                                                                             </div>
@@ -470,7 +470,7 @@ const SheetTicketsToOrganizer = ({
                                                                             <div className="mt-2 flex items-start gap-2 text-xs text-psi-dark/70">
                                                                                 <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0 mt-px" />
                                                                                 <div className="min-w-0">
-                                                                                    <p className="font-semibold text-psi-dark">Validação</p>
+                                                                                    <p className="font-medium text-psi-dark">Validação</p>
                                                                                     <p className="wrap-break-word">{formatValidationAudit(ticket)}</p>
                                                                                 </div>
                                                                             </div>
@@ -495,7 +495,7 @@ const SheetTicketsToOrganizer = ({
                                                                                     {ticket.refundedBy && (
                                                                                         <div>
                                                                                             <p className="text-xs text-psi-dark/60 mb-1">Solicitado por</p>
-                                                                                            <p className="text-xs font-semibold text-psi-dark font-mono">
+                                                                                            <p className="text-xs font-medium text-psi-dark font-mono">
                                                                                                 {ticket.refundedBy}
                                                                                             </p>
                                                                                         </div>
@@ -503,7 +503,7 @@ const SheetTicketsToOrganizer = ({
                                                                                     {ticket.refundedAt && (
                                                                                         <div>
                                                                                             <p className="text-xs text-psi-dark/60 mb-1">Concluído em</p>
-                                                                                            <p className="text-xs font-semibold text-psi-dark">
+                                                                                            <p className="text-xs font-medium text-psi-dark">
                                                                                                 {DateUtils.formatDate(ticket.refundedAt, "DD/MM/YYYY [às] HH:mm")}
                                                                                             </p>
                                                                                         </div>
@@ -511,7 +511,7 @@ const SheetTicketsToOrganizer = ({
                                                                                     {ticket.refundEndToEndIndentifier && (
                                                                                         <div>
                                                                                             <p className="text-xs text-psi-dark/60 mb-1">ID de end to end</p>
-                                                                                            <p className="text-xs font-semibold text-psi-dark">
+                                                                                            <p className="text-xs font-medium text-psi-dark">
                                                                                                 {ticket.refundEndToEndIndentifier}
                                                                                             </p>
                                                                                         </div>

@@ -58,7 +58,7 @@ const CarteiraPannel = () => {
         <div className="space-y-6 container mt-[80px]">
                     <div className="flex items-start justify-between">
                         <div className="space-y-2">
-                            <h1 className="text-3xl font-bold text-psi-primary
+                            <h1 className="text-3xl font-semibold text-psi-primary
                             sm:text-4xl">Carteira</h1>
                             <p className="text-sm text-psi-dark/60">Saldo disponível para saque e movimentações</p>
                         </div>
@@ -101,7 +101,7 @@ const CarteiraPannel = () => {
 
             <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 p-6 sm:p-8">
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-psi-dark">Histórico</h3>
+                    <h3 className="text-lg font-medium text-psi-dark">Histórico</h3>
                     <p className="text-sm text-psi-dark/60">Últimas transações</p>
                 </div>
 
@@ -135,7 +135,7 @@ const CarteiraPannel = () => {
                                     </div>
 
                                     <div className="text-right">
-                                        <div className={`text-sm font-semibold ${colorClass}`}>
+                                        <div className={`text-sm font-medium ${colorClass}`}>
                                             {isBalanceVisible ? `${sign} ${ValueUtils.centsToCurrency(item.value)}` : "••••"}
                                         </div>
                                     </div>
@@ -158,7 +158,7 @@ const CarteiraPannel = () => {
                     <div className="space-y-6 mt-4">
                         <div className="rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4">
                             <div className="text-sm text-psi-dark/60 mb-1">Valor disponível para saque</div>
-                            <div className="text-3xl font-bold text-psi-primary">
+                            <div className="text-3xl font-semibold text-psi-primary">
                                 {ValueUtils.centsToCurrency(balance)}
                             </div>
                         </div>
@@ -166,7 +166,7 @@ const CarteiraPannel = () => {
                         {organizer?.payoutMethod === "BANK_ACCOUNT" && (
                             <div className="space-y-4">
                                 <div className="rounded-xl border border-[#E4E6F0] bg-white p-4 space-y-3">
-                                    <h3 className="text-lg font-semibold text-psi-dark">Conta Bancária</h3>
+                                    <h3 className="text-lg font-medium text-psi-dark">Conta Bancária</h3>
                                     
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
@@ -217,7 +217,7 @@ const CarteiraPannel = () => {
                                     <div className="flex items-start gap-3">
                                         <Info className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
                                         <div>
-                                            <p className="text-sm font-semibold text-amber-900 mb-1">
+                                            <p className="text-sm font-medium text-amber-900 mb-1">
                                                 Taxa e Prazo
                                             </p>
                                             <p className="text-sm text-amber-700">
@@ -232,7 +232,7 @@ const CarteiraPannel = () => {
                         {organizer?.payoutMethod === "PIX" && (
                             <div className="space-y-4">
                                 <div className="rounded-xl border border-[#E4E6F0] bg-white p-4 space-y-3">
-                                    <h3 className="text-lg font-semibold text-psi-dark">Chave PIX</h3>
+                                    <h3 className="text-lg font-medium text-psi-dark">Chave PIX</h3>
                                     
                                     <div className="space-y-3">
                                         <div>
@@ -255,7 +255,7 @@ const CarteiraPannel = () => {
                                     <div className="flex items-start gap-3">
                                         <Info className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
                                         <div>
-                                            <p className="text-sm font-semibold text-emerald-900 mb-1">
+                                            <p className="text-sm font-medium text-emerald-900 mb-1">
                                                 Taxa e Prazo
                                             </p>
                                             <p className="text-sm text-emerald-700">

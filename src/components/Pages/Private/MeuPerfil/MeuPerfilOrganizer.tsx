@@ -339,7 +339,7 @@ const MeuPerfilOrganizer = () => {
                 lg:px-8">
                     <div className="space-y-8">
                         <div>
-                            <h1 className="text-3xl font-bold text-psi-primary mb-2
+                            <h1 className="text-3xl font-semibold text-psi-primary mb-2
                             sm:text-4xl">
                                 { organizer?.verificationStatus === "APPROVED" ? "Meu Perfil" : "Verificação de Organizador" }
                             </h1>
@@ -370,7 +370,7 @@ const MeuPerfilOrganizer = () => {
                                         : "text-amber-600"
                                 }`} />
                                 <div>
-                                    <p className={`font-semibold ${
+                                    <p className={`font-medium ${
                                         organizer.verificationStatus === "APPROVED"
                                             ? "text-green-900"
                                             : organizer.verificationStatus === "REJECTED"
@@ -397,7 +397,7 @@ const MeuPerfilOrganizer = () => {
                                                     <User className="h-5 w-5 text-psi-primary" />
                                                 </div>
                                                 <div className="text-start">
-                                                    <h2 className="text-lg font-semibold text-psi-dark">Dados Pessoais</h2>
+                                                    <h2 className="text-lg font-medium text-psi-dark">Dados Pessoais</h2>
                                                     <p className="text-sm text-psi-dark/60">Informações básicas do organizador</p>
                                                 </div>
                                             </div>
@@ -579,7 +579,7 @@ const MeuPerfilOrganizer = () => {
                                 </div>
 
                                 <div className="pt-6 border-t border-psi-dark/10">
-                                    <h3 className="text-lg font-semibold text-psi-dark mb-4">Endereço</h3>
+                                    <h3 className="text-lg font-medium text-psi-dark mb-4">Endereço</h3>
                                     
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
@@ -842,7 +842,7 @@ const MeuPerfilOrganizer = () => {
                                                     <Building2 className="h-5 w-5 text-psi-primary" />
                                                 </div>
                                                 <div className="text-start">
-                                                    <h2 className="text-lg font-semibold text-psi-dark">Informações da Empresa</h2>
+                                                    <h2 className="text-lg font-medium text-psi-dark">Informações da Empresa</h2>
                                                     <p className="text-sm text-psi-dark/60">Opcional - Preencha se for pessoa jurídica</p>
                                                 </div>
                                             </div>
@@ -935,7 +935,7 @@ const MeuPerfilOrganizer = () => {
                                                     <ImageIcon className="h-5 w-5 text-psi-primary" />
                                                 </div>
                                                 <div className="text-start">
-                                                    <h2 className="text-lg font-semibold text-psi-dark">Logo e Descrição</h2>
+                                                    <h2 className="text-lg font-medium text-psi-dark">Logo e Descrição</h2>
                                                     <p className="text-sm text-amber-700 font-medium">Altamente recomendado</p>
                                                 </div>
                                             </div>
@@ -1024,7 +1024,7 @@ const MeuPerfilOrganizer = () => {
                                                     <CreditCard className="h-5 w-5 text-psi-primary" />
                                                 </div>
                                                 <div className="text-start">
-                                                    <h2 className="text-lg font-semibold text-psi-dark">Conta Bancária</h2>
+                                                    <h2 className="text-lg font-medium text-psi-dark">Conta Bancária</h2>
                                                     <p className="text-sm text-psi-dark/60">Opcional - Se preencher, todos os campos marcados com * são obrigatórios</p>
                                                     <p className="text-xs text-psi-dark/50 mt-1">Taxa de transferência: R$ 5,00</p>
                                                 </div>
@@ -1290,7 +1290,7 @@ const MeuPerfilOrganizer = () => {
                                                     <Wallet className="h-5 w-5 text-psi-primary" />
                                                 </div>
                                                 <div className="text-start">
-                                                    <h2 className="text-lg font-semibold text-psi-dark">Chave PIX</h2>
+                                                    <h2 className="text-lg font-medium text-psi-dark">Chave PIX</h2>
                                                     <p className="text-sm text-psi-dark/60">Opcional - Se preencher, todos os campos marcados com * são obrigatórios</p>
                                                     <p className="text-xs text-psi-dark/50 mt-1">Taxa de transferência: R$ 2,00</p>
                                                 </div>
@@ -1366,7 +1366,7 @@ const MeuPerfilOrganizer = () => {
                                 sm:p-8 shadow-sm">
                                     <div className="space-y-4">
                                         <div>
-                                            <h2 className="text-lg font-semibold text-psi-dark mb-2">Método de Pagamento Preferido</h2>
+                                            <h2 className="text-lg font-medium text-psi-dark mb-2">Método de Pagamento Preferido</h2>
                                             <p className="text-sm text-psi-dark/60 mb-4">
                                                 Você configurou tanto a conta bancária quanto a chave PIX. Selecione qual método você prefere usar para receber os repasses.
                                             </p>
@@ -1416,7 +1416,7 @@ const MeuPerfilOrganizer = () => {
                                                         <FileText className="h-5 w-5 text-red-600" />
                                                     </div>
                                                     <div className="text-start">
-                                                        <h2 className="text-lg font-semibold text-psi-dark">Documentos de Identidade</h2>
+                                                        <h2 className="text-lg font-medium text-psi-dark">Documentos de Identidade</h2>
                                                         <p className="text-sm text-red-600 font-medium">Obrigatório</p>
                                                     </div>
                                                 </div>
@@ -1511,7 +1511,7 @@ const MeuPerfilOrganizer = () => {
                                                     <Instagram className="h-5 w-5 text-psi-primary" />
                                                 </div>
                                                 <div className="text-start">
-                                                    <h2 className="text-lg font-semibold text-psi-dark">Redes Sociais</h2>
+                                                    <h2 className="text-lg font-medium text-psi-dark">Redes Sociais</h2>
                                                     <p className="text-sm text-psi-dark/60">Opcional - Links para suas redes sociais</p>
                                                 </div>
                                             </div>
@@ -1580,7 +1580,7 @@ const MeuPerfilOrganizer = () => {
                                                     <Mail className="h-5 w-5 text-amber-600" />
                                                 </div>
                                                 <div className="text-start">
-                                                    <h2 className="text-lg font-semibold text-psi-dark">Contato de Suporte</h2>
+                                                    <h2 className="text-lg font-medium text-psi-dark">Contato de Suporte</h2>
                                                     <p className="text-sm text-amber-700 font-medium">Obrigatório - Preencha pelo menos um dos campos marcados com *</p>
                                                 </div>
                                             </div>

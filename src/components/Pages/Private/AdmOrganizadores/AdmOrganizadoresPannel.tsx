@@ -221,7 +221,7 @@ const AdmOrganizadoresPannel = () => {
             lg:px-8">
                 <div className="space-y-4">
                     <div className="space-y-3">
-                        <h1 className="text-3xl font-semibold text-psi-primary
+                        <h1 className="text-3xl font-medium text-psi-primary
                         sm:text-4xl">
                             Gerenciar Organizadores
                         </h1>
@@ -281,10 +281,10 @@ const AdmOrganizadoresPannel = () => {
                             <Table className="w-full table-fixed">
                             <TableHeader>
                                 <TableRow className="border-b border-psi-dark/10 hover:bg-transparent bg-psi-dark/2">
-                                    <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider">Organizador</TableHead>
-                                    <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider">Contato</TableHead>
-                                    <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider">Status</TableHead>
-                                    <TableHead className="h-16 px-6 text-psi-dark font-semibold text-sm uppercase tracking-wider text-right">Ações</TableHead>
+                                    <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider">Organizador</TableHead>
+                                    <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider">Contato</TableHead>
+                                    <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider">Status</TableHead>
+                                    <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider text-right">Ações</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -296,7 +296,7 @@ const AdmOrganizadoresPannel = () => {
                                                     <Building2 className="h-8 w-8 text-psi-primary/60" />
                                                 </div>
                                                 <div className="space-y-1">
-                                                    <p className="text-base font-semibold text-psi-dark">Nenhum organizador encontrado</p>
+                                                    <p className="text-base font-medium text-psi-dark">Nenhum organizador encontrado</p>
                                                     <p className="text-sm text-psi-dark/50">Tente ajustar os filtros de busca.</p>
                                                 </div>
                                             </div>
@@ -320,13 +320,13 @@ const AdmOrganizadoresPannel = () => {
                                                                 />
                                                             ) : (
                                                                 <div className="h-12 w-12 rounded-full bg-gradient-to-br from-psi-primary/20 to-psi-primary/10 flex items-center justify-center shrink-0">
-                                                                    <span className="text-sm font-semibold text-psi-primary">
+                                                                    <span className="text-sm font-medium text-psi-primary">
                                                                         {initials}
                                                                     </span>
                                                                 </div>
                                                             )}
                                                             <div className="space-y-1 min-w-0">
-                                                                <p className="font-semibold text-psi-dark text-base">
+                                                                <p className="font-medium text-psi-dark text-base">
                                                                     {organizer.firstName} {organizer.lastName}
                                                                 </p>
                                                                 {org?.companyName && (
@@ -390,7 +390,7 @@ const AdmOrganizadoresPannel = () => {
                                                                             <User className="h-4 w-4 text-psi-primary shrink-0" />
                                                                             Nome completo
                                                                         </div>
-                                                                        <p className="text-base font-semibold text-psi-dark break-words">
+                                                                        <p className="text-base font-medium text-psi-dark break-words">
                                                                             {organizer.firstName} {organizer.lastName}
                                                                         </p>
                                                                     </div>
@@ -400,7 +400,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                 <FileText className="h-4 w-4 text-psi-primary shrink-0" />
                                                                                 CPF
                                                                             </div>
-                                                                            <p className="text-base font-semibold text-psi-dark break-words overflow-wrap-anywhere">
+                                                                            <p className="text-base font-medium text-psi-dark break-words overflow-wrap-anywhere">
                                                                                 {organizer.document}
                                                                             </p>
                                                                         </div>
@@ -411,7 +411,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                 <Calendar className="h-4 w-4 text-psi-primary shrink-0" />
                                                                                 Data de nascimento
                                                                             </div>
-                                                                            <p className="text-base font-semibold text-psi-dark break-words overflow-wrap-anywhere">
+                                                                            <p className="text-base font-medium text-psi-dark break-words overflow-wrap-anywhere">
                                                                                 {formatDate(organizer.birth)}
                                                                             </p>
                                                                         </div>
@@ -422,7 +422,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                 <Building2 className="h-4 w-4 text-psi-primary shrink-0" />
                                                                                 Nome da empresa
                                                                             </div>
-                                                                            <p className="text-base font-semibold text-psi-dark break-words overflow-wrap-anywhere">
+                                                                            <p className="text-base font-medium text-psi-dark break-words overflow-wrap-anywhere">
                                                                                 {org.companyName}
                                                                             </p>
                                                                         </div>
@@ -433,7 +433,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                 <FileText className="h-4 w-4 text-psi-primary shrink-0" />
                                                                                 CNPJ
                                                                             </div>
-                                                                            <p className="text-base font-semibold text-psi-dark break-words overflow-wrap-anywhere">
+                                                                            <p className="text-base font-medium text-psi-dark break-words overflow-wrap-anywhere">
                                                                                 {org.companyDocument}
                                                                             </p>
                                                                         </div>
@@ -444,7 +444,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                 <Mail className="h-4 w-4 text-psi-primary shrink-0" />
                                                                                 Email de suporte
                                                                             </div>
-                                                                            <p className="text-base font-semibold text-psi-dark break-all overflow-wrap-anywhere">
+                                                                            <p className="text-base font-medium text-psi-dark break-all overflow-wrap-anywhere">
                                                                                 {org.supportEmail}
                                                                             </p>
                                                                         </div>
@@ -455,7 +455,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                 <Phone className="h-4 w-4 text-psi-primary shrink-0" />
                                                                                 Telefone de suporte
                                                                             </div>
-                                                                            <p className="text-base font-semibold text-psi-dark break-words overflow-wrap-anywhere">
+                                                                            <p className="text-base font-medium text-psi-dark break-words overflow-wrap-anywhere">
                                                                                 {org.supportPhone}
                                                                             </p>
                                                                         </div>
@@ -479,7 +479,7 @@ const AdmOrganizadoresPannel = () => {
 
                                                                 {(org?.pixAddressKey || org?.bankAccountNumber) && (
                                                                     <div className="space-y-4 pt-6 border-t border-psi-dark/10">
-                                                                        <h3 className="text-base font-semibold text-psi-dark flex items-center gap-2">
+                                                                        <h3 className="text-base font-medium text-psi-dark flex items-center gap-2">
                                                                             <CreditCard className="h-5 w-5 text-psi-primary" />
                                                                             Informações bancárias
                                                                         </h3>
@@ -503,7 +503,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                         {org.bankAccountName && (
                                                                                             <div>
                                                                                                 <p className="text-xs text-psi-dark/50 uppercase tracking-wide mb-1">Nome da conta</p>
-                                                                                                <p className="text-sm font-semibold text-psi-dark break-words overflow-wrap-anywhere">
+                                                                                                <p className="text-sm font-medium text-psi-dark break-words overflow-wrap-anywhere">
                                                                                                     {org.bankAccountName}
                                                                                                 </p>
                                                                                             </div>
@@ -511,7 +511,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                         {org.bankAccountOwnerName && (
                                                                                             <div>
                                                                                                 <p className="text-xs text-psi-dark/50 uppercase tracking-wide mb-1">Titular</p>
-                                                                                                <p className="text-sm font-semibold text-psi-dark break-words overflow-wrap-anywhere">
+                                                                                                <p className="text-sm font-medium text-psi-dark break-words overflow-wrap-anywhere">
                                                                                                     {org.bankAccountOwnerName}
                                                                                                 </p>
                                                                                             </div>
@@ -534,7 +534,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                         )}
                                                                                         <div>
                                                                                             <p className="text-xs text-psi-dark/50 uppercase tracking-wide mb-1">Dados da conta</p>
-                                                                                            <p className="text-base font-semibold text-psi-dark break-words overflow-wrap-anywhere">
+                                                                                            <p className="text-base font-medium text-psi-dark break-words overflow-wrap-anywhere">
                                                                                                 Ag: {org.bankAccountAgency} - Conta: {org.bankAccountNumber}-{org.bankAccountDigit}
                                                                                             </p>
                                                                                         </div>
@@ -556,7 +556,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                     <div className="space-y-2">
                                                                                         <div>
                                                                                             <p className="text-xs text-psi-dark/50 uppercase tracking-wide mb-1">Chave</p>
-                                                                                            <p className="text-base font-semibold text-psi-dark break-all overflow-wrap-anywhere">
+                                                                                            <p className="text-base font-medium text-psi-dark break-all overflow-wrap-anywhere">
                                                                                                 {org.pixAddressKey}
                                                                                             </p>
                                                                                         </div>
@@ -576,7 +576,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                     <CreditCard className="h-4 w-4 text-psi-primary shrink-0" />
                                                                                     Método de repasse preferido
                                                                                 </div>
-                                                                                <p className="text-base font-semibold text-psi-dark break-words overflow-wrap-anywhere">
+                                                                                <p className="text-base font-medium text-psi-dark break-words overflow-wrap-anywhere">
                                                                                     {org.payoutMethod === "PIX" ? "PIX" : "Conta Bancária"}
                                                                                 </p>
                                                                             </div>
@@ -586,7 +586,7 @@ const AdmOrganizadoresPannel = () => {
 
                                                                 {(org?.identityDocumentFront || org?.identityDocumentBack || org?.identityDocumentSelfie) && (
                                                                     <div className="space-y-4 pt-6 border-t border-psi-dark/10">
-                                                                        <h3 className="text-base font-semibold text-psi-dark flex items-center gap-2">
+                                                                        <h3 className="text-base font-medium text-psi-dark flex items-center gap-2">
                                                                             <ImageIcon className="h-5 w-5 text-psi-primary" />
                                                                             Documentos de identidade
                                                                         </h3>
@@ -667,7 +667,7 @@ const AdmOrganizadoresPannel = () => {
 
                                                                 {(org?.instagramUrl || org?.facebookUrl) && (
                                                                     <div className="space-y-4 pt-6 border-t border-psi-dark/10">
-                                                                        <h3 className="text-base font-semibold text-psi-dark flex items-center gap-2">
+                                                                        <h3 className="text-base font-medium text-psi-dark flex items-center gap-2">
                                                                             Redes sociais
                                                                         </h3>
                                                                         <div className="flex flex-wrap gap-3">

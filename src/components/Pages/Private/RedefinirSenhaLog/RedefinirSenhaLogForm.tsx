@@ -51,7 +51,7 @@ const RedefinirSenhaLogForm = () => {
                     <div className="flex justify-center mb-4">
                         <CheckCircle2 className="size-16 text-green-500" />
                     </div>
-                    <h1 className="text-3xl font-bold text-psi-dark dark:text-white mb-2">
+                    <h1 className="text-3xl font-semibold text-psi-dark dark:text-white mb-2">
                         Senha Redefinida!
                     </h1>
                     <p className="text-muted-foreground">
@@ -75,7 +75,7 @@ const RedefinirSenhaLogForm = () => {
     return (
         <AuthLayout>
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-psi-dark dark:text-white mb-2">
+                <h1 className="text-3xl font-semibold text-psi-dark dark:text-white mb-2">
                     Redefinir Senha
                 </h1>
                 <p className="text-muted-foreground">

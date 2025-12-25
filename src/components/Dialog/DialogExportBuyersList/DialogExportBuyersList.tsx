@@ -405,7 +405,7 @@ const DialogExportBuyersList = ({
                 <div className="space-y-4 py-4">
                     {((event?.EventDates && event.EventDates.length > 0) || (event?.TicketTypes && event.TicketTypes && event.TicketTypes.length > 0)) ? (
                         <div className="space-y-3 p-4 rounded-xl border border-psi-primary/20 bg-psi-primary/5">
-                            <p className="text-sm font-semibold text-psi-dark">Filtros (Opcional)</p>
+                            <p className="text-sm font-medium text-psi-dark">Filtros (Opcional)</p>
                             
                             {event?.EventDates && event.EventDates.length > 0 && (
                                 <div className="space-y-2">
@@ -481,7 +481,7 @@ const DialogExportBuyersList = ({
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <p className="text-sm font-semibold text-psi-dark">PDF</p>
+                                        <p className="text-sm font-medium text-psi-dark">PDF</p>
                                         <Badge variant="secondary" className="bg-psi-primary/10 text-psi-primary border-psi-primary/20">
                                             Mais utilizado
                                         </Badge>
@@ -513,7 +513,7 @@ const DialogExportBuyersList = ({
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <p className="text-sm font-semibold text-psi-dark">Excel (xlsx)</p>
+                                        <p className="text-sm font-medium text-psi-dark">Excel (xlsx)</p>
                                     </div>
                                     <p className="text-xs text-psi-dark/60 mt-1">
                                         Formato ideal para análise e edição
@@ -538,7 +538,7 @@ const DialogExportBuyersList = ({
                                     <FileText className="h-6 w-6 text-psi-secondary" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-semibold text-psi-dark">CSV</p>
+                                    <p className="text-sm font-medium text-psi-dark">CSV</p>
                                     <p className="text-xs text-psi-dark/60 mt-1">
                                         Formato simples e compatível
                                     </p>
@@ -562,7 +562,7 @@ const DialogExportBuyersList = ({
                                     <Code className="h-6 w-6 text-psi-tertiary" />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-semibold text-psi-dark">JSON</p>
+                                    <p className="text-sm font-medium text-psi-dark">JSON</p>
                                     <p className="text-xs text-psi-dark/60 mt-1">
                                         Formato para integração e desenvolvimento
                                     </p>

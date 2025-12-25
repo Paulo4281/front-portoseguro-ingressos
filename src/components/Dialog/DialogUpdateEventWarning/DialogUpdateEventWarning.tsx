@@ -55,7 +55,7 @@ const DialogUpdateEventWarning = ({
 
                 <div className="space-y-4 py-4">
                     <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                        <p className="text-sm font-semibold text-amber-900 mb-2">
+                        <p className="text-sm font-medium text-amber-900 mb-2">
                             ⚠️ Editar um evento publicado é uma ação sensível
                         </p>
                         <p className="text-sm text-amber-800">
@@ -67,7 +67,7 @@ const DialogUpdateEventWarning = ({
 
                     <div className="space-y-3">
                         <div>
-                            <p className="text-sm font-semibold text-psi-dark mb-2">
+                            <p className="text-sm font-medium text-psi-dark mb-2">
                                 Campos de Alto Risco:
                             </p>
                             <ul className="list-disc list-inside space-y-1 text-sm text-psi-dark/70 ml-2">
@@ -79,7 +79,7 @@ const DialogUpdateEventWarning = ({
                         </div>
 
                         <div>
-                            <p className="text-sm font-semibold text-psi-dark mb-2">
+                            <p className="text-sm font-medium text-psi-dark mb-2">
                                 Campos de Risco Moderado:
                             </p>
                             <ul className="list-disc list-inside space-y-1 text-sm text-psi-dark/70 ml-2">
@@ -94,7 +94,7 @@ const DialogUpdateEventWarning = ({
                         </div>
 
                         <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-4">
-                            <p className="text-sm font-semibold text-psi-dark mb-1">
+                            <p className="text-sm font-medium text-psi-dark mb-1">
                                 Recomendação:
                             </p>
                             <p className="text-sm text-psi-dark/70">

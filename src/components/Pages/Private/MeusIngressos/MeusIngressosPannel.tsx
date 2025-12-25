@@ -401,7 +401,7 @@ const MeusIngressosPannel = () => {
                         <div className="flex justify-center">
                             <AlertCircle className="h-12 w-12 text-psi-primary" />
                         </div>
-                        <h1 className="text-3xl font-bold text-psi-primary
+                        <h1 className="text-3xl font-semibold text-psi-primary
                         sm:text-4xl">
                             Acesse sua conta
                         </h1>
@@ -462,7 +462,7 @@ const MeusIngressosPannel = () => {
                 sm:py-20">
                     <div className="max-w-3xl mx-auto text-center space-y-6">
                         <AlertCircle className="h-12 w-12 text-psi-secondary mx-auto" />
-                        <h2 className="text-2xl font-semibold text-psi-dark">Não foi possível carregar seus ingressos</h2>
+                        <h2 className="text-2xl font-medium text-psi-dark">Não foi possível carregar seus ingressos</h2>
                         <p className="text-psi-dark/70">
                             Tente novamente mais tarde ou atualize a página.
                         </p>
@@ -500,7 +500,7 @@ const MeusIngressosPannel = () => {
                         sm:items-center
                         sm:justify-between">
                             <div className="flex-1 flex flex-col gap-2">
-                                <h2 className="text-lg font-semibold text-psi-primary">
+                                <h2 className="text-lg font-medium text-psi-primary">
                                     Resumo dos seus ingressos
                                 </h2>
                                 <p className="text-sm text-psi-dark/70">
@@ -511,19 +511,19 @@ const MeusIngressosPannel = () => {
                             sm:gap-8">
                                 <div className="flex flex-col items-center min-w-[88px]">
                                     <span className="text-xs text-psi-dark/60">Total</span>
-                                    <span className="text-2xl font-bold text-psi-primary">{stats.total}</span>
+                                    <span className="text-2xl font-semibold text-psi-primary">{stats.total}</span>
                                 </div>
                                 <div className="flex flex-col items-center min-w-[88px]">
                                     <span className="text-xs text-emerald-600/80">Confirmados</span>
-                                    <span className="text-2xl font-bold text-emerald-600">{stats.confirmed}</span>
+                                    <span className="text-2xl font-semibold text-emerald-600">{stats.confirmed}</span>
                                 </div>
                                 <div className="flex flex-col items-center min-w-[88px]">
                                     <span className="text-xs text-psi-dark">Pendentes</span>
-                                    <span className="text-2xl font-bold text-psi-dark">{stats.pending}</span>
+                                    <span className="text-2xl font-semibold text-psi-dark">{stats.pending}</span>
                                 </div>
                                 <div className="flex flex-col items-center min-w-[88px]">
                                     <span className="text-xs text-psi-dark/60">Eventos</span>
-                                    <span className="text-2xl font-bold text-psi-dark">{stats.uniqueEvents}</span>
+                                    <span className="text-2xl font-semibold text-psi-dark">{stats.uniqueEvents}</span>
                                 </div>
                             </div>
                         </div>
@@ -534,7 +534,7 @@ const MeusIngressosPannel = () => {
                             <div className="flex justify-center">
                                 <TicketCheck className="h-12 w-12 text-psi-primary" />
                             </div>
-                            <h2 className="text-2xl font-semibold text-psi-dark">Você ainda não possui ingressos</h2>
+                            <h2 className="text-2xl font-medium text-psi-dark">Você ainda não possui ingressos</h2>
                             <p className="text-psi-dark/70 max-w-2xl mx-auto">
                                 Explore os eventos disponíveis em Porto Seguro e garanta ingressos exclusivos com as menores taxas da região.
                             </p>
@@ -618,20 +618,20 @@ const MeusIngressosPannel = () => {
                                                     <div className="flex flex-wrap items-start gap-3 justify-between">
                                                         <div className="space-y-1">
                                                             <div className="flex items-center gap-2 flex-wrap">
-                                                                <h3 className="text-2xl font-semibold text-psi-dark">{group.event.name}</h3>
+                                                                <h3 className="text-2xl font-medium text-psi-dark">{group.event.name}</h3>
                                                                 {isMultipleTickets && (
                                                                     <Badge className="bg-psi-primary/10 text-psi-primary border-psi-primary/20">
                                                                         {group.tickets.length} ingressos
                                                                     </Badge>
                                                                 )}
                                                                 {isCancelled && (
-                                                                    <Badge className="bg-rose-100 text-rose-700 border-rose-300 font-semibold">
+                                                                    <Badge className="bg-rose-100 text-rose-700 border-rose-300 font-medium">
                                                                         <AlertCircle className="h-3.5 w-3.5 mr-1" />
                                                                         Evento Cancelado
                                                                     </Badge>
                                                                 )}
                                                                 {isPostponed && !isCancelled && (
-                                                                    <Badge className="bg-amber-100 text-amber-700 border-amber-300 font-semibold">
+                                                                    <Badge className="bg-amber-100 text-amber-700 border-amber-300 font-medium">
                                                                         <AlertCircle className="h-3.5 w-3.5 mr-1" />
                                                                         Evento Adiado
                                                                     </Badge>
@@ -662,7 +662,7 @@ const MeusIngressosPannel = () => {
                                                     <div className="grid gap-4
                                                     sm:grid-cols-2">
                                                         <div className="space-y-3 rounded-2xl border border-psi-primary/20 bg-white/80 p-4 shadow-sm">
-                                                            <div className="flex items-center gap-2 text-sm font-semibold text-psi-dark">
+                                                            <div className="flex items-center gap-2 text-sm font-medium text-psi-dark">
                                                                 <MapPin className="h-4 w-4 text-psi-primary" />
                                                                 Local
                                                             </div>
@@ -676,12 +676,12 @@ const MeusIngressosPannel = () => {
 
                                                         <div className="rounded-2xl border border-psi-dark/10 bg-white p-4 shadow-sm space-y-1">
                                                             <p className="text-xs uppercase text-psi-dark/50 tracking-wide">Valor total pago</p>
-                                                            <p className="text-2xl font-semibold text-psi-primary">
+                                                            <p className="text-2xl font-medium text-psi-primary">
                                                                 {ValueUtils.centsToCurrency(totalPaid)}
                                                             </p>
                                                             <p className="text-xs text-psi-dark/60">Taxas já inclusas</p>
                                                             <hr className="my-2" />
-                                                            <p className="text-xs text-psi-dark/60">Código da compra: <span className="font-semibold text-psi-dark text-sm">{group.payment?.code}</span></p>
+                                                            <p className="text-xs text-psi-dark/60">Código da compra: <span className="font-medium text-psi-dark text-sm">{group.payment?.code}</span></p>
                                                             {group.payment?.transactionReceiptUrl && (
                                                                 <Link href={group.payment.transactionReceiptUrl} target="_blank" className="text-xs flex items-center gap-1 mt-2 text-psi-dark/60">
                                                                     <FileText className="h-4 w-4 text-psi-primary" />
@@ -692,7 +692,7 @@ const MeusIngressosPannel = () => {
                                                     </div>
 
                                                     <div className="space-y-4">
-                                                        <div className="flex items-center gap-2 text-lg font-semibold text-psi-dark">
+                                                        <div className="flex items-center gap-2 text-lg font-medium text-psi-dark">
                                                             <Ticket className="h-5 w-5 text-psi-primary" />
                                                             {isMultipleTickets ? "Ingressos" : "Ingresso"}
                                                         </div>
@@ -713,17 +713,17 @@ const MeusIngressosPannel = () => {
                                                                         <div className="flex items-start justify-between gap-3">
                                                                             <div className="flex-1 space-y-2">
                                                                                 <div className="flex items-center gap-2">
-                                                                                    <span className="text-sm font-semibold text-psi-dark">
+                                                                                    <span className="text-sm font-medium text-psi-dark">
                                                                                         Ingresso {ticketIndex + 1}
                                                                                     </span>
-                                                                                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${ticketStatus.badgeClass}`}>
+                                                                                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${ticketStatus.badgeClass}`}>
                                                                                         {ticketStatus.label}
                                                                                     </span>
                                                                                 </div>
                                                                                 {ticket.code && (
                                                                                     <div>
                                                                                         <p className="text-xs text-psi-dark/60">Código</p>
-                                                                                        <p className="text-sm font-semibold text-psi-dark font-mono">
+                                                                                        <p className="text-sm font-medium text-psi-dark font-mono">
                                                                                             {ticket.code}
                                                                                         </p>
                                                                                     </div>
@@ -731,7 +731,7 @@ const MeusIngressosPannel = () => {
                                                                                 {ticket.price && (
                                                                                     <div>
                                                                                         <p className="text-xs text-psi-dark/60">Valor</p>
-                                                                                        <p className="text-sm font-semibold text-psi-dark">
+                                                                                        <p className="text-sm font-medium text-psi-dark">
                                                                                             {ValueUtils.centsToCurrency(ticket.price)}
                                                                                         </p>
                                                                                     </div>
@@ -742,7 +742,7 @@ const MeusIngressosPannel = () => {
                                                                         <div className="grid gap-4
                                                                         sm:grid-cols-2">
                                                                             <div className="space-y-2 rounded-xl border border-psi-primary/10 bg-psi-primary/5 p-3">
-                                                                                <div className="flex items-center gap-2 text-xs font-semibold text-psi-dark">
+                                                                                <div className="flex items-center gap-2 text-xs font-medium text-psi-dark">
                                                                                     <Calendar className="h-3.5 w-3.5 text-psi-primary" />
                                                                                     Data e horário
                                                                                 </div>
@@ -756,7 +756,7 @@ const MeusIngressosPannel = () => {
                                                                             </div>
 
                                                                             <div className="space-y-2 rounded-xl border border-psi-primary/10 bg-psi-primary/5 p-3">
-                                                                                <div className="flex items-center gap-2 text-xs font-semibold text-psi-dark">
+                                                                                <div className="flex items-center gap-2 text-xs font-medium text-psi-dark">
                                                                                     <QrCode className="h-3.5 w-3.5 text-psi-primary" />
                                                                                     QR Code
                                                                                 </div>
@@ -840,7 +840,7 @@ const MeusIngressosPannel = () => {
                                                                                     {ticket.refundedAt && (
                                                                                         <div>
                                                                                             <p className="text-xs text-psi-dark/60 mb-1">Concluído em</p>
-                                                                                            <p className="text-xs font-semibold text-psi-dark">
+                                                                                            <p className="text-xs font-medium text-psi-dark">
                                                                                                 {DateUtils.formatDate(ticket.refundedAt, "DD/MM/YYYY [às] HH:mm")}
                                                                                             </p>
                                                                                         </div>
@@ -872,7 +872,7 @@ const MeusIngressosPannel = () => {
 
                                                     {hasForm && (
                                                         <div className="rounded-2xl border border-psi-primary/20 bg-white/80 p-4 shadow-sm space-y-4">
-                                                            <div className="flex items-center gap-2 text-sm font-semibold text-psi-dark">
+                                                            <div className="flex items-center gap-2 text-sm font-medium text-psi-dark">
                                                                 <FileText className="h-4 w-4 text-psi-primary" />
                                                                 Respostas do Formulário
                                                             </div>
@@ -933,7 +933,7 @@ const MeusIngressosPannel = () => {
 
                                                     {hasRefundInfo && (
                                                         <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 shadow-sm space-y-4">
-                                                            <div className="flex items-center gap-2 text-sm font-semibold text-psi-dark">
+                                                            <div className="flex items-center gap-2 text-sm font-medium text-psi-dark">
                                                                 <AlertTriangle className="h-4 w-4 text-amber-600" />
                                                                 Status do Reembolso
                                                             </div>
@@ -950,7 +950,7 @@ const MeusIngressosPannel = () => {
                                                                 {group.payment?.refundedAt && (
                                                                     <div className="space-y-1">
                                                                         <p className="text-xs text-psi-dark/60">Concluído em</p>
-                                                                        <p className="text-sm font-semibold text-psi-dark">
+                                                                        <p className="text-sm font-medium text-psi-dark">
                                                                             {DateUtils.formatDate(group.payment.refundedAt, "DD/MM/YYYY [às] HH:mm")}
                                                                         </p>
                                                                     </div>
@@ -1080,7 +1080,7 @@ const MeusIngressosPannel = () => {
                                 {selectedTicketForPix.Payment.qrcodeData.expirationDate && (
                                     <div className="text-center">
                                         <p className="text-sm text-psi-dark/60">Vencimento</p>
-                                        <p className="text-sm font-semibold text-psi-dark">
+                                        <p className="text-sm font-medium text-psi-dark">
                                             {formatExpirationDate(selectedTicketForPix.Payment.qrcodeData.expirationDate)}
                                         </p>
                                     </div>
@@ -1154,7 +1154,7 @@ const MeusIngressosPannel = () => {
                             </div>
                             <div className="text-center">
                                 <p className="text-sm text-psi-dark/60">Evento</p>
-                                <p className="text-sm font-semibold text-psi-dark">
+                                <p className="text-sm font-medium text-psi-dark">
                                     {selectedTicketForZoom.Event.name}
                                 </p>
                             </div>
@@ -1189,7 +1189,7 @@ const MeusIngressosPannel = () => {
                                 Este evento foi <strong>adiado</strong> para uma nova data. O reembolso é <strong>facultativo</strong>.
                             </p>
                             <div className="space-y-2 text-sm text-amber-800">
-                                <p className="font-semibold">Você tem duas opções:</p>
+                                <p className="font-medium">Você tem duas opções:</p>
                                 <ul className="list-disc list-inside space-y-1 ml-2">
                                     <li>Se você <strong>conseguir comparecer</strong> na nova data, não há necessidade de solicitar reembolso. Seu ingresso continuará válido.</li>
                                     <li>Se você <strong>não puder comparecer</strong> na nova data, pode solicitar o reembolso agora.</li>
