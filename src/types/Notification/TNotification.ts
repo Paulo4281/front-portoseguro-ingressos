@@ -5,15 +5,15 @@ const NotificationSubjects = [
     "PAYMENT_REFUNDED_BY_ORGANIZER",
     "PAYMENT_REFUNDED_BY_ADMIN_TO_CUSTOMER",
     "PAYMENT_REFUNDED_BY_ADMIN_TO_ORGANIZER",
-    "EVENT_DAYS15_WARNING",
-    "EVENT_DAYS7_WARNING",
-    "EVENT_DAYS3_WARNING",
-    "EVENT_AFTER_CUSTOMER",
-    "EVENT_AFTER_ORGANIZER",
+    "EVENT_DAYS15_WARNING", // to be implemented
+    "EVENT_DAYS7_WARNING", // to be implemented
+    "EVENT_DAYS3_WARNING", // to be implemented
+    "EVENT_AFTER_CUSTOMER", // to be implemented
+    "EVENT_AFTER_ORGANIZER", // to be implemented
     "EVENT_CANCELLED_CLIENT",
     "EVENT_POSTPONED_CLIENT",
-    "EVENT_CANCELLED_ORGANIZER",
-    "EVENT_POSTPONED_ORGANIZER",
+    "EVENT_CANCELLED_SUPPORT_ORGANIZER",
+    "EVENT_POSTPONED_SUPPORT_ORGANIZER",
 ] as const
 
 type TNotificationSubject = typeof NotificationSubjects[number]

@@ -751,9 +751,9 @@ const NotificationBell = () => {
                 return "Evento cancelado"
             case "EVENT_POSTPONED_CLIENT":
                 return "Evento adiado"
-            case "EVENT_CANCELLED_ORGANIZER":
+            case "EVENT_CANCELLED_SUPPORT_ORGANIZER":
                 return "Evento cancelado"
-            case "EVENT_POSTPONED_ORGANIZER":
+            case "EVENT_POSTPONED_SUPPORT_ORGANIZER":
                 return "Evento adiado"
             case "PAYMENT_REFUNDED_BY_CUSTOMER":
             case "PAYMENT_REFUNDED_BY_ORGANIZER":
@@ -823,6 +823,26 @@ const NotificationBell = () => {
                 const customerName = data.customerName
 
                 return `O administrador solicitou reembolso para o ingresso do evento ${eventName} para o cliente ${customerName}.`
+            }
+            case "EVENT_CANCELLED_CLIENT": {
+                const eventName = data.eventName
+
+                return `O evento ${eventName} foi cancelado pelo organizador. O valor do ingresso foi reembolsado. Verifique o status do seu ingresso em 'Meus Ingressos'.`
+            }
+            case "EVENT_CANCELLED_SUPPORT_ORGANIZER": {
+                const eventName = data.eventName
+
+                return `O evento ${eventName} foi cancelado com sucesso pelo administrador. O valor dos ingressos foram reembolsados aos clientes.`
+            }
+            case "EVENT_POSTPONED_CLIENT": {
+                const eventName = data.eventName
+
+                return `O evento ${eventName} foi adiado pelo organizador. Você pode solicitar o reembolso do seu ingresso caso não consiga comparecer na nova data.`
+            }
+            case "EVENT_POSTPONED_SUPPORT_ORGANIZER": {
+                const eventName = data.eventName
+
+                return `O evento ${eventName} foi adiado com sucesso pelo administrador. Os clientes podem solicitar o reembolso do seu ingresso caso não consiga comparecer na nova data.`
             }
             default:
                 return notification.message || "Você possui uma atualização importante."
