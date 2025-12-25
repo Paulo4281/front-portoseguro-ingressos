@@ -10,7 +10,7 @@ export const useSupportFindAdmin = (params?: TSupportFindAdminParams) => {
         isError,
         refetch
     } = useQueryHook<TApiResponse<TSupportFindResponse>>({
-        queryKey: ["support", "find", "admin", params],
+        queryKey: ["support", "find", "admin", JSON.stringify(params)],
         queryFn: () => SupportService.findAdminSupports(params)
     })
 

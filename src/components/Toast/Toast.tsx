@@ -3,8 +3,15 @@
 import { Slide, toast, ToastOptions } from "react-toastify"
 import { CheckCircle2, XCircle, Info, X } from "lucide-react"
 
+const getToastPosition = (): ToastOptions["position"] => {
+    if (typeof window !== "undefined") {
+        return window.innerWidth < 768 ? "top-center" : "bottom-right"
+    }
+    return "bottom-right"
+}
+
 const globalToastOptions: ToastOptions = {
-    position: window.innerWidth < 768 ? "top-center" : "bottom-right",
+    position: getToastPosition(),
     autoClose: 5000,
     transition: Slide,
     hideProgressBar: true,

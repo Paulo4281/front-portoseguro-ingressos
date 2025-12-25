@@ -1,5 +1,6 @@
 import { CadastroForm } from "@/components/Pages/Public/Cadastro/CadastroForm"
 import { Metadata } from "next"
+import { Suspense } from "react"
 
 export const metadata: Metadata = {
     title: "Cadastro | Porto Seguro Ingressos",
@@ -8,7 +9,9 @@ export const metadata: Metadata = {
 
 const CadastroPage = () => {
     return (
-        <CadastroForm />
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Carregando...</div>}>
+            <CadastroForm />
+        </Suspense>
     )
 }
 

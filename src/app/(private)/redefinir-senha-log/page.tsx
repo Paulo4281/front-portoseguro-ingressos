@@ -1,4 +1,5 @@
 import { Metadata } from "next"
+import { Suspense } from "react"
 
 export const metadata: Metadata = {
     title: "Redefinir Senha | Porto Seguro Ingressos",
@@ -9,9 +10,9 @@ import { RedefinirSenhaLogForm } from "@/components/Pages/Private/RedefinirSenha
 
 const RedefinirSenhaLogPage = () => {
     return (
-        <>
-        <RedefinirSenhaLogForm />
-        </>
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Carregando...</div>}>
+            <RedefinirSenhaLogForm />
+        </Suspense>
     )
 }
 

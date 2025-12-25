@@ -183,14 +183,13 @@ const SuportePannel = () => {
     
     const events = useMemo(() => {
         if (!eventsData?.data || !Array.isArray(eventsData.data)) return []
-        return eventsData.data.map((event: TEvent) => ({
+        return eventsData.data.map((event: { id: string; name: string }) => ({
             value: event.id,
             label: event.name
         }))
     }, [eventsData])
 
     const subjectAdditionalFieldsConfig = useMemo(() => getSubjectAdditionalFieldsConfig(events), [events])
-    
     const currentValidator = useMemo(() => getSupportCreateValidator(selectedSubject, subjectAdditionalFieldsConfig), [selectedSubject, subjectAdditionalFieldsConfig])
     
     const form = useForm<TSupportCreateForm>({

@@ -361,7 +361,7 @@ const AdmOrganizadoresPannel = () => {
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="py-5 px-6">
-                                                        {getStatusBadge(org?.verificationStatus || null)}
+                                                        {getStatusBadge(org?.verificationStatus as "PENDING" | "APPROVED" | "REJECTED" | null | undefined)}
                                                     </TableCell>
                                                     <TableCell className="py-5 px-6 text-right">
                                                         <button

@@ -7,7 +7,7 @@ export const useOrganizerReject = () => {
         mutateAsync,
         isPending
     } = useMutationHook<{ organizerId: string }, TApiResponse>({
-        mutationFn: (organizerId: string) => OrganizerService.rejectOrganizer(organizerId)
+        mutationFn: ({ organizerId }) => OrganizerService.rejectOrganizer(organizerId)
     })
 
     return {

@@ -35,6 +35,8 @@ const LoadingScreen = () => {
     }, [pathname, searchParams])
 
     useEffect(() => {
+        if (typeof window === "undefined" || typeof document === "undefined") return
+        
         const handleClick = (e: MouseEvent) => {
             const target = e.target as HTMLElement
             const link = target.closest("a")
