@@ -13,7 +13,7 @@ const systemFont = Poppins({
   variable: "--font-poppins",
   display: "auto",
   weight: "500",
-})
+});
 
 export default function RootLayout({
   children,
