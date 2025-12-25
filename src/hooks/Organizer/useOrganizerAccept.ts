@@ -7,7 +7,7 @@ export const useOrganizerAccept = () => {
         mutateAsync,
         isPending
     } = useMutationHook<{ organizerId: string }, TApiResponse>({
-        mutationFn: (organizerId: string) => OrganizerService.acceptOrganizer(organizerId)
+        mutationFn: ({ organizerId }) => OrganizerService.acceptOrganizer(organizerId)
     })
 
     return {

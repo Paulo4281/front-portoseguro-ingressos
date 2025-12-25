@@ -52,6 +52,7 @@ const loadCartItemsFromCache = (): TCartItem[] | null => {
 export const CartProvider = ({ children }: { children: ReactNode }) => {
     const cachedItems = loadCartItemsFromCache()
     const [items, setItems] = useState<TCartItem[]>(cachedItems || [])
+    const router = useRouter()
 
     const { mutateAsync: deleteTicketHoldByUserId } = useTicketHoldDeleteByUserId()
 
@@ -128,10 +129,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
             return [...prev, { ...item, quantity }]
         })
-        if (location.pathname !== "/checkout") {
-            window.location.href = "/checkout"
+        
+        if (typeof window !== "undefined" && window.location.pathname !== "/checkout") {
+            router.push("/checkout")
         }
-    }, [])
+    }, [router])
 
     const removeItem = useCallback((eventId: string, batchId?: string) => {
         setItems((prev) =>

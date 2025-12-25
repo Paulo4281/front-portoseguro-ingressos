@@ -9,7 +9,7 @@ const useDashboardGetData = (dateStart?: string, dateEnd?: string, enabled: bool
         isLoading,
         isError
     } = useQueryHook<TApiResponse<TDashboardOverview>>({
-        queryKey: ["dashboard-overview", dateStart, dateEnd],
+        queryKey: ["dashboard-overview", dateStart || "", dateEnd || ""],
         queryFn: () => DashboardService.overview(dateStart, dateEnd),
         enabled
     })

@@ -1,4 +1,5 @@
 import { Metadata } from "next"
+import { Suspense } from "react"
 
 export const metadata: Metadata = {
     title: "QR Scanner Link | Porto Seguro Ingressos",
@@ -9,7 +10,9 @@ import { QrScanLinkPannel } from "@/components/Pages/Public/QrScanLink/QrScanLin
 
 const QrScanLinkPage = () => {
     return (
-        <QrScanLinkPannel />
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Carregando...</div>}>
+            <QrScanLinkPannel />
+        </Suspense>
     )
 }
 

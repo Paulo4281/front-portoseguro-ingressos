@@ -1,4 +1,5 @@
 import { Metadata } from "next"
+import { Suspense } from "react"
 
 export const metadata: Metadata = {
     title: "Gerenciar Organizadores | Porto Seguro Ingressos",
@@ -9,9 +10,9 @@ import { AdmOrganizadoresPannel } from "@/components/Pages/Private/AdmOrganizado
 
 const AdmOrganizadoresPage = () => {
     return (
-        <>
-        <AdmOrganizadoresPannel />
-        </>
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Carregando...</div>}>
+            <AdmOrganizadoresPannel />
+        </Suspense>
     )
 }
 

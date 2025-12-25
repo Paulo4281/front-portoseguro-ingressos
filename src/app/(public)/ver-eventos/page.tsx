@@ -1,4 +1,5 @@
 import { Metadata } from "next"
+import { Suspense } from "react"
 
 export const metadata: Metadata = {
     title: "Ver Eventos | Porto Seguro Ingressos",
@@ -9,9 +10,9 @@ import { VerEventosPannel } from "@/components/Pages/Public/VerEventos/VerEvento
 
 const VerEventosPage = () => {
     return (
-        <>
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Carregando...</div>}>
             <VerEventosPannel />
-        </>
+        </Suspense>
     )
 }
 

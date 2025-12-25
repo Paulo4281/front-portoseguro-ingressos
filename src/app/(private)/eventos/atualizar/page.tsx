@@ -1,4 +1,5 @@
 import { Metadata } from "next"
+import { Suspense } from "react"
 
 export const metadata: Metadata = {
     title: "Atualizar Evento | Porto Seguro Ingressos",
@@ -12,7 +13,9 @@ const AtualizarEventoPage = () => {
 
     return (
         <VerificationStatusGuard>
-            <AtualizarEventoForm  />
+            <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Carregando...</div>}>
+                <AtualizarEventoForm  />
+            </Suspense>
         </VerificationStatusGuard>
     )
 }

@@ -3,6 +3,7 @@ import "@/styles/KeyFrames.css"
 import "react-toastify/dist/ReactToastify.css"
 import { Poppins } from "next/font/google"
 import { ToastContainer } from "react-toastify"
+import { Suspense } from "react"
 import { Providers } from "@/providers"
 import { Menu } from "@/components/Menu/Menu"
 import { Footer } from "@/components/Footer/Footer"
@@ -13,7 +14,7 @@ const systemFont = Poppins({
   variable: "--font-poppins",
   display: "auto",
   weight: "500",
-})
+});
 
 export default function RootLayout({
   children,
@@ -26,7 +27,9 @@ export default function RootLayout({
         className={`${systemFont.variable} font-sans antialiased overflow-x-hidden`}
       >
         <Providers>
-          <LoadingScreen />
+          <Suspense fallback={null}>
+            <LoadingScreen />
+          </Suspense>
           <ToastContainer
             position="top-center"
             autoClose={5000}

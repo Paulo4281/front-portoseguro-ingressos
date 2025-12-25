@@ -10,7 +10,7 @@ export const useSupportFind = (params?: TSupportFindOrganizerParams) => {
         isError,
         refetch
     } = useQueryHook<TApiResponse<TSupportFindResponse>>({
-        queryKey: ["support", "find", "organizer", params],
+        queryKey: ["support", "find", "organizer", JSON.stringify(params)],
         queryFn: () => SupportService.findOrganizerSupports(params)
     })
 
