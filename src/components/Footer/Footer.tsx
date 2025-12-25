@@ -45,7 +45,7 @@ const Footer = () => {
     const currentYear = new Date().getFullYear()
 
     return (
-        <footer className="w-full border-t border-[#E4E6F0] bg-white/95 text-psi-dark mt-auto backdrop-blur" style={{ zIndex: 0! }}>
+        <footer className="w-full border-t border-[#E4E6F0] bg-white/95 text-psi-dark mt-auto" style={{ zIndex: 0! }}>
             <div className="container mx-auto flex flex-col gap-10 px-4 py-12
             sm:px-6
             lg:px-8">

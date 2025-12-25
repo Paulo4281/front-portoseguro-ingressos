@@ -11,8 +11,8 @@ import { LoadingScreen } from "@/components/LoadingScreen/LoadingScreen"
 const systemFont = Poppins({
   subsets: ["latin"],
   variable: "--font-poppins",
-  display: "swap",
-  weight: "400",
+  display: "auto",
+  weight: "500",
 })
 
 export default function RootLayout({
@@ -23,7 +23,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body
-        className="font-sans antialiased overflow-x-hidden"
+        className={`${systemFont.variable} font-sans antialiased overflow-x-hidden`}
       >
         <Providers>
           <LoadingScreen />

@@ -481,6 +481,70 @@ const VerEventoInfo = (
         return activeEventDate?.id || null
     }, [isRecurrent, event?.EventDates])
 
+    const isAllSoldOut = useMemo(() => {
+        if (!event) return false
+
+        if (hasMultipleDaysWithTicketTypePrices && event?.EventDates && event?.TicketTypes) {
+            const availableDates = event.EventDates.filter(ed => {
+                if (isRecurrent) {
+                    return ed.isActive === true && ed.hasSpecificPrice && ed.EventDateTicketTypePrices && ed.EventDateTicketTypePrices.length > 0
+                }
+                return ed.hasSpecificPrice && ed.EventDateTicketTypePrices && ed.EventDateTicketTypePrices.length > 0
+            })
+
+            if (availableDates.length === 0) return true
+
+            return availableDates.every(eventDate => {
+                return eventDate.EventDateTicketTypePrices?.every((edttp: any) => {
+                    const ticketsAmount = getTicketsAmount(eventDate.id, edttp.ticketTypeId)
+                    return ticketsAmount === 0
+                }) ?? false
+            })
+        }
+
+        if (batchHasTicketTypes && selectedBatch?.EventBatchTicketTypes) {
+            return selectedBatch.EventBatchTicketTypes.every(ebt => {
+                if (selectedDays[ebt.ticketTypeId] && selectedDays[ebt.ticketTypeId].length > 0) {
+                    return selectedDays[ebt.ticketTypeId].every(dayId => {
+                        const ticketsAmount = getTicketsAmount(dayId, ebt.ticketTypeId)
+                        return ticketsAmount === 0
+                    })
+                }
+                const ticketsAmount = getTicketsAmount(isRecurrent ? activeEventDateId : null, ebt.ticketTypeId)
+                return ticketsAmount === 0
+            })
+        }
+
+        if (hasMultipleDaysWithSpecificPrices && event?.EventDates) {
+            const availableDates = event.EventDates.filter(ed => {
+                if (isRecurrent) {
+                    return ed.isActive === true && ed.hasSpecificPrice
+                }
+                return ed.hasSpecificPrice
+            })
+
+            if (availableDates.length === 0) return true
+
+            return availableDates.every(eventDate => {
+                const ticketsAmount = getTicketsAmount(eventDate.id, null)
+                return ticketsAmount === 0
+            })
+        }
+
+        const ticketsAmount = getTicketsAmount(isRecurrent ? activeEventDateId : null, null)
+        return ticketsAmount === 0
+    }, [
+        event,
+        hasMultipleDaysWithTicketTypePrices,
+        hasMultipleDaysWithSpecificPrices,
+        batchHasTicketTypes,
+        selectedBatch,
+        selectedDays,
+        isRecurrent,
+        activeEventDateId,
+        getTicketsAmount
+    ])
+
     const handleAddToCart = () => {
         if (!event) return
 
@@ -1237,7 +1301,7 @@ const VerEventoInfo = (
                                                         {event.isFree ? "Gratuito" : (displayPrice !== null && displayPrice !== undefined ? ValueUtils.formatPrice(Math.round(displayPrice)) : "Preço não definido")}
                                                     </p>
                                                     {hasLastTickets && (
-                                                        <span className="px-2 py-0.5 animate-pulse bg-psi-dark/90 text-psi-light text-xs font-semibold rounded-full">
+                                                        <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-semibold rounded-full">
                                                             Últimos ingressos
                                                         </span>
                                                     )}
@@ -1290,7 +1354,7 @@ const VerEventoInfo = (
                                                                 {eventDate.EventDateTicketTypePrices?.some((edttp: any) => 
                                                                     isLastTicketsForDayAndType(eventDate.id, edttp.ticketTypeId)
                                                                 ) && (
-                                                                    <span className="px-2 py-0.5 animate-pulse bg-psi-dark/90 text-psi-light text-xs font-semibold rounded-full">
+                                                                    <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-semibold rounded-full">
                                                                         Últimos ingressos
                                                                     </span>
                                                                 )}
@@ -1307,6 +1371,8 @@ const VerEventoInfo = (
                                                                     const feeCents = TicketFeeUtils.calculateFeeInCents(edttp.price, event.isClientTaxed)
                                                                     const isLastTickets = isLastTicketsForDayAndType(eventDate.id, edttp.ticketTypeId)
                                                                     const maxQuantity = getMaxQuantity(eventDate.id, edttp.ticketTypeId, buyTicketsLimit)
+                                                                    const ticketsAmount = getTicketsAmount(eventDate.id, edttp.ticketTypeId)
+                                                                    const isSoldOut = ticketsAmount === 0
                                                                     
                                                                     return (
                                                                         <div key={edttp.ticketTypeId} className="rounded-lg border border-psi-primary/20 bg-white p-3 space-y-2">
@@ -1314,6 +1380,11 @@ const VerEventoInfo = (
                                                                                 <div className="flex-1">
                                                                                     <div className="flex items-center gap-2 mb-1">
                                                                                         <p className="text-sm font-medium text-psi-dark">{ticketType?.name || "Tipo desconhecido"}</p>
+                                                                                        {isSoldOut && (
+                                                                                            <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-semibold rounded-full">
+                                                                                                Esgotado
+                                                                                            </span>
+                                                                                        )}
                                                                                     </div>
                                                                                     <p className="text-xs text-psi-primary font-semibold mt-1">
                                                                                         {event.isFree ? "Gratuito" : `${ValueUtils.formatPrice(edttp.price)} por ingresso`}
@@ -1329,42 +1400,48 @@ const VerEventoInfo = (
                                                                                         </p>
                                                                                     )}
                                                                                 </div>
-                                                                                <QuantitySelector
-                                                                                    value={qty}
-                                                                                    onChange={(newQuantity) => {
-                                                                                        if (newQuantity > maxQuantity) {
-                                                                                            Toast.info("Não há mais ingressos disponíveis além dessa quantidade.")
-                                                                                            newQuantity = maxQuantity
-                                                                                        }
-                                                                                        setSelectedDaysAndTypes(prev => {
-                                                                                            const current = prev[eventDate.id] || {}
-                                                                                            if (newQuantity === 0) {
-                                                                                                const updated = { ...current }
-                                                                                                delete updated[edttp.ticketTypeId]
-                                                                                                if (Object.keys(updated).length === 0) {
-                                                                                                    const newState = { ...prev }
-                                                                                                    delete newState[eventDate.id]
-                                                                                                    return newState
+                                                                                {isSoldOut ? (
+                                                                                    <div className="px-4 py-2 rounded-lg bg-red-50 border border-red-200">
+                                                                                        <p className="text-sm font-medium text-red-800">Ingressos esgotados</p>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <QuantitySelector
+                                                                                        value={qty}
+                                                                                        onChange={(newQuantity) => {
+                                                                                            if (newQuantity > maxQuantity) {
+                                                                                                Toast.info("Não há mais ingressos disponíveis além dessa quantidade.")
+                                                                                                newQuantity = maxQuantity
+                                                                                            }
+                                                                                            setSelectedDaysAndTypes(prev => {
+                                                                                                const current = prev[eventDate.id] || {}
+                                                                                                if (newQuantity === 0) {
+                                                                                                    const updated = { ...current }
+                                                                                                    delete updated[edttp.ticketTypeId]
+                                                                                                    if (Object.keys(updated).length === 0) {
+                                                                                                        const newState = { ...prev }
+                                                                                                        delete newState[eventDate.id]
+                                                                                                        return newState
+                                                                                                    }
+                                                                                                    const result = {
+                                                                                                        ...prev,
+                                                                                                        [eventDate.id]: updated
+                                                                                                    }
+                                                                                                    return result
                                                                                                 }
                                                                                                 const result = {
                                                                                                     ...prev,
-                                                                                                    [eventDate.id]: updated
+                                                                                                    [eventDate.id]: {
+                                                                                                        ...current,
+                                                                                                        [edttp.ticketTypeId]: newQuantity
+                                                                                                    }
                                                                                                 }
                                                                                                 return result
-                                                                                            }
-                                                                                            const result = {
-                                                                                                ...prev,
-                                                                                                [eventDate.id]: {
-                                                                                                    ...current,
-                                                                                                    [edttp.ticketTypeId]: newQuantity
-                                                                                                }
-                                                                                            }
-                                                                                            return result
-                                                                                        })
-                                                                                    }}
-                                                                                    max={maxQuantity}
-                                                                                    min={0}
-                                                                                />
+                                                                                            })
+                                                                                        }}
+                                                                                        max={maxQuantity}
+                                                                                        min={0}
+                                                                                    />
+                                                                                )}
                                                                             </div>
                                                                         </div>
                                                                     )
@@ -1423,7 +1500,7 @@ const VerEventoInfo = (
                                                                             )
                                                                             if (hasLastTickets) {
                                                                                 return (
-                                                                                    <span className="px-2 py-0.5 animate-pulse bg-psi-dark/90 text-psi-light text-xs font-semibold rounded-full">
+                                                                                    <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-semibold rounded-full">
                                                                                         Últimos ingressos
                                                                                     </span>
                                                                                 )
@@ -1435,7 +1512,7 @@ const VerEventoInfo = (
                                                                             const hasLastTicketsForType = isLastTicketsForTicketType(ebt.ticketTypeId)
                                                                             if (hasLastTicketsInAnyDay || hasLastTicketsForType) {
                                                                                 return (
-                                                                                    <span className="px-2 py-0.5 animate-pulse bg-psi-dark/90 text-psi-light text-xs font-semibold rounded-full">
+                                                                                    <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-semibold rounded-full">
                                                                                         Últimos ingressos
                                                                                     </span>
                                                                                 )
@@ -1529,7 +1606,7 @@ const VerEventoInfo = (
                                                                                                 {formatDate(eventDate.date)}
                                                                                             </div>
                                                                                             {isLastTicketsForDayAndType(eventDate.id, ebt.ticketTypeId) && (
-                                                                                                <span className="px-2 py-0.5 animate-pulse bg-psi-dark/90 text-psi-light text-xs font-semibold rounded-full">
+                                                                                                <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-semibold rounded-full">
                                                                                                     Últimos ingressos
                                                                                                 </span>
                                                                                             )}
@@ -1562,34 +1639,56 @@ const VerEventoInfo = (
                                                                 )}
                                                             </div>
                                                         </div>
-                                                        <QuantitySelector
-                                                            value={qty}
-                                                            onChange={(newQuantity) => {
-                                                                const maxQuantity = selectedDaysForType.length > 0
-                                                                    ? Math.min(...selectedDaysForType.map(dayId => 
-                                                                        getMaxQuantity(dayId, ebt.ticketTypeId, buyTicketsLimit)
-                                                                    ))
-                                                                    : getMaxQuantity(isRecurrent ? activeEventDateId : null, ebt.ticketTypeId, buyTicketsLimit)
-                                                                
-                                                                if (newQuantity > maxQuantity) {
-                                                                    Toast.info("Não há mais ingressos disponíveis além dessa quantidade.")
-                                                                    newQuantity = maxQuantity
-                                                                }
-                                                                
-                                                                setTicketTypeQuantities(prev => ({
-                                                                    ...prev,
-                                                                    [ebt.ticketTypeId]: newQuantity
-                                                                }))
-                                                            }}
-                                                            max={selectedDaysForType.length > 0
-                                                                ? Math.min(...selectedDaysForType.map(dayId => 
-                                                                    getMaxQuantity(dayId, ebt.ticketTypeId, buyTicketsLimit)
-                                                                ))
-                                                                : getMaxQuantity(isRecurrent ? activeEventDateId : null, ebt.ticketTypeId, buyTicketsLimit)
+                                                        {(() => {
+                                                            let ticketsAmount: number | null
+                                                            if (selectedDaysForType.length > 0) {
+                                                                const amounts = selectedDaysForType.map(dayId => 
+                                                                    getTicketsAmount(dayId, ebt.ticketTypeId)
+                                                                ).filter((amount): amount is number => amount !== null && amount !== undefined)
+                                                                ticketsAmount = amounts.length > 0 ? Math.min(...amounts) : null
+                                                            } else {
+                                                                ticketsAmount = getTicketsAmount(isRecurrent ? activeEventDateId : null, ebt.ticketTypeId)
                                                             }
-                                                            min={0}
-                                                            // disabled={event.EventDates && event.EventDates.length > 1 && selectedDaysForType.length === 0}
-                                                        />
+                                                            const isSoldOut = ticketsAmount === 0
+                                                            
+                                                            if (isSoldOut) {
+                                                                return (
+                                                                    <div className="px-4 py-3 rounded-lg bg-red-50 border border-red-200">
+                                                                        <p className="text-sm font-medium text-red-800">Ingressos esgotados</p>
+                                                                    </div>
+                                                                )
+                                                            }
+                                                            
+                                                            return (
+                                                                <QuantitySelector
+                                                                    value={qty}
+                                                                    onChange={(newQuantity) => {
+                                                                        const maxQuantity = selectedDaysForType.length > 0
+                                                                            ? Math.min(...selectedDaysForType.map(dayId => 
+                                                                                getMaxQuantity(dayId, ebt.ticketTypeId, buyTicketsLimit)
+                                                                            ))
+                                                                            : getMaxQuantity(isRecurrent ? activeEventDateId : null, ebt.ticketTypeId, buyTicketsLimit)
+                                                                        
+                                                                        if (newQuantity > maxQuantity) {
+                                                                            Toast.info("Não há mais ingressos disponíveis além dessa quantidade.")
+                                                                            newQuantity = maxQuantity
+                                                                        }
+                                                                        
+                                                                        setTicketTypeQuantities(prev => ({
+                                                                            ...prev,
+                                                                            [ebt.ticketTypeId]: newQuantity
+                                                                        }))
+                                                                    }}
+                                                                    max={selectedDaysForType.length > 0
+                                                                        ? Math.min(...selectedDaysForType.map(dayId => 
+                                                                            getMaxQuantity(dayId, ebt.ticketTypeId, buyTicketsLimit)
+                                                                        ))
+                                                                        : getMaxQuantity(isRecurrent ? activeEventDateId : null, ebt.ticketTypeId, buyTicketsLimit)
+                                                                    }
+                                                                    min={0}
+                                                                />
+                                                            )
+                                                        })()}
                                                     </div>
                                                 )
                                             })}
@@ -1641,7 +1740,7 @@ const VerEventoInfo = (
                                                                                     {formatDate(eventDate.date)}
                                                                                 </div>
                                                                                 {isLastTicketsForDay(eventDate.id) && (
-                                                                                    <span className="px-2 py-0.5 animate-pulse bg-psi-dark/90 text-psi-light text-xs font-semibold rounded-full">
+                                                                                    <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-semibold rounded-full">
                                                                                         Últimos ingressos
                                                                                     </span>
                                                                                 )}
@@ -1672,24 +1771,37 @@ const VerEventoInfo = (
                                                                     )}
                                                                 </div>
                                                             </div>
-                                                            {isSelected && (
-                                                                <QuantitySelector
-                                                                    value={qty}
-                                                                    onChange={(newQuantity) => {
-                                                                        const maxQuantity = getMaxQuantity(eventDate.id, null, buyTicketsLimit)
-                                                                        if (newQuantity > maxQuantity) {
-                                                                            Toast.info("Não há mais ingressos disponíveis além dessa quantidade.")
-                                                                            newQuantity = maxQuantity
-                                                                        }
-                                                                        setDayQuantities(prev => ({
-                                                                            ...prev,
-                                                                            [eventDate.id]: newQuantity
-                                                                        }))
-                                                                    }}
-                                                                    max={getMaxQuantity(eventDate.id, null, buyTicketsLimit)}
-                                                                    min={0}
-                                                                />
-                                                            )}
+                                                            {isSelected && (() => {
+                                                                const ticketsAmount = getTicketsAmount(eventDate.id, null)
+                                                                const isSoldOut = ticketsAmount === 0
+                                                                
+                                                                if (isSoldOut) {
+                                                                    return (
+                                                                        <div className="px-4 py-3 rounded-lg bg-red-50 border border-red-200">
+                                                                            <p className="text-sm font-medium text-red-800">Ingressos esgotados</p>
+                                                                        </div>
+                                                                    )
+                                                                }
+                                                                
+                                                                return (
+                                                                    <QuantitySelector
+                                                                        value={qty}
+                                                                        onChange={(newQuantity) => {
+                                                                            const maxQuantity = getMaxQuantity(eventDate.id, null, buyTicketsLimit)
+                                                                            if (newQuantity > maxQuantity) {
+                                                                                Toast.info("Não há mais ingressos disponíveis além dessa quantidade.")
+                                                                                newQuantity = maxQuantity
+                                                                            }
+                                                                            setDayQuantities(prev => ({
+                                                                                ...prev,
+                                                                                [eventDate.id]: newQuantity
+                                                                            }))
+                                                                        }}
+                                                                        max={getMaxQuantity(eventDate.id, null, buyTicketsLimit)}
+                                                                        min={0}
+                                                                    />
+                                                                )
+                                                            })()}
                                                         </div>
                                                     )
                                                 })}
@@ -1700,76 +1812,93 @@ const VerEventoInfo = (
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-sm font-medium text-psi-dark">Quantidade</span>
                                                         {isLastTicketsForEvent() && (
-                                                            <span className="px-2 py-0.5 animate-pulse bg-psi-dark/90 text-psi-light text-xs font-semibold rounded-full">
+                                                            <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-semibold rounded-full">
                                                                 Últimos ingressos
                                                             </span>
                                                         )}
                                                     </div>
                                                     <span className="text-xs text-psi-dark/60">Máximo {buyTicketsLimit} por pessoa</span>
                                                 </div>
-                                                <QuantitySelector
-                                                    value={currentQuantity}
-                                                    onChange={(newQuantity) => {
-                                                        const maxQuantity = getMaxQuantity(isRecurrent ? activeEventDateId : null, null, buyTicketsLimit)
-                                                        if (newQuantity > maxQuantity) {
-                                                            Toast.info("Não há mais ingressos disponíveis além dessa quantidade.")
-                                                            newQuantity = maxQuantity
-                                                        }
-                                                        setQuantity(newQuantity)
-                                                        if (cartItem) {
-                                                            addItem({
-                                                                eventId: event.id,
-                                                                eventName: event.name,
-                                                                eventImage: event.image,
-                                                                batchId: selectedBatchId,
-                                                                batchName: selectedBatch?.name,
-                                                                price: currentPrice,
-                                                                isClientTaxed: event.isClientTaxed,
-                                                                isFree: event.isFree
-                                                            }, newQuantity)
-                                                        }
-                                                    }}
-                                                    max={getMaxQuantity(isRecurrent ? activeEventDateId : null, null, buyTicketsLimit)}
-                                                    min={0}
-                                                />
+                                                {(() => {
+                                                    const ticketsAmount = getTicketsAmount(isRecurrent ? activeEventDateId : null, null)
+                                                    const isSoldOut = ticketsAmount === 0
+                                                    
+                                                    if (isSoldOut) {
+                                                        return (
+                                                            <div className="px-4 py-3 rounded-lg bg-red-50 border border-red-200">
+                                                                <p className="text-sm font-medium text-red-800">Ingressos esgotados</p>
+                                                            </div>
+                                                        )
+                                                    }
+                                                    
+                                                    return (
+                                                        <QuantitySelector
+                                                            value={currentQuantity}
+                                                            onChange={(newQuantity) => {
+                                                                const maxQuantity = getMaxQuantity(isRecurrent ? activeEventDateId : null, null, buyTicketsLimit)
+                                                                if (newQuantity > maxQuantity) {
+                                                                    Toast.info("Não há mais ingressos disponíveis além dessa quantidade.")
+                                                                    newQuantity = maxQuantity
+                                                                }
+                                                                setQuantity(newQuantity)
+                                                                if (cartItem) {
+                                                                    addItem({
+                                                                        eventId: event.id,
+                                                                        eventName: event.name,
+                                                                        eventImage: event.image,
+                                                                        batchId: selectedBatchId,
+                                                                        batchName: selectedBatch?.name,
+                                                                        price: currentPrice,
+                                                                        isClientTaxed: event.isClientTaxed,
+                                                                        isFree: event.isFree
+                                                                    }, newQuantity)
+                                                                }
+                                                            }}
+                                                            max={getMaxQuantity(isRecurrent ? activeEventDateId : null, null, buyTicketsLimit)}
+                                                            min={0}
+                                                        />
+                                                    )
+                                                })()}
                                             </div>
                                         )}
                                     </div>
                                 )}
 
-                                <div className="pt-4 border-t border-psi-dark/10">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <span className="text-sm text-psi-dark/70">Total</span>
-                                        <span 
-                                            key={totalAnimationKey}
-                                            className={`text-2xl font-bold text-psi-primary ${totalAnimationKey > 0 ? 'total-animate' : ''}`}
+                                {!isAllSoldOut && (
+                                    <div className="pt-4 border-t border-psi-dark/10">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="text-sm text-psi-dark/70">Total</span>
+                                            <span 
+                                                key={totalAnimationKey}
+                                                className={`text-2xl font-bold text-psi-primary ${totalAnimationKey > 0 ? 'total-animate' : ''}`}
+                                            >
+                                                {ValueUtils.centsToCurrency(totalValue)}
+                                            </span>
+                                        </div>
+                                        <Button
+                                            size="lg"
+                                            variant="primary"
+                                            className="w-full"
+                                            onClick={handleAddToCart}
+                                            disabled={
+                                                (batchHasTicketTypes && totalQuantity === 0) || 
+                                                (hasMultipleDaysWithSpecificPrices && totalQuantity === 0) ||
+                                                (hasMultipleDaysWithTicketTypePrices && totalQuantity === 0) ||
+                                                isLoadingCheckoutPage
+                                            }
                                         >
-                                            {ValueUtils.centsToCurrency(totalValue)}
-                                        </span>
+                                            {
+                                                isLoadingCheckoutPage ? (
+                                                    <LoadingButton />
+                                                ) : (
+                                                    <>
+                                                    <span>Comprar</span>
+                                                    </>
+                                                )
+                                            }
+                                        </Button>
                                     </div>
-                                    <Button
-                                        size="lg"
-                                        variant="primary"
-                                        className="w-full"
-                                        onClick={handleAddToCart}
-                                        disabled={
-                                            (batchHasTicketTypes && totalQuantity === 0) || 
-                                            (hasMultipleDaysWithSpecificPrices && totalQuantity === 0) ||
-                                            (hasMultipleDaysWithTicketTypePrices && totalQuantity === 0) ||
-                                            isLoadingCheckoutPage
-                                        }
-                                    >
-                                        {
-                                            isLoadingCheckoutPage ? (
-                                                <LoadingButton />
-                                            ) : (
-                                                <>
-                                                <span>Comprar</span>
-                                                </>
-                                            )
-                                        }
-                                    </Button>
-                                </div>
+                                )}
                             </div>
                         )}
 

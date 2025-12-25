@@ -895,7 +895,7 @@ const AtualizarEventoForm = () => {
                     </div>
 
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
-                        <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 p-6
+                        <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 shadow-lg shadow-black/5 p-6
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <FileText className="h-5 w-5 text-psi-primary" />
@@ -1028,7 +1028,7 @@ const AtualizarEventoForm = () => {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 p-6
+                        <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 shadow-lg shadow-black/5 p-6
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <Tag className="h-5 w-5 text-psi-primary" />
@@ -1139,7 +1139,7 @@ const AtualizarEventoForm = () => {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 p-6
+                        <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 shadow-lg shadow-black/5 p-6
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <Tag className="h-5 w-5 text-psi-primary" />
@@ -1773,7 +1773,7 @@ const AtualizarEventoForm = () => {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl border z-0 border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 p-6
+                        <div className="rounded-2xl border z-0 border-[#E4E6F0] bg-white/95 shadow-lg shadow-black/5 p-6
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <Repeat className="h-5 w-5 text-psi-primary" />
@@ -2063,7 +2063,7 @@ const AtualizarEventoForm = () => {
                         </div>
 
                         {!recurrenceEnabled && (
-                            <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 p-6
+                            <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 shadow-lg shadow-black/5 p-6
                             sm:p-8 space-y-6">
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="flex items-center gap-3">
@@ -2357,7 +2357,7 @@ const AtualizarEventoForm = () => {
                             </div>
                         )}
 
-                        <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 p-6
+                        <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 shadow-lg shadow-black/5 p-6
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
                                 <FileText className="h-5 w-5 text-psi-primary" />

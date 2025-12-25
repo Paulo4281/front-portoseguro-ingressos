@@ -624,8 +624,19 @@ const CheckoutInfo = () => {
         return isAuthenticated && currentStep === maxStep && paymentMethod === "credit"
     }, [isAuthenticated, currentStep, maxStep, paymentMethod])
 
-    const { data: cardsData } = useCardFindByUserId({ enabled: shouldFetchCards })
-    const cards = cardsData?.data || []
+    const cardQueryRef = useRef<{ initialized: boolean }>({ initialized: false })
+    const { data: cardsData, isLoading: isLoadingCards } = useCardFindByUserId({
+        enabled: shouldFetchCards && !cardQueryRef.current.initialized
+    })
+    useEffect(() => {
+        if (shouldFetchCards && !cardQueryRef.current.initialized) {
+            cardQueryRef.current.initialized = true
+        }
+    }, [shouldFetchCards])
+    
+    const cards = useMemo(() => {
+        return cardsData?.data || []
+    }, [cardsData?.data])
 
     useEffect(() => {
         if (paymentMethod === "credit" && cards.length > 0 && !selectedCardId && !showNewCardForm) {
@@ -2160,7 +2171,14 @@ const CheckoutInfo = () => {
 
                                                         {paymentMethod === "credit" && (
                                                             <div className="space-y-4 pt-6 border-t border-psi-dark/10">
-                                                                {cards.length > 0 && !showNewCardForm && (
+                                                                {isLoadingCards && (
+                                                                    <div className="flex items-center justify-center gap-2 py-8">
+                                                                        <Loader2 className="h-5 w-5 animate-spin text-psi-primary" />
+                                                                        <span className="text-sm text-psi-dark/60">Carregando cartões...</span>
+                                                                    </div>
+                                                                )}
+
+                                                                {!isLoadingCards && cards.length > 0 && !showNewCardForm && (
                                                                     <div className="space-y-3">
                                                                         <div className="flex items-center justify-between">
                                                                             <h4 className="text-sm font-semibold text-psi-dark">Cartões Cadastrados</h4>
@@ -2245,7 +2263,7 @@ const CheckoutInfo = () => {
                                                                     </div>
                                                                 )}
 
-                                                                {(showNewCardForm || cards.length === 0) && (
+                                                                {!isLoadingCards && (showNewCardForm || cards.length === 0) && (
                                                                     <div className="space-y-4">
                                                                         {cards.length > 0 && (
                                                                             <div className="flex items-center justify-between">
