@@ -98,6 +98,7 @@ import { FieldError } from "@/components/FieldError/FieldError"
 import { PasswordStrength } from "@/components/PasswordStrength/PasswordStrength"
 import { LoadingButton } from "@/components/Loading/LoadingButton"
 import { Icon } from "@/components/Icon/Icon"
+import { DialogCreditCardError } from "@/components/Dialog/DialogCreditCardError/DialogCreditCardError"
 import { Timer } from "@/components/Timer/Timer"
 import { getStates, getCitiesByState } from "@/utils/Helpers/IBGECitiesAndStates/IBGECitiesAndStates"
 import { getCountries, getCountriesSync } from "@/utils/Helpers/Countries/Countries"
@@ -188,6 +189,7 @@ const CheckoutInfo = () => {
     const { mutateAsync: updateUser, isPending: isUpdatingUser } = useUserUpdate()
 
     const [buyTicketResponse, setBuyTicketResponse] = useState<TTicketBuyResponse | null>(null)
+    const [showCreditCardErrorDialog, setShowCreditCardErrorDialog] = useState(false)
     const [isCheckingPayment, setIsCheckingPayment] = useState(false)
     const [paymentVerified, setPaymentVerified] = useState(false)
     const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
@@ -1053,6 +1055,11 @@ const CheckoutInfo = () => {
 
         const response = await buyTicket(data)
 
+        if (response?.success && response?.data?.isCreditCardError) {
+            setShowCreditCardErrorDialog(true)
+            return
+        }
+
         if (response?.success && response?.data?.pixData) {
             setBuyTicketResponse(response.data)
             setPaymentVerified(false)
@@ -1586,7 +1593,9 @@ const CheckoutInfo = () => {
                                                             </div>
 
                                                             <div className="animate-pulse transition-opacity duration-700">
-                                                                <Badge variant="default" className="text-xs font-medium">Oferta imperdível!</Badge>
+                                                                <Badge variant="psi-tertiary" className="text-xs font-medium">
+                                                                    Garanta já seu ingresso!
+                                                                </Badge>
                                                             </div>
 
                                                             {item.batchName && (
@@ -3600,6 +3609,11 @@ const CheckoutInfo = () => {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <DialogCreditCardError
+                open={showCreditCardErrorDialog}
+                onOpenChange={setShowCreditCardErrorDialog}
+            />
         </Background>
     )
 }

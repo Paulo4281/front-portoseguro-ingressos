@@ -23,6 +23,8 @@ export const APIErrorHandler: Record<number, string> = {
     21: "Código de acesso inválido",
     22: "Sessão expirada",
     23: "Máximo de usuários atingido",
+    24: "O número de parcelas não pode exceder o máximo de parcelas permitido para o evento",
+    25: "Você atingiu o limite de compras de ingressos para este evento",
 
     700: "Não é possível alterar datas do evento que já possuem ingressos vendidos. FALE COM O SUPORTE",
     701: "Não é possível alterar datas do evento que começarão em menos de 72 horas e já possuem ingressos vendidos. FALE COM O SUPORTE",

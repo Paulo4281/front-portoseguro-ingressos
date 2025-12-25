@@ -260,6 +260,7 @@ type TTicketBuyResponse = {
     } | null
     paymentId?: string | null
     confirmedByCreditCard?: boolean
+    isCreditCardError?: boolean
 }
 
 type TTicketQRCodeResponse = {
