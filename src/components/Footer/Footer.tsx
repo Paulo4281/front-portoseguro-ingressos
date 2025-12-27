@@ -182,16 +182,7 @@ const Footer = () => {
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity"
                         >
-                            <img
-                                src="/images/logos/maion-digital.png"
-                                alt="Maion Digital"
-                                className="h-6 w-auto"
-                                onError={(e) => {
-                                    const target = e.target as HTMLImageElement
-                                    target.style.display = 'none'
-                                }}
-                            />
-                            <span className="text-xs font-medium text-psi-dark/70">Maion Digital</span>
+                        <span className="text-xs font-medium text-psi-dark/70">Maion Digital</span>
                         </a>
                     </div>
                 </div>

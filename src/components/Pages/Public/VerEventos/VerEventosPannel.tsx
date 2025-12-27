@@ -366,34 +366,69 @@ const VerEventosPannel = () => {
                                             <div className="flex items-start gap-2 text-sm text-psi-dark/70">
                                                 <Calendar className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="font-medium text-psi-dark mb-1">
-                                                        {getDateRange(event.EventDates)}
-                                                    </div>
-                                                    {event.EventDates && event.EventDates.length > 1 && (
-                                                        <div className="space-y-1 mt-2">
-                                                            {event.EventDates.slice(0, 3).map((eventDate: TEventDate, index: number) => (
-                                                                <div key={index} className="flex items-center gap-2 text-xs text-psi-dark/60">
+                                                    {
+                                                        event.Recurrence?.id
+                                                        ?
+                                                        (
+                                                            <>
+                                                            
+                                                            </>
+                                                        )
+                                                        :
+                                                        (
+                                                            <>
+                                                            <div className="font-medium text-psi-dark mb-1">
+                                                                {getDateRange(event.EventDates)}
+                                                            </div>
+                                                            </>
+                                                        )
+                                                    }
+                                                    {
+                                                        event.Recurrence?.id
+                                                        ?
+                                                        (
+                                                            <>
+                                                            {
+                                                                <div className="flex items-center gap-2 text-xs text-psi-dark/60">
                                                                     <Clock className="h-3 w-3 text-psi-primary shrink-0" />
                                                                     <span>
-                                                                        {formatDate(eventDate.date)}: {formatEventTime(eventDate.hourStart, eventDate.hourEnd)}
+                                                                        {formatDate(event.EventDates?.find(ed => ed.isActive === true)?.date)}: {formatEventTime(event.EventDates?.find(ed => ed.isActive === true)?.hourStart, event.EventDates?.find(ed => ed.isActive === true)?.hourEnd)}
                                                                     </span>
                                                                 </div>
-                                                            ))}
-                                                            {event.EventDates.length > 3 && (
-                                                                <div className="text-xs text-psi-primary font-medium">
-                                                                    +{event.EventDates.length - 3} datas
+                                                            }
+                                                            </>
+                                                        )
+                                                        :
+                                                        (
+                                                            <>
+                                                            {event.EventDates && event.EventDates.length > 0 && (
+                                                                <div className="space-y-1 mt-2">
+                                                                    {event.EventDates.slice(0, 3).map((eventDate: TEventDate, index: number) => (
+                                                                        <div key={index} className="flex items-center gap-2 text-xs text-psi-dark/60">
+                                                                            <Clock className="h-3 w-3 text-psi-primary shrink-0" />
+                                                                            <span>
+                                                                                {formatDate(eventDate.date)}: {formatEventTime(eventDate.hourStart, eventDate.hourEnd)}
+                                                                            </span>
+                                                                        </div>
+                                                                    ))}
+                                                                    {event.EventDates.length > 3 && (
+                                                                        <div className="text-xs text-psi-primary font-medium">
+                                                                            +{event.EventDates.length - 3} datas
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             )}
-                                                        </div>
-                                                    )}
-                                                    {event.EventDates && event.EventDates.length === 1 && (
+                                                            </>
+                                                        )
+                                                    }
+                                                    {/* {event.EventDates && event.EventDates.length === 1 && (
                                                         <div className="flex items-center gap-2 text-xs text-psi-dark/60 mt-1">
                                                             <Clock className="h-3 w-3 text-psi-primary shrink-0" />
                                                             <span>
                                                                 {formatEventTime(event.EventDates[0].hourStart, event.EventDates[0].hourEnd)}
                                                             </span>
                                                         </div>
-                                                    )}
+                                                    )} */}
                                                 </div>
                                             </div>
                                             

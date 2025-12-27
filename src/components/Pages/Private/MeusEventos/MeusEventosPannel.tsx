@@ -596,14 +596,14 @@ const EventCard = ({
                                     ))}
                                 </div>
                             )}
-                            {event.EventDates && event.EventDates.length === 1 && (
+                            {/* {event.EventDates && event.EventDates.length === 1 && (
                                 <div className="flex items-center gap-2 text-xs text-psi-dark/60 mt-1">
                                     <Clock className="h-3 w-3 text-psi-primary shrink-0" />
                                     <span>
                                         {formatEventTime(event.EventDates[0].hourStart, event.EventDates[0].hourEnd)}
                                     </span>
                                 </div>
-                            )}
+                            )} */}
                             {event.Recurrence && event.EventDates && event.EventDates.length > 0 && (() => {
                                 const activeEventDate = event.EventDates.find(ed => ed.isActive === true)
                                 return activeEventDate ? (

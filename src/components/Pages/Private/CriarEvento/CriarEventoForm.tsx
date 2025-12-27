@@ -200,6 +200,7 @@ const CriarEventoForm = () => {
     const recurrenceDay = form.watch("recurrence.day")
     const batches = form.watch("batches") || []
     const descriptionLength = form.watch("description")?.length || 0
+    const isFreeEvent = form.watch("isFree") || false
 
     const ticketTypes = form.watch("ticketTypes") || []
 
@@ -1392,7 +1393,7 @@ const CriarEventoForm = () => {
                                                                     control={form.control}
                                                                     render={({ field }) => (
                                                                         <InputCurrency
-                                                                            value={field.value || 0}
+                                                                            value={(isFreeEvent ? 0 : field.value || 0)}
                                                                             onChangeValue={(value) => {
                                                                                 if (!value || value === "") {
                                                                                     field.onChange(undefined)
@@ -1403,6 +1404,7 @@ const CriarEventoForm = () => {
                                                                             }}
                                                                             required
                                                                             className="w-full"
+                                                                            disabled={isFreeEvent}
                                                                         />
                                                                     )}
                                                                 />
