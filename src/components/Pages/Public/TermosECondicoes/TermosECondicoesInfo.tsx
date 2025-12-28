@@ -99,6 +99,18 @@ const TermosECondicoesInfo = () => {
                                                 </div>
                                             </div>
                                         </div>
+                                        <div className="bg-psi-primary/5 rounded-lg p-4 border border-psi-primary/10">
+                                            <div className="flex items-start gap-3">
+                                                <CheckCircle2 className="h-5 w-5 text-psi-primary shrink-0 mt-0.5" />
+                                                <div className="flex-1">
+                                                    <h3 className="font-medium text-psi-dark mb-2">2.4. Cancelamento de Ingresso pelo Organizador</h3>
+                                                    <p className="text-psi-dark/70 text-sm leading-relaxed">
+                                                        O organizador do evento pode optar pelo cancelamento de um ingresso específico a qualquer momento. 
+                                                        Nessa situação, o valor do ingresso e a taxa de serviço são <strong className="text-psi-dark">devolvidos integralmente</strong> ao comprador, por meio do mesmo método de pagamento utilizado na compra.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useMemo, useEffect } from "react"
 import {
     Dialog,
     DialogContent,
@@ -9,11 +10,20 @@ import {
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { Ticket, TrendingUp, Eye, DollarSign, Users, Calendar, Clock, MapPin, Award } from "lucide-react"
 import { useEventGenerateSalesReport } from "@/hooks/Event/useEventGenerateSalesReport"
+import { useEventFindByIdUser } from "@/hooks/Event/useEventFindByIdUser"
 import type { TEventSalesReport } from "@/types/Event/TEvent"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { cn } from "@/lib/utils"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
+import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
 type TEventSalesReportProps = {
     eventId: string
@@ -30,8 +40,31 @@ const EventSalesReport = ({
     open,
     onOpenChange
 }: TEventSalesReportProps) => {
+    const [selectedEventDateId, setSelectedEventDateId] = useState<string>("ALL")
+
+    const { data: eventData } = useEventFindByIdUser(eventId, { enabled: open && !!eventId })
+    
+    const eventDates = useMemo(() => {
+        if (!eventData?.data?.EventDates || !Array.isArray(eventData.data.EventDates)) return []
+        return [...eventData.data.EventDates].sort((a, b) => {
+            if (!a.date || !b.date) return 0
+            return getDateOrderValue(a.date) - getDateOrderValue(b.date)
+        })
+    }, [eventData])
+
+    useEffect(() => {
+        if (!open) {
+            setSelectedEventDateId("ALL")
+        }
+    }, [open])
+
+    useEffect(() => {
+        setSelectedEventDateId("ALL")
+    }, [eventId])
+
     const { data: reportResponse, isLoading } = useEventGenerateSalesReport({
         eventId,
+        eventDateId: selectedEventDateId !== "ALL" ? selectedEventDateId : undefined,
         enabled: open && !!eventId
     })
 
@@ -75,22 +108,23 @@ const EventSalesReport = ({
                     sticky
                     top-0
                     bg-white
-                    z-10
-                    flex
+                    z-10"
+                >
+                    <div className="flex
                     flex-row
                     items-center
-                    justify-between"
-                >
-                    <DialogTitle className="text-2xl
-                        font-semibold
-                        text-psi-dark"
-                    >
-                        Relatório de Vendas
-                        {eventName && (
-                            <span className="text-psi-primary ml-2">{eventName}</span>
-                        )}
-                    </DialogTitle>
-                    <button
+                    justify-between
+                    mb-4">
+                        <DialogTitle className="text-2xl
+                            font-semibold
+                            text-psi-dark"
+                        >
+                            Relatório de Vendas
+                            {eventName && (
+                                <span className="text-psi-primary ml-2">{eventName}</span>
+                            )}
+                        </DialogTitle>
+                        <button
                         type="button"
                         aria-label="Fechar relatório"
                         onClick={() => onOpenChange(false)}
@@ -122,6 +156,26 @@ const EventSalesReport = ({
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
                     </button>
+                    </div>
+                    {eventDates.length > 0 && (
+                        <div className="flex items-center gap-3">
+                            <label className="text-sm font-medium text-psi-dark">Filtrar por data:</label>
+                            <Select value={selectedEventDateId} onValueChange={setSelectedEventDateId}>
+                                <SelectTrigger className="w-[280px]">
+                                    <SelectValue placeholder="Selecione uma data" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="ALL">Todas as datas</SelectItem>
+                                    {eventDates.map((eventDate) => (
+                                        <SelectItem key={eventDate.id} value={eventDate.id}>
+                                            {eventDate.date ? formatEventDate(eventDate.date, "DD/MM/YYYY") : "Sem data"}
+                                            {eventDate.hourStart && ` - ${formatEventTime(eventDate.hourStart, eventDate.hourEnd)}`}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
                 </DialogHeader>
 
                 <div className="flex-1 overflow-y-auto p-6 h-[calc(100vh-100px)]">

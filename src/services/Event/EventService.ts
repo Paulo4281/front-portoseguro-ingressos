@@ -386,10 +386,12 @@ class EventServiceClass {
         return response
     }
 
-    async generateSalesReport(eventId: string): Promise<AxiosResponse["data"]> {
+    async generateSalesReport(eventId: string, eventDateId?: string): Promise<AxiosResponse["data"]> {
+        const params = eventDateId ? { eventDateId } : undefined
         const response = (await API.GET({
             prefix: "/event",
-            url: `/sales-report/${eventId}`
+            url: `/sales-report/${eventId}`,
+            params
         }))?.data
         return response
     }

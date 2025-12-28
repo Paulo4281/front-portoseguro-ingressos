@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent, Wallet, QrCode, HeartPlus, Info, HouseHeart, CreditCard, Book } from "lucide-react"
+import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent, Wallet, QrCode, HeartPlus, Info, HouseHeart, CreditCard, Book, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Logo from "@/components/Logo/Logo"
 import { Avatar } from "@/components/Avatar/Avatar"
@@ -190,6 +190,10 @@ const Menu = () => {
     const [isOpen, setIsOpen] = useState(false)
     const [scroll, setScroll] = useState<boolean>(false)
 
+    const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+    const [showInstallButton, setShowInstallButton] = useState(false)
+    const [isInstalled, setIsInstalled] = useState(false)
+
     const toggleMenu = () => {
         setIsOpen(!isOpen)
     }
@@ -240,6 +244,126 @@ const Menu = () => {
         window.addEventListener('scroll', handleScroll)
         return () => window.removeEventListener('scroll', handleScroll)
     }, [])
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+
+        if ('serviceWorker' in navigator) {
+            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            const isSecure = window.location.protocol === 'https:' || isLocalhost
+
+            if (isSecure) {
+                navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                    .then((registration) => {
+                        console.log('Service Worker registered', registration)
+                    })
+                    .catch((error) => {
+                        console.error(error)
+                    })
+            }
+        }
+    }, [])
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            console.log('window undefined no useEffect de instalação');
+            return;
+        }
+
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+        const isIOSStandalone = (window.navigator as any).standalone === true
+        const installed = isStandalone || isIOSStandalone
+
+        console.log('Verificação de instalação do app:', { isStandalone, isIOSStandalone, installed })
+        setIsInstalled(installed)
+    }, [])
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            console.log('window undefined no useEffect de beforeinstallprompt')
+            return
+        }
+
+        const handler = (e: any) => {
+            e.preventDefault()
+            console.log('Evento beforeinstallprompt capturado', e)
+            setDeferredPrompt(e)
+            setShowInstallButton(true)
+        }
+
+        window.addEventListener('beforeinstallprompt', handler)
+        console.log('Adicionado listener para beforeinstallprompt')
+
+        return () => {
+            console.log('Removendo listener para beforeinstallprompt')
+            window.removeEventListener('beforeinstallprompt', handler)
+        }
+    }, [])
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            console.log('window undefined no useEffect de appinstalled')
+            return
+        }
+
+        const onInstalled = () => {
+            console.log('Evento appinstalled disparado')
+            setIsInstalled(true)
+            setShowInstallButton(false)
+            setDeferredPrompt(null)
+            Toast.success("App instalado com sucesso!")
+        }
+
+        window.addEventListener('appinstalled', onInstalled)
+        console.log('Adicionado listener para appinstalled')
+        return () => {
+            console.log('Removendo listener para appinstalled')
+            window.removeEventListener('appinstalled', onInstalled)
+        }
+    }, [])
+
+    useEffect(() => {
+        console.log('isInstalled', isInstalled)
+        console.log("showInstallButton", showInstallButton)
+    }, [isInstalled, showInstallButton])
+
+    const handleInstallClick = async () => {
+        console.log('Clicou para instalar o app', { deferredPrompt })
+
+        if (!deferredPrompt) {
+            console.log('deferredPrompt não existe')
+            Toast.info("Para instalar o app, use o menu do navegador e selecione 'Adicionar à tela inicial'")
+            return
+        }
+
+        if (typeof deferredPrompt.prompt !== 'function') {
+            console.log('prompt do deferredPrompt não é função', { deferredPrompt })
+            Toast.error("Erro: prompt não disponível")
+            return
+        }
+
+        try {
+            await deferredPrompt.prompt()
+            console.log('Prompt de instalação exibido')
+            const { outcome } = await deferredPrompt.userChoice
+            console.log('Resultado do userChoice:', outcome)
+
+            if (outcome === 'accepted') {
+                console.log('Usuário aceitou instalar')
+                Toast.success("App instalado com sucesso!")
+            } else {
+                console.log('Usuário cancelou a instalação')
+                Toast.info("Instalação cancelada")
+            }
+        } catch (error) {
+            console.log('Erro ao exibir prompt de instalação', error)
+            Toast.error("Erro ao mostrar prompt de instalação")
+        } finally {
+            setDeferredPrompt(null)
+            setShowInstallButton(false)
+            console.log('Resetou states de instalação')
+        }
+    }
 
     return (
         <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300
@@ -344,6 +468,19 @@ const Menu = () => {
                                 </Button>
                                 {
                                     isAuthenticated && <NotificationBell />
+                                }
+                                {
+                                    (!isInstalled && showInstallButton) && (
+                                        <Button
+                                            onClick={handleInstallClick}
+                                            variant="secondary"
+                                            size="sm"
+                                            className="bg-linear-to-r from-psi-primary to-psi-secondary hover:from-psi-primary/90 hover:to-psi-secondary/90 text-white border-0"
+                                        >
+                                            <Download className="h-4 w-4" />
+                                            Baixar App
+                                        </Button>
+                                    )
                                 }
                                 {
                                     !isAuthenticated && (
@@ -466,6 +603,19 @@ const Menu = () => {
                                 <NotificationBell />
                             </div>
                         )}
+                        {
+                            (!isInstalled && showInstallButton && !isAuthenticated) || 1 == 1 && (
+                                <Button
+                                    onClick={handleInstallClick}
+                                    variant="secondary"
+                                    size="sm"
+                                    className="bg-linear-to-r from-psi-primary to-psi-secondary hover:from-psi-primary/90 hover:to-psi-secondary/90 text-white border-0"
+                                >
+                                    <Download className="h-4 w-4" />
+                                    <span className="hidden xs:inline">Baixar App</span>
+                                </Button>
+                            )
+                        }
                         {isAuthenticated ? (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -622,17 +772,35 @@ const Menu = () => {
                                     Conheça
                                 </Link>
                             </Button>
-                            <Button
-                                asChild
-                                variant="primary"
-                                size="sm"
-                                className="w-full justify-start rounded-xl"
-                            >
-                                <Link href="/login" onClick={closeMenu}>
-                                    <LogIn className="h-4 w-4" />
-                                    Entrar
-                                </Link>
-                            </Button>
+                            <div className="flex gap-1">
+                                {
+                                    (!isInstalled && showInstallButton) && (
+                                        <Button
+                                            onClick={() => {
+                                                handleInstallClick()
+                                                closeMenu()
+                                            }}
+                                            variant="secondary"
+                                            size="sm"
+                                            className="w-1/2 justify-start rounded-xl bg-linear-to-r from-psi-primary to-psi-secondary hover:from-psi-primary/90 hover:to-psi-secondary/90 text-white border-0"
+                                        >
+                                            <Download className="h-4 w-4" />
+                                            Baixar App
+                                        </Button>
+                                    )
+                                }
+                                <Button
+                                    asChild
+                                    variant="primary"
+                                    size="sm"
+                                    className="w-1/2 justify-start rounded-xl"
+                                >
+                                    <Link href="/login" onClick={closeMenu}>
+                                        <LogIn className="h-4 w-4" />
+                                        Entrar
+                                    </Link>
+                                </Button>
+                            </div>
                             </div>
                         </div>
                 )}
