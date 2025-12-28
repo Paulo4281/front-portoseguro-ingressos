@@ -159,12 +159,18 @@
   }
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (min-width: 400px) and (max-width: 768px) {
   .container {
     max-width: 768px;
     padding: 30px 50px 30px 50px;
   }
+}
 
+@media screen and (max-width: 399px) {
+  .container {
+    max-width: 399px;
+    padding: 30px 20px 30px 20px !important;
+  }
 }
 
 @layer base {

@@ -10,7 +10,6 @@ const navigation = [
         title: "Explore",
         items: [
             { label: "Eventos", href: "/eventos" },
-            { label: "Produtores", href: "/organizadores" }
         ]
     },
     {

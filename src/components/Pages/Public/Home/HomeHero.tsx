@@ -242,11 +242,11 @@ const HomeHero = () => {
                             lg:min-h-[160px]">
 
                                 <div className="
-                                absolute left-[44vw] bottom-0 w-[140px] h-auto z-10 pointer-events-none
+                                absolute left-[44vw] bottom-[70px] w-[100px] h-auto z-10 pointer-events-none
                                 xs:left-0 xs:bottom-[65px] xs:w-[100px]
                                 sm:w-[250px] sm:left-[400px] sm:bottom-[-60px]
                                 lg:w-[260px] lg:left-[465px] lg:bottom-[-30px]
-                                3xl:w-[320px] 3xl:left-[500px] 3xl:bottom-[-75px]
+                                3xl:w-[320px] 3xl:left-[500px] 3xl:bottom-[-95px]
                                 ">
                                     <Image
                                         src="/images/porto-seguro-ingressos-cabral.png"
@@ -323,7 +323,7 @@ const HomeHero = () => {
                                             ">{process.env.NEXT_PUBLIC_TAX_FEE_PERCENTAGE}%</span>
                                             <span className="text-sm
                                             sm:text-base
-                                            md:text-lg text-psi-dark/60 font-medium pb-1">por ingresso</span>
+                                            md:text-xs text-psi-dark/60 font-medium pb-1">por ingresso</span>
                                         </div>
                                     </div>
                                     <div className="hidden
@@ -339,7 +339,7 @@ const HomeHero = () => {
                                             ">{ ValueUtils.centsToCurrency(Number(process.env.NEXT_PUBLIC_TAX_FEE_FIXED_BELOW_THRESHOLD)).replace(",00", "") }</span>
                                             <span className="text-sm
                                             sm:text-base
-                                            md:text-lg text-psi-dark/60 font-medium pb-1">por ingresso</span>
+                                            md:text-xs text-psi-dark/60 font-medium pb-1">por ingresso</span>
                                         </div>
                                     </div>
                                 </div>
@@ -442,11 +442,12 @@ const HomeHero = () => {
                         </div>
 
                         <div className="rounded-[28px] border border-white/15 bg-linear-to-br from-white/10 via-white/5 to-white/5 p-6 space-y-6">
-                        <div className="absolute left-[60vw] bottom-[1365px] w-[130px] h-auto z-10 pointer-events-none
+                        <div className="
+                                absolute left-[67vw] bottom-[3225px] w-[130px] h-auto z-10 pointer-events-none
                                 xs:left-[57vw] xs:bottom-[2735px] xs:w-[160px]
                                 sm:w-[170px] sm:left-[400px] sm:bottom-[1600px]
-                                lg:w-[320px] lg:left-[980px] lg:bottom-[770px]
-                                3xl:w-[300px] 3xl:left-[1260px] 3xl:bottom-[770px]
+                                lg:w-[320px] lg:left-[980px] lg:bottom-[1400px]
+                                3xl:w-[300px] 3xl:left-[1260px] 3xl:bottom-[1370px]
                                 ">
                                     <Image
                                         src="/images/porto-seguro-ingressos-forte.png"
@@ -499,134 +500,243 @@ const HomeHero = () => {
             </section>
 
             <section className="relative w-full overflow-hidden">
-                <div className="relative min-h-[600px]
-                sm:min-h-[700px]
-                lg:min-h-[800px] flex items-center">
+                <div className="relative min-h-[620px]
+                sm:min-h-[750px]
+                lg:min-h-[850px] flex items-center">
                     <div className="absolute inset-0 z-0">
                         <Image
-                            src="/images/porto-seguro-ingressos-palmeira-praia.jpeg"
-                            alt="Porto Seguro e região - Arraial D'Ajuda, Trancoso, Cabrália, Caraíva"
+                            src="/images/porto-seguro-ingressos-cidade.jpeg"
+                            alt="Praia paradisíaca de Porto Seguro - Bahia"
                             fill
                             className="object-cover"
                             priority
                         />
                         <div
                             aria-hidden="true"
-                            className="absolute inset-0 bg-black/70"
+                            className="absolute inset-0 bg-black/80"
                         />
-                        <div className="absolute inset-0 bg-linear-to-br from-psi-primary/90 via-psi-secondary/80 to-psi-primary/90
-                        sm:from-psi-primary/85 sm:via-psi-secondary/75 sm:to-psi-primary/85
-                        lg:from-psi-primary/80 lg:via-psi-secondary/70 lg:to-psi-primary/80" />
-                        <div className="absolute inset-0 bg-linear-to-t from-psi-dark/60 via-transparent to-transparent" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-psi-primary/80 via-psi-secondary/60 to-psi-dark/70
+                        sm:from-psi-primary/80 sm:via-psi-secondary/40 sm:to-psi-dark/70
+                        lg:from-psi-primary/60 lg:via-psi-secondary/30 lg:to-psi-dark/60" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-psi-dark/50 via-transparent to-transparent" />
                     </div>
 
-                    <div className="relative z-10 container py-16
-                    sm:py-20
-                    lg:py-24">
-                        <div className="grid gap-12
-                        lg:grid-cols-2 lg:gap-16 items-center">
-                            <div className="space-y-6 text-white">
-                                <div className="space-y-3">
-                                    <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 backdrop-blur-sm text-white text-xs font-medium uppercase tracking-wider border border-white/30">
-                                        Capital do Descobrimento
+                    <div className="relative z-10 container py-20
+                    sm:py-28
+                    lg:py-32">
+                        <div className="grid gap-20
+                        lg:grid-cols-[1.1fr_1fr] lg:gap-24 items-center">
+                            <div className="max-w-2xl space-y-8 text-white">
+                                <div>
+                                    <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/15 backdrop-blur-md text-white text-[13px] font-semibold uppercase tracking-widest border border-white/25 shadow"
+                                    >
+                                        Costa do Descobrimento
                                     </span>
-                                    <h2 className="text-4xl font-semibold leading-tight
-                                    sm:text-5xl
-                                    lg:text-6xl">
-                                        O coração pulsante da <span className="text-psi-tertiary">cultura baiana</span>
-                                    </h2>
-                                    <p className="text-lg text-white/90
-                                    sm:text-xl max-w-2xl">
-                                        De Porto Seguro a Caraíva, passando por Arraial D'Ajuda, Trancoso e Cabrália. Uma região rica em história, natureza e experiências inesquecíveis.
-                                    </p>
                                 </div>
-
-                                <div className="grid grid-cols-2 gap-4 pt-4
-                                sm:grid-cols-4
-                                lg:grid-cols-3
-                                ">
-                                    {["Porto Seguro", "Arraial D'Ajuda", "Trancoso", "Caraíva", "Cabrália", "Coroa Vermelha"].map((city) => (
-                                        <div key={city} className="rounded-xl bg-white/90 backdrop-blur-sm border border-white/20 p-3 text-center">
-                                            <p className="text-sm font-medium text-psi-dark">{city}</p>
-                                        </div>
+                                <h2 className="text-5xl font-bold leading-tight
+                                sm:text-6xl
+                                lg:text-7xl"
+                                    style={{ letterSpacing: "-0.04em" }}
+                                >
+                                    Viva o melhor de <span className="text-psi-tertiary drop-shadow">Porto Seguro</span> <br />
+                                    e região
+                                </h2>
+                                <p className="text-xl
+                                sm:text-2xl max-w-xl text-white/90 font-light">
+                                    Uma plataforma exclusiva para conectar produtores, moradores e turistas aos eventos mais autênticos do sul da Bahia — com total segurança e experiência premium.
+                                </p>
+                                <div className="flex flex-wrap gap-3 pt-3">
+                                    {[
+                                        "Porto Seguro",
+                                        "Arraial D'Ajuda",
+                                        "Trancoso",
+                                        "Caraíva",
+                                        "Cabrália",
+                                        "Coroa Vermelha"
+                                    ].map((city) => (
+                                        <span
+                                            key={city}
+                                            className="inline-flex items-center px-4 py-2 rounded-full bg-white/85 text-psi-dark text-xs font-semibold shadow border border-white/50"
+                                        >
+                                            {city}
+                                        </span>
                                     ))}
                                 </div>
 
-                                <div className="flex flex-col gap-4 justify-center pt-4
-                                sm:flex-row">
+                                <div className="flex flex-col gap-4 pt-6
+                                sm:flex-row sm:items-center">
                                     <CTAButton
-                                        size="lg"
+                                        size="xl"
                                         text="Anuncie seu evento"
                                         variant="tertiary"
                                         icon={Megaphone}
                                         href="/cadastro?org=true"
-                                        className="hover:bg-psi-primary! hover:text-white!"
+                                        className="hover:bg-psi-primary! hover:text-white! min-w-[220px]"
                                     />
                                 </div>
                             </div>
 
-                            <div className="space-y-6">
-                                <div className="rounded-2xl bg-white/95 backdrop-blur-md border border-white/50 p-6
-                                sm:p-8 shadow-xl">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-xl bg-psi-primary/10 flex items-center justify-center">
-                                                <Users className="w-6 h-6 text-psi-primary" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-lg font-medium text-psi-dark">Para Organizadores</h3>
-                                                <p className="text-sm text-psi-dark/60">Conecte-se com o público local</p>
-                                            </div>
+                            <div className="flex flex-col gap-7 max-w-xl">
+                                <div className="rounded-3xl border border-psi-primary/10 bg-white/95 shadow-2xl backdrop-blur-lg p-8
+                                transition-all hover:scale-[1.025] hover:shadow-psi-secondary/30 hover:border-psi-secondary/20">
+                                    <div className="flex items-center gap-4 mb-2">
+                                        <span className="w-14 h-14 rounded-2xl bg-psi-primary/10 flex items-center justify-center">
+                                            <Users className="w-7 h-7 text-psi-primary" />
+                                        </span>
+                                        <div>
+                                            <h3 className="text-xl font-bold text-psi-primary leading-tight">Para Organizadores</h3>
+                                            <span className="text-sm text-psi-dark/70 leading-none">Impulsione seus eventos</span>
                                         </div>
-                                        <p className="text-sm text-psi-dark/70 leading-relaxed">
-                                            Porto Seguro e região recebem milhões de turistas anualmente. Use nossa plataforma para alcançar esse público qualificado e aumentar suas vendas com taxas justas e suporte local.
-                                        </p>
-                                        <ul className="space-y-2">
-                                            {[
-                                                "Público qualificado de turistas e moradores",
-                                                "Taxas reduzidas para maximizar seus lucros",
-                                                "Suporte dedicado para produtores locais",
-                                                "Repasse rápido e transparente"
-                                            ].map((item, index) => (
-                                                <li key={index} className="flex items-start gap-2 text-sm text-psi-dark/70">
-                                                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                                                    <span>{item}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
                                     </div>
+                                    <p className="text-base text-psi-dark/80 leading-relaxed mb-3">
+                                        Alavanque sua bilheteria com taxas únicas, repasse em até <span className="text-psi-secondary font-semibold">48h</span> e acompanhamento em tempo real. Ganhe destaque perante turistas e público local.
+                                    </p>
+                                    <ul className="grid gap-2 pt-2">
+                                        <li className="flex items-center gap-2 text-sm text-psi-dark/85">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                            Taxas regionais e transparentes
+                                        </li>
+                                        <li className="flex items-center gap-2 text-sm text-psi-dark/85">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                            Recebimento rápido e seguro pós-evento
+                                        </li>
+                                        <li className="flex items-center gap-2 text-sm text-psi-dark/85">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                            Suporte local e personalizado
+                                        </li>
+                                        <li className="flex items-center gap-2 text-sm text-psi-dark/85">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                            Painel com vendas e relatórios
+                                        </li>
+                                    </ul>
                                 </div>
 
-                                <div className="rounded-2xl bg-white/95 backdrop-blur-md border border-white/50 p-6
-                                sm:p-8 shadow-xl">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-xl bg-psi-secondary/10 flex items-center justify-center">
-                                                <Ticket className="w-6 h-6 text-psi-secondary" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-lg font-medium text-psi-dark">Para Compradores</h3>
-                                                <p className="text-sm text-psi-dark/60">Descubra os melhores eventos</p>
-                                            </div>
+                                <div className="rounded-3xl border border-psi-secondary/10 bg-white/95 shadow-2xl backdrop-blur-lg p-8
+                                transition-all hover:scale-[1.025] hover:shadow-psi-tertiary/30 hover:border-psi-tertiary/20">
+                                    <div className="flex items-center gap-4 mb-2">
+                                        <span className="w-14 h-14 rounded-2xl bg-psi-secondary/10 flex items-center justify-center">
+                                            <Ticket className="w-7 h-7 text-psi-secondary" />
+                                        </span>
+                                        <div>
+                                            <h3 className="text-xl font-bold text-psi-secondary leading-tight">Para Compradores</h3>
+                                            <span className="text-sm text-psi-dark/70 leading-none">Explore experiências reais</span>
                                         </div>
-                                        <p className="text-sm text-psi-dark/70 leading-relaxed">
-                                            Explore eventos autênticos da região: shows, festivais, experiências culturais e muito mais. Compre com segurança e aproveite ao máximo sua estadia em Porto Seguro.
-                                        </p>
-                                        <ul className="space-y-2">
-                                            {[
-                                                "Eventos verificados e seguros",
-                                                "Ingressos digitais com QR Code",
-                                                "Taxas transparentes e justas",
-                                                "Suporte em português"
-                                            ].map((item, index) => (
-                                                <li key={index} className="flex items-start gap-2 text-sm text-psi-dark/70">
-                                                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                                                    <span>{item}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
                                     </div>
+                                    <p className="text-base text-psi-dark/80 leading-relaxed mb-3">
+                                        Encontre eventos autênticos, compre com facilidade e tenha seus ingressos na palma da mão, direto no seu celular.
+                                    </p>
+                                    <ul className="grid gap-2 pt-2">
+                                        <li className="flex items-center gap-2 text-sm text-psi-dark/85">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                            Ingressos digitais e QR Code seguro
+                                        </li>
+                                        <li className="flex items-center gap-2 text-sm text-psi-dark/85">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                            Eventos verificados e regionais
+                                        </li>
+                                        <li className="flex items-center gap-2 text-sm text-psi-dark/85">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                            Suporte em português Brasil
+                                        </li>
+                                        <li className="flex items-center gap-2 text-sm text-psi-dark/85">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                            Taxas fixas, sem surpresas
+                                        </li>
+                                    </ul>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section>
+                <div className="container mx-auto mt-8">
+                    <h3 className="text-2xl font-semibold text-psi-dark mb-6 text-center">
+                        Perguntas Frequentes (FAQ)
+                    </h3>
+                    <div className="
+                    grid grid-cols-1 gap-4
+                    lg:grid-cols-2
+                    ">
+                        <div className="rounded-2xl border border-psi-primary/10 bg-white/95 p-5">
+                            <button
+                                type="button"
+                                aria-expanded="false"
+                                aria-controls="faq-1"
+                                className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-psi-primary"
+                                tabIndex={0}
+                            >
+                                <span className="text-psi-primary font-medium">
+                                    Como funciona a compra de ingressos pela plataforma?
+                                </span>
+                            </button>
+                            <div id="faq-1" className="mt-2 text-psi-dark/70 text-sm">
+                                Você pode explorar eventos, selecionar ingressos desejados e finalizar a compra de forma 100% online com pagamento seguro. Após a confirmação, o ingresso digital com QR Code fica disponível na sua conta.
+                            </div>
+                        </div>
+                        <div className="rounded-2xl border border-psi-primary/10 bg-white/95 p-5">
+                            <button
+                                type="button"
+                                aria-expanded="false"
+                                aria-controls="faq-2"
+                                className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-psi-primary"
+                                tabIndex={0}
+                            >
+                                <span className="text-psi-primary font-medium">
+                                    Quem pode anunciar eventos na plataforma?
+                                </span>
+                            </button>
+                            <div id="faq-2" className="mt-2 text-psi-dark/70 text-sm">
+                                Qualquer organizador local, casas de show ou produtoras de Porto Seguro podem se cadastrar, passar pelo processo de verificação e anunciar seus eventos facilmente.
+                            </div>
+                        </div>
+                        <div className="rounded-2xl border border-psi-primary/10 bg-white/95 p-5">
+                            <button
+                                type="button"
+                                aria-expanded="false"
+                                aria-controls="faq-3"
+                                className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-psi-primary"
+                                tabIndex={0}
+                            >
+                                <span className="text-psi-primary font-medium">
+                                    As taxas são realmente menores que as dos concorrentes?
+                                </span>
+                            </button>
+                            <div id="faq-3" className="mt-2 text-psi-dark/70 text-sm">
+                                Sim! Temos taxa reduzida de {process.env.NEXT_PUBLIC_TAX_FEE_PERCENTAGE}% em ingressos acima de {ValueUtils.centsToCurrency(Number(process.env.NEXT_PUBLIC_TAX_THRESHOLD_CENTS))} e valor fixo abaixo disso, bem diferente dos concorrentes nacionais.
+                            </div>
+                        </div>
+                        <div className="rounded-2xl border border-psi-primary/10 bg-white/95 p-5">
+                            <button
+                                type="button"
+                                aria-expanded="false"
+                                aria-controls="faq-4"
+                                className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-psi-primary"
+                                tabIndex={0}
+                            >
+                                <span className="text-psi-primary font-medium">
+                                    O pagamento é seguro? Como funciona o repasse para o organizador?
+                                </span>
+                            </button>
+                            <div id="faq-4" className="mt-2 text-psi-dark/70 text-sm">
+                                O valor dos ingressos é protegido até a data do evento e o repasse é feito de forma direta e transparente após a realização, sempre para a conta cadastrada do organizador.
+                            </div>
+                        </div>
+                        <div className="rounded-2xl border border-psi-primary/10 bg-white/95 p-5">
+                            <button
+                                type="button"
+                                aria-expanded="false"
+                                aria-controls="faq-5"
+                                className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-psi-primary"
+                                tabIndex={0}
+                            >
+                                <span className="text-psi-primary font-medium">
+                                    Preciso ser morador de Porto Seguro para comprar ou anunciar?
+                                </span>
+                            </button>
+                            <div id="faq-5" className="mt-2 text-psi-dark/70 text-sm">
+                                Não! A plataforma é dedicada aos eventos locais de Porto Seguro, mas está aberta para turistas comprarem ingressos online antes ou durante sua estadia. Para anunciar, basta comprovar vínculo e passar pela verificação.
                             </div>
                         </div>
                     </div>
