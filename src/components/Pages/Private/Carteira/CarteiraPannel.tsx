@@ -2,10 +2,11 @@
 
 import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { useWalletCurrent } from "@/hooks/Wallet/useWalletCurrent"
-import { useWalletHistory } from "@/hooks/Wallet/useWalletHistory"
+import { useBalanceCurrent } from "@/hooks/Balance/useBalanceCurrent"
+import { usePayoutList } from "@/hooks/Payout/usePayoutList"
+import { usePayoutWithdraw } from "@/hooks/Payout/usePayoutWithdraw"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
-import { ArrowUp, ArrowDown, Eye, EyeOff, Info } from "lucide-react"
+import { ArrowUp, ArrowDown, Eye, EyeOff, Info, Loader2 } from "lucide-react"
 import { Background } from "@/components/Background/Background"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import { useAuthStore } from "@/stores/Auth/AuthStore"
@@ -16,21 +17,27 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
+import { Toast } from "@/components/Toast/Toast"
 
 const CarteiraPannel = () => {
-    const { data: walletData, isLoading: walletLoading } = useWalletCurrent()
-    const { data: historyData, isLoading: historyLoading } = useWalletHistory()
+    const { data: balanceData, isLoading: balanceLoading, refetch: refetchBalance } = useBalanceCurrent()
+    const { data: payoutListData, isLoading: payoutListLoading, refetch: refetchPayoutList } = usePayoutList()
+    const { mutateAsync: withdrawPayout, isPending: isWithdrawing } = usePayoutWithdraw()
     const { user } = useAuthStore()
     const [isBalanceVisible, setIsBalanceVisible] = useState(false)
     const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false)
 
     const balance = useMemo(() => {
-        return walletData?.data?.value ?? 0
-    }, [walletData])
+        return balanceData?.data?.currentValue ?? 0
+    }, [balanceData])
 
-    const history = useMemo(() => {
-        return historyData?.data ?? []
-    }, [historyData])
+    const balanceList = useMemo(() => {
+        return balanceData?.data?.balances ?? []
+    }, [balanceData])
+
+    const payoutList = useMemo(() => {
+        return payoutListData?.data ?? []
+    }, [payoutListData])
 
     const organizer = useMemo(() => {
         return user?.Organizer || null
@@ -83,13 +90,13 @@ const CarteiraPannel = () => {
                     <div className="text-start">
                         <div className="text-xs text-psi-dark/60">Disponível</div>
                         <div className="mt-1 text-4xl lg:text-5xl font-extrabold text-psi-primary">
-                            {walletLoading ? "—" : isBalanceVisible ? ValueUtils.centsToCurrency(balance) : "••••••"}
+                            {balanceLoading ? "—" : isBalanceVisible ? ValueUtils.centsToCurrency(balance) : "••••••"}
                         </div>
                         <hr className="my-4" />
                         <div className="mt-4">
                             <Button 
                                 variant="primary" 
-                                disabled={walletLoading || balance <= 0}
+                                disabled={balanceLoading || balance <= 0}
                                 onClick={() => setIsWithdrawDialogOpen(true)}
                             >
                                 Sacar
@@ -105,32 +112,35 @@ const CarteiraPannel = () => {
                     <p className="text-sm text-psi-dark/60">Últimas transações</p>
                 </div>
 
-                {historyLoading ? (
+                {payoutListLoading ? (
                     <p className="text-sm text-psi-dark/60">Carregando histórico...</p>
-                ) : history.length === 0 ? (
+                ) : payoutList.length === 0 && balanceList.length === 0 ? (
                     <p className="text-sm text-psi-dark/60">Nenhuma transação encontrada.</p>
                 ) : (
+                    <>
                     <ul className="space-y-3">
-                        {history.map((item, idx) => {
-                            const isReceived = item.type === "RECEIVED"
-                            const sign = isReceived ? "+" : "-"
-                            const colorClass = isReceived ? "text-emerald-600" : "text-destructive"
-                            const formattedDate = DateUtils.formatDate(item.date)
+                        {payoutList.map((item, idx) => {
+                            const isPaid = item.paidAt !== null
+                            const sign = "-"
+                            const colorClass = isPaid ? "text-red-600" : "text-amber-600"
+                            const formattedDate = DateUtils.formatDate(item.createdAt)
+                            const formattedPaidDate = item.paidAt ? DateUtils.formatDate(item.paidAt) : null
 
                             return (
                                 <li key={idx} className="flex items-center justify-between p-3 rounded-lg border border-[#F0F1F6] bg-white">
                                     <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-md bg-psi-primary/10 ${isReceived ? "text-emerald-600" : "text-destructive"}`}>
-                                            {isReceived ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                                        <div className={`p-2 rounded-md bg-psi-primary/10 ${colorClass}`}>
+                                            <ArrowDown className="h-4 w-4" />
                                         </div>
                                         <div>
-                                            <div className="text-sm font-medium text-psi-dark">{isReceived ? "Recebimento" : "Saque"}</div>
-                                            {
-                                                item.eventName && (
-                                                    <div className="text-sm text-gray-600">{item.eventName}</div>
-                                                )
-                                            }
-                                            <div className="text-xs text-psi-dark/60">{formattedDate}</div>
+                                            <div className="text-sm font-medium text-psi-dark">Saque</div>
+                                            <div className="text-xs text-psi-dark/60">
+                                                {formattedDate}
+                                                {formattedPaidDate && ` • Pago em ${formattedPaidDate}`}
+                                            </div>
+                                            {!isPaid && (
+                                                <div className="text-xs text-amber-600 font-medium mt-1">Processando</div>
+                                            )}
                                         </div>
                                     </div>
 
@@ -142,7 +152,30 @@ const CarteiraPannel = () => {
                                 </li>
                             )
                         })}
+                        {balanceList.map((item, idx) => {
+                            return (
+                                <li key={idx} className="flex items-center justify-between p-3 rounded-lg border border-[#F0F1F6] bg-white">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-md bg-psi-primary/10 text-emerald-600">
+                                            <ArrowUp className="h-4 w-4" />
+                                        </div>
+                                        <div>
+                                            <div className="text-sm font-medium text-psi-dark">Liberado</div>
+                                            <div className="text-xs text-psi-dark/60">
+                                                {DateUtils.formatDate(item.createdAt)} • {item.description}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-sm font-medium text-emerald-600">
+                                            { isBalanceVisible ? `${ValueUtils.centsToCurrency(item.value)}` : "••••"}
+                                        </div>
+                                    </div>
+                                </li>
+                            )
+                        })}
                     </ul>
+                    </>
                 )}
             </div>
 
@@ -282,14 +315,33 @@ const CarteiraPannel = () => {
                             <Button
                                 variant="ghost"
                                 onClick={() => setIsWithdrawDialogOpen(false)}
+                                disabled={isWithdrawing}
                             >
                                 Cancelar
                             </Button>
                             <Button
                                 variant="primary"
-                                disabled={!organizer?.payoutMethod || balance <= 0}
+                                disabled={!organizer?.payoutMethod || balance <= 0 || isWithdrawing}
+                                onClick={async () => {
+                                    try {
+                                        await withdrawPayout()
+                                        Toast.success("Saque solicitado com sucesso!")
+                                        setIsWithdrawDialogOpen(false)
+                                        refetchBalance()
+                                        refetchPayoutList()
+                                    } catch (error) {
+                                        Toast.error("Erro ao solicitar saque")
+                                    }
+                                }}
                             >
-                                Confirmar Saque
+                                {isWithdrawing ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Processando...
+                                    </>
+                                ) : (
+                                    "Confirmar Saque"
+                                )}
                             </Button>
                         </div>
                     </div>

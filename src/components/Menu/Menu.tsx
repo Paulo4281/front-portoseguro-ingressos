@@ -928,6 +928,10 @@ const NotificationBell = () => {
             case "PAYMENT_REFUNDED_BY_ADMIN_TO_CUSTOMER":
             case "PAYMENT_REFUNDED_BY_ADMIN_TO_ORGANIZER":
                 return "Reembolso de ingresso"
+            case "EVENT_BALANCE_RELEASED_TO_ORGANIZER":
+                return "Saldo liberado"
+            case "PAYMENT_FIRST_SOLD_TICKET":
+                return "Primeiro ingresso vendido"
             default:
                 return "Notificação"
         }
@@ -1011,6 +1015,16 @@ const NotificationBell = () => {
                 const eventName = data.eventName
 
                 return `O evento ${eventName} foi adiado com sucesso pelo administrador. Os clientes podem solicitar o reembolso do seu ingresso caso não consiga comparecer na nova data.`
+            }
+            case "EVENT_BALANCE_RELEASED_TO_ORGANIZER": {
+                const eventName = data.eventName
+
+                return `O saldo do evento ${eventName} foi liberado. O valor está disponível para saque.`
+            }
+            case "PAYMENT_FIRST_SOLD_TICKET": {
+                const eventName = data.eventName
+
+                return `O evento ${eventName} teve seu primeiro ingresso vendido com sucesso!`
             }
             default:
                 return notification.message || "Você possui uma atualização importante."

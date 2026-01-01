@@ -41,6 +41,7 @@ type TEvent = {
     isClientTaxed: boolean
     maxInstallments: number
     isActive: boolean
+    isFinished: boolean
     isDeleted: boolean
     isCancelled: boolean
     isPostponed: boolean
