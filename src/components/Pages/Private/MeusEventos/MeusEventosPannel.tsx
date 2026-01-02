@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Share2, Download, Ban, Search, Copy, TicketIcon, Sparkle, AlertCircle, XCircle } from "lucide-react"
+import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Share2, Download, Ban, Search, Copy, TicketIcon, Sparkle, AlertCircle, XCircle, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/Input/Input"
 import {
@@ -562,6 +562,12 @@ const EventCard = ({
                         <h3 className="text-xl font-semibold text-psi-dark line-clamp-1">
                             {event.name}
                         </h3>
+                        {event.isFinished && (
+                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-xs font-medium rounded-full flex items-center gap-1">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Finalizado
+                            </span>
+                        )}
                         {event.isCancelled && (
                             <span className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-medium rounded-full flex items-center gap-1">
                                 <XCircle className="h-3 w-3" />

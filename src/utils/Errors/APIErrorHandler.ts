@@ -27,6 +27,7 @@ export const APIErrorHandler: Record<number, string> = {
     25: "Você atingiu o limite de compras de ingressos para este evento",
     26: "Sessão inexistente ou expirada",
     27: "Evento ainda não foi finalizado",
+    28: "Não há saldo suficiente para realizar o saque",
 
     700: "Não é possível alterar datas do evento que já possuem ingressos vendidos. FALE COM O SUPORTE",
     701: "Não é possível alterar datas do evento que começarão em menos de 72 horas e já possuem ingressos vendidos. FALE COM O SUPORTE",

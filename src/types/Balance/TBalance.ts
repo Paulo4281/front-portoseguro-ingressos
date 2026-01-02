@@ -11,3 +11,7 @@ export type TBalanceDatesAdminListResponse = {
     date: string
 }
 
+export type TBalanceVerifyBalanceIsReleasedResponse = {
+    isReleased: boolean
+}
+

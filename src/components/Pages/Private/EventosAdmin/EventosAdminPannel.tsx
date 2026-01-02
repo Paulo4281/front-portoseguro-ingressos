@@ -15,6 +15,7 @@ import {
 import { useEventFindAdmin } from "@/hooks/Event/useEventFindAdmint"
 import { useEventCancel } from "@/hooks/Event/useEventCancel"
 import { usePaymentReleaseBalance } from "@/hooks/Payment/usePaymentReleaseBalance"
+import { useBalanceVerifyIsReleased } from "@/hooks/Balance/useBalanceVerifyIsReleased"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Background } from "@/components/Background/Background"
 import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
@@ -183,6 +184,7 @@ const EventosAdminPannel = () => {
                 Toast.success("Saldo liberado com sucesso!")
                 queryClient.invalidateQueries({ queryKey: ["events", "admin"] })
                 queryClient.invalidateQueries({ queryKey: ["balance", "dates-by-event", eventId] })
+                queryClient.invalidateQueries({ queryKey: ["balance", "verify-is-released", eventId] })
                 setReleaseBalanceDialogOpen(false)
                 setPasswordDialogOpen(false)
                 setSelectedEvent(null)
@@ -440,8 +442,20 @@ const EventCard = ({
     const isRecurrent = !!event.Recurrence
     const isFinished = verifyEventIsFinished()
 
+    const { data: balanceVerifyData, isLoading: isLoadingBalanceVerify } = useBalanceVerifyIsReleased(
+        event.id,
+        isFinished
+    )
+
+    const isBalanceReleased = balanceVerifyData?.data?.isReleased ?? false
+    const needsAttention = isFinished && !isBalanceReleased
+
     return (
-        <div className="group rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-black/10">
+        <div className={`group rounded-2xl border overflow-hidden transition-all duration-300 ${
+            needsAttention
+                ? "border-amber-400 bg-linear-to-br from-amber-50 via-white to-amber-50 shadow-lg shadow-amber-200/50 hover:shadow-xl hover:shadow-amber-300/50"
+                : "border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 hover:shadow-xl hover:shadow-black/10"
+        }`}>
             <div className="relative h-60 w-full overflow-hidden">
                 <Link href={`/ver-evento/${event.slug}`} target="_blank">
                     <img
@@ -473,11 +487,25 @@ const EventCard = ({
                                 <>
                                     <DropdownMenuSeparator className="bg-[#E4E6F0]" />
                                     <DropdownMenuItem 
-                                        className="rounded-lg text-sm text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 cursor-pointer"
-                                        onClick={() => onReleaseBalance(event)}
+                                        className={`rounded-lg text-sm ${
+                                            isBalanceReleased
+                                                ? "text-psi-dark/40 hover:text-psi-dark/40 hover:bg-[#F3F4FB] cursor-not-allowed opacity-50"
+                                                : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 cursor-pointer"
+                                        }`}
+                                        onClick={() => {
+                                            if (!isBalanceReleased) {
+                                                onReleaseBalance(event)
+                                            }
+                                        }}
+                                        disabled={isBalanceReleased || isLoadingBalanceVerify}
                                     >
-                                        <Wallet className="h-4 w-4 text-emerald-600" />
-                                        Liberar saldo
+                                        <Wallet className={`h-4 w-4 ${isBalanceReleased ? "text-psi-dark/40" : "text-emerald-600"}`} />
+                                        {isLoadingBalanceVerify 
+                                            ? "Verificando..." 
+                                            : isBalanceReleased 
+                                                ? "Saldo já repassado" 
+                                                : "Liberar saldo"
+                                        }
                                     </DropdownMenuItem>
                                 </>
                             )}
@@ -496,9 +524,23 @@ const EventCard = ({
 
             <div className="p-6 space-y-4">
                 <div>
-                    <h3 className="text-xl font-semibold text-psi-dark mb-2 line-clamp-1">
-                        {event.name}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <h3 className="text-xl font-semibold text-psi-dark line-clamp-1">
+                            {event.name}
+                        </h3>
+                        {needsAttention && (
+                            <span className="px-2 py-0.5 bg-amber-500 text-white text-xs font-medium rounded-full flex items-center gap-1 animate-pulse">
+                                <Wallet className="h-3 w-3" />
+                                Repasse pendente
+                            </span>
+                        )}
+                        {isFinished && isBalanceReleased && (
+                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-xs font-medium rounded-full flex items-center gap-1">
+                                <Wallet className="h-3 w-3" />
+                                Saldo repassado
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 <div className="space-y-3">

@@ -18,6 +18,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Toast } from "@/components/Toast/Toast"
+import { DialogPasswordConfirmation } from "@/components/Dialog/DialogPasswordConfirmation/DialogPasswordConfirmation"
 
 const CarteiraPannel = () => {
     const { data: balanceData, isLoading: balanceLoading, refetch: refetchBalance } = useBalanceCurrent()
@@ -26,6 +27,7 @@ const CarteiraPannel = () => {
     const { user } = useAuthStore()
     const [isBalanceVisible, setIsBalanceVisible] = useState(false)
     const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false)
+    const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
 
     const balance = useMemo(() => {
         return balanceData?.data?.currentValue ?? 0
@@ -322,31 +324,35 @@ const CarteiraPannel = () => {
                             <Button
                                 variant="primary"
                                 disabled={!organizer?.payoutMethod || balance <= 0 || isWithdrawing}
-                                onClick={async () => {
-                                    try {
-                                        await withdrawPayout()
-                                        Toast.success("Saque solicitado com sucesso!")
-                                        setIsWithdrawDialogOpen(false)
-                                        refetchBalance()
-                                        refetchPayoutList()
-                                    } catch (error) {
-                                        Toast.error("Erro ao solicitar saque")
-                                    }
+                                onClick={() => {
+                                    setIsWithdrawDialogOpen(false)
+                                    setIsPasswordDialogOpen(true)
                                 }}
                             >
-                                {isWithdrawing ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        Processando...
-                                    </>
-                                ) : (
-                                    "Confirmar Saque"
-                                )}
+                                Confirmar Saque
                             </Button>
                         </div>
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <DialogPasswordConfirmation
+                open={isPasswordDialogOpen}
+                onOpenChange={setIsPasswordDialogOpen}
+                onConfirm={async () => {
+                    try {
+                        await withdrawPayout()
+                        Toast.success("Saque solicitado com sucesso!")
+                        setIsPasswordDialogOpen(false)
+                        refetchBalance()
+                        refetchPayoutList()
+                    } catch (error) {
+                        Toast.error("Erro ao solicitar saque")
+                    }
+                }}
+                title="Confirmação de Segurança"
+                description="Por motivos de segurança, digite sua senha para confirmar o saque."
+            />
         </div>
         </Background>
     )
