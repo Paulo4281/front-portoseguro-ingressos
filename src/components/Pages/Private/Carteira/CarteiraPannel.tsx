@@ -6,7 +6,7 @@ import { useBalanceCurrent } from "@/hooks/Balance/useBalanceCurrent"
 import { usePayoutList } from "@/hooks/Payout/usePayoutList"
 import { usePayoutWithdraw } from "@/hooks/Payout/usePayoutWithdraw"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
-import { ArrowUp, ArrowDown, Eye, EyeOff, Info, Loader2 } from "lucide-react"
+import { ArrowUp, ArrowDown, Eye, EyeOff, Info, Loader2, ExternalLink } from "lucide-react"
 import { Background } from "@/components/Background/Background"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import { useAuthStore } from "@/stores/Auth/AuthStore"
@@ -122,26 +122,55 @@ const CarteiraPannel = () => {
                     <>
                     <ul className="space-y-3">
                         {payoutList.map((item, idx) => {
-                            const isPaid = item.paidAt !== null
+                            const isPaid = item.status === "PAID"
+                            const isFailed = item.status === "FAILED"
+                            const isProcessing = item.status === "PROCESSING"
                             const sign = "-"
-                            const colorClass = isPaid ? "text-red-600" : "text-amber-600"
+                            const colorClass = isFailed ? "text-red-600" : isPaid ? "text-red-600" : "text-amber-600"
+                            const borderClass = isFailed ? "border-red-200 bg-red-50/50" : "border-[#F0F1F6] bg-white"
                             const formattedDate = DateUtils.formatDate(item.createdAt)
                             const formattedPaidDate = item.paidAt ? DateUtils.formatDate(item.paidAt) : null
 
                             return (
-                                <li key={idx} className="flex items-center justify-between p-3 rounded-lg border border-[#F0F1F6] bg-white">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-md bg-psi-primary/10 ${colorClass}`}>
+                                <li key={idx} className={`flex items-center justify-between p-3 rounded-lg border ${borderClass}`}>
+                                    <div className="flex items-center gap-3 flex-1">
+                                        <div className={`p-2 rounded-md ${isFailed ? "bg-red-100" : "bg-psi-primary/10"} ${colorClass}`}>
                                             <ArrowDown className="h-4 w-4" />
                                         </div>
-                                        <div>
-                                            <div className="text-sm font-medium text-psi-dark">Saque</div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <div className="text-sm font-medium text-psi-dark">Saque</div>
+                                                {isFailed && (
+                                                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
+                                                        Falhou
+                                                    </span>
+                                                )}
+                                            </div>
                                             <div className="text-xs text-psi-dark/60">
                                                 {formattedDate}
                                                 {formattedPaidDate && ` • Pago em ${formattedPaidDate}`}
                                             </div>
-                                            {!isPaid && (
+                                            {isProcessing && (
                                                 <div className="text-xs text-amber-600 font-medium mt-1">Processando</div>
+                                            )}
+                                            {isFailed && item.failReason && (
+                                                <div className="mt-2 p-2 rounded-md bg-red-50 border border-red-100">
+                                                    <p className="text-xs font-medium text-red-800 mb-1">Motivo da falha:</p>
+                                                    <p className="text-xs text-red-700">{item.failReason}</p>
+                                                </div>
+                                            )}
+                                            {item.transactionReceiptUrl && (
+                                                <div className="mt-2">
+                                                    <a
+                                                        href={item.transactionReceiptUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1 text-xs text-psi-primary hover:text-psi-primary/80 font-medium"
+                                                    >
+                                                        Ver comprovante
+                                                        <ExternalLink className="h-3 w-3" />
+                                                    </a>
+                                                </div>
                                             )}
                                         </div>
                                     </div>

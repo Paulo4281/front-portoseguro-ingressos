@@ -210,10 +210,14 @@ const AdmTransferenciasPannel = () => {
                                         const statusConfig = payoutStatusConfig[payout.status as TPayoutStatus]
                                         const methodConfig = payoutMethodConfig[payout.method as TPayoutAdminListResponse["method"]]
                                         const user = payout.User
+                                        const isFailed = payout.status === "FAILED"
+                                        const rowClassName = isFailed 
+                                            ? "border-b border-red-200 bg-red-50/30 hover:bg-red-50/50 transition-colors" 
+                                            : "border-b border-psi-dark/5 hover:bg-psi-dark/3 transition-colors"
 
                                         return (
                                             <>
-                                                <TableRow key={payout.id} className="border-b border-psi-dark/5 hover:bg-psi-dark/3 transition-colors">
+                                                <TableRow key={payout.id} className={rowClassName}>
                                                     <TableCell className="py-5 px-6">
                                                         <div className="space-y-2">
                                                             <div className="flex items-center gap-3">
@@ -490,8 +494,28 @@ const AdmTransferenciasPannel = () => {
                                                                         </div>
                                                                     )}
 
-                                                                    {payout.externalTransactionId && (
+                                                                    {payout.transactionReceiptUrl && (
                                                                         <div className="rounded-2xl border border-psi-dark/10 bg-white/80 p-4 space-y-2 shadow-sm">
+                                                                            <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
+                                                                                <ExternalLink className="h-4 w-4 text-psi-primary" />
+                                                                                Comprovante
+                                                                            </div>
+                                                                            <div className="space-y-2">
+                                                                                <a
+                                                                                    href={payout.transactionReceiptUrl}
+                                                                                    target="_blank"
+                                                                                    rel="noopener noreferrer"
+                                                                                    className="inline-flex items-center gap-2 text-sm text-psi-primary hover:text-psi-primary/80 font-medium"
+                                                                                >
+                                                                                    Ver comprovante da transferência
+                                                                                    <ExternalLink className="h-3 w-3" />
+                                                                                </a>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {payout.externalTransactionId && (
+                                                                        <div className="rounded-2xl border border-psi-dark/10 bg-white/80 p-4 space-y-2 shadow-sm w-fit">
                                                                             <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
                                                                                 <ExternalLink className="h-4 w-4 text-psi-primary" />
                                                                                 Informações adicionais

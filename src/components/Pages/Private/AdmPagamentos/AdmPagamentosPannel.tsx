@@ -676,11 +676,27 @@ const AdmPagamentosPannel = () => {
                                                                                     </span>
                                                                                 </div>
                                                                             )}
+                                                                            {payment.netValue !== null && payment.netValue !== undefined && (
+                                                                                <div className="flex justify-between items-center">
+                                                                                    <span className="text-sm text-psi-dark/70">Ganho líquido:</span>
+                                                                                    <span className="text-sm font-medium text-psi-dark">
+                                                                                        {ValueUtils.centsToCurrency(payment.netValue)}
+                                                                                    </span>
+                                                                                </div>
+                                                                            )}
                                                                             {payment.customerFee !== null && payment.customerFee !== undefined && payment.customerFee > 0 && (
                                                                                 <div className="flex justify-between items-center">
                                                                                     <span className="text-sm text-psi-dark/70">Taxa do cliente:</span>
                                                                                     <span className="text-sm font-medium text-psi-dark">
                                                                                         {ValueUtils.centsToCurrency(payment.customerFee)}
+                                                                                    </span>
+                                                                                </div>
+                                                                            )}
+                                                                            {payment.customerPaymentFee !== null && payment.customerPaymentFee !== undefined && payment.customerPaymentFee > 0 && (
+                                                                                <div className="flex justify-between items-center">
+                                                                                    <span className="text-sm text-psi-dark/70">Taxa de pagamento do cliente:</span>
+                                                                                    <span className="text-sm font-medium text-psi-dark">
+                                                                                        {ValueUtils.centsToCurrency(payment.customerPaymentFee)}
                                                                                     </span>
                                                                                 </div>
                                                                             )}
@@ -700,6 +716,14 @@ const AdmPagamentosPannel = () => {
                                                                                     </span>
                                                                                 </div>
                                                                             )}
+                                                                            {payment.gatewayFeeGain !== null && payment.gatewayFeeGain !== undefined && payment.gatewayFeeGain > 0 && (
+                                                                                <div className="flex justify-between items-center">
+                                                                                    <span className="text-sm text-psi-dark/70">Ganho do gateway:</span>
+                                                                                    <span className="text-sm font-medium text-psi-dark">
+                                                                                        {ValueUtils.centsToCurrency(payment.gatewayFeeGain)}
+                                                                                    </span>
+                                                                                </div>
+                                                                            )}
                                                                             {payment.organizerPayout !== null && payment.organizerPayout !== undefined && payment.organizerPayout > 0 && (
                                                                                 <div className="flex justify-between items-center pt-2 border-t border-psi-dark/10">
                                                                                     <span className="text-sm font-medium text-psi-dark">Repasse organizador:</span>
@@ -709,7 +733,7 @@ const AdmPagamentosPannel = () => {
                                                                                 </div>
                                                                             )}
                                                                             <div className="flex justify-between items-center pt-2 border-t border-psi-dark/10">
-                                                                                <span className="text-sm font-medium text-psi-dark">Total pago:</span>
+                                                                                <span className="text-sm font-medium text-psi-dark">Total pago pelo cliente:</span>
                                                                                 <span className="text-base font-semibold text-psi-primary">
                                                                                     {ValueUtils.centsToCurrency(payment.totalPaidByCustomer || payment.grossValue)}
                                                                                 </span>

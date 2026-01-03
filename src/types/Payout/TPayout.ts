@@ -16,6 +16,9 @@ export type TPayoutListResponse = {
     value: number
     paidAt: string | null
     createdAt: string
+    status: TPayoutStatus
+    transactionReceiptUrl: string | null
+    failReason: string | null
 }
 
 export type TPayoutWithdrawResponse = {
@@ -32,6 +35,7 @@ export type TPayoutAdminListResponse = {
     transferObject: any | null
     failReason: string | null
     externalTransactionId: string | null
+    transactionReceiptUrl: string | null
     paidAt: string | null
     userId: string
     createdAt: string
