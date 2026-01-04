@@ -74,18 +74,6 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
 
-  const notificationData = event.notification.data || {}
-  let urlToOpen = '/'
-
-  // Se houver uma URL nos dados da notificação, abrir ela
-  if (notificationData.url) {
-    urlToOpen = notificationData.url
-  } else if (notificationData.eventId) {
-    urlToOpen = `/ver-evento/${notificationData.eventSlug || notificationData.eventId}`
-  } else if (notificationData.ticketId) {
-    urlToOpen = '/meus-ingressos'
-  }
-
   // Abrir ou focar na janela
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {

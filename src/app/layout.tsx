@@ -9,6 +9,7 @@ import { Menu } from "@/components/Menu/Menu"
 import { Footer } from "@/components/Footer/Footer"
 import { LoadingScreen } from "@/components/LoadingScreen/LoadingScreen"
 import { Metadata, Viewport } from "next"
+import { WebPushPrompt } from "@/components/WebPush/WebPushPrompt"
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 const ogImageUrl = `${appUrl}/images/porto-seguro-ingressos-cover-image-logo.jpg`
@@ -96,6 +97,7 @@ export default function RootLayout({
               {children}
             </main>
             <Footer />
+            <WebPushPrompt />
         </Providers>
       </body>
     </html>
