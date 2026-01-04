@@ -73,6 +73,6 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
 
 export const config: MiddlewareConfig = {
     matcher: [
-        '/((?!api|_next/static|_next/image|favicon.ico|images|icons|videos).*)',
+        '/((?!api|_next/static|_next/image|favicon.ico|manifest.webmanifest|manifest.json|service-worker.js|robots.txt|sitemap.xml|images|icons|videos).*)',
     ]
 }

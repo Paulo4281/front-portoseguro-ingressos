@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CTAButton } from "@/components/CTAButton/CTAButton"
-import { ArrowUpRight, Lock, ShieldCheck, Ticket, Music2, SunMedium, Waves, PartyPopper, TrendingDown, Users, CreditCard, TrendingUp, Megaphone, Tag, Fingerprint, Cpu, Sparkles, Globe2, CheckCircle2, HeartHandshake, DollarSign, Star, BookOpen, ArrowRight, DollarSignIcon, Book } from "lucide-react"
+import { ArrowUpRight, Lock, ShieldCheck, Ticket, Music2, SunMedium, Waves, PartyPopper, TrendingDown, Users, CreditCard, TrendingUp, Megaphone, Tag, Fingerprint, Cpu, Sparkles, Globe2, CheckCircle2, HeartHandshake, DollarSign, Star, BookOpen, ArrowRight, DollarSignIcon, Book, Car, Building2, Trophy, UtensilsCrossed, Heart, Music, Church } from "lucide-react"
 import { useEventFindFeatured } from "@/hooks/Event/useEventFindFeatured"
 import { CardEvent } from "@/components/Card/CardEvent/CardEvent"
 import { Carousel } from "@/components/Carousel/Carousel"
@@ -363,9 +363,100 @@ const HomeHero = () => {
                 </div>
             </section>
 
-            <section className="w-full bg-white py-12
-            sm:py-16
-            lg:py-20">
+            <section className="w-full bg-white pt-12">
+                <div className="container space-y-10">
+                    <div className="space-y-3 text-center max-w-3xl mx-auto">
+                        <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-psi-primary/10 text-psi-primary text-xs font-medium uppercase tracking-wide">
+                            <Sparkles className="h-3 w-3 mr-1" />
+                            Casos de Uso
+                        </span>
+                        <h2 className="text-3xl font-semibold text-psi-dark
+                        sm:text-4xl">
+                            Uma Plataforma para <span className="text-psi-primary">Todos os Eventos</span>
+                        </h2>
+                        <p className="text-psi-dark/70 text-sm
+                        sm:text-base">
+                            Dos eventos mais simples aos mais complexos, nossa plataforma oferece tecnologia de ponta e suporte humanizado
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1
+                    md:grid-cols-2
+                    lg:grid-cols-4 gap-6">
+                        {[
+                            {
+                                id: 3,
+                                icon: Trophy,
+                                title: "Eventos Esportivos",
+                                description: "Maratonas, campeonatos e competições esportivas com formulários personalizados e validação em tempo real.",
+                                image: "porto-seguro-ingressos-eventos-esportivos"
+                            },
+                            {
+                                id: 8,
+                                icon: Music,
+                                title: "Eventos Musicais",
+                                description: "Shows, festivais e eventos musicais com lotes automáticos, recorrência e gestão em tempo real.",
+                                image: "porto-seguro-ingressos-eventos-musica"
+                            },
+                            {
+                                id: 10,
+                                icon: Church,
+                                title: "Eventos Religiosos",
+                                description: "Celebrações, retiros e encontros espirituais com experiência respeitosa e organizada.",
+                                image: "porto-seguro-ingressos-eventos-religiosos"
+                            },
+                            {
+                                id: 4,
+                                icon: UtensilsCrossed,
+                                title: "Eventos Gastronômicos",
+                                description: "Festivais de comida e experiências culinárias com tipos de ingressos flexíveis e preços por data.",
+                                image: "porto-seguro-ingressos-eventos-gastronomia"
+                            }
+                        ].map((useCase) => {
+                            const IconComponent = useCase.icon
+                            return (
+                                <div
+                                    key={useCase.id}
+                                    className="group relative overflow-hidden rounded-2xl border border-psi-primary/20 bg-white shadow-lg shadow-psi-primary/5 hover:shadow-xl hover:shadow-psi-primary/20 transition-all duration-500"
+                                >
+                                    <div className="relative h-64 overflow-hidden bg-linear-to-br from-psi-primary/10 to-psi-secondary/10">
+                                        <Image
+                                            src={`/images/casos-de-uso/${useCase.image}.jpg`}
+                                            alt={useCase.title}
+                                            fill
+                                            className="object-cover transition-transform duration-500 group-hover:scale-110"
+                                        />
+                                        <div className="absolute inset-0 bg-linear-to-t from-psi-dark/60 via-psi-dark/20 to-transparent" />
+                                        <div className="absolute top-4 left-4 w-10 h-10 rounded-xl bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                                            <IconComponent className="h-5 w-5 text-psi-primary" />
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="p-5 space-y-3">
+                                        <h3 className="text-lg font-semibold text-psi-dark">
+                                            {useCase.title}
+                                        </h3>
+                                        <p className="text-sm text-psi-dark/70 leading-relaxed line-clamp-3">
+                                            {useCase.description}
+                                        </p>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+
+                    <div className="flex justify-center pt-4">
+                        <Button asChild size="lg" variant="primary" className="group">
+                            <Link href="/casos-de-uso">
+                                Ver todos os casos de uso
+                                <ArrowRight className="h-4 w-4 transition-transform" />
+                            </Link>
+                        </Button>
+                    </div>
+                </div>
+            </section>
+
+            <section className="w-full bg-white py-12">
                 <div className="container space-y-10">
                     <div className="space-y-3 text-center max-w-3xl mx-auto">
                         <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-psi-primary/10 text-psi-primary text-xs font-medium uppercase tracking-wide">
@@ -515,10 +606,10 @@ const HomeHero = () => {
                             aria-hidden="true"
                             className="absolute inset-0 bg-black/80"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-br from-psi-primary/80 via-psi-secondary/60 to-psi-dark/70
+                        <div className="absolute inset-0 bg-linear-to-br from-psi-primary/80 via-psi-secondary/60 to-psi-dark/70
                         sm:from-psi-primary/80 sm:via-psi-secondary/40 sm:to-psi-dark/70
                         lg:from-psi-primary/60 lg:via-psi-secondary/30 lg:to-psi-dark/60" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-psi-dark/50 via-transparent to-transparent" />
+                        <div className="absolute inset-0 bg-linear-to-t from-psi-dark/50 via-transparent to-transparent" />
                     </div>
 
                     <div className="relative z-10 container py-20

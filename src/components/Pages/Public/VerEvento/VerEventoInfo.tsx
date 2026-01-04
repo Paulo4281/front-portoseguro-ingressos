@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Repeat, Tag, ShieldCheck, Lock, CreditCard, ArrowRight, TrendingDown, Users, QrCode, Headphones, Zap, CheckCircle2, Share2, MessageCircle, Star, TrendingUp, Gift, Instagram, Facebook, Mail, Phone, Building2, ExternalLink, Laptop, AlertCircle } from "lucide-react"
+import { Calendar, Clock, MapPin, Repeat, Tag, ShieldCheck, Lock, CreditCard, ArrowRight, TrendingDown, Users, QrCode, Headphones, Zap, CheckCircle2, Share2, MessageCircle, Star, TrendingUp, Gift, Instagram, Facebook, Mail, Phone, Building2, ExternalLink, Laptop, AlertCircle, CheckCircle } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useEventFindSimilar } from "@/hooks/Event/useEventFindSimilar"
 import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
@@ -1327,7 +1327,24 @@ const VerEventoInfo = (
                             </div>
                         )}
 
-                        {(activeBatches?.length > 0 || !event.EventBatches || event.EventBatches.length === 0) && (
+                        {event.isFinished ? (
+                            <div className="space-y-4 rounded-xl border border-emerald-200 bg-linear-to-br from-emerald-50 via-white to-emerald-50 p-6">
+                                <div className="flex items-center gap-3 pb-4 border-b border-emerald-200">
+                                    <div className="rounded-lg bg-emerald-100 p-2">
+                                        <CheckCircle className="h-5 w-5 text-emerald-600" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-medium text-emerald-900">Evento Finalizado</h3>
+                                        <p className="text-xs text-emerald-700">Este evento já foi finalizado</p>
+                                    </div>
+                                </div>
+                                <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-4">
+                                    <p className="text-sm text-emerald-800 leading-relaxed">
+                                        As vendas de ingressos para este evento foram encerradas. Obrigado pelo seu interesse!
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (activeBatches?.length > 0 || !event.EventBatches || event.EventBatches.length === 0) ? (
                             <div className="space-y-4 rounded-xl border border-psi-primary/20 bg-white p-6">
                                 {hasMultipleDaysWithTicketTypePrices && event?.EventDates && event?.TicketTypes ? (
                                     <div className="space-y-4">
@@ -1900,7 +1917,7 @@ const VerEventoInfo = (
                                     </div>
                                 )}
                             </div>
-                        )}
+                        ) : null}
 
                         {descriptionContent && (
                             <div className="lg:hidden">

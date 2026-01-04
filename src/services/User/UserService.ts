@@ -94,6 +94,15 @@ class UserServiceClass {
         }))?.data
         return response
     }
+
+    async updateWebpush(data: { endpoint: string; p256dh: string; auth: string }): Promise<AxiosResponse["data"]> {
+        const response = (await API.PUT({
+            prefix: "/user",
+            url: "/webpush",
+            data: data
+        }))?.data
+        return response
+    }
 }
 
 export const UserService = new UserServiceClass()

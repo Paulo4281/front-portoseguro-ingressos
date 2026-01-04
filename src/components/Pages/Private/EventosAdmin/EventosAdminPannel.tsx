@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Repeat, Tag, MoreVertical, Search, ChevronDown, ChevronUp, CalendarClock, Ban, Users, Building2, FileText } from "lucide-react"
+import { Calendar, Clock, MapPin, Repeat, Tag, MoreVertical, Search, ChevronDown, ChevronUp, CalendarClock, Ban, Users, Building2, FileText, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/Input/Input"
 import {
@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useEventFindAdmin } from "@/hooks/Event/useEventFindAdmint"
 import { useEventCancel } from "@/hooks/Event/useEventCancel"
+import { usePaymentReleaseBalance } from "@/hooks/Payment/usePaymentReleaseBalance"
+import { useBalanceVerifyIsReleased } from "@/hooks/Balance/useBalanceVerifyIsReleased"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Background } from "@/components/Background/Background"
 import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
@@ -25,6 +27,7 @@ import { DialogAdminChangeDateWarning } from "@/components/Dialog/DialogAdminCha
 import { DialogAdminCancelEventWarning } from "@/components/Dialog/DialogAdminCancelEventWarning/DialogAdminCancelEventWarning"
 import { DialogPasswordConfirmation } from "@/components/Dialog/DialogPasswordConfirmation/DialogPasswordConfirmation"
 import { DialogAdminChangeDate } from "@/components/Dialog/DialogAdminChangeDate/DialogAdminChangeDate"
+import { DialogAdminReleaseBalance } from "@/components/Dialog/DialogAdminReleaseBalance/DialogAdminReleaseBalance"
 import { Pagination } from "@/components/Pagination/Pagination"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
@@ -91,10 +94,13 @@ const EventosAdminPannel = () => {
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
     const [selectedEvent, setSelectedEvent] = useState<TEvent | null>(null)
     const [openCollapses, setOpenCollapses] = useState<Record<string, boolean>>({})
-    const [pendingActionType, setPendingActionType] = useState<"cancel" | "changeDate" | null>(null)
+    const [pendingActionType, setPendingActionType] = useState<"cancel" | "changeDate" | "releaseBalance" | null>(null)
+    const [releaseBalanceDialogOpen, setReleaseBalanceDialogOpen] = useState(false)
+    const [selectedEventDateId, setSelectedEventDateId] = useState<string | null>(null)
 
     const queryClient = useQueryClient()
     const { mutateAsync: cancelEvent } = useEventCancel()
+    const { mutateAsync: releaseBalance, isPending: isReleasingBalance } = usePaymentReleaseBalance()
 
     const handleSearch = () => {
         setSearchQuery(searchName)
@@ -137,6 +143,12 @@ const EventosAdminPannel = () => {
         setCancelDialogOpen(true)
     }
 
+    const handleOpenReleaseBalanceDialog = (event: TEvent) => {
+        setSelectedEvent(event)
+        setSelectedEventId(event.id)
+        setReleaseBalanceDialogOpen(true)
+    }
+
     const toggleCollapse = (eventId: string) => {
         setOpenCollapses(prev => ({
             ...prev,
@@ -163,14 +175,38 @@ const EventosAdminPannel = () => {
         }
     }, [cancelEvent, queryClient])
     
+    const handleReleaseBalance = useCallback(async (eventId: string, eventDateId: string | null) => {
+        if (!eventId) return
+        
+        try {
+            const response = await releaseBalance({ eventId, eventDateId })
+            if (response?.success) {
+                Toast.success("Saldo liberado com sucesso!")
+                queryClient.invalidateQueries({ queryKey: ["events", "admin"] })
+                queryClient.invalidateQueries({ queryKey: ["balance", "dates-by-event", eventId] })
+                queryClient.invalidateQueries({ queryKey: ["balance", "verify-is-released", eventId] })
+                setReleaseBalanceDialogOpen(false)
+                setPasswordDialogOpen(false)
+                setSelectedEvent(null)
+                setSelectedEventId(null)
+                setSelectedEventDateId(null)
+            }
+        } catch (error: any) {
+            const errorMessage = error?.response?.data?.message || "Erro ao liberar saldo."
+            Toast.error(errorMessage)
+        }
+    }, [releaseBalance, queryClient])
+
     const handleConfirmPassword = useCallback(async () => {
         if (pendingActionType === "cancel" && selectedEventId) {
             await handleCancelEvent(selectedEventId)
         } else if (pendingActionType === "changeDate") {
             setChangeDateFormDialogOpen(true)
+        } else if (pendingActionType === "releaseBalance" && selectedEventId) {
+            await handleReleaseBalance(selectedEventId, selectedEventDateId)
         }
         setPendingActionType(null)
-    }, [pendingActionType, selectedEventId, handleCancelEvent])
+    }, [pendingActionType, selectedEventId, selectedEventDateId, handleCancelEvent, handleReleaseBalance])
 
     if (isLoading) {
         return (
@@ -265,6 +301,7 @@ const EventosAdminPannel = () => {
                                 event={event}
                                 onChangeDate={handleOpenChangeDateDialog}
                                 onCancel={handleOpenCancelDialog}
+                                onReleaseBalance={handleOpenReleaseBalanceDialog}
                                 isCollapsed={openCollapses[event.id] || false}
                                 onToggleCollapse={() => toggleCollapse(event.id)}
                             />
@@ -326,12 +363,17 @@ const EventosAdminPannel = () => {
                     if (!open) {
                         setSelectedEvent(null)
                         setSelectedEventId(null)
+                        setSelectedEventDateId(null)
                         setPendingActionType(null)
                     }
                 }}
                 onConfirm={handleConfirmPassword}
                 title="Confirmação de Segurança"
-                description="Por motivos de segurança, digite sua senha para prosseguir com esta ação administrativa."
+                description={
+                    pendingActionType === "releaseBalance"
+                        ? `Esta ação irá liberar o saldo por completo para o organizador do evento "${selectedEvent?.name}". Por motivos de segurança, digite sua senha para prosseguir.`
+                        : "Por motivos de segurança, digite sua senha para prosseguir com esta ação administrativa."
+                }
                 isAdmin
             />
 
@@ -341,6 +383,26 @@ const EventosAdminPannel = () => {
                 event={selectedEvent}
                 onSuccess={() => {
                     setChangeDateFormDialogOpen(false)
+                }}
+            />
+
+            <DialogAdminReleaseBalance
+                open={releaseBalanceDialogOpen}
+                onOpenChange={(open) => {
+                    setReleaseBalanceDialogOpen(open)
+                    if (!open) {
+                        setSelectedEvent(null)
+                        setSelectedEventId(null)
+                        setSelectedEventDateId(null)
+                        setPendingActionType(null)
+                    }
+                }}
+                event={selectedEvent}
+                onConfirm={(eventDateId) => {
+                    setSelectedEventDateId(eventDateId)
+                    setPendingActionType("releaseBalance")
+                    setReleaseBalanceDialogOpen(false)
+                    setPasswordDialogOpen(true)
                 }}
             />
         </Background>
@@ -355,6 +417,7 @@ type TEventCardProps = {
     event: TEvent
     onChangeDate: (event: TEvent) => void
     onCancel: (event: TEvent) => void
+    onReleaseBalance: (event: TEvent) => void
     isCollapsed: boolean
     onToggleCollapse: () => void
 }
@@ -363,13 +426,36 @@ const EventCard = ({
     event,
     onChangeDate,
     onCancel,
+    onReleaseBalance,
     isCollapsed,
     onToggleCollapse
 }: TEventCardProps) => {
+
+    const verifyEventIsFinished = () => {
+        if (event.Recurrence && event.Recurrence?.id) {
+            return true
+        } else {
+            return event.isFinished
+        }
+    }
+
     const isRecurrent = !!event.Recurrence
+    const isFinished = verifyEventIsFinished()
+
+    const { data: balanceVerifyData, isLoading: isLoadingBalanceVerify } = useBalanceVerifyIsReleased(
+        event.id,
+        isFinished
+    )
+
+    const isBalanceReleased = balanceVerifyData?.data?.isReleased ?? false
+    const needsAttention = isFinished && !isBalanceReleased
 
     return (
-        <div className="group rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-black/10">
+        <div className={`group rounded-2xl border overflow-hidden transition-all duration-300 ${
+            needsAttention
+                ? "border-amber-400 bg-linear-to-br from-amber-50 via-white to-amber-50 shadow-lg shadow-amber-200/50 hover:shadow-xl hover:shadow-amber-300/50"
+                : "border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 hover:shadow-xl hover:shadow-black/10"
+        }`}>
             <div className="relative h-60 w-full overflow-hidden">
                 <Link href={`/ver-evento/${event.slug}`} target="_blank">
                     <img
@@ -397,6 +483,32 @@ const EventCard = ({
                                 <CalendarClock className="h-4 w-4 text-psi-primary" />
                                 Alterar data
                             </DropdownMenuItem>
+                            {isFinished && (
+                                <>
+                                    <DropdownMenuSeparator className="bg-[#E4E6F0]" />
+                                    <DropdownMenuItem 
+                                        className={`rounded-lg text-sm ${
+                                            isBalanceReleased
+                                                ? "text-psi-dark/40 hover:text-psi-dark/40 hover:bg-[#F3F4FB] cursor-not-allowed opacity-50"
+                                                : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 cursor-pointer"
+                                        }`}
+                                        onClick={() => {
+                                            if (!isBalanceReleased) {
+                                                onReleaseBalance(event)
+                                            }
+                                        }}
+                                        disabled={isBalanceReleased || isLoadingBalanceVerify}
+                                    >
+                                        <Wallet className={`h-4 w-4 ${isBalanceReleased ? "text-psi-dark/40" : "text-emerald-600"}`} />
+                                        {isLoadingBalanceVerify 
+                                            ? "Verificando..." 
+                                            : isBalanceReleased 
+                                                ? "Saldo já repassado" 
+                                                : "Liberar saldo"
+                                        }
+                                    </DropdownMenuItem>
+                                </>
+                            )}
                             <DropdownMenuSeparator className="bg-[#E4E6F0]" />
                             <DropdownMenuItem 
                                 className="rounded-lg text-sm text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
@@ -412,9 +524,23 @@ const EventCard = ({
 
             <div className="p-6 space-y-4">
                 <div>
-                    <h3 className="text-xl font-semibold text-psi-dark mb-2 line-clamp-1">
-                        {event.name}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <h3 className="text-xl font-semibold text-psi-dark line-clamp-1">
+                            {event.name}
+                        </h3>
+                        {needsAttention && (
+                            <span className="px-2 py-0.5 bg-amber-500 text-white text-xs font-medium rounded-full flex items-center gap-1 animate-pulse">
+                                <Wallet className="h-3 w-3" />
+                                Repasse pendente
+                            </span>
+                        )}
+                        {isFinished && isBalanceReleased && (
+                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-xs font-medium rounded-full flex items-center gap-1">
+                                <Wallet className="h-3 w-3" />
+                                Saldo repassado
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 <div className="space-y-3">

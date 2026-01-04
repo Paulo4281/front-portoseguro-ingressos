@@ -197,6 +197,16 @@ type TPaymentRefundParams = {
     ticketId?: string
 }
 
+type TPaymentReleaseBalanceParams = {
+    eventId: string
+    eventDateId?: string | null
+}
+
+type TPaymentReleaseBalanceResponse = {
+    success: boolean
+    message?: string
+}
+
 type TPaymentGatewayGetPIXQrCodeResponse = {
     encodedImage: string
     payload: string
@@ -215,4 +225,6 @@ export type {
     TPaymentAdminListResponse,
     TPaymentInstallment,
     TPaymentRefundParams,
+    TPaymentReleaseBalanceParams,
+    TPaymentReleaseBalanceResponse,
 }

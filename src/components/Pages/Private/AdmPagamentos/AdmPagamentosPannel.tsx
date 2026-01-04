@@ -54,6 +54,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { useUserCheckPasswordAdmin } from "@/hooks/User/useUserCheckPasswordAdmin"
 import { Toast } from "@/components/Toast/Toast"
 import { LoadingButton } from "@/components/Loading/LoadingButton"
+import { DialogUnderstandValues } from "@/components/Dialog/DialogUnderstandValues/DialogUnderstandValues"
+import { HelpCircle } from "lucide-react"
 
 export const ticketCancelledByConfig: Record<string, { label: string; badgeClass: string }> = {
     ORGANIZER: {
@@ -245,6 +247,8 @@ const AdmPagamentosPannel = () => {
     const [showPassword, setShowPassword] = useState(false)
     const [refundReason, setRefundReason] = useState("")
     const [passwordError, setPasswordError] = useState<string | null>(null)
+    const [isUnderstandValuesDialogOpen, setIsUnderstandValuesDialogOpen] = useState(false)
+    const [selectedPaymentForValues, setSelectedPaymentForValues] = useState<TPaymentAdminListResponse | null>(null)
 
     const toggleRow = (paymentId: string) => {
         setOpenRows((prev) => ({
@@ -657,9 +661,24 @@ const AdmPagamentosPannel = () => {
                                                                     </div>
 
                                                                     <div className="rounded-2xl border border-psi-dark/10 bg-white/80 p-4 space-y-2 shadow-sm">
-                                                                        <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
-                                                                            <DollarSign className="h-4 w-4 text-psi-primary" />
-                                                                            Valores
+                                                                        <div className="flex items-center justify-between">
+                                                                            <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
+                                                                                <DollarSign className="h-4 w-4 text-psi-primary" />
+                                                                                Valores
+                                                                            </div>
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="ghost"
+                                                                                size="sm"
+                                                                                onClick={() => {
+                                                                                    setSelectedPaymentForValues(payment)
+                                                                                    setIsUnderstandValuesDialogOpen(true)
+                                                                                }}
+                                                                                className="h-7 px-2 text-xs text-psi-primary hover:text-psi-primary/80 hover:bg-psi-primary/5"
+                                                                            >
+                                                                                <HelpCircle className="h-3.5 w-3.5 mr-1" />
+                                                                                Entender valores
+                                                                            </Button>
                                                                         </div>
                                                                         <div className="space-y-2">
                                                                             <div className="flex justify-between items-center">
@@ -692,11 +711,27 @@ const AdmPagamentosPannel = () => {
                                                                                     </span>
                                                                                 </div>
                                                                             )}
+                                                                            {payment.customerPaymentFee !== null && payment.customerPaymentFee !== undefined && payment.customerPaymentFee > 0 && (
+                                                                                <div className="flex justify-between items-center">
+                                                                                    <span className="text-sm text-psi-dark/70">Taxa de pagamento do cliente:</span>
+                                                                                    <span className="text-sm font-medium text-psi-dark">
+                                                                                        {ValueUtils.centsToCurrency(payment.customerPaymentFee)}
+                                                                                    </span>
+                                                                                </div>
+                                                                            )}
                                                                             {payment.platformPaymentFee !== null && payment.platformPaymentFee !== undefined && payment.platformPaymentFee > 0 && (
                                                                                 <div className="flex justify-between items-center">
                                                                                     <span className="text-sm text-psi-dark/70">Taxa da plataforma:</span>
                                                                                     <span className="text-sm font-medium text-psi-dark">
                                                                                         {ValueUtils.centsToCurrency(payment.platformPaymentFee)}
+                                                                                    </span>
+                                                                                </div>
+                                                                            )}
+                                                                            {payment.gatewayFeeGain !== null && payment.gatewayFeeGain !== undefined && payment.gatewayFeeGain > 0 && (
+                                                                                <div className="flex justify-between items-center">
+                                                                                    <span className="text-sm text-psi-dark/70">Ganho do gateway:</span>
+                                                                                    <span className="text-sm font-medium text-psi-dark">
+                                                                                        {ValueUtils.centsToCurrency(payment.gatewayFeeGain)}
                                                                                     </span>
                                                                                 </div>
                                                                             )}
@@ -708,8 +743,16 @@ const AdmPagamentosPannel = () => {
                                                                                     </span>
                                                                                 </div>
                                                                             )}
+                                                                            {payment.netValue !== null && payment.netValue !== undefined && (
+                                                                                <div className="flex justify-between items-center pt-2 border-t border-psi-dark/10">
+                                                                                    <span className="text-sm font-medium text-psi-dark">Ganho líquido:</span>
+                                                                                    <span className="text-sm font-medium text-emerald-600">
+                                                                                        {ValueUtils.centsToCurrency(payment.netValue)}
+                                                                                    </span>
+                                                                                </div>
+                                                                            )}
                                                                             <div className="flex justify-between items-center pt-2 border-t border-psi-dark/10">
-                                                                                <span className="text-sm font-medium text-psi-dark">Total pago:</span>
+                                                                                <span className="text-sm font-medium text-psi-dark">Total pago pelo cliente:</span>
                                                                                 <span className="text-base font-semibold text-psi-primary">
                                                                                     {ValueUtils.centsToCurrency(payment.totalPaidByCustomer || payment.grossValue)}
                                                                                 </span>
@@ -1517,6 +1560,17 @@ const AdmPagamentosPannel = () => {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <DialogUnderstandValues
+                open={isUnderstandValuesDialogOpen}
+                onOpenChange={(open) => {
+                    setIsUnderstandValuesDialogOpen(open)
+                    if (!open) {
+                        setSelectedPaymentForValues(null)
+                    }
+                }}
+                payment={selectedPaymentForValues}
+            />
         </Background>
     )
 }

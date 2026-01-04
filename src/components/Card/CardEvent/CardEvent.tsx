@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { Calendar, Clock, Gift, Laptop, MapPin, Repeat, Tag } from "lucide-react"
+import { Calendar, Clock, Gift, Laptop, MapPin, Repeat, Tag, CheckCircle2 } from "lucide-react"
 import { Card } from "@/components/Card/Card"
 import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
@@ -155,16 +155,24 @@ const CardEvent = (
                         alt={event.name}
                         className="object-cover h-full w-full transition-transform duration-500 group-hover:scale-105"
                     />
-                    {activeBatch && (
-                        <div className="absolute top-3 right-3">
+                    <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+                        {event.isFinished && (
+                            <div className="inline-flex items-center gap-1.5 bg-emerald-500/95 backdrop-blur-sm px-2.5 py-1 rounded-full border border-emerald-600/20 shadow-sm">
+                                <CheckCircle2 className="h-3 w-3 text-white" />
+                                <span className="text-xs font-medium text-white">
+                                    Finalizado
+                                </span>
+                            </div>
+                        )}
+                        {activeBatch && (
                             <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full border border-psi-primary/20 shadow-sm">
                                 <Tag className="h-3 w-3 text-psi-primary" />
                                 <span className="text-xs font-medium text-psi-dark">
                                     {activeBatch.name}
                                 </span>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
                 
                 <div className="p-5 flex flex-col flex-1">
