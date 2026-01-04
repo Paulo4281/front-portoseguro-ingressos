@@ -21,7 +21,7 @@ export const usePayoutListAdmin = (params?: TUsePayoutListAdminParams) => {
         isError,
         refetch
     } = useQueryHook<TApiResponse<TPayoutAdminListResponseWithPagination>>({
-        queryKey: ["payout", "admin", "list", params?.offset || 0],
+        queryKey: ["payout", "admin", "list", params?.offset?.toString() || "0"],
         queryFn: () => PayoutService.listToAdmin(params?.offset || 0),
     })
 
