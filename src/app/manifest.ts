@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next"
 
-export default function manisfest(): MetadataRoute.Manifest {
+export default function manifest(): MetadataRoute.Manifest {
     return {
         "name": "Porto Seguro Ingressos",
         "short_name": "Porto Seguro Ingressos",
@@ -17,7 +17,7 @@ export default function manisfest(): MetadataRoute.Manifest {
                 "type": "image/png"
             }
         ],
-        "categories": ["eventos", "ingressos", "porto-seguro", "bahia"],
+        "categories": ["tickets"],
         "lang": "pt-BR",
         "dir": "ltr",
         "scope": "/",
