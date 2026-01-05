@@ -1022,17 +1022,22 @@ const AtualizarEventoForm = () => {
                                     <Controller
                                         name="categories"
                                         control={form.control}
-                                        render={({ field }) => (
-                                            <MultiSelect
-                                                options={eventCategories.map((category) => ({ value: category.id, label: category.name }))}
-                                                value={field.value || []}
-                                                onChange={field.onChange}
-                                                placeholder="Selecione as categorias..."
-                                                minSelections={1}
-                                                maxSelections={5}
-                                                required
-                                            />
-                                        )}
+                                        render={({ field }) => {
+                                            const sortedCategories = [...eventCategories].sort((a, b) =>
+                                                a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' })
+                                            )
+                                            return (
+                                                <MultiSelect
+                                                    options={sortedCategories.map((category) => ({ value: category.id, label: category.name }))}
+                                                    value={field.value || []}
+                                                    onChange={field.onChange}
+                                                    placeholder="Selecione as categorias..."
+                                                    minSelections={1}
+                                                    maxSelections={5}
+                                                    required
+                                                />
+                                            )
+                                        }}
                                     />
                                     <FieldError message={form.formState.errors.categories?.message || ""} />
                                 </div>
