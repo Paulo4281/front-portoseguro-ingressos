@@ -37,6 +37,11 @@ const publicRoutes: TPublicRoutes[] = [
 
 export default async function proxy(request: NextRequest): Promise<NextResponse> {
     const path = request.nextUrl.pathname
+    
+    if (path.startsWith("/sitemap") || path === "/robots.txt") {
+        return NextResponse.next()
+    }
+    
     const isPublicRoute = publicRoutes.find((route) => path === route.path || path.startsWith(route.path + "/"))
     const authToken = request.cookies.get("psi_token")?.value
 
@@ -73,6 +78,6 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
 
 export const config: MiddlewareConfig = {
     matcher: [
-        '/((?!api|_next/static|_next/image|favicon.ico|manifest.webmanifest|manifest.json|service-worker.js|robots.txt|sitemap.xml|images|icons|videos).*)',
+        '/((?!api|_next/static|_next/image|favicon.ico|manifest.webmanifest|manifest.json|service-worker.js|robots.txt|sitemap.*|images|icons|videos).*)',
     ]
 }
