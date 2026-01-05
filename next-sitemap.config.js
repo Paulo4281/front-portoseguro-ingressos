@@ -1,7 +1,8 @@
 module.exports = {
     siteUrl: process.env.NEXT_PUBLIC_FRONT_URL || 'http://localhost:3000',
     generateRobotsTxt: true,
-    sitemapSize: 7000,
+    generateIndexSitemap: false,
+    sitemapSize: 50000,
     exclude: [
       '/adm-eventos',
       '/adm-organizadores',
