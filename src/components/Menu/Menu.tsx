@@ -610,7 +610,7 @@ const Menu = () => {
                                 <NotificationBell />
                             </div>
                         )}
-                        {/* {
+                        {
                             (!isInstalled && showInstallButton && !isAuthenticated) || 1 == 1 && (
                                 <Button
                                     onClick={handleInstallClick}
@@ -622,7 +622,7 @@ const Menu = () => {
                                     <span className="hidden xs:inline">Baixar App</span>
                                 </Button>
                             )
-                        } */}
+                        }
                         {isAuthenticated ? (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
