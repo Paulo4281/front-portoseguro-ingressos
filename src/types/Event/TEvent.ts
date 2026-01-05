@@ -51,6 +51,7 @@ type TEvent = {
     form: any | null
     isFormForEachTicket: boolean
     buyTicketsLimit: number | null
+    termsUrl: string | null
 
     EventDates: TEventDate[]
     EventBatches: TEventBatch[]

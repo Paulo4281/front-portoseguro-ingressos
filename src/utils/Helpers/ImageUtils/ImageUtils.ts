@@ -33,6 +33,13 @@ class ImageUtilsClass {
         const bucketUrl = process.env.NEXT_PUBLIC_BUCKET_URL || ""
         return `${bucketUrl}/supports/${imageHash}`
     }
+
+    getEventTermsUrl(termsHash: string | null | undefined): string {
+        if (!termsHash) return ""
+
+        const bucketUrl = process.env.NEXT_PUBLIC_BUCKET_URL || ""
+        return `${bucketUrl}/events-terms/${termsHash}`
+    }
 }
 
 export const ImageUtils = new ImageUtilsClass()

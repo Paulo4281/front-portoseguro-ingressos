@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Repeat, Tag, ShieldCheck, Lock, CreditCard, ArrowRight, TrendingDown, Users, QrCode, Headphones, Zap, CheckCircle2, Share2, MessageCircle, Star, TrendingUp, Gift, Instagram, Facebook, Mail, Phone, Building2, ExternalLink, Laptop, AlertCircle, CheckCircle } from "lucide-react"
+import { Calendar, Clock, MapPin, Repeat, Tag, ShieldCheck, Lock, CreditCard, ArrowRight, TrendingDown, Users, QrCode, Headphones, Zap, CheckCircle2, Share2, MessageCircle, Star, TrendingUp, Gift, Instagram, Facebook, Mail, Phone, Building2, ExternalLink, Laptop, AlertCircle, CheckCircle, FileText } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useEventFindSimilar } from "@/hooks/Event/useEventFindSimilar"
 import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
@@ -1043,6 +1043,38 @@ const VerEventoInfo = (
                                     {descriptionContent}
                                 </div>
                             )}
+
+                            {event.termsUrl && (() => {
+                                const termsUrl = event.termsUrl.startsWith("http") 
+                                    ? event.termsUrl 
+                                    : ImageUtils.getEventTermsUrl(event.termsUrl)
+                                
+                                return (
+                                    <div className="rounded-2xl border border-psi-primary/20 bg-linear-to-br from-psi-primary/5 via-white to-psi-primary/10 p-6 space-y-4">
+                                        <div className="flex items-center gap-3 pb-4 border-b border-psi-primary/10">
+                                            <div className="rounded-lg bg-psi-primary/10 p-2">
+                                                <FileText className="h-5 w-5 text-psi-primary" />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-medium text-psi-dark">Regulamento do Evento</h3>
+                                                <p className="text-xs text-psi-dark/60">Leia o regulamento e fique ciente das regras do evento.</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => window.open(termsUrl, "_blank")}
+                                                className="border-psi-primary/30 text-psi-primary hover:bg-psi-primary/5"
+                                            >
+                                                <ExternalLink className="h-4 w-4 mr-2" />
+                                                Visualizar Regulamento
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )
+                            })()}
 
                             {
                                 renderEventOrganizer({

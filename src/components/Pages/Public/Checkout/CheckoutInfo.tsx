@@ -78,6 +78,7 @@ import {
     AlertCircle
 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { CTAButton } from "@/components/CTAButton/CTAButton"
 import { Toast } from "@/components/Toast/Toast"
 import { useCouponCheck } from "@/hooks/Coupon/useCouponCheck"
@@ -170,6 +171,7 @@ const CheckoutInfo = () => {
     const [showLoginDialog, setShowLoginDialog] = useState(false)
     const [showCadastroDialog, setShowCadastroDialog] = useState(false)
     const [showConfirmacaoDialog, setShowConfirmacaoDialog] = useState(false)
+    const [showRegulamentoDialog, setShowRegulamentoDialog] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
     const [canResend, setCanResend] = useState(false)
     const [timerKey, setTimerKey] = useState(0)
@@ -2495,24 +2497,36 @@ const CheckoutInfo = () => {
                                         </div>
 
                                         {!buyTicketResponse?.pixData && (
-                                            <div className="flex justify-center">
-                                                <Button
-                                                    type="button"
-                                                    onClick={handleFinalize}
-                                                    variant="primary"
-                                                    size="lg"
-                                                    className=""
-                                                    disabled={isBuyingTicket}
-                                                >
-                                                    {isBuyingTicket ? (
-                                                        <LoadingButton />
-                                                    ) : (
-                                                        <>
-                                                        <Check className="size-4" />
-                                                        Finalizar Compra
-                                                        </>
-                                                    )}
-                                                </Button>
+                                            <div className="space-y-4">
+                                                <p className="text-sm text-psi-dark/70 text-center">
+                                                    Ao efetuar a compra eu aceito o{" "}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowRegulamentoDialog(true)}
+                                                        className="text-psi-primary hover:underline font-medium"
+                                                    >
+                                                        regulamento da plataforma para compra de ingressos.
+                                                    </button>
+                                                </p>
+                                                <div className="flex justify-center">
+                                                    <Button
+                                                        type="button"
+                                                        onClick={handleFinalize}
+                                                        variant="primary"
+                                                        size="lg"
+                                                        className=""
+                                                        disabled={isBuyingTicket}
+                                                    >
+                                                        {isBuyingTicket ? (
+                                                            <LoadingButton />
+                                                        ) : (
+                                                            <>
+                                                            <Check className="size-4" />
+                                                            Finalizar Compra
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                </div>
                                             </div>
                                         )}
                                     </div>
@@ -2874,6 +2888,17 @@ const CheckoutInfo = () => {
                             <PasswordStrength password={passwordValue || ""} />
                             <FieldError message={cadastroForm.formState.errors.password?.message || ""} />
                         </div>
+                        <p className="text-sm text-psi-dark/70 text-center">
+                            Ao me cadastrar eu concordo com os{" "}
+                            <Link href="/termos-e-condicoes" className="text-psi-primary hover:underline" target="_blank">
+                                termos e condições
+                            </Link>
+                            {" "}e{" "}
+                            <Link href="/politica-de-privacidade" className="text-psi-primary hover:underline" target="_blank">
+                                política de privacidade
+                            </Link>
+                            {" "}do Porto Seguro Ingressos.
+                        </p>
                         <Button
                             type="submit"
                             variant="primary"
@@ -3624,6 +3649,75 @@ const CheckoutInfo = () => {
                                 Atualizar Dados
                             </Button>
                         </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showRegulamentoDialog} onOpenChange={setShowRegulamentoDialog}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Regulamento da Plataforma Para Compra de Ingressos</DialogTitle>
+                        <DialogDescription>
+                            Leia atentamente o regulamento antes de finalizar sua compra
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-6 text-psi-dark/70">
+                        <p className="leading-relaxed">
+                            O Porto Seguro Ingressos é uma plataforma de venda de ingressos. Não temos responsabilidade e poder sobre organização e ocorrências relativas a este evento.
+                        </p>
+                        <div>
+                            <p className="font-medium text-psi-dark mb-4">Declaro que:</p>
+                            <ol className="space-y-4 list-decimal list-inside">
+                                <li className="leading-relaxed">
+                                    Estarei presente neste evento por minha livre e espontânea vontade, isentando de quaisquer responsabilidades os ORGANIZADORES e as empresas envolvidas, em meu nome e de meus herdeiros;
+                                </li>
+                                <li className="leading-relaxed">
+                                    Isento organizadores e empresas envolvidas no evento de qualquer responsabilidade sobre objetos deixados por mim em guarda-volumes, chapelaria ou locais indicados pela organização do evento;
+                                </li>
+                                <li className="leading-relaxed">
+                                    Estou ciente que o valor pago não será devolvido em caso de não comparecimento ao evento, bem como não são aceitas substituições / troca de participantes;
+                                </li>
+                                <li className="leading-relaxed">
+                                    Estou de acordo com cobrança de valor adicional da TAXA DE SERVIÇO para cada novo ingresso / inscrição adquirido(a) no sistema, caso haja a respectiva taxa;
+                                </li>
+                                <li className="leading-relaxed">
+                                    Estou ciente que ingressos / inscrições podem encerrar-se a qualquer momento, sob definição da empresa organizadora;
+                                </li>
+                                <li className="leading-relaxed">
+                                    Confirmo que, para garantir meu ingresso / inscrição é necessário efetuar o pagamento do valor total do mesmo, e que, caso não seja pago, o ingresso/inscrição será(ão) cancelado(s) automaticamente no sistema e a vaga liberada;
+                                </li>
+                                <li className="leading-relaxed">
+                                    É de minha responsabilidade obter todas as informações sobre o evento, tais como: data, local e horário;
+                                </li>
+                                <li className="leading-relaxed">
+                                    Estou fisica e mentalmente apto a participar deste evento, nas condições propostas pela organização;
+                                </li>
+                                <li className="leading-relaxed">
+                                    Autorizo a utilização por parte do organizador, patrocinadores e Porto Seguro Ingressos de qualquer dado, fotografia, filme ou outra gravação contendo imagens de minha participação neste evento, em qualquer mídia seja impressa ou eletrônica, incluindo na Internet, para qualquer fim e por tempo indeterminado;
+                                </li>
+                                <li className="leading-relaxed">
+                                    Autorizo recebimento de e-mails, SMS e WhatsApp, bem como qualquer meio digital de comunicação, do ORGANIZADOR e Porto Seguro Ingressos e seus parceiros divulgando informações, notícias e serviços;
+                                </li>
+                                <li className="leading-relaxed">
+                                    Na realização do cadastro, compra de ingressos ou inscrições para terceiros, tenho a autorização deste(s) participante(s), me responsabilizo pela legitimidade de dados fornecidos e garanto que o mesmo tem total ciência desta declaração e do respectivo REGULAMENTO do evento;
+                                </li>
+                                <li className="leading-relaxed">
+                                    Estou ciente que, caso seja autorizado qualquer tipo de estorno, poderá ser cobrada a taxa e/ou custos do processo de reembolso;
+                                </li>
+                                <li className="leading-relaxed">
+                                    Estou totalmente ciente e concordo com o REGULAMENTO ou REGRAS GERAIS deste Evento, bem como do Termo de Uso e Política de Privacidade da plataforma Porto Seguro Ingressos.
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+                    <div className="flex justify-end pt-4 border-t border-psi-dark/10">
+                        <Button
+                            type="button"
+                            variant="primary"
+                            onClick={() => setShowRegulamentoDialog(false)}
+                        >
+                            Entendi
+                        </Button>
                     </div>
                 </DialogContent>
             </Dialog>

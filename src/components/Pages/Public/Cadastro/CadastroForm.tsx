@@ -327,6 +327,18 @@ const CadastroForm = () => {
                             <FieldError message={form.formState.errors.password?.message || ""} />
                         </div>
 
+                        <p className="text-sm text-muted-foreground text-center">
+                            Ao me cadastrar eu concordo com os{" "}
+                            <Link href="/termos-e-condicoes" className="text-psi-primary hover:underline">
+                                termos e condições
+                            </Link>
+                            {" "}e{" "}
+                            <Link href="/politica-de-privacidade" className="text-psi-primary hover:underline">
+                                política de privacidade
+                            </Link>
+                            {" "}do Porto Seguro Ingressos.
+                        </p>
+
                         <Button
                             type="submit"
                             variant="primary"

@@ -74,7 +74,7 @@ const eventDetailedStatsMock: TEventDetailedStats = {
 }
 
 class EventServiceClass {
-    async create(data: TEventCreate): Promise<AxiosResponse["data"]> {
+    async create(data: TEventCreate, termsFile?: File): Promise<AxiosResponse["data"]> {
         const formData = new FormData()
         
         formData.append("name", data.name)
@@ -84,6 +84,9 @@ class EventServiceClass {
         }
         if (data.image) {
             formData.append("image", data.image)
+        }
+        if (termsFile) {
+            formData.append("termsFile", termsFile)
         }
 
         formData.append("isClientTaxed", String(data.isClientTaxed || false))
@@ -392,6 +395,26 @@ class EventServiceClass {
             prefix: "/event",
             url: `/sales-report/${eventId}`,
             params
+        }))?.data
+        return response
+    }
+
+    async deleteTerms(eventId: string): Promise<AxiosResponse["data"]> {
+        const response = (await API.DELETE({
+            prefix: "/event",
+            url: `/terms/${eventId}`
+        }))?.data
+        return response
+    }
+
+    async updateTerms(eventId: string, termsFile: File): Promise<AxiosResponse["data"]> {
+        const formData = new FormData()
+        formData.append("termsFile", termsFile)
+        
+        const response = (await API.PATCH_FILE({
+            prefix: "/event",
+            url: `/terms/${eventId}`,
+            formData: formData
         }))?.data
         return response
     }
