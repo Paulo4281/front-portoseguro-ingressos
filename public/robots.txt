@@ -1,0 +1,34 @@
+# *
+User-agent: *
+Allow: /
+Disallow: /adm-eventos
+Disallow: /adm-organizadores
+Disallow: /adm-pagamentos
+Disallow: /adm-suporte
+Disallow: /adm-transferencias
+Disallow: /carteira
+Disallow: /clientes
+Disallow: /configuracoes
+Disallow: /confirmar-social
+Disallow: /cupons
+Disallow: /dashboard
+Disallow: /eventos/atualizar
+Disallow: /eventos/criar
+Disallow: /meu-perfil
+Disallow: /meus-eventos
+Disallow: /meus-ingressos
+Disallow: /payouts
+Disallow: /qr-scanner
+Disallow: /redefinir-senha-log
+Disallow: /suporte
+Disallow: /cadastro-confirmar
+Disallow: /checkout
+Disallow: /qr-scanner-link
+Disallow: /senha-redefinir
+Disallow: /senha-redefinir-confirmar
+
+# Host
+Host: https://www.portoseguroingressos.com.br
+
+# Sitemaps
+Sitemap: https://www.portoseguroingressos.com.br/sitemap.xml
