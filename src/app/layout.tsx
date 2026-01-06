@@ -19,8 +19,16 @@ export const metadata: Metadata = {
   title: "Porto Seguro Ingressos",
   description: "A forma mais sofisticada de viver os eventos da capital do descobrimento. Conectamos organizadores locais e apaixonados pela cena cultural com uma experiência de compra inteligente, transparente e com taxas justas.",
   icons: {
-    icon: "/favicon.ico",
-    apple: "/favicon.ico",
+    icon: [
+      {
+        url: "/favicon.ico",
+      },
+      {
+        url: "/images/logos/favicon/favicon-48x48.png",
+        sizes: "48x48",
+      }
+    ],
+    apple: "/logos/apple/apple-touch-icon.png"
   },
   appleWebApp: {
     capable: true,
