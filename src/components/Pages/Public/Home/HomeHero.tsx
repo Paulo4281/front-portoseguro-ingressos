@@ -193,7 +193,7 @@ const HomeHero = () => {
                                 <div className="w-full">
                                     <Carousel
                                         items={categorySlides}
-                                        className="px-2 py-4"
+                                        className="px-2"
                                         slidesPerView={2}
                                         spaceBetween={12}
                                         loop
@@ -220,8 +220,9 @@ const HomeHero = () => {
                         </div>
                     )}
 
-                    <div className="grid gap-10 w-full container
-                    lg:grid-cols-[1.1fr_0.9fr]">
+                    <div className="grid gap-10 w-full container mt-[-40px]
+                    lg:grid-cols-[1.1fr_0.9fr] lg:mt-0
+                    ">
                         <div className="space-y-10 w-full relative">
                             <div className="space-y-6">
                                 <h1 className="text-4xl font-medium leading-tight text-psi-dark
@@ -242,7 +243,8 @@ const HomeHero = () => {
                             lg:min-h-[160px]">
 
                                 <div className="
-                                absolute left-[44vw] bottom-[70px] w-[100px] h-auto z-10 pointer-events-none
+                                absolute left-[50vw] bottom-[30px] w-[100px] h-auto z-10 pointer-events-none
+                                xss:left-[50vw] xss:bottom-[64px] xss:w-[100px]
                                 xs:left-0 xs:bottom-[65px] xs:w-[100px]
                                 sm:w-[250px] sm:left-[400px] sm:bottom-[-60px]
                                 lg:w-[260px] lg:left-[465px] lg:bottom-[-30px]
@@ -456,7 +458,7 @@ const HomeHero = () => {
                 </div>
             </section>
 
-            <section className="w-full bg-white py-12">
+            <section className="w-full bg-white py-4 lg:py-6">
                 <div className="container space-y-10">
                     <div className="space-y-3 text-center max-w-3xl mx-auto">
                         <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-psi-primary/10 text-psi-primary text-xs font-medium uppercase tracking-wide">
@@ -534,7 +536,8 @@ const HomeHero = () => {
 
                         <div className="rounded-[28px] border border-white/15 bg-linear-to-br from-white/10 via-white/5 to-white/5 p-6 space-y-6">
                         <div className="
-                                absolute left-[67vw] bottom-[3225px] w-[130px] h-auto z-10 pointer-events-none
+                                absolute left-[28.5vw] bottom-[3225px] w-[100px] h-auto z-10 pointer-events-none
+                                xss:left-[28.5vw] xss:bottom-[3105px] xss:w-[100px]
                                 xs:left-[57vw] xs:bottom-[2735px] xs:w-[160px]
                                 sm:w-[170px] sm:left-[400px] sm:bottom-[1600px]
                                 lg:w-[320px] lg:left-[980px] lg:bottom-[1400px]

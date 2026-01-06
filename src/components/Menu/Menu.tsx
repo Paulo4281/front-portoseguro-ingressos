@@ -972,7 +972,6 @@ const NotificationBell = () => {
             }
             case "EVENT_AFTER_CUSTOMER": {
                 const eventName = data.eventName || "seu evento"
-                const feedbackLink = data.feedbackLink
 
                 return `O evento ${eventName} foi finalizado. Esperamos que tenha sido uma experiência incrível!`
             }

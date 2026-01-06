@@ -28,6 +28,7 @@ export const APIErrorHandler: Record<number, string> = {
     26: "Sessão inexistente ou expirada",
     27: "Evento ainda não foi finalizado",
     28: "Não há saldo suficiente para realizar o saque",
+    29: "Identificamos muitas tentativas de login falhas. Por favor, tente novamente mais tarde.",
 
     700: "Não é possível alterar datas do evento que já possuem ingressos vendidos. FALE COM O SUPORTE",
     701: "Não é possível alterar datas do evento que começarão em menos de 72 horas e já possuem ingressos vendidos. FALE COM O SUPORTE",

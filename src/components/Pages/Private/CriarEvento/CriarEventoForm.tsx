@@ -5,7 +5,7 @@ import { useForm, Controller, useFieldArray, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, FileText, Repeat, Tag, Sparkles, Rocket, HelpCircle, Megaphone } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, FileText, Repeat, Tag, Sparkles, Rocket, HelpCircle, Megaphone, CheckCircle2, ExternalLink } from "lucide-react"
 import { EventCreateValidator } from "@/validators/Event/EventValidator"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -14,6 +14,7 @@ import { FieldError } from "@/components/FieldError/FieldError"
 import { Background } from "@/components/Background/Background"
 import { LoadingButton } from "@/components/Loading/LoadingButton"
 import { ImageUpload } from "@/components/ImageUpload/ImageUpload"
+import { FileUpload } from "@/components/FileUpload/FileUpload"
 import { MarkdownEditor } from "@/components/MarkdownEditor/MarkdownEditor"
 import { TimePicker } from "@/components/TimePicker/TimePicker"
 import { DatePicker } from "@/components/DatePicker/DatePicker"
@@ -35,6 +36,13 @@ import { DialogTaxes } from "@/components/Dialog/DialogTaxes/DialogTaxes"
 import { FormBuilder, type TFormField } from "@/components/FormBuilder/FormBuilder"
 import { DialogEventSummary } from "@/components/Dialog/DialogEventSummary/DialogEventSummary"
 import { DialogMarkdownInstructions } from "@/components/Dialog/DialogMarkdownInstructions/DialogMarkdownInstructions"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 
 type TEventCreate = z.infer<typeof EventCreateValidator>
 
@@ -127,7 +135,10 @@ const CriarEventoForm = () => {
     const [isFormForEachTicket, setIsFormForEachTicket] = useState(false)
     const [isSummaryDialogOpen, setIsSummaryDialogOpen] = useState(false)
     const [eventDataToSubmit, setEventDataToSubmit] = useState<TEventCreate | null>(null)
+    const [termsFile, setTermsFile] = useState<File | null>(null)
     const [isMarkdownDialogOpen, setMarkdownDialogOpen] = useState(false)
+    const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false)
+    const [createdEventSlug, setCreatedEventSlug] = useState<string | null>(null)
     const router = useRouter()
 
     const { data: eventCategoriesData, isLoading: isEventCategoriesLoading } = useEventCategoryFind()
@@ -320,9 +331,22 @@ const CriarEventoForm = () => {
                 maxInstallments: eventDataToSubmit.maxInstallments || null
             }
 
-            await createEvent(submitData)
+            const response = await createEvent({ data: submitData, termsFile: termsFile || undefined })
+            console.log("Resposta da criação do evento:", response)
+            
             setIsSummaryDialogOpen(false)
             setEventDataToSubmit(null)
+            
+            if (response?.success !== false) {
+                if (response?.data?.slug) {
+                    setCreatedEventSlug(response.data.slug)
+                } else if (response?.data?.slug) {
+                    setCreatedEventSlug(response.data?.slug)
+                }
+                setIsSuccessDialogOpen(true)
+            } else {
+                console.error("Erro na resposta da API:", response)
+            }
         } catch (error) {
             console.error("Erro ao criar evento:", error)
         }
@@ -517,17 +541,22 @@ const CriarEventoForm = () => {
                                     <Controller
                                         name="categories"
                                         control={form.control}
-                                        render={({ field }) => (
-                                            <MultiSelect
-                                                options={eventCategories.map((category) => ({ value: category.id, label: category.name }))}
-                                                value={field.value || []}
-                                                onChange={field.onChange}
-                                                placeholder="Selecione as categorias..."
-                                                minSelections={1}
-                                                maxSelections={5}
-                                                required
-                                            />
-                                        )}
+                                        render={({ field }) => {
+                                            const sortedCategories = [...eventCategories].sort((a, b) =>
+                                                a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' })
+                                            )
+                                            return (
+                                                <MultiSelect
+                                                    options={sortedCategories.map((category) => ({ value: category.id, label: category.name }))}
+                                                    value={field.value || []}
+                                                    onChange={field.onChange}
+                                                    placeholder="Selecione as categorias..."
+                                                    minSelections={1}
+                                                    maxSelections={5}
+                                                    required
+                                                />
+                                            )
+                                        }}
                                     />
                                     <FieldError message={form.formState.errors.categories?.message || ""} />
                                 </div>
@@ -570,6 +599,21 @@ const CriarEventoForm = () => {
                                                 error={form.formState.errors.image?.message}
                                             />
                                         )}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-psi-dark mb-2">
+                                        Regulamento do Evento (Opcional)
+                                    </label>
+                                    <p className="text-xs text-psi-dark/60 mb-3">
+                                        Faça upload de um arquivo PDF com o regulamento do seu evento. Tamanho máximo: 10MB.
+                                    </p>
+                                    <FileUpload
+                                        value={termsFile}
+                                        onChange={setTermsFile}
+                                        accept=".pdf"
+                                        maxSize={10 * 1024 * 1024}
                                     />
                                 </div>
                             </div>
@@ -1300,6 +1344,13 @@ const CriarEventoForm = () => {
                                             />
                                         )}
                                     />
+                                    <div className="mt-3 rounded-lg border border-psi-primary/20 bg-psi-primary/5 p-3">
+                                        <p className="text-xs text-psi-dark/70 leading-relaxed">
+                                            <strong className="text-psi-dark">Importante:</strong> Para compras parceladas no cartão de crédito, o repasse será feito <strong className="text-psi-dark">conforme as parcelas forem sendo pagas</strong>. 
+                                            Por exemplo: se um ingresso foi dividido em 6x e já se passaram 4 meses quando o evento se encerrar, será repassado ao organizador o valor das 4 parcelas já pagas. 
+                                            As parcelas restantes serão repassadas assim que recebermos a cobrança de cada uma delas.
+                                        </p>
+                                    </div>
                                     <FieldError message={form.formState.errors.maxInstallments?.message || ""} />
                                 </div>
 
@@ -1318,7 +1369,7 @@ const CriarEventoForm = () => {
                                             <div className="flex flex-col items-end gap-2">
                                                 <Button
                                                     type="button"
-                                                    variant="outline"
+                                                    variant="primary"
                                                     size="sm"
                                                     onClick={addBatch}
                                                     disabled={recurrenceEnabled && batchFields.length >= 1}
@@ -1749,6 +1800,59 @@ const CriarEventoForm = () => {
                     isLoading={isCreating}
                 />
             )}
+
+            <Dialog open={isSuccessDialogOpen} onOpenChange={setIsSuccessDialogOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <div className="flex flex-col items-center text-center space-y-4">
+                            <div className="size-20 rounded-full bg-psi-primary/10 flex items-center justify-center">
+                                <CheckCircle2 className="size-12 text-psi-primary" />
+                            </div>
+                            <div className="space-y-2">
+                                <DialogTitle className="text-2xl font-semibold text-psi-dark">
+                                    Evento publicado com sucesso!
+                                </DialogTitle>
+                                <DialogDescription className="text-base text-psi-dark/70">
+                                    Aguarde, em poucos instantes as vendas começarão para o seu evento.
+                                </DialogDescription>
+                            </div>
+                        </div>
+                    </DialogHeader>
+                    <div className="flex flex-col gap-3 pt-4">
+                        <Button
+                            type="button"
+                            variant="primary"
+                            className="w-full"
+                            size="lg"
+                            onClick={() => {
+                                setIsSuccessDialogOpen(false)
+                                router.push("/meus-eventos")
+                            }}
+                        >
+                            Ir para meus eventos
+                        </Button>
+                        {createdEventSlug ? (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full"
+                                size="lg"
+                                onClick={() => {
+                                    setIsSuccessDialogOpen(false)
+                                    router.push(`/ver-evento/${createdEventSlug}`)
+                                }}
+                            >
+                                <ExternalLink className="size-4 mr-2" />
+                                Ver página do evento
+                            </Button>
+                        ) : (
+                            <p className="text-xs text-psi-dark/60 text-center">
+                                O evento foi criado com sucesso. Você pode visualizá-lo em "Meus Eventos".
+                            </p>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </Background>
     )
 }

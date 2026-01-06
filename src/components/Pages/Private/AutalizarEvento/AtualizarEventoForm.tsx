@@ -13,6 +13,7 @@ import { FieldError } from "@/components/FieldError/FieldError"
 import { Background } from "@/components/Background/Background"
 import { LoadingButton } from "@/components/Loading/LoadingButton"
 import { ImageUpload } from "@/components/ImageUpload/ImageUpload"
+import { FileUpload } from "@/components/FileUpload/FileUpload"
 import { MarkdownEditor } from "@/components/MarkdownEditor/MarkdownEditor"
 import { TimePicker } from "@/components/TimePicker/TimePicker"
 import { DatePicker } from "@/components/DatePicker/DatePicker"
@@ -32,6 +33,8 @@ import { useEventFindByIdUser } from "@/hooks/Event/useEventFindByIdUser"
 import { useEventUpdate } from "@/hooks/Event/useEventUpdate"
 import useEventUpdateImage from "@/hooks/Event/useEventUpdateImage"
 import { useEventVerifySold } from "@/hooks/Event/useEventVerifySold"
+import { useEventDeleteTerms } from "@/hooks/Event/useEventDeleteTerms"
+import { useEventUpdateTerms } from "@/hooks/Event/useEventUpdateTerms"
 import type { TEventVerifySoldResponse } from "@/types/Event/TEvent"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
@@ -42,6 +45,14 @@ import { DialogEditWarning, type TChangeItem } from "@/components/Dialog/DialogE
 import { Toast } from "@/components/Toast/Toast"
 import { DialogMarkdownInstructions } from "@/components/Dialog/DialogMarkdownInstructions/DialogMarkdownInstructions"
 import { DialogPasswordConfirmation } from "@/components/Dialog/DialogPasswordConfirmation/DialogPasswordConfirmation"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 import { useSearchParams } from "next/navigation"
 
 type TEventUpdate = z.infer<typeof EventUpdateValidator>
@@ -187,6 +198,9 @@ const AtualizarEventoForm = () => {
     const [isMarkdownDialogOpen, setMarkdownDialogOpen] = useState(false)
     const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
     const [pendingSubmitData, setPendingSubmitData] = useState<TEventUpdate | null>(null)
+    const [termsFile, setTermsFile] = useState<File | null>(null)
+    const [termsUrl, setTermsUrl] = useState<string | null>(null)
+    const [isDeleteTermsDialogOpen, setIsDeleteTermsDialogOpen] = useState(false)
 
     const searchParams = useSearchParams()
     const eventId = useMemo(() => searchParams.get("id"), [searchParams])
@@ -197,6 +211,8 @@ const AtualizarEventoForm = () => {
 
     const { mutateAsync: updateEvent, isPending: isUpdatingEvent } = useEventUpdate(eventId || "")
     const { mutateAsync: updateEventImage, isPending: isUpdatingImage } = useEventUpdateImage(eventId || "")
+    const { mutateAsync: deleteTerms, isPending: isDeletingTerms } = useEventDeleteTerms()
+    const { mutateAsync: updateTerms, isPending: isUpdatingTerms } = useEventUpdateTerms(eventId || "")
 
     const eventCategories = useMemo(() => {
         if (eventCategoriesData?.data && Array.isArray(eventCategoriesData.data)) {
@@ -645,6 +661,15 @@ const AtualizarEventoForm = () => {
                 isFormForEachTicket: !!event.isFormForEachTicket
             })
 
+            if ((event as any).termsUrl) {
+                const termsUrlValue = (event as any).termsUrl
+                if (termsUrlValue.startsWith("http")) {
+                    setTermsUrl(termsUrlValue)
+                } else {
+                    setTermsUrl(ImageUtils.getEventTermsUrl(termsUrlValue))
+                }
+            }
+
             setIsFormInitialized(true)
         }
     }, [eventData, isFormInitialized, form, eventCategories])
@@ -733,6 +758,18 @@ const AtualizarEventoForm = () => {
                 }
             }
 
+            // Handle terms file: If termsFile is a File, update it
+            if (termsFile instanceof File) {
+                try {
+                    await updateTerms(termsFile)
+                    setTermsUrl(null)
+                    setTermsFile(null)
+                    Toast.success("Regulamento atualizado com sucesso!")
+                } catch (error) {
+                    console.error("Erro ao atualizar regulamento:", error)
+                }
+            }
+
             if (response?.success) {
                 Toast.success("Evento atualizado com sucesso!")
             }
@@ -752,6 +789,19 @@ const AtualizarEventoForm = () => {
         if (pendingSubmitData) {
             await executeSubmit(pendingSubmitData)
             setPendingSubmitData(null)
+        }
+    }
+
+    const handleDeleteTermsConfirm = async () => {
+        try {
+            await deleteTerms(eventId || "")
+            setTermsUrl(null)
+            setTermsFile(null)
+            setIsDeleteTermsDialogOpen(false)
+            Toast.success("Regulamento excluído com sucesso!")
+        } catch (error) {
+            console.error("Erro ao excluir regulamento:", error)
+            Toast.error("Erro ao excluir regulamento. Tente novamente.")
         }
     }
 
@@ -972,17 +1022,22 @@ const AtualizarEventoForm = () => {
                                     <Controller
                                         name="categories"
                                         control={form.control}
-                                        render={({ field }) => (
-                                            <MultiSelect
-                                                options={eventCategories.map((category) => ({ value: category.id, label: category.name }))}
-                                                value={field.value || []}
-                                                onChange={field.onChange}
-                                                placeholder="Selecione as categorias..."
-                                                minSelections={1}
-                                                maxSelections={5}
-                                                required
-                                            />
-                                        )}
+                                        render={({ field }) => {
+                                            const sortedCategories = [...eventCategories].sort((a, b) =>
+                                                a.name.localeCompare(b.name, 'pt-BR', { sensitivity: 'base' })
+                                            )
+                                            return (
+                                                <MultiSelect
+                                                    options={sortedCategories.map((category) => ({ value: category.id, label: category.name }))}
+                                                    value={field.value || []}
+                                                    onChange={field.onChange}
+                                                    placeholder="Selecione as categorias..."
+                                                    minSelections={1}
+                                                    maxSelections={5}
+                                                    required
+                                                />
+                                            )
+                                        }}
                                     />
                                     <FieldError message={form.formState.errors.categories?.message || ""} />
                                 </div>
@@ -1002,6 +1057,31 @@ const AtualizarEventoForm = () => {
                                                 showButtons={false}
                                             />
                                         )}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-psi-dark mb-2">
+                                        Regulamento do Evento (Opcional)
+                                    </label>
+                                    <p className="text-xs text-psi-dark/60 mb-3">
+                                        Faça upload de um arquivo PDF com o regulamento do seu evento. Tamanho máximo: 10MB. Você pode excluir ou substituir o arquivo atual.
+                                    </p>
+                                    <FileUpload
+                                        value={termsFile || termsUrl}
+                                        onChange={(file) => {
+                                            if (file === null) {
+                                                if (termsUrl) {
+                                                    setIsDeleteTermsDialogOpen(true)
+                                                } else {
+                                                    setTermsFile(null)
+                                                }
+                                            } else {
+                                                setTermsFile(file)
+                                            }
+                                        }}
+                                        accept=".pdf"
+                                        maxSize={10 * 1024 * 1024}
                                     />
                                 </div>
 
@@ -2441,6 +2521,45 @@ const AtualizarEventoForm = () => {
                 title="Confirmação de Segurança"
                 description="Por motivos de segurança, digite sua senha para confirmar a atualização do evento."
             />
+
+            <Dialog open={isDeleteTermsDialogOpen} onOpenChange={setIsDeleteTermsDialogOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <div className="h-10 w-10 rounded-full bg-psi-primary/10 flex items-center justify-center">
+                                <FileText className="h-5 w-5 text-psi-primary" />
+                            </div>
+                            Excluir Regulamento
+                        </DialogTitle>
+                        <DialogDescription className="pt-2">
+                            Tem certeza que deseja excluir o regulamento do evento? Esta ação não pode ser desfeita.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <DialogFooter className="gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setIsDeleteTermsDialogOpen(false)}
+                            disabled={isDeletingTerms}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={handleDeleteTermsConfirm}
+                            disabled={isDeletingTerms}
+                        >
+                            {isDeletingTerms ? (
+                                <LoadingButton />
+                            ) : (
+                                "Excluir"
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </Background>
     )
 }
