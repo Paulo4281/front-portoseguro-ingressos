@@ -157,29 +157,33 @@ const TermosECondicoesInfo = () => {
                                 </div>
                                 <div className="flex-1 space-y-3">
                                     <h2 className="text-2xl font-semibold text-psi-dark">4. Responsabilidade pelo QR Code</h2>
-                                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                    <div className="bg-transparent rounded-lg p-4">
                                         <div className="flex items-start gap-3">
-                                            <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+                                            <AlertCircle className="h-5 w-5 text-purple-600 shrink-0 mt-0.5" />
                                             <div className="flex-1">
-                                                <h4 className="font-medium text-red-900 mb-2">Atenção: Uso do QR Code</h4>
-                                                <p className="text-red-800 text-sm leading-relaxed mb-2">
+                                                <h4 className="font-medium text-purple-900 mb-2">Atenção: Uso do QR Code</h4>
+                                                <p className="text-psi-dark text-sm leading-relaxed mb-2">
                                                     O uso do QR Code para validação do ingresso é de <strong>total responsabilidade do cliente</strong>.
                                                 </p>
-                                                <ul className="space-y-1 text-red-800 text-sm">
+                                                <p className="text-psi-dark text-sm leading-relaxed mb-2">
+                                                    O QR Code do seu ingresso será disponibilizado no site ou no app para acesso fácil e seguro. Caso tenha adquirido apenas um ingresso, você também poderá recebê-lo por e-mail automaticamente após a confirmação de pagamento. 
+                                                    <strong className="block mt-1">Para compras de múltiplos ingressos em uma única transação, os QR Codes de todos os ingressos estarão disponíveis exclusivamente em sua área "Meus Ingressos" no site ou app. Não serão enviados por e-mail neste caso.</strong>
+                                                </p>
+                                                <ul className="space-y-1 text-psi-dark text-sm">
                                                     <li className="flex items-start gap-2">
-                                                        <span className="text-red-600 mt-1">•</span>
+                                                        <span className="text-purple-600 mt-1">•</span>
                                                         <span>O QR Code <strong>não deve ser compartilhado</strong> com absolutamente ninguém</span>
                                                     </li>
                                                     <li className="flex items-start gap-2">
-                                                        <span className="text-red-600 mt-1">•</span>
+                                                        <span className="text-purple-600 mt-1">•</span>
                                                         <span>Não nos responsabilizamos pelo mau uso da plataforma e do QR Code</span>
                                                     </li>
                                                     <li className="flex items-start gap-2">
-                                                        <span className="text-red-600 mt-1">•</span>
+                                                        <span className="text-purple-600 mt-1">•</span>
                                                         <span>Em caso de compartilhamento indevido, o ingresso pode ser invalidado</span>
                                                     </li>
                                                     <li className="flex items-start gap-2">
-                                                        <span className="text-red-600 mt-1">•</span>
+                                                        <span className="text-purple-600 mt-1">•</span>
                                                         <span>Mantenha seu QR Code seguro e acessível apenas para você</span>
                                                     </li>
                                                 </ul>

@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Repeat, Tag, ShieldCheck, Lock, CreditCard, ArrowRight, TrendingDown, Users, QrCode, Headphones, Zap, CheckCircle2, Share2, MessageCircle, Star, TrendingUp, Gift, Instagram, Facebook, Mail, Phone, Building2, ExternalLink, Laptop, AlertCircle, CheckCircle, FileText } from "lucide-react"
+import { Calendar, Clock, MapPin, Repeat, Tag, ShieldCheck, Lock, CreditCard, ArrowRight, TrendingDown, Users, QrCode, Headphones, Zap, CheckCircle2, Share2, MessageCircle, Star, TrendingUp, Gift, Instagram, Facebook, Mail, Phone, Building2, ExternalLink, Laptop, AlertCircle, CheckCircle, FileText, Loader2, ShoppingCart } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useEventFindSimilar } from "@/hooks/Event/useEventFindSimilar"
 import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
@@ -31,6 +31,15 @@ import { LoadingButton } from "@/components/Loading/LoadingButton"
 import { useEventVerifyLastTicket } from "@/hooks/Event/useEventVerifyLastTicket"
 import { Toast } from "@/components/Toast/Toast"
 import { useEventFindBySlug } from "@/hooks/Event/useEventFindBySlug"
+import { useOrganizerGetSupportInfo } from "@/hooks/Organizer/useOrganizerGetSupportInfo"
+import { useRouter } from "next/navigation"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 
 type TVerEventoInfoProps = {
     slug: string
@@ -44,7 +53,13 @@ const VerEventoInfo = (
     const { data: eventData, isLoading, isError } = useEventFindBySlug(slug)
     const { data: eventCategoriesData } = useEventCategoryFind()
     const { mutateAsync: registerEventClick } = useEventClickCreate()
-    const { user } = useAuthStore()
+    const { user, isAuthenticated } = useAuthStore()
+    const { mutateAsync: getSupportInfo, isPending: isLoadingSupportInfo } = useOrganizerGetSupportInfo()
+    const router = useRouter()
+    
+    const [supportDialogOpen, setSupportDialogOpen] = useState(false)
+    const [supportInfo, setSupportInfo] = useState<{ email: string | null; phone: string | null } | null>(null)
+    const [isLoadingCheckoutDialogOpen, setIsLoadingCheckoutDialogOpen] = useState(false)
 
     const event = useMemo(() => {
         return eventData?.data
@@ -549,6 +564,7 @@ const VerEventoInfo = (
         if (!event) return
 
         setIsLoadingCheckoutPage(true)
+        setIsLoadingCheckoutDialogOpen(true)
 
         const batchId = selectedBatch?.id
         const batchName = selectedBatch?.name
@@ -689,8 +705,16 @@ const VerEventoInfo = (
             }, quantity)
         }
 
-        setIsLoadingCheckoutPage(false)
+        setTimeout(() => {
+            setIsLoadingCheckoutPage(false)
+        }, 100)
     }
+
+    useEffect(() => {
+        if (typeof window !== "undefined" && window.location.pathname === "/checkout") {
+            setIsLoadingCheckoutDialogOpen(false)
+        }
+    }, [])
 
     useEffect(() => {
         if (selectedBatch?.EventBatchTicketTypes && selectedBatch.EventBatchTicketTypes.length > 0) {
@@ -882,6 +906,20 @@ const VerEventoInfo = (
                 }
                 .total-animate {
                     animation: totalUpdate 0.4s ease-in-out;
+                }
+                @keyframes loading {
+                    0% {
+                        width: 0%;
+                        transform: translateX(0);
+                    }
+                    50% {
+                        width: 70%;
+                        transform: translateX(0);
+                    }
+                    100% {
+                        width: 100%;
+                        transform: translateX(100%);
+                    }
                 }
             `}} />
             <Background variant="light" className="min-h-screen">
@@ -1504,9 +1542,9 @@ const VerEventoInfo = (
                                     </div>
                                 ) : batchHasTicketTypes && selectedBatch?.EventBatchTicketTypes ? (
                                     <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-psi-dark">Selecione a quantidade por tipo</span>
-                                            <span className="text-xs text-psi-dark/60">Máximo {buyTicketsLimit} por pessoa</span>
+                                        <div className="flex flex-col items-start justify-between">
+                                            <p className="text-sm font-medium text-psi-dark">Selecione a quantidade por tipo</p>
+                                            <p className="text-xs text-psi-dark/60">Máximo {buyTicketsLimit} por pessoa</p>
                                         </div>
                                         <div className="space-y-4">
                                             {selectedBatch.EventBatchTicketTypes.map((ebt) => {
@@ -1982,7 +2020,7 @@ const VerEventoInfo = (
                                         <CreditCard className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
                                         <div>
                                             <p className="text-sm font-medium text-psi-dark">Múltiplas Formas de Pagamento</p>
-                                            <p className="text-xs text-psi-dark/60">PIX, cartão de crédito ou boleto bancário</p>
+                                            <p className="text-xs text-psi-dark/60">PIX e cartão de crédito</p>
                                         </div>
                                     </div>
 
@@ -2010,7 +2048,7 @@ const VerEventoInfo = (
                                         <QrCode className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
                                         <div>
                                             <p className="text-sm font-medium text-psi-dark">QR Code Digital</p>
-                                            <p className="text-xs text-psi-dark/60">Ingressos enviados por email com QR Code</p>
+                                            <p className="text-xs text-psi-dark/60">Acesse seus ingressos via site/app ou por e-mail.</p>
                                         </div>
                                     </div>
 
@@ -2051,7 +2089,7 @@ const VerEventoInfo = (
                                             </div>
                                             <div className="flex items-start gap-2">
                                                 <CheckCircle2 className="h-3.5 w-3.5 text-psi-primary shrink-0 mt-0.5" />
-                                                <p className="text-xs text-psi-dark/70">Taxas muito mais baixas que concorrentes</p>
+                                                <p className="text-xs text-psi-dark/70">Taxas mais baixas que concorrentes</p>
                                             </div>
                                             <div className="flex items-start gap-2">
                                                 <CheckCircle2 className="h-3.5 w-3.5 text-psi-primary shrink-0 mt-0.5" />
@@ -2094,17 +2132,6 @@ const VerEventoInfo = (
                                         <p className="text-xs text-psi-dark/60 mb-3">
                                             Cadastre seus eventos e venda ingressos com taxas reduzidas. Suporte personalizado para produtores locais.
                                         </p>
-                                        <Link href="/cadastro">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="w-full group border-psi-primary/30 text-psi-primary hover:bg-psi-primary/5"
-                                            >
-                                                <Users className="h-4 w-4" />
-                                                Área do Produtor
-                                                <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                                            </Button>
-                                        </Link>
                                     </div>
                                 </div>
                             </div>
@@ -2148,6 +2175,7 @@ const VerEventoInfo = (
                                         className="w-full border-psi-primary/20 hover:bg-psi-primary/5"
                                         onClick={() => {
                                             navigator.clipboard.writeText(window.location.href)
+                                            Toast.success("Link copiado para a área de transferência")
                                         }}
                                     >
                                         Copiar Link
@@ -2230,11 +2258,37 @@ const VerEventoInfo = (
                                             variant="outline"
                                             size="sm"
                                             className="flex-1 border-psi-primary/20 hover:bg-psi-primary/5"
-                                            onClick={() => {
-                                                window.open(`mailto:contato@portoseguroingressos.com.br?subject=Dúvida sobre: ${event.name}`, '_blank')
+                                            onClick={async () => {
+                                                if (!isAuthenticated || !user) {
+                                                    Toast.error("Você precisa estar logado para entrar em contato com o organizador.")
+                                                    return
+                                                }
+                                                
+                                                if (!event?.organizerId) {
+                                                    Toast.error("Informações de contato não disponíveis.")
+                                                    return
+                                                }
+                                                
+                                                try {
+                                                    const response = await getSupportInfo(event.organizerId)
+                                                    if (response?.success && response?.data) {
+                                                        setSupportInfo(response.data)
+                                                        setSupportDialogOpen(true)
+                                                    } else {
+                                                        Toast.error("Não foi possível obter as informações de contato.")
+                                                    }
+                                                } catch (error) {
+                                                    console.error("Erro ao buscar informações de suporte:", error)
+                                                    Toast.error("Erro ao buscar informações de contato.")
+                                                }
                                             }}
+                                            disabled={isLoadingSupportInfo}
                                         >
-                                            Contatar
+                                            {isLoadingSupportInfo ? (
+                                                <LoadingButton />
+                                            ) : (
+                                                "Contatar"
+                                            )}
                                         </Button>
                                     </div>
                                 </div>
@@ -2299,6 +2353,92 @@ const VerEventoInfo = (
                         </div>
                     </div>
                 )}
+            <Dialog open={supportDialogOpen} onOpenChange={setSupportDialogOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <div className="h-10 w-10 rounded-full bg-psi-primary/10 flex items-center justify-center">
+                                <MessageCircle className="h-5 w-5 text-psi-primary" />
+                            </div>
+                            Informações de Contato
+                        </DialogTitle>
+                        <DialogDescription className="pt-2">
+                            Entre em contato com o organizador do evento através dos canais abaixo.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
+                        {supportInfo?.email && (
+                            <div className="rounded-lg border border-psi-primary/20 bg-psi-primary/5 p-4 space-y-2">
+                                <div className="flex items-center gap-2 text-sm font-medium text-psi-dark">
+                                    <Mail className="h-4 w-4 text-psi-primary" />
+                                    E-mail
+                                </div>
+                                <a
+                                    href={`mailto:${supportInfo.email}?subject=Dúvida sobre: ${event?.name || "Evento"}`}
+                                    className="text-sm text-psi-primary hover:text-psi-primary/80 hover:underline break-all"
+                                >
+                                    {supportInfo.email}
+                                </a>
+                            </div>
+                        )}
+
+                        {supportInfo?.phone && (
+                            <div className="rounded-lg border border-psi-primary/20 bg-psi-primary/5 p-4 space-y-2">
+                                <div className="flex items-center gap-2 text-sm font-medium text-psi-dark">
+                                    <Phone className="h-4 w-4 text-psi-primary" />
+                                    Telefone
+                                </div>
+                                <a
+                                    href={`tel:${supportInfo.phone}`}
+                                    className="text-sm text-psi-primary hover:text-psi-primary/80 hover:underline"
+                                >
+                                    {supportInfo.phone}
+                                </a>
+                            </div>
+                        )}
+
+                        {(!supportInfo?.email && !supportInfo?.phone) && (
+                            <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4">
+                                <p className="text-sm text-amber-800">
+                                    Informações de contato não disponíveis no momento.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isLoadingCheckoutDialogOpen} onOpenChange={() => {}}>
+                <DialogContent className="sm:max-w-[425px] border-psi-primary/20">
+                    <DialogHeader>
+                        <div className="flex flex-col items-center text-center space-y-6 py-4">
+                            <div className="relative">
+                                <div className="h-24 w-24 rounded-full bg-psi-primary/10 flex items-center justify-center">
+                                    <div className="relative">
+                                        <Loader2 className="h-12 w-12 text-psi-primary animate-spin" />
+                                        <ShoppingCart className="h-6 w-6 text-psi-primary absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+                                    </div>
+                                </div>
+                                <div className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-psi-primary animate-ping opacity-75"></div>
+                            </div>
+                            <div className="space-y-2">
+                                <DialogTitle className="text-xl font-semibold text-psi-dark">
+                                    Adicionando ao carrinho...
+                                </DialogTitle>
+                                <DialogDescription className="text-base text-psi-dark/70">
+                                    Aguarde enquanto redirecionamos você para o checkout
+                                </DialogDescription>
+                            </div>
+                            <div className="w-full max-w-xs">
+                                <div className="h-2 bg-psi-primary/10 rounded-full overflow-hidden">
+                                    <div className="h-full bg-psi-primary rounded-full animate-[loading_1.5s_ease-in-out_infinite]"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </DialogHeader>
+                </DialogContent>
+            </Dialog>
         </Background>
         </>
     )

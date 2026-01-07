@@ -103,6 +103,14 @@ class UserServiceClass {
         }))?.data
         return response
     }
+
+    async getOrganizerSupportInfo(organizerId: string): Promise<AxiosResponse["data"]> {
+        const response = (await API.GET({
+            prefix: "/user",
+            url: `/organizer/get-support-info/${organizerId}`
+        }))?.data
+        return response
+    }
 }
 
 export const UserService = new UserServiceClass()

@@ -611,7 +611,7 @@ const Menu = () => {
                             </div>
                         )}
                         {
-                            (!isInstalled && showInstallButton && !isAuthenticated) || 1 == 1 && (
+                            (!isInstalled && showInstallButton && !isAuthenticated) && (
                                 <Button
                                     onClick={handleInstallClick}
                                     variant="secondary"

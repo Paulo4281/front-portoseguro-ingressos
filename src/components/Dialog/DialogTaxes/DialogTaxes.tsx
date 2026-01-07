@@ -271,7 +271,10 @@ const DialogTaxes = ({
             </div>
 
             <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-4">
-              <p className="text-sm mb-3">Lista de taxas por parcela:</p>
+              <p className="text-sm mb-1">Lista de taxas por parcela:</p>
+              <p className="text-xs text-psi-dark/60 mb-3">
+                Obs: As taxas são aplicadas sobre o total pago pelo cliente e são pagas pelo cliente e não pelo organizador.
+              </p>
 
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-sm">
