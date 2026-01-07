@@ -223,6 +223,7 @@ const MeuPerfilCustomer = () => {
                                                     size="lg"
                                                     onChange={(file) => field.onChange(file)}
                                                     editable
+                                                    accept="image/png, image/jpeg"
                                                 />
                                             )}
                                         />
@@ -231,7 +232,7 @@ const MeuPerfilCustomer = () => {
                                                 Passe o mouse sobre a foto para alterar
                                             </p>
                                             <p className="text-xs text-psi-dark/60">
-                                                Opcional. Formatos aceitos: PNG, JPG, GIF até 10MB
+                                                Opcional. Formatos aceitos: PNG, JPG, JPEG (até 10MB)
                                             </p>
                                             {isUploading && (
                                                 <p className="text-xs text-psi-primary mt-1">

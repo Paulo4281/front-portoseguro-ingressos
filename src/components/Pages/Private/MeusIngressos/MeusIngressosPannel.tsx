@@ -179,6 +179,75 @@ const formatPurchaseDate = (date: string) => {
     return DateUtils.formatDate(date, "DD/MM/YYYY")
 }
 
+const renderFormFields = (form: TTicket["form"]) => {
+    if (!form) return null
+
+    const hasAnyFields = (
+        (form.text && form.text.length > 0) ||
+        (form.email && form.email.length > 0) ||
+        (form.textArea && form.textArea.length > 0) ||
+        (form.select && form.select.length > 0) ||
+        (form.multiSelect && form.multiSelect.length > 0)
+    )
+
+    if (!hasAnyFields) return null
+
+    return (
+        <div className="space-y-3">
+            {form.text && form.text.length > 0 && (
+                <div className="space-y-2">
+                    {form.text.map((item, index) => (
+                        <div key={index} className="text-sm">
+                            <p className="font-medium text-psi-dark/70">{item.label}</p>
+                            <p className="text-psi-dark">{item.answer || "-"}</p>
+                        </div>
+                    ))}
+                </div>
+            )}
+            {form.email && form.email.length > 0 && (
+                <div className="space-y-2">
+                    {form.email.map((item, index) => (
+                        <div key={index} className="text-sm">
+                            <p className="font-medium text-psi-dark/70">{item.label}</p>
+                            <p className="text-psi-dark">{item.answer || "-"}</p>
+                        </div>
+                    ))}
+                </div>
+            )}
+            {form.textArea && form.textArea.length > 0 && (
+                <div className="space-y-2">
+                    {form.textArea.map((item, index) => (
+                        <div key={index} className="text-sm">
+                            <p className="font-medium text-psi-dark/70">{item.label}</p>
+                            <p className="text-psi-dark whitespace-pre-wrap">{item.answer || "-"}</p>
+                        </div>
+                    ))}
+                </div>
+            )}
+            {form.select && form.select.length > 0 && (
+                <div className="space-y-2">
+                    {form.select.map((item, index) => (
+                        <div key={index} className="text-sm">
+                            <p className="font-medium text-psi-dark/70">{item.label}</p>
+                            <p className="text-psi-dark">{item.answer || "-"}</p>
+                        </div>
+                    ))}
+                </div>
+            )}
+            {form.multiSelect && form.multiSelect.length > 0 && (
+                <div className="space-y-2">
+                    {form.multiSelect.map((item, index) => (
+                        <div key={index} className="text-sm">
+                            <p className="font-medium text-psi-dark/70">{item.label}</p>
+                            <p className="text-psi-dark">{item.answer || "-"}</p>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    )
+}
+
 const MeusIngressosPannel = () => {
     const { user, isAuthenticated } = useAuthStore()
     const userId = user?.id || ""
@@ -563,6 +632,18 @@ const MeusIngressosPannel = () => {
                                     (firstTicket.form.select && firstTicket.form.select.length > 0) ||
                                     (firstTicket.form.multiSelect && firstTicket.form.multiSelect.length > 0)
                                 )
+                                
+                                const hasFormForEachTicket = isMultipleTickets && 
+                                    group.tickets.every(ticket => {
+                                        if (!ticket.form) return false
+                                        return (
+                                            (ticket.form.text && ticket.form.text.length > 0) ||
+                                            (ticket.form.email && ticket.form.email.length > 0) ||
+                                            (ticket.form.textArea && ticket.form.textArea.length > 0) ||
+                                            (ticket.form.select && ticket.form.select.length > 0) ||
+                                            (ticket.form.multiSelect && ticket.form.multiSelect.length > 0)
+                                        )
+                                    })
                                 const hasPixQrCode = group.payment?.method === "PIX" && 
                                                     group.payment?.status === "PENDING" && 
                                                     group.payment?.qrcodeData
@@ -864,70 +945,29 @@ const MeusIngressosPannel = () => {
                                                                                 )}
                                                                             </div>
                                                                         )}
+
+                                                                        {hasFormForEachTicket && ticket.form && renderFormFields(ticket.form) && (
+                                                                            <div className="mt-3 pt-3 border-t border-psi-primary/20 space-y-2">
+                                                                                <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
+                                                                                    <FileText className="h-3.5 w-3.5 text-psi-primary" />
+                                                                                    Respostas do Formulário
+                                                                                </div>
+                                                                                {renderFormFields(ticket.form)}
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                 )
                                                             })}
                                                         </div>
                                                     </div>
 
-                                                    {hasForm && (
+                                                    {hasForm && !hasFormForEachTicket && (
                                                         <div className="rounded-2xl border border-psi-primary/20 bg-white/80 p-4 shadow-sm space-y-4">
                                                             <div className="flex items-center gap-2 text-sm font-medium text-psi-dark">
                                                                 <FileText className="h-4 w-4 text-psi-primary" />
                                                                 Respostas do Formulário
                                                             </div>
-                                                            <div className="space-y-3">
-                                                                {firstTicket.form?.text && firstTicket.form.text.length > 0 && (
-                                                                    <div className="space-y-2">
-                                                                        {firstTicket.form.text.map((item, index) => (
-                                                                            <div key={index} className="text-sm">
-                                                                                <p className="font-medium text-psi-dark/70">{item.label}</p>
-                                                                                <p className="text-psi-dark">{item.answer || "-"}</p>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                )}
-                                                                {firstTicket.form?.email && firstTicket.form.email.length > 0 && (
-                                                                    <div className="space-y-2">
-                                                                        {firstTicket.form.email.map((item, index) => (
-                                                                            <div key={index} className="text-sm">
-                                                                                <p className="font-medium text-psi-dark/70">{item.label}</p>
-                                                                                <p className="text-psi-dark">{item.answer || "-"}</p>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                )}
-                                                                {firstTicket.form?.textArea && firstTicket.form.textArea.length > 0 && (
-                                                                    <div className="space-y-2">
-                                                                        {firstTicket.form.textArea.map((item, index) => (
-                                                                            <div key={index} className="text-sm">
-                                                                                <p className="font-medium text-psi-dark/70">{item.label}</p>
-                                                                                <p className="text-psi-dark whitespace-pre-wrap">{item.answer || "-"}</p>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                )}
-                                                                {firstTicket.form?.select && firstTicket.form.select.length > 0 && (
-                                                                    <div className="space-y-2">
-                                                                        {firstTicket.form.select.map((item, index) => (
-                                                                            <div key={index} className="text-sm">
-                                                                                <p className="font-medium text-psi-dark/70">{item.label}</p>
-                                                                                <p className="text-psi-dark">{item.answer || "-"}</p>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                )}
-                                                                {firstTicket.form?.multiSelect && firstTicket.form.multiSelect.length > 0 && (
-                                                                    <div className="space-y-2">
-                                                                        {firstTicket.form.multiSelect.map((item, index) => (
-                                                                            <div key={index} className="text-sm">
-                                                                                <p className="font-medium text-psi-dark/70">{item.label}</p>
-                                                                                <p className="text-psi-dark">{item.answer || "-"}</p>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                )}
-                                                            </div>
+                                                            {renderFormFields(firstTicket.form)}
                                                         </div>
                                                     )}
 
