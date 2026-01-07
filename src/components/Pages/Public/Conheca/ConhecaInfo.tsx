@@ -25,7 +25,7 @@ const ConhecaInfo = () => {
                         </h1>
                         <p className="text-lg
                         sm:text-xl text-psi-dark/70 max-w-2xl mx-auto">
-                            A empresa responsável pela criação do Porto Seguro Ingressos
+                            Uma história de transformação digital e inovação no mercado de eventos e entretenimento.
                         </p>
                     </div>
 
@@ -47,7 +47,7 @@ const ConhecaInfo = () => {
                                 asChild
                                 variant="outline"
                                 size="lg"
-                                className="gap-2"
+                                className="gap-2 hover:bg-psi-secondary hover:text-white"
                             >
                                 <a
                                     href="https://www.instagram.com/maion.digital?igsh=ZWN5dWNheGZ4ZnRm&utm_source=qr"
@@ -62,7 +62,7 @@ const ConhecaInfo = () => {
                                 asChild
                                 variant="outline"
                                 size="lg"
-                                className="gap-2"
+                                className="gap-2 hover:bg-blue-400 hover:text-white"
                             >
                                 <a
                                     href="https://www.facebook.com/profile.php?id=61559369005177"
@@ -92,7 +92,7 @@ const ConhecaInfo = () => {
                             <div className="space-y-6 text-psi-dark/80 leading-relaxed max-w-3xl">
                                 <p className="text-lg
                                 sm:text-xl">
-                                    Fundada em 2024 por dois jovens visionários em Porto Seguro, a <strong className="text-psi-dark font-medium">Maion Digital</strong> nasceu para transformar o mercado de eventos e entretenimento. Especializados em estratégias digitais e desenvolvimento de plataformas, oferecemos soluções abrangentes para destacar seus eventos e impulsionar suas vendas no mercado online.
+                                    Fundada em 2024 por dois empresários visionários em Porto Seguro, a <strong className="text-psi-dark font-medium">Maion Digital</strong> nasceu para transformar o mercado de eventos e entretenimento. Especializados em estratégias digitais e desenvolvimento de plataformas, oferecemos soluções abrangentes para destacar seus eventos e impulsionar suas vendas no mercado online.
                                 </p>
                                 <p className="text-lg
                                 sm:text-xl">
@@ -180,7 +180,7 @@ const ConhecaInfo = () => {
                                 </Link>
                             </Button>
                             <Button asChild size="lg" variant="outline">
-                                <Link href="/cadastro?org=true">
+                                <Link href="/cadastro">
                                     Criar minha conta
                                 </Link>
                             </Button>

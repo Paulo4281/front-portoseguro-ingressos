@@ -13,16 +13,16 @@ import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 const INSTALLMENT_FEES: Record<number, { percentage: number; fixed: number }> = {
     1: { percentage: 0, fixed: 0 },
     2: { percentage: 3.49, fixed: 49 },
-    3: { percentage: 4.49, fixed: 149 },
-    4: { percentage: 5.79, fixed: 149 },
-    5: { percentage: 6.89, fixed: 149 },
-    6: { percentage: 7.99, fixed: 149 },
-    7: { percentage: 8.09, fixed: 149 },
-    8: { percentage: 9.19, fixed: 149 },
-    9: { percentage: 10.29, fixed: 149 },
-    10: { percentage: 11.39, fixed: 149 },
-    11: { percentage: 14.49, fixed: 149 },
-    12: { percentage: 16.59, fixed: 149 }
+    3: { percentage: 5.99, fixed: 149 },
+    4: { percentage: 8.99, fixed: 149 },
+    5: { percentage: 11.99, fixed: 149 },
+    6: { percentage: 14.99, fixed: 149 },
+    7: { percentage: 18.99, fixed: 149 },
+    8: { percentage: 22.99, fixed: 149 },
+    9: { percentage: 26.99, fixed: 149 },
+    10: { percentage: 29.99, fixed: 149 },
+    11: { percentage: 32.99, fixed: 149 },
+    12: { percentage: 35.99, fixed: 149 }
 }
 
 const MIN_VALUE_FOR_INSTALLMENT = 1000

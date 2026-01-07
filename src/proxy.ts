@@ -32,7 +32,8 @@ const publicRoutes: TPublicRoutes[] = [
     { path: "/qr-scanner-link", whenAuthenticated: "next" },
     { path: "/casos-de-uso", whenAuthenticated: "next" },
     { path: "/politica-de-privacidade", whenAuthenticated: "next" },
-    { path: "/termos-e-condicoes", whenAuthenticated: "next" }
+    { path: "/termos-e-condicoes", whenAuthenticated: "next" },
+    { path: "/ajuda", whenAuthenticated: "next" }
 ]
 
 export default async function proxy(request: NextRequest): Promise<NextResponse> {
