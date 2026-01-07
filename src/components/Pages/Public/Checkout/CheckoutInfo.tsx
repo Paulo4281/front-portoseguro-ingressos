@@ -1570,7 +1570,7 @@ const CheckoutInfo = () => {
                                                 ) : (
                                                     <>
                                                         Continuar
-                                                        <ArrowRight className="size-4 ml-2" />
+                                                        <ArrowRight className="size-4" />
                                                     </>
                                                 )}
                                             </Button>

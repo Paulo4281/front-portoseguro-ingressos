@@ -12,6 +12,7 @@ type TAvatarProps = {
     size?: "sm" | "md" | "lg"
     onChange?: (file: File | null) => void
     editable?: boolean
+    accept?: string
 }
 
 const sizeClasses = {
@@ -33,7 +34,8 @@ const Avatar = (
         className,
         size = "md",
         onChange,
-        editable = false
+        editable = false,
+        accept = "image/*"
     }: TAvatarProps
 ) => {
     const [isHovered, setIsHovered] = useState(false)
@@ -73,7 +75,7 @@ const Avatar = (
             <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept={accept}
                 onChange={handleFileChange}
                 className="hidden"
             />
