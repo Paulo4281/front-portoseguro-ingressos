@@ -44,11 +44,36 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
     }
     
     const isPublicRoute = publicRoutes.find((route) => path === route.path || path.startsWith(route.path + "/"))
-    const authToken = request.cookies.get("psi_token")?.value
+    
+    const allCookies = request.cookies.getAll()
+    let authToken = request.cookies.get("psi_token")?.value
 
-    try {
-        if (authToken) {
-            const { id, role, customerId = null, organizer = null } = decodeJwt(authToken) as TJwtDecoded
+    if (!authToken) {
+        const cookieHeader = request.headers.get("cookie")
+        if (cookieHeader) {
+            const cookies = cookieHeader.split(";").map(c => c.trim())
+            const psiTokenCookie = cookies.find(c => c.startsWith("psi_token="))
+            if (psiTokenCookie) {
+                authToken = psiTokenCookie.split("=")[1]
+            }
+        }
+    }
+
+    if (process.env.NODE_ENV === "production" && !isPublicRoute && !authToken) {
+        console.log("Middleware - Path:", path)
+        console.log("Middleware - Cookies disponíveis:", allCookies.map(c => c.name))
+        console.log("Middleware - psi_token presente:", !!authToken)
+        console.log("Middleware - Cookie header:", request.headers.get("cookie")?.substring(0, 100))
+    }
+
+    if (authToken) {
+        try {
+            const decoded = decodeJwt(authToken) as TJwtDecoded
+            const { id, role, customerId = null, organizer = null } = decoded
+
+            if (!role) {
+                throw new Error("Token sem role definida")
+            }
 
             if (role === "ADMIN") {
                 await jwtVerify(authToken, SECRET_ADMIN)
@@ -63,9 +88,20 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
             }
 
             return NextResponse.next()
+        } catch(error) {
+            console.error("Erro ao verificar token:", error)
+            
+            const response = NextResponse.next()
+            response.cookies.delete("psi_token")
+            
+            if (!isPublicRoute) {
+                const redirectUrl = request.nextUrl.clone()
+                redirectUrl.pathname = "/login"
+                return NextResponse.redirect(redirectUrl)
+            }
+            
+            return response
         }
-    } catch(error) {
-        console.error(error)
     }
 
     if (!isPublicRoute) {
