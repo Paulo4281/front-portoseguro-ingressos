@@ -67,7 +67,7 @@ export const useWebPushNotification = () => {
                 return await saveSubscription(existingSubscription)
             }
 
-            const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+            const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "BJvGHvqvvP6tj3OLo4Sxk9ZUXu0JtuXK569RkY2Rv0-Xp_kGSguuUaeEcEEgRtb3bvxuWsjUyb2YP1A83ZNpZkw"
             if (!vapidPublicKey) {
                 console.error("VAPID_PUBLIC_KEY não configurada")
                 Toast.error("Configuração de notificações não encontrada")
