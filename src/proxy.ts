@@ -58,10 +58,6 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
             }
         }
     }
-    console.log("Middleware - Path:", path)
-    console.log("Middleware - Cookies disponíveis:", allCookies.map(c => c.name))
-    console.log("Middleware - psi_token presente:", !!authToken)
-    console.log("Middleware - Cookie header:", request.headers.get("cookie")?.substring(0, 100))
 
     if (authToken) {
         try {
