@@ -276,6 +276,9 @@ const MeuPerfilOrganizer = () => {
                 
                 if (user && response.data) {
                     const updatedUser = response.data as TUser
+                    if (updatedUser?.Organizer && updatedUser.Organizer.verificationStatus !== "APPROVED") {
+                        updatedUser.Organizer.verificationStatus = "PENDING"
+                    }
                     setUser(updatedUser)
                 }
             } else {
