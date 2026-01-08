@@ -64,7 +64,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                         Taxas Altamente Competitivas
                                     </h4>
                                     <p className="text-sm text-psi-dark/70">
-                                        Apenas 1% fixo acima de R$ 39,90 e R$ 1 fixo abaixo disso. Taxas muito mais baixas que concorrentes nacionais, pensadas especialmente para organizadores de <span className="truncate">Porto Seguro</span>.
+                                        Apenas 5% fixo acima de R$ 39,90 e R$ 2,90 fixo abaixo disso. Taxas muito mais baixas que concorrentes nacionais, pensadas especialmente para organizadores de <span className="truncate">Porto Seguro</span>.
                                     </p>
                                 </div>
 
@@ -182,7 +182,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                         Taxas Altamente Competitivas
                                     </h4>
                                     <p className="text-sm text-psi-dark/70">
-                                        Apenas 1% fixo acima de R$ 39,90 e R$ 1 fixo abaixo disso. Taxas muito mais baixas que concorrentes nacionais, pensadas especialmente para organizadores de <span className="truncate">Porto Seguro</span>.
+                                        Apenas 5% fixo acima de R$ 39,90 e R$ 2,90 fixo abaixo disso. Taxas muito mais baixas que concorrentes nacionais, pensadas especialmente para organizadores de <span className="truncate">Porto Seguro</span>.
                                     </p>
                                 </div>
 
@@ -300,7 +300,7 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                         Taxas Altamente Competitivas
                                     </h4>
                                     <p className="text-sm text-psi-dark/70">
-                                        Apenas 1% fixo acima de R$ 39,90 e R$ 1 fixo abaixo disso. Taxas muito mais baixas que concorrentes nacionais, pensadas especialmente para organizadores de Porto Seguro.
+                                        Apenas 5% fixo acima de R$ 39,90 e R$ 2,90 fixo abaixo disso. Taxas muito mais baixas que concorrentes nacionais, pensadas especialmente para organizadores de Porto Seguro.
                                     </p>
                                 </div>
 

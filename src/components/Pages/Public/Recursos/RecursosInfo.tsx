@@ -63,7 +63,7 @@ const RecursosInfo = () => {
     const businessAdvantages = [
         {
             title: "Taxas Competitivas",
-            description: "1% acima de R$39,90 ou R$1 fixo. As menores taxas do mercado brasileiro, sem surpresas.",
+            description: "5% acima de R$39,90 ou R$2,90 fixo. As menores taxas do mercado brasileiro, sem surpresas.",
             icon: TrendingDown,
             stat: "Menor taxa do Brasil"
         },

@@ -23,7 +23,7 @@ context: |
     - Integração com a API do Asaas (pagamentos, webhooks, transferências).
     - Painel administrativo (gerenciar eventos, usuários, transações e repasses).
     - Sistema de verificação de organizadores (CNPJ, documentos e conta bancária).
-    - Controle de taxas (1% fixo acima de R$39,90 e R$1 fixo abaixo disso).
+    - Controle de taxas (5% fixo acima de R$39,90 e R$2,90 fixo abaixo disso).
     - Repasses automáticos pós-evento.
     - Suporte a notificações via webhook (confirmações de pagamento, estornos, etc).
 
