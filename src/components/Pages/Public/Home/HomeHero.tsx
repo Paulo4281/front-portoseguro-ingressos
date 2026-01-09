@@ -52,7 +52,6 @@ const HomeHero = () => {
     const { mutateAsync: loginWithGoogle, isPending: isLoggingInWithGoogle } = useAuthLoginWithGoogle()
     const googleButtonRef = useRef<HTMLDivElement>(null)
     const [isGoogleScriptLoaded, setIsGoogleScriptLoaded] = useState(false)
-    const [googleButtonRendered, setGoogleButtonRendered] = useState(false)
     
     const loginForm = useForm<TAuth>({
         resolver: zodResolver(AuthValidator)
@@ -102,11 +101,13 @@ const HomeHero = () => {
     useEffect(() => {
         const clientId = process.env.NEXT_PUBLIC_GOOGLE_SOCIAL_LOGIN_CLIENT_ID
         if (!clientId) {
-            console.warn("Google Client ID não configurado")
+            console.error("[HomeHero] CLIENT_ID não configurado")
             return
         }
 
-        const initializeGoogle = () => {
+        const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]')
+        
+        if (existingScript) {
             if (window.google?.accounts?.id) {
                 try {
                     window.google.accounts.id.initialize({
@@ -114,26 +115,31 @@ const HomeHero = () => {
                         callback: handleCredentialResponse
                     })
                     setIsGoogleScriptLoaded(true)
-                    return true
                 } catch (error) {
-                    console.error("Erro ao inicializar Google:", error)
+                    console.error("[HomeHero] Erro ao inicializar Google (script existente):", error)
                 }
-            }
-            return false
-        }
-
-        if (initializeGoogle()) {
-            return
-        }
-
-        const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]')
-        if (existingScript) {
-            const checkInterval = setInterval(() => {
-                if (initializeGoogle()) {
+            } else {
+                console.warn("[HomeHero] window.google.accounts.id não disponível mesmo com script existente")
+                const checkInterval = setInterval(() => {
+                    if (window.google?.accounts?.id) {
+                        try {
+                            window.google.accounts.id.initialize({
+                                client_id: clientId,
+                                callback: handleCredentialResponse
+                            })
+                            setIsGoogleScriptLoaded(true)
+                            clearInterval(checkInterval)
+                        } catch (error) {
+                            console.error("[HomeHero] Erro ao inicializar Google (retry):", error)
+                        }
+                    }
+                }, 500)
+                setTimeout(() => {
                     clearInterval(checkInterval)
-                }
-            }, 200)
-            return () => clearInterval(checkInterval)
+                    console.warn("[HomeHero] Timeout ao aguardar window.google.accounts.id")
+                }, 10000)
+            }
+            return
         }
 
         const script = document.createElement("script")
@@ -141,19 +147,40 @@ const HomeHero = () => {
         script.async = true
         script.defer = true
         script.onload = () => {
-            setTimeout(() => {
-                if (!initializeGoogle()) {
-                    const retryInterval = setInterval(() => {
-                        if (initializeGoogle()) {
-                            clearInterval(retryInterval)
-                        }
-                    }, 200)
-                    setTimeout(() => clearInterval(retryInterval), 5000)
+            if (window.google && window.google.accounts) {
+                try {
+                    window.google.accounts.id.initialize({
+                        client_id: clientId,
+                        callback: handleCredentialResponse
+                    })
+                    setIsGoogleScriptLoaded(true)
+                } catch (error) {
+                    console.error("[HomeHero] Erro ao inicializar Google:", error)
                 }
-            }, 300)
+            } else {
+                console.warn("[HomeHero] window.google não disponível após onload")
+                const retryInterval = setInterval(() => {
+                    if (window.google?.accounts?.id) {
+                        try {
+                            window.google.accounts.id.initialize({
+                                client_id: clientId,
+                                callback: handleCredentialResponse
+                            })
+                            setIsGoogleScriptLoaded(true)
+                            clearInterval(retryInterval)
+                        } catch (error) {
+                            console.error("[HomeHero] Erro ao inicializar Google (retry):", error)
+                        }
+                    }
+                }, 500)
+                setTimeout(() => {
+                    clearInterval(retryInterval)
+                    console.warn("[HomeHero] Timeout ao aguardar window.google após onload")
+                }, 10000)
+            }
         }
         script.onerror = () => {
-            console.error("Erro ao carregar script do Google")
+            console.error("[HomeHero] Erro ao carregar script do Google")
         }
         document.head.appendChild(script)
 
@@ -165,47 +192,62 @@ const HomeHero = () => {
     }, [handleCredentialResponse])
 
     useEffect(() => {
-        if (!isGoogleScriptLoaded || !googleButtonRef.current) {
+        if (!isGoogleScriptLoaded || !window.google?.accounts?.id) {
+            if (!isGoogleScriptLoaded) {
+                console.warn("[HomeHero] isGoogleScriptLoaded é false")
+            }
+            if (!window.google?.accounts?.id) {
+                console.warn("[HomeHero] window.google.accounts.id não está disponível")
+            }
             return
         }
 
-        const renderGoogleButton = () => {
+        const renderButton = () => {
             if (!googleButtonRef.current) {
-                return
-            }
-
-            if (!window.google?.accounts?.id) {
-                setTimeout(renderGoogleButton, 200)
-                return
+                console.warn("[HomeHero] googleButtonRef.current ainda é null, aguardando...")
+                return false
             }
 
             try {
-                if (googleButtonRef.current.children.length > 0) {
-                    setGoogleButtonRendered(true)
-                    return
+                if (googleButtonRef.current.children.length === 0) {
+                    window.google.accounts.id.renderButton(googleButtonRef.current, {
+                        theme: "filled_blue",
+                        type: "standard",
+                        size: "large",
+                        shape: "pill",
+                        width: "100%"
+                    })
+                    setTimeout(() => {
+                    }, 1000)
+                    return true
+                } else {
+                    return true
                 }
-                
-                window.google.accounts.id.renderButton(googleButtonRef.current, {
-                    theme: "filled_blue",
-                    type: "standard",
-                    size: "large",
-                    shape: "pill",
-                    width: "100%"
-                })
-                
-                setTimeout(() => {
-                    if (googleButtonRef.current && googleButtonRef.current.children.length > 0) {
-                        setGoogleButtonRendered(true)
-                    }
-                }, 500)
             } catch (error) {
-                console.error("Erro ao renderizar botão do Google:", error)
-                setTimeout(renderGoogleButton, 500)
+                console.error("[HomeHero] Erro ao renderizar botão do Google:", error)
+                return false
             }
         }
 
-        const timer = setTimeout(renderGoogleButton, 300)
-        return () => clearTimeout(timer)
+        if (renderButton()) {
+            return
+        }
+
+        const retryInterval = setInterval(() => {
+            if (renderButton()) {
+                clearInterval(retryInterval)
+            }
+        }, 200)
+
+        const timeout = setTimeout(() => {
+            clearInterval(retryInterval)
+            console.warn("[HomeHero] Timeout ao aguardar ref para renderizar botão")
+        }, 10000)
+
+        return () => {
+            clearInterval(retryInterval)
+            clearTimeout(timeout)
+        }
     }, [isGoogleScriptLoaded])
 
     const heroCategories = useMemo(() => {
@@ -436,7 +478,9 @@ const HomeHero = () => {
 
                                                     <div className="w-full min-h-[40px] flex flex-col items-center">
                                                         <div 
-                                                            ref={googleButtonRef} 
+                                                            ref={(el) => {
+                                                                googleButtonRef.current = el
+                                                            }} 
                                                             className="w-full flex justify-center"
                                                             style={{ minHeight: '40px' }}
                                                         />
@@ -445,9 +489,9 @@ const HomeHero = () => {
                                                                 <LoadingButton />
                                                             </div>
                                                         )}
-                                                        {!isGoogleScriptLoaded && !googleButtonRendered && (
-                                                            <div className="text-xs text-psi-dark/40 mt-2 animate-pulse">
-                                                                Carregando...
+                                                        {!isGoogleScriptLoaded && (
+                                                            <div className="text-xs text-psi-dark/40 mt-2">
+                                                                Carregando Google Sign-In...
                                                             </div>
                                                         )}
                                                     </div>
