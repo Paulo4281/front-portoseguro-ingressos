@@ -193,7 +193,7 @@ const ImageUpload = (
                 <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/*"
+                    accept="image/png, image/jpeg, image/jpg"
                     onChange={handleFileChange}
                     className="hidden"
                 />
@@ -248,11 +248,8 @@ const ImageUpload = (
                         <p className="text-sm font-medium text-psi-dark mb-1">
                             Clique para fazer upload
                         </p>
-                        <p className="text-xs text-psi-dark/60">
-                            ou arraste e solte a imagem aqui
-                        </p>
                         <p className="text-xs text-psi-dark/40 mt-2">
-                            PNG, JPG, GIF até 10MB
+                            PNG, JPG, JPEG até 10MB
                         </p>
                     </div>
                 )}

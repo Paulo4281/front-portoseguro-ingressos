@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from "react"
 import { useForm, Controller, useFieldArray, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
-import { ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, FileText, Repeat, Tag, Sparkles, Check, CheckCircle, Info, HelpCircle } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, FileText, Repeat, Tag, Sparkles, Check, CheckCircle, Info, HelpCircle, CreditCard, Users } from "lucide-react"
 import { EventUpdateValidator } from "@/validators/Event/EventValidator"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -1315,69 +1315,168 @@ const AtualizarEventoForm = () => {
                                 />
                                 <FieldError message={form.formState.errors.isFree?.message || ""} />
 
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                            Limitar quantidade de ingressos por pessoa
-                                        </label>
+                                <div className="space-y-6">
+                                    <div className="rounded-2xl border border-psi-primary/20 bg-linear-to-br from-psi-primary/5 via-white to-psi-primary/5 p-6 space-y-5">
+                                        <div className="flex items-start gap-4">
+                                            <div className="rounded-xl bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-3 shrink-0">
+                                                <Users className="h-6 w-6 text-psi-primary" />
+                                            </div>
+                                            <div className="flex-1 space-y-2">
+                                                <div>
+                                                    <label className="block text-base font-semibold text-psi-dark mb-1">
+                                                        Limitar quantidade de ingressos por pessoa
+                                                    </label>
+                                                    <p className="text-sm text-psi-dark/60">
+                                                        Defina o número máximo de ingressos que uma única pessoa pode comprar
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <Controller
                                             name="buyTicketsLimit"
                                             control={form.control}
-                                            render={({ field }) => (
-                                                <Input
-                                                    {...field}
-                                                    type="number"
-                                                    placeholder="10"
-                                                    min={1}
-                                                    max={100}
-                                                    className="w-full max-w-[200px]"
-                                                    value={field.value || 10}
-                                                    onChange={(e) => {
-                                                        const value = e.target.value
-                                                        if (value === "") {
-                                                            field.onChange(null)
-                                                        } else {
-                                                            const numValue = parseInt(value, 10)
-                                                            if (!isNaN(numValue) && numValue >= 1 && numValue <= 100) {
-                                                                field.onChange(numValue)
-                                                            }
-                                                        }
-                                                    }}
-                                                />
-                                            )}
+                                            render={({ field }) => {
+                                                const currentValue = field.value || 10
+                                                const quickOptions = [5, 10, 20, 50]
+                                                
+                                                return (
+                                                    <div className="space-y-4">
+                                                        <div className="flex flex-wrap items-center gap-3">
+                                                            <span className="text-sm font-medium text-psi-dark/70">Opções rápidas:</span>
+                                                            {quickOptions.map((option) => (
+                                                                <Button
+                                                                    key={option}
+                                                                    type="button"
+                                                                    variant={currentValue === option ? "primary" : "outline"}
+                                                                    size="sm"
+                                                                    className={currentValue === option ? "" : "border-psi-primary/30 hover:border-psi-primary/50"}
+                                                                    onClick={() => field.onChange(option)}
+                                                                >
+                                                                    {option} ingressos
+                                                                </Button>
+                                                            ))}
+                                                        </div>
+                                                        
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-sm font-medium text-psi-dark/70 whitespace-nowrap">Ou escolha:</span>
+                                                            <Input
+                                                                {...field}
+                                                                type="number"
+                                                                placeholder="10"
+                                                                min={1}
+                                                                max={100}
+                                                                className="w-full max-w-[120px]"
+                                                                value={field.value || ""}
+                                                                onChange={(e) => {
+                                                                    const value = e.target.value
+                                                                    if (value === "") {
+                                                                        field.onChange(null)
+                                                                    } else {
+                                                                        const numValue = parseInt(value, 10)
+                                                                        if (!isNaN(numValue) && numValue >= 1 && numValue <= 100) {
+                                                                            field.onChange(numValue)
+                                                                        }
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <span className="text-xs text-psi-dark/60">ingressos (máx. 100)</span>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            }}
                                         />
                                         <FieldError message={form.formState.errors.buyTicketsLimit?.message || ""} />
                                     </div>
 
-                                    <div>
-                                        <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                            Máximo de parcelas
-                                        </label>
+                                    <div className="rounded-2xl border border-psi-primary/20 bg-linear-to-br from-psi-primary/5 via-white to-psi-primary/5 p-6 space-y-5">
+                                        <div className="flex items-start gap-4">
+                                            <div className="rounded-xl bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-3 shrink-0">
+                                                <CreditCard className="h-6 w-6 text-psi-primary" />
+                                            </div>
+                                            <div className="flex-1 space-y-2">
+                                                <div>
+                                                    <label className="block text-base font-semibold text-psi-dark mb-1">
+                                                        Máximo de parcelas
+                                                    </label>
+                                                    <p className="text-sm text-psi-dark/60">
+                                                        Permita que compradores parcelem o pagamento no cartão de crédito
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <Controller
                                             name="maxInstallments"
                                             control={form.control}
-                                            render={({ field }) => (
-                                                <Input
-                                                    {...field}
-                                                    type="number"
-                                                    placeholder="1"
-                                                    min={1}
-                                                    max={12}
-                                                    className="w-full max-w-[200px]"
-                                                    value={field.value || ""}
-                                                    onChange={(e) => {
-                                                        const value = e.target.value
-                                                        if (value === "") {
-                                                            field.onChange(null)
-                                                        } else {
-                                                            const numValue = parseInt(value, 10)
-                                                            if (!isNaN(numValue) && numValue >= 1 && numValue <= 12) {
-                                                                field.onChange(numValue)
-                                                            }
-                                                        }
-                                                    }}
-                                                />
-                                            )}
+                                            render={({ field }) => {
+                                                const currentValue = field.value || 1
+                                                const quickOptions = [1, 3, 6, 12]
+                                                
+                                                return (
+                                                    <div className="space-y-4">
+                                                        <div className="flex flex-wrap items-center gap-3">
+                                                            <span className="text-sm font-medium text-psi-dark/70">Opções rápidas:</span>
+                                                            {quickOptions.map((option) => (
+                                                                <Button
+                                                                    key={option}
+                                                                    type="button"
+                                                                    variant={currentValue === option ? "primary" : "outline"}
+                                                                    size="sm"
+                                                                    className={currentValue === option ? "" : "border-psi-primary/30 hover:border-psi-primary/50"}
+                                                                    onClick={() => field.onChange(option)}
+                                                                >
+                                                                    {option}x
+                                                                </Button>
+                                                            ))}
+                                                        </div>
+                                                        
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-sm font-medium text-psi-dark/70 whitespace-nowrap">Ou escolha:</span>
+                                                            <Input
+                                                                {...field}
+                                                                type="number"
+                                                                placeholder="1"
+                                                                min={1}
+                                                                max={12}
+                                                                className="w-full max-w-[120px]"
+                                                                value={field.value || ""}
+                                                                onChange={(e) => {
+                                                                    const value = e.target.value
+                                                                    if (value === "") {
+                                                                        field.onChange(null)
+                                                                    } else {
+                                                                        const numValue = parseInt(value, 10)
+                                                                        if (!isNaN(numValue) && numValue >= 1 && numValue <= 12) {
+                                                                            field.onChange(numValue)
+                                                                        }
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <span className="text-xs text-psi-dark/60">parcelas (máx. 12x)</span>
+                                                        </div>
+
+                                                        {currentValue > 1 && (
+                                                            <div className="rounded-xl border border-psi-secondary/30 bg-linear-to-br from-psi-secondary/10 via-white to-psi-secondary/5 p-4 space-y-2">
+                                                                <div className="flex items-start gap-2">
+                                                                    <Info className="h-4 w-4 text-psi-secondary shrink-0 mt-0.5" />
+                                                                    <div className="flex-1 space-y-1">
+                                                                        <p className="text-sm font-medium text-psi-dark">
+                                                                            Como funciona o repasse parcelado
+                                                                        </p>
+                                                                        <p className="text-xs text-psi-dark/70 leading-relaxed">
+                                                                            O repasse será feito <strong className="text-psi-dark">conforme as parcelas forem sendo pagas</strong>. 
+                                                                            Por exemplo: se um ingresso foi dividido em 6x e já se passaram 4 meses quando o evento se encerrar, 
+                                                                            será repassado ao organizador o valor das 4 parcelas já pagas. 
+                                                                            As parcelas restantes serão repassadas assim que recebermos a cobrança de cada uma delas.
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )
+                                            }}
                                         />
                                         <FieldError message={form.formState.errors.maxInstallments?.message || ""} />
                                     </div>

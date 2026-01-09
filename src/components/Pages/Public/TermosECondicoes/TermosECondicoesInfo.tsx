@@ -128,7 +128,7 @@ const TermosECondicoesInfo = () => {
                                         <div>
                                             <h3 className="font-medium text-psi-dark mb-2">3.1. Taxa de Serviço</h3>
                                             <p className="text-psi-dark/70 leading-relaxed">
-                                                A taxa de serviço cobrada ao cliente é de <strong className="text-psi-primary">R$ 1,90 por ingresso</strong>. 
+                                                A taxa de serviço cobrada ao cliente é de <strong className="text-psi-primary">R$ 1,99 por ingresso</strong>. 
                                                 Este valor pode aumentar caso o organizador opte por repassar parte de sua taxa para o comprador.
                                             </p>
                                         </div>

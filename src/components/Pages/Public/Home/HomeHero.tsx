@@ -1,10 +1,12 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useForm, Controller } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CTAButton } from "@/components/CTAButton/CTAButton"
-import { ArrowUpRight, Lock, ShieldCheck, Ticket, Music2, SunMedium, Waves, PartyPopper, TrendingDown, Users, CreditCard, TrendingUp, Megaphone, Tag, Fingerprint, Cpu, Sparkles, Globe2, CheckCircle2, HeartHandshake, DollarSign, Star, BookOpen, ArrowRight, DollarSignIcon, Book, Car, Building2, Trophy, UtensilsCrossed, Heart, Music, Church } from "lucide-react"
+import { ArrowUpRight, Lock, ShieldCheck, Ticket, Music2, SunMedium, Waves, PartyPopper, TrendingDown, Users, CreditCard, TrendingUp, Megaphone, Tag, Fingerprint, Cpu, Sparkles, Globe2, CheckCircle2, HeartHandshake, DollarSign, Star, BookOpen, ArrowRight, DollarSignIcon, Book, Car, Building2, Trophy, UtensilsCrossed, Heart, Music, Church, Mail, UserPlus, Zap } from "lucide-react"
 import { useEventFindFeatured } from "@/hooks/Event/useEventFindFeatured"
 import { CardEvent } from "@/components/Card/CardEvent/CardEvent"
 import { Carousel } from "@/components/Carousel/Carousel"
@@ -17,10 +19,44 @@ import { EventCategoryIconHandler } from "@/utils/Helpers/EventCategoryIconHandl
 import { TEvent } from "@/types/Event/TEvent"
 import { Toast } from "@/components/Toast/Toast"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
+import { AuthValidator } from "@/validators/Auth/AuthValidator"
+import { TAuth } from "@/types/Auth/TAuth"
+import { Input } from "@/components/Input/Input"
+import { FieldError } from "@/components/FieldError/FieldError"
+import { useAuthLogin } from "@/hooks/Auth/useAuthLogin"
+import { useAuthLoginWithGoogle } from "@/hooks/Auth/useAuthLoginWithGoogle"
+import { useRouter } from "next/navigation"
+import { LoadingButton } from "@/components/Loading/LoadingButton"
+import { useAuthStore } from "@/stores/Auth/AuthStore"
+
+declare global {
+    interface Window {
+        google: {
+            accounts: {
+                id: {
+                    initialize: (config: { client_id: string; callback: (response: { credential: string }) => void }) => void
+                    renderButton: (element: HTMLElement, config: any) => void
+                    prompt: () => void
+                }
+            }
+        }
+    }
+}
 
 const HomeHero = () => {
     const { data: eventsData, isLoading, isError } = useEventFindFeatured()
     const [featuredEvents, setFeaturedEvents] = useState<TEvent[]>([])
+    const { user, isAuthenticated, setUser } = useAuthStore()
+    const router = useRouter()
+    const { mutateAsync: loginUser, isPending: isLoggingIn } = useAuthLogin()
+    const { mutateAsync: loginWithGoogle, isPending: isLoggingInWithGoogle } = useAuthLoginWithGoogle()
+    const googleButtonRef = useRef<HTMLDivElement>(null)
+    const [isGoogleScriptLoaded, setIsGoogleScriptLoaded] = useState(false)
+    const [googleButtonRendered, setGoogleButtonRendered] = useState(false)
+    
+    const loginForm = useForm<TAuth>({
+        resolver: zodResolver(AuthValidator)
+    })
 
     useEffect(() => {
         if (eventsData?.success) {
@@ -34,6 +70,143 @@ const HomeHero = () => {
     }, [eventsData])
 
     const { data: eventCategoriesData, isLoading: isEventCategoriesLoading } = useEventCategoryFind()
+
+    const handleLoginSubmit = async (data: TAuth) => {
+        const response = await loginUser(data)
+        if (response && response.success && response.data?.user) {
+            setUser(response.data.user)
+            Toast.success("Login realizado com sucesso!")
+            if (response.data.user.role === "NOT_DEFINED") {
+                router.push("/confirmar-social")
+            } else {
+                loginForm.reset()
+            }
+        }
+    }
+
+    const handleCredentialResponse = useCallback(async (response: { credential: string }) => {
+        try {
+            const authResponse = await loginWithGoogle(response.credential)
+            if (authResponse && authResponse.success && authResponse.data?.user) {
+                setUser(authResponse.data.user)
+                Toast.success("Login realizado com sucesso!")
+                if (authResponse.data.user.role === "NOT_DEFINED") {
+                    router.push("/confirmar-social")
+                }
+            }
+        } catch (error) {
+            Toast.error("Erro ao fazer login com Google")
+        }
+    }, [loginWithGoogle, setUser, router])
+
+    useEffect(() => {
+        const clientId = process.env.NEXT_PUBLIC_GOOGLE_SOCIAL_LOGIN_CLIENT_ID
+        if (!clientId) {
+            console.warn("Google Client ID não configurado")
+            return
+        }
+
+        const initializeGoogle = () => {
+            if (window.google?.accounts?.id) {
+                try {
+                    window.google.accounts.id.initialize({
+                        client_id: clientId,
+                        callback: handleCredentialResponse
+                    })
+                    setIsGoogleScriptLoaded(true)
+                    return true
+                } catch (error) {
+                    console.error("Erro ao inicializar Google:", error)
+                }
+            }
+            return false
+        }
+
+        if (initializeGoogle()) {
+            return
+        }
+
+        const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]')
+        if (existingScript) {
+            const checkInterval = setInterval(() => {
+                if (initializeGoogle()) {
+                    clearInterval(checkInterval)
+                }
+            }, 200)
+            return () => clearInterval(checkInterval)
+        }
+
+        const script = document.createElement("script")
+        script.src = "https://accounts.google.com/gsi/client"
+        script.async = true
+        script.defer = true
+        script.onload = () => {
+            setTimeout(() => {
+                if (!initializeGoogle()) {
+                    const retryInterval = setInterval(() => {
+                        if (initializeGoogle()) {
+                            clearInterval(retryInterval)
+                        }
+                    }, 200)
+                    setTimeout(() => clearInterval(retryInterval), 5000)
+                }
+            }, 300)
+        }
+        script.onerror = () => {
+            console.error("Erro ao carregar script do Google")
+        }
+        document.head.appendChild(script)
+
+        return () => {
+            if (document.head.contains(script)) {
+                document.head.removeChild(script)
+            }
+        }
+    }, [handleCredentialResponse])
+
+    useEffect(() => {
+        if (!isGoogleScriptLoaded || !googleButtonRef.current) {
+            return
+        }
+
+        const renderGoogleButton = () => {
+            if (!googleButtonRef.current) {
+                return
+            }
+
+            if (!window.google?.accounts?.id) {
+                setTimeout(renderGoogleButton, 200)
+                return
+            }
+
+            try {
+                if (googleButtonRef.current.children.length > 0) {
+                    setGoogleButtonRendered(true)
+                    return
+                }
+                
+                window.google.accounts.id.renderButton(googleButtonRef.current, {
+                    theme: "filled_blue",
+                    type: "standard",
+                    size: "large",
+                    shape: "pill",
+                    width: "100%"
+                })
+                
+                setTimeout(() => {
+                    if (googleButtonRef.current && googleButtonRef.current.children.length > 0) {
+                        setGoogleButtonRendered(true)
+                    }
+                }, 500)
+            } catch (error) {
+                console.error("Erro ao renderizar botão do Google:", error)
+                setTimeout(renderGoogleButton, 500)
+            }
+        }
+
+        const timer = setTimeout(renderGoogleButton, 300)
+        return () => clearTimeout(timer)
+    }, [isGoogleScriptLoaded])
 
     const heroCategories = useMemo(() => {
         if (eventCategoriesData?.data && Array.isArray(eventCategoriesData.data)) {
@@ -169,6 +342,146 @@ const HomeHero = () => {
                                     }}
                                 />
                             </div>
+
+                            {!isAuthenticated && (
+                                <div className="w-full mb-12">
+                                    <div className="relative overflow-hidden border-2 border-psi-primary/20 bg-linear-to-br from-psi-primary/10 via-white to-psi-light/50 p-8
+                                    sm:p-10
+                                    lg:p-12 shadow-xl shadow-psi-primary/10 neon-border">
+                                        <div className="absolute top-0 right-0 w-64 h-64 bg-psi-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                                        <div className="relative space-y-6">
+                                            <div className="text-center space-y-2">
+                                                <h3 className="text-2xl font-bold text-psi-dark
+                                                sm:text-3xl">
+                                                    Acesse sua conta e <span className="text-psi-primary">acelere suas compras</span>
+                                                </h3>
+                                                <p className="text-sm text-psi-dark/60
+                                                sm:text-base">
+                                                    Faça login rápido ou crie sua conta gratuitamente
+                                                </p>
+                                            </div>
+
+                                            <div className="grid gap-6
+                                            lg:grid-cols-2 lg:gap-8 max-w-4xl mx-auto">
+                                                <div className="space-y-4">
+                                                    <form onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4">
+                                                        <div className="space-y-2">
+                                                            <Controller
+                                                                name="email"
+                                                                control={loginForm.control}
+                                                                render={({ field }) => (
+                                                                    <Input
+                                                                        {...field}
+                                                                        id="home-email"
+                                                                        type="email"
+                                                                        placeholder="seu@email.com"
+                                                                        icon={Mail}
+                                                                        required
+                                                                    />
+                                                                )}
+                                                            />
+                                                            <FieldError message={loginForm.formState.errors.email?.message || ""} />
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <Controller
+                                                                name="password"
+                                                                control={loginForm.control}
+                                                                render={({ field }) => (
+                                                                    <Input
+                                                                        {...field}
+                                                                        id="home-password"
+                                                                        type="password"
+                                                                        placeholder="Sua senha"
+                                                                        icon={Lock}
+                                                                        required
+                                                                    />
+                                                                )}
+                                                            />
+                                                            <FieldError message={loginForm.formState.errors.password?.message || ""} />
+                                                        </div>
+
+                                                        <Button
+                                                            type="submit"
+                                                            variant="primary"
+                                                            className="w-full"
+                                                            size="lg"
+                                                            disabled={isLoggingIn}
+                                                        >
+                                                            {
+                                                                isLoggingIn ? (
+                                                                    <LoadingButton />
+                                                                ) : (
+                                                                    <>
+                                                                        Entrar
+                                                                    </>
+                                                                )
+                                                            }
+                                                        </Button>
+                                                    </form>
+
+                                                    <div className="relative">
+                                                        <div className="absolute inset-0 flex items-center">
+                                                            <div className="w-full border-t border-border" />
+                                                        </div>
+                                                        <div className="relative flex justify-center text-xs uppercase">
+                                                            <span className="bg-white
+                                                            dark:bg-psi-dark
+                                                            px-2
+                                                            text-muted-foreground">
+                                                                Ou
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="w-full min-h-[40px] flex flex-col items-center">
+                                                        <div 
+                                                            ref={googleButtonRef} 
+                                                            className="w-full flex justify-center"
+                                                            style={{ minHeight: '40px' }}
+                                                        />
+                                                        {isLoggingInWithGoogle && (
+                                                            <div className="mt-2 flex justify-center">
+                                                                <LoadingButton />
+                                                            </div>
+                                                        )}
+                                                        {!isGoogleScriptLoaded && !googleButtonRendered && (
+                                                            <div className="text-xs text-psi-dark/40 mt-2 animate-pulse">
+                                                                Carregando...
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-col justify-start space-y-4 lg:border-l lg:border-psi-primary/20 lg:pl-8">
+                                                    <div className="text-center lg:text-left space-y-3">
+                                                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-psi-secondary/10 text-psi-secondary">
+                                                            <Star className="h-4 w-4" />
+                                                            <span className="text-sm font-semibold">Novo por aqui?</span>
+                                                        </div>
+                                                        <p className="text-sm text-psi-dark/70">
+                                                            Crie sua conta gratuitamente e ganhe acesso a ofertas exclusivas, checkout mais rápido e muito mais!
+                                                        </p>
+                                                    </div>
+
+                                                    <Button
+                                                        asChild
+                                                        variant="secondary"
+                                                        size="lg"
+                                                        className="w-full group"
+                                                    >
+                                                        <Link href="/cadastro">
+                                                            <UserPlus className="h-4 w-4" />
+                                                            Criar conta grátis
+                                                            <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                                                        </Link>
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="flex w-full flex-col items-center">
                                 <div className="

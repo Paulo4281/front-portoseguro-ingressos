@@ -26,6 +26,7 @@ import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import type { TTicketScanLink } from "@/types/Ticket/TTicket"
 import { QrCode, Link2, Trash2, Users, Scan, CheckCircle2, XCircle, Calendar, Ticket, Search, MoreVertical, Check, Info, ImageUp, CircleMinus } from "lucide-react"
+import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 import { DialogConfirm } from "@/components/Dialog/DialogConfirm/DialogConfirm"
 import { Toast } from "@/components/Toast/Toast"
 import { useEventFindByUserId } from "@/hooks/Event/useEventFindByUserId"
@@ -729,14 +730,34 @@ const QrScannerPannel = () => {
                                             )}
 
                                             {selectedEvent && (
-                                                <div className="mt-4 p-4 rounded-lg bg-psi-primary/5 border border-psi-primary/20">
-                                                    <p className="text-sm font-medium text-psi-dark mb-2">{selectedEvent.name}</p>
-                                                    {/* {selectedEvent.location && (
-                                                        <p className="text-xs text-psi-dark/60 flex items-center gap-1">
-                                                            <Calendar className="h-3 w-3" />
-                                                            {selectedEvent.location}
-                                                        </p>
-                                                    )} */}
+                                                <div className="mt-6 rounded-xl overflow-hidden border border-psi-primary/20 bg-white shadow-sm">
+                                                    <div className="relative h-48 w-full overflow-hidden bg-linear-to-br from-psi-primary/10 to-psi-secondary/10">
+                                                        {selectedEvent.image ? (
+                                                            <img
+                                                                src={ImageUtils.getEventImageUrl(selectedEvent.image)}
+                                                                alt={selectedEvent.name}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center">
+                                                                <Ticket className="h-16 w-16 text-psi-primary/30" />
+                                                            </div>
+                                                        )}
+                                                        <div className="absolute inset-0 bg-linear-to-t from-psi-dark/60 via-psi-dark/20 to-transparent" />
+                                                        <div className="absolute bottom-0 left-0 right-0 p-4">
+                                                            <h3 className="text-lg font-semibold text-white mb-1 drop-shadow-lg">
+                                                                {selectedEvent.name}
+                                                            </h3>
+                                                            {selectedEvent.EventDates && selectedEvent.EventDates.length > 0 && (
+                                                                <div className="flex items-center gap-2 text-white/90 text-sm">
+                                                                    <Calendar className="h-4 w-4" />
+                                                                    <span className="drop-shadow">
+                                                                        {selectedEvent.EventDates.length} {selectedEvent.EventDates.length === 1 ? "data" : "datas"}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
@@ -763,26 +784,56 @@ const QrScannerPannel = () => {
 
                                         {selectedEventId && (
                                             <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
-                                                <h2 className="text-lg font-medium text-psi-dark mb-4">Estatísticas</h2>
+                                                <div className="flex items-center gap-3 mb-5">
+                                                    <div className="rounded-lg bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-2">
+                                                        <Ticket className="h-5 w-5 text-psi-primary" />
+                                                    </div>
+                                                    <h2 className="text-lg font-semibold text-psi-dark">Estatísticas de Validação</h2>
+                                                </div>
                                                 <div className="space-y-3">
-                                                    <div className="flex items-center justify-between p-3 rounded-lg bg-psi-primary/5">
-                                                        <span className="text-sm text-psi-dark/70">Total de ingressos</span>
-                                                        <span className="text-lg font-medium text-psi-primary">{validationStats.total}</span>
+                                                    <div className="flex items-center justify-between p-4 rounded-xl bg-linear-to-br from-psi-primary/10 via-psi-primary/5 to-psi-primary/10 border border-psi-primary/20">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="rounded-lg bg-psi-primary/20 p-2">
+                                                                <Ticket className="h-5 w-5 text-psi-primary" />
+                                                            </div>
+                                                            <span className="text-sm font-medium text-psi-dark/80">Total de ingressos</span>
+                                                        </div>
+                                                        <span className="text-2xl font-bold text-psi-primary">{validationStats.total}</span>
                                                     </div>
-                                                    <div className="flex items-center justify-between p-3 rounded-lg bg-green-50">
-                                                        <span className="text-sm text-psi-dark/70 flex items-center gap-2">
-                                                            <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                                            Validados
-                                                        </span>
-                                                        <span className="text-lg font-medium text-green-600">{validationStats.validated}</span>
+                                                    <div className="flex items-center justify-between p-4 rounded-xl bg-linear-to-br from-green-50 via-green-50/50 to-green-50 border border-green-200/50">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="rounded-lg bg-green-100 p-2">
+                                                                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                                            </div>
+                                                            <span className="text-sm font-medium text-psi-dark/80">Validados</span>
+                                                        </div>
+                                                        <span className="text-2xl font-bold text-green-600">{validationStats.validated}</span>
                                                     </div>
-                                                    <div className="flex items-center justify-between p-3 rounded-lg bg-orange-50">
-                                                        <span className="text-sm text-psi-dark/70 flex items-center gap-2">
-                                                            <CircleMinus className="h-4 w-4 text-yellow-500" />
-                                                            Pendentes
-                                                        </span>
-                                                        <span className="text-lg font-medium text-yellow-500">{validationStats.remaining}</span>
+                                                    <div className="flex items-center justify-between p-4 rounded-xl bg-linear-to-br from-amber-50 via-amber-50/50 to-amber-50 border border-amber-200/50">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="rounded-lg bg-amber-100 p-2">
+                                                                <CircleMinus className="h-5 w-5 text-amber-600" />
+                                                            </div>
+                                                            <span className="text-sm font-medium text-psi-dark/80">Pendentes</span>
+                                                        </div>
+                                                        <span className="text-2xl font-bold text-amber-600">{validationStats.remaining}</span>
                                                     </div>
+                                                    {validationStats.total > 0 && (
+                                                        <div className="mt-4 pt-4 border-t border-psi-primary/10">
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <span className="text-xs font-medium text-psi-dark/60">Progresso de validação</span>
+                                                                <span className="text-xs font-semibold text-psi-primary">
+                                                                    {Math.round((validationStats.validated / validationStats.total) * 100)}%
+                                                                </span>
+                                                            </div>
+                                                            <div className="w-full h-2 bg-psi-primary/10 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className="h-full bg-linear-to-r from-green-500 to-green-600 rounded-full transition-all duration-500"
+                                                                    style={{ width: `${(validationStats.validated / validationStats.total) * 100}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}

@@ -167,9 +167,16 @@
   }
 }
 
-@media screen and (max-width: 399px) {
+@media screen and (min-width: 377px) and (max-width: 399px) {
   .container {
     max-width: 399px;
+    padding: 30px 20px 30px 20px !important;
+  }
+}
+
+@media screen and (max-width: 376px) {
+  .container {
+    max-width: 376px !important;
     padding: 30px 20px 30px 20px !important;
   }
 }

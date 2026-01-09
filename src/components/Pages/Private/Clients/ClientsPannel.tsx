@@ -114,7 +114,7 @@ const ClientsPannel = () => {
             lg:px-8">
                 <div className="space-y-4">
                     <div className="space-y-3">
-                        <h1 className="text-3xl font-medium text-psi-primary
+                        <h1 className="text-3xl font-semibold text-psi-primary
                         sm:text-4xl">
                             Clientes
                         </h1>

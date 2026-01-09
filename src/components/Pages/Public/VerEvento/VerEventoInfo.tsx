@@ -923,7 +923,8 @@ const VerEventoInfo = (
                 }
             `}} />
             <Background variant="light" className="min-h-screen">
-            <div className="max-w-[88vw] mx-auto py-8 mt-[80px]
+            <div className="max-w-[95vw] mx-auto py-8 mt-[80px]
+            xss:max-w-[88vw]
             sm:py-12
             lg:max-w-[80vw] lg:container
             ">
@@ -1366,17 +1367,19 @@ const VerEventoInfo = (
                                             : isLastTicketsForEvent()
                                         return (
                                             <>
-                                                <div className="flex items-center gap-2">
-                                                    <p className="text-3xl font-semibold text-psi-primary">
-                                                        {event.isFree ? "Gratuito" : (displayPrice !== null && displayPrice !== undefined ? ValueUtils.formatPrice(Math.round(displayPrice)) : "Preço não definido")}
-                                                    </p>
-                                                    {hasLastTickets && (
-                                                        <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-medium rounded-full">
-                                                            Últimos ingressos
-                                                        </span>
-                                                    )}
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-3xl font-semibold text-psi-primary">
+                                                            {event.isFree ? "Gratuito" : (displayPrice !== null && displayPrice !== undefined ? ValueUtils.formatPrice(Math.round(displayPrice)) : "Preço não definido")}
+                                                        </p>
+                                                        {hasLastTickets && (
+                                                            <span className="px-2 py-0.5 animate-pulse bg-psi-tertiary text-psi-dark text-xs font-medium rounded-full">
+                                                                Últimos ingressos
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-sm text-psi-dark/60">Ingresso único</p>
                                                 </div>
-                                                <p className="text-sm text-psi-dark/60">Ingresso único</p>
                                                 {!event.isFree && displayPrice && displayPrice > 0 && (
                                                     <p className="text-xs text-psi-dark/60">
                                                         + Taxa de serviço: {ValueUtils.centsToCurrency(feeCents)}
@@ -1418,9 +1421,9 @@ const VerEventoInfo = (
                             <div className="space-y-4 rounded-xl border border-psi-primary/20 bg-white p-6">
                                 {hasMultipleDaysWithTicketTypePrices && event?.EventDates && event?.TicketTypes ? (
                                     <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
+                                        <div className="space-y-1">
                                             <span className="text-sm font-medium text-psi-dark">Selecione os dias e tipos de ingressos</span>
-                                            <span className="text-xs text-psi-dark/60">Máximo {buyTicketsLimit} por pessoa</span>
+                                            <span className="text-xs text-psi-dark/60 block">Máximo {buyTicketsLimit} por pessoa</span>
                                         </div>
                                         {event.EventDates.filter(ed => {
                                             if (isRecurrent) {
@@ -1785,9 +1788,9 @@ const VerEventoInfo = (
                                     <div className="space-y-4">
                                         {hasMultipleDaysWithSpecificPrices ? (
                                             <div className="space-y-4">
-                                                <div className="flex items-center justify-between">
+                                                <div className="space-y-1">
                                                     <span className="text-sm font-medium text-psi-dark">Selecione os dias e quantidades</span>
-                                                    <span className="text-xs text-psi-dark/60">Máximo {buyTicketsLimit} por pessoa</span>
+                                                    <span className="text-xs text-psi-dark/60 block">Máximo {buyTicketsLimit} por pessoa</span>
                                                 </div>
                                                 {event.EventDates && event.EventDates.some((ed) => ed.hasSpecificPrice) && event.EventDates.filter(ed => {
                                                     if (isRecurrent) {
@@ -1895,7 +1898,7 @@ const VerEventoInfo = (
                                             </div>
                                         ) : (
                                             <div className="space-y-4">
-                                                <div className="flex items-center justify-between">
+                                                <div className="space-y-2">
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-sm font-medium text-psi-dark">Quantidade</span>
                                                         {isLastTicketsForEvent() && (

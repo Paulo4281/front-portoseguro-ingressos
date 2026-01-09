@@ -14,6 +14,8 @@ type TEventUpdate = Partial<TEventCreate>
 type TEventCacheResponse = {
     id: string
     name: string
+    slug: string
+    image: string
     Recurrence: {
         id: string
     } | null
