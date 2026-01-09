@@ -266,7 +266,7 @@ const ClientsPannel = () => {
                                                                                 Data de nascimento
                                                                             </div>
                                                                             <p className="text-base font-medium text-psi-dark">
-                                                                                {formatDate(client.birth)}
+                                                                                {client.birth}
                                                                             </p>
                                                                         </div>
                                                                     )}

@@ -736,8 +736,6 @@ const AtualizarEventoForm = () => {
                 maxInstallments: data.maxInstallments || null
             }
 
-            console.log(submitData)
-
             // Detect if image is a new File (uploaded). If so, we'll send it via the PATCH image route.
             let imageFile: File | undefined = undefined
             if (data.image && typeof (data.image as any) === "object" && (data.image as any).name) {

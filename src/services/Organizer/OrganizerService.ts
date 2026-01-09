@@ -62,8 +62,6 @@ class OrganizerServiceClass {
     async update(payload: TOrganizerUpdate): Promise<AxiosResponse["data"]> {
         const formData = new FormData()
 
-        console.log(payload)
-
         if (payload.firstName) formData.append("firstName", payload.firstName)
         if (payload.lastName) formData.append("lastName", payload.lastName)
         if (payload.birth !== undefined) formData.append("birth", payload.birth || "")
