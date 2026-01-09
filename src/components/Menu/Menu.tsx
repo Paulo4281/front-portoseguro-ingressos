@@ -262,10 +262,8 @@ const Menu = () => {
             if (isSecure) {
                 navigator.serviceWorker.register('/sw.js', { scope: '/' })
                     .then((registration) => {
-                        console.log('Service Worker registered', registration)
                     })
                     .catch((error) => {
-                        console.error(error)
                     })
             }
         }
@@ -273,7 +271,6 @@ const Menu = () => {
 
     useEffect(() => {
         if (typeof window === 'undefined') {
-            console.log('window undefined no useEffect de instalação');
             return;
         }
 
@@ -281,40 +278,33 @@ const Menu = () => {
         const isIOSStandalone = (window.navigator as any).standalone === true
         const installed = isStandalone || isIOSStandalone
 
-        console.log('Verificação de instalação do app:', { isStandalone, isIOSStandalone, installed })
         setIsInstalled(installed)
     }, [])
 
     useEffect(() => {
         if (typeof window === 'undefined') {
-            console.log('window undefined no useEffect de beforeinstallprompt')
             return
         }
 
         const handler = (e: any) => {
             e.preventDefault()
-            console.log('Evento beforeinstallprompt capturado', e)
             setDeferredPrompt(e)
             setShowInstallButton(true)
         }
 
         window.addEventListener('beforeinstallprompt', handler)
-        console.log('Adicionado listener para beforeinstallprompt')
 
         return () => {
-            console.log('Removendo listener para beforeinstallprompt')
             window.removeEventListener('beforeinstallprompt', handler)
         }
     }, [])
 
     useEffect(() => {
         if (typeof window === 'undefined') {
-            console.log('window undefined no useEffect de appinstalled')
             return
         }
 
         const onInstalled = () => {
-            console.log('Evento appinstalled disparado')
             setIsInstalled(true)
             setShowInstallButton(false)
             setDeferredPrompt(null)
@@ -322,53 +312,40 @@ const Menu = () => {
         }
 
         window.addEventListener('appinstalled', onInstalled)
-        console.log('Adicionado listener para appinstalled')
         return () => {
-            console.log('Removendo listener para appinstalled')
             window.removeEventListener('appinstalled', onInstalled)
         }
     }, [])
 
     useEffect(() => {
-        console.log('isInstalled', isInstalled)
-        console.log("showInstallButton", showInstallButton)
     }, [isInstalled, showInstallButton])
 
     const handleInstallClick = async () => {
-        console.log('Clicou para instalar o app', { deferredPrompt })
 
         if (!deferredPrompt) {
-            console.log('deferredPrompt não existe')
             Toast.info("Para instalar o app, use o menu do navegador e selecione 'Adicionar à tela inicial'")
             return
         }
 
         if (typeof deferredPrompt.prompt !== 'function') {
-            console.log('prompt do deferredPrompt não é função', { deferredPrompt })
             Toast.error("Erro: prompt não disponível")
             return
         }
 
         try {
             await deferredPrompt.prompt()
-            console.log('Prompt de instalação exibido')
             const { outcome } = await deferredPrompt.userChoice
-            console.log('Resultado do userChoice:', outcome)
 
             if (outcome === 'accepted') {
-                console.log('Usuário aceitou instalar')
                 Toast.success("App instalado com sucesso!")
             } else {
-                console.log('Usuário cancelou a instalação')
                 Toast.info("Instalação cancelada")
             }
         } catch (error) {
-            console.log('Erro ao exibir prompt de instalação', error)
             Toast.error("Erro ao mostrar prompt de instalação")
         } finally {
             setDeferredPrompt(null)
             setShowInstallButton(false)
-            console.log('Resetou states de instalação')
         }
     }
 
@@ -930,6 +907,8 @@ const NotificationBell = () => {
                 return "Evento cancelado"
             case "EVENT_POSTPONED_SUPPORT_ORGANIZER":
                 return "Evento adiado"
+            case "EVENT_BATCH_ONLINE":
+                return "As vendas começaram"
             case "PAYMENT_REFUNDED_BY_CUSTOMER":
             case "PAYMENT_REFUNDED_BY_ORGANIZER":
             case "PAYMENT_REFUNDED_BY_ADMIN_TO_CUSTOMER":
@@ -939,6 +918,10 @@ const NotificationBell = () => {
                 return "Saldo liberado"
             case "PAYMENT_FIRST_SOLD_TICKET":
                 return "Primeiro ingresso vendido"
+            case "REGISTER_APPROVED":
+                return "Registro aprovado"
+            case "REGISTER_REJECTED":
+                return "Registro rejeitado"
             default:
                 return "Notificação"
         }
@@ -979,6 +962,11 @@ const NotificationBell = () => {
                 const eventName = data.eventName || "seu evento"
 
                 return `O evento ${eventName} foi finalizado.`
+            }
+            case "EVENT_BATCH_ONLINE": {
+                const eventName = data.eventName
+
+                return `O evento ${eventName} teve seu primeiro lote disponibilizado online!`
             }
             case "PAYMENT_REFUNDED_BY_CUSTOMER": {
                 const firstName = data.firstName
@@ -1031,6 +1019,12 @@ const NotificationBell = () => {
                 const eventName = data.eventName
 
                 return `O evento ${eventName} teve seu primeiro ingresso vendido com sucesso!`
+            }
+            case "REGISTER_APPROVED": {
+                return "Seu cadastro foi aprovado com sucesso! Agora você pode acessar o sistema e começar a vender eventos!"
+            }
+            case "REGISTER_REJECTED": {
+                return "Seu cadastro foi rejeitado. Por favor, contate o suporte para mais informações."
             }
             default:
                 return notification.message || "Você possui uma atualização importante."

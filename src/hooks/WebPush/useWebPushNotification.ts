@@ -16,7 +16,6 @@ export const useWebPushNotification = () => {
         if ("serviceWorker" in navigator) {
             try {
                 const registration = await navigator.serviceWorker.register("/sw.js")
-                console.log("Service Worker registrado com sucesso:", registration.scope)
             } catch (error) {
                 console.error("Erro ao registrar Service Worker:", error)
             }

@@ -332,7 +332,6 @@ const CriarEventoForm = () => {
             }
 
             const response = await createEvent({ data: submitData, termsFile: termsFile || undefined })
-            console.log("Resposta da criação do evento:", response)
             
             setIsSummaryDialogOpen(false)
             setEventDataToSubmit(null)

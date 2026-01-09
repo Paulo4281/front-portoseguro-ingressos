@@ -455,7 +455,6 @@ const CheckoutInfo = () => {
                         for (const ticketType of item.ticketTypes) {
                             const originalEventDateId = ticketType.days?.[0] || null
                             const activeEventDateId = getActiveEventDateId(currentEvent, originalEventDateId)
-                            console.log(activeEventDateId)
                             ticketHolds.push({
                                 eventId: eventId || "",
                                 eventBatchId: item.batchId || "",
@@ -815,10 +814,7 @@ const CheckoutInfo = () => {
                 const requiredFields = eventFields.filter(f => f.field.required)
                 const missingFields = requiredFields.filter(f => {
                     const key = `${f.eventId}_${f.type}-${f.field.order}`
-                    // console.log(key)
-                    // console.log(formAnswers)
                     const answer = formAnswers[key]
-                    // console.log(answer)
 
                     if (!answer) return true
                     if (Array.isArray(answer) && answer.length === 0) return true
@@ -834,8 +830,6 @@ const CheckoutInfo = () => {
 
                     return false
                 })
-
-                console.log(missingFields)
 
                 if (missingFields.length > 0) {
                     Toast.info(`Por favor, preencha todos os campos obrigatórios do formulário do evento "${event.name}".`)
@@ -940,8 +934,6 @@ const CheckoutInfo = () => {
                 }
             })
         })
-
-        console.log(formAnswers)
 
         data["eventForms"] = Object.entries(formAnswers).reduce((acc, [key, value]) => {
             const [eventId, rest] = key.split("_")

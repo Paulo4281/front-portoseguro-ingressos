@@ -141,9 +141,7 @@ export const getInstallmentFee = (installments: number) => {
 
 export const calculateTotalWithInstallmentFee = (totalValue: number, installments: number) => {
     const fee = getInstallmentFee(installments)
-    console.log(totalValue)
     const percentageFee = ValueUtils.getPercentageValue(totalValue, fee!.percentage)
-    console.log(percentageFee)
     return totalValue + percentageFee + fee!.fixed
 }
 
