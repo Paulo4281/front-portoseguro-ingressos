@@ -25,7 +25,7 @@ const FileUpload = (
         accept = ".pdf",
         maxSize = 10 * 1024 * 1024,
         label = "Clique para fazer upload",
-        description = "ou arraste e solte o arquivo aqui"
+        description = ""
     }: TFileUploadProps
 ) => {
     const [preview, setPreview] = useState<string | null>(

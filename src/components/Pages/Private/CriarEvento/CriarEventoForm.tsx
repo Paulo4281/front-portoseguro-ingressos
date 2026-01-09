@@ -5,7 +5,7 @@ import { useForm, Controller, useFieldArray, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, FileText, Repeat, Tag, Sparkles, Rocket, HelpCircle, Megaphone, CheckCircle2, ExternalLink } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Calendar, MapPin, Ticket, FileText, Repeat, Tag, Sparkles, Rocket, HelpCircle, Megaphone, CheckCircle2, ExternalLink, AlertCircle, X, CreditCard, Info, Users } from "lucide-react"
 import { EventCreateValidator } from "@/validators/Event/EventValidator"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -31,7 +31,9 @@ import { z } from "zod"
 import { cn } from "@/lib/utils"
 import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
 import { useEventCreate } from "@/hooks/Event/useEventCreate"
+import { useAICreateEventDescription } from "@/hooks/AI/useAICreateEventDescription"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
+import { Toast } from "@/components/Toast/Toast"
 import { DialogTaxes } from "@/components/Dialog/DialogTaxes/DialogTaxes"
 import { FormBuilder, type TFormField } from "@/components/FormBuilder/FormBuilder"
 import { DialogEventSummary } from "@/components/Dialog/DialogEventSummary/DialogEventSummary"
@@ -139,10 +141,14 @@ const CriarEventoForm = () => {
     const [isMarkdownDialogOpen, setMarkdownDialogOpen] = useState(false)
     const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false)
     const [createdEventSlug, setCreatedEventSlug] = useState<string | null>(null)
+    const [descriptionWrittenWithAI, setDescriptionWrittenWithAI] = useState(false)
+    const [isAIMissingFieldsDialogOpen, setIsAIMissingFieldsDialogOpen] = useState(false)
+    const [missingFields, setMissingFields] = useState<string[]>([])
     const router = useRouter()
 
     const { data: eventCategoriesData, isLoading: isEventCategoriesLoading } = useEventCategoryFind()
     const { mutateAsync: createEvent, isPending: isCreating } = useEventCreate()
+    const { mutateAsync: createEventDescriptionWithAI, isPending: isCreatingDescriptionWithAI } = useAICreateEventDescription()
 
     const eventCategories = useMemo(() => {
         if (eventCategoriesData?.data && Array.isArray(eventCategoriesData.data)) {
@@ -212,8 +218,65 @@ const CriarEventoForm = () => {
     const batches = form.watch("batches") || []
     const descriptionLength = form.watch("description")?.length || 0
     const isFreeEvent = form.watch("isFree") || false
+    const eventName = form.watch("name")
+    const selectedCategoryIds = form.watch("categories")
+    const eventLocation = form.watch("location")
 
     const ticketTypes = form.watch("ticketTypes") || []
+
+    const handleCreateDescriptionWithAI = async () => {
+        if (descriptionWrittenWithAI) {
+            Toast.info("Descrição já escrita com IA.")
+            return
+        }
+
+        const missing: string[] = []
+
+        if (!eventName || eventName.trim() === "") {
+            missing.push("Nome do evento")
+        }
+
+        if (!selectedCategoryIds || selectedCategoryIds.length === 0) {
+            missing.push("Categoria (pelo menos uma)")
+        }
+
+        if (!eventLocation || eventLocation.trim() === "") {
+            missing.push("Localização")
+        }
+
+        if (missing.length > 0) {
+            setMissingFields(missing)
+            setIsAIMissingFieldsDialogOpen(true)
+            return
+        }
+
+        try {
+            const categoryNames = eventCategories
+                .filter(category => selectedCategoryIds.includes(category.id))
+                .map(category => category.name)
+                .filter(Boolean)
+
+            if (categoryNames.length === 0) {
+                setMissingFields(["Categoria (pelo menos uma)"])
+                setIsAIMissingFieldsDialogOpen(true)
+                return
+            }
+
+            const response = await createEventDescriptionWithAI({
+                eventName: eventName || "",
+                categories: categoryNames,
+                location: eventLocation || ""
+            })
+
+            if (response?.success && response?.data?.message) {
+                form.setValue("description", response.data.message)
+                setDescriptionWrittenWithAI(true)
+                Toast.success("Descrição criada com IA com sucesso!")
+            }
+        } catch (error) {
+            Toast.error("Erro ao criar descrição com IA. Tente novamente.")
+        }
+    }
 
     const watchedBatches = useWatch({
         control: form.control,
@@ -511,9 +574,19 @@ const CriarEventoForm = () => {
                                                 variant="secondary"
                                                 size="sm"
                                                 className="text-xs"
+                                                onClick={handleCreateDescriptionWithAI}
+                                                disabled={descriptionWrittenWithAI || isCreatingDescriptionWithAI}
                                             >
-                                                <Sparkles className="h-3.5 w-3.5" />
-                                                Escrever com IA
+                                                {
+                                                    isCreatingDescriptionWithAI ? (
+                                                        <LoadingButton />
+                                                    ) : (
+                                                        <>
+                                                            <Sparkles className="h-3.5 w-3.5" />
+                                                            Escrever com IA
+                                                        </>
+                                                    )
+                                                }
                                             </Button>
                                         </div>
                                     </div>
@@ -634,7 +707,7 @@ const CriarEventoForm = () => {
                                     <h3 className="text-lg font-medium text-psi-dark">Tipos</h3>
                                     <Button
                                         type="button"
-                                        variant="outline"
+                                        variant="primary"
                                         size="sm"
                                         onClick={addTicketType}
                                     >
@@ -972,7 +1045,7 @@ const CriarEventoForm = () => {
                                     </div>
                                     <Button
                                         type="button"
-                                        variant="outline"
+                                        variant="primary"
                                         size="sm"
                                         onClick={addDate}
                                     >
@@ -1274,82 +1347,168 @@ const CriarEventoForm = () => {
                                 />
                                 <FieldError message={form.formState.errors.isFree?.message || ""} />
 
-                                <div>
-                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                        Limitar quantidade de ingressos por pessoa
-                                    </label>
-                                    <p className="text-xs text-psi-dark/60 mb-3">
-                                        Defina o número máximo de ingressos que uma única pessoa pode comprar para este evento. Se não definir, o padrão será 10 ingressos.
-                                    </p>
+                                <div className="rounded-2xl border border-psi-primary/20 bg-linear-to-br from-psi-primary/5 via-white to-psi-primary/5 p-6 space-y-5">
+                                    <div className="flex items-start gap-4">
+                                        <div className="rounded-xl bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-3 shrink-0">
+                                            <Users className="h-6 w-6 text-psi-primary" />
+                                        </div>
+                                        <div className="flex-1 space-y-2">
+                                            <div>
+                                                <label className="block text-base font-semibold text-psi-dark mb-1">
+                                                    Limitar quantidade de ingressos por pessoa
+                                                </label>
+                                                <p className="text-sm text-psi-dark/60">
+                                                    Defina o número máximo de ingressos que uma única pessoa pode comprar
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <Controller
                                         name="buyTicketsLimit"
                                         control={form.control}
-                                        render={({ field }) => (
-                                            <Input
-                                                {...field}
-                                                type="number"
-                                                placeholder="10"
-                                                min={1}
-                                                max={100}
-                                                className="w-full max-w-[200px]"
-                                                value={field.value || ""}
-                                                onChange={(e) => {
-                                                    const value = e.target.value
-                                                    if (value === "") {
-                                                        field.onChange(null)
-                                                    } else {
-                                                        const numValue = parseInt(value, 10)
-                                                        if (!isNaN(numValue) && numValue >= 1 && numValue <= 100) {
-                                                            field.onChange(numValue)
-                                                        }
-                                                    }
-                                                }}
-                                            />
-                                        )}
+                                        render={({ field }) => {
+                                            const currentValue = field.value || 10
+                                            const quickOptions = [5, 10, 20, 50]
+                                            
+                                            return (
+                                                <div className="space-y-4">
+                                                    <div className="flex flex-wrap items-center gap-3">
+                                                        <span className="text-sm font-medium text-psi-dark/70">Opções rápidas:</span>
+                                                        {quickOptions.map((option) => (
+                                                            <Button
+                                                                key={option}
+                                                                type="button"
+                                                                variant={currentValue === option ? "primary" : "outline"}
+                                                                size="sm"
+                                                                className={currentValue === option ? "" : "border-psi-primary/30 hover:border-psi-primary/50"}
+                                                                onClick={() => field.onChange(option)}
+                                                            >
+                                                                {option} ingressos
+                                                            </Button>
+                                                        ))}
+                                                    </div>
+                                                    
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-sm font-medium text-psi-dark/70 whitespace-nowrap">Ou escolha:</span>
+                                                        <Input
+                                                            {...field}
+                                                            type="number"
+                                                            placeholder="10"
+                                                            min={1}
+                                                            max={100}
+                                                            className="w-full max-w-[120px]"
+                                                            value={field.value || ""}
+                                                            onChange={(e) => {
+                                                                const value = e.target.value
+                                                                if (value === "") {
+                                                                    field.onChange(null)
+                                                                } else {
+                                                                    const numValue = parseInt(value, 10)
+                                                                    if (!isNaN(numValue) && numValue >= 1 && numValue <= 100) {
+                                                                        field.onChange(numValue)
+                                                                    }
+                                                                }
+                                                            }}
+                                                        />
+                                                        <span className="text-xs text-psi-dark/60">ingressos (máx. 100)</span>
+                                                    </div>
+                                                </div>
+                                            )
+                                        }}
                                     />
                                     <FieldError message={form.formState.errors.buyTicketsLimit?.message || ""} />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-psi-dark/70 mb-2">
-                                        Máximo de parcelas
-                                    </label>
-                                    <p className="text-xs text-psi-dark/60 mb-3">
-                                        Defina em até quantas vezes o comprador poderá parcelar a compra no cartão de crédito (ex: 1, 2, 3... até 12).
-                                    </p>
+                                <div className="rounded-2xl border border-psi-primary/20 bg-linear-to-br from-psi-primary/5 via-white to-psi-primary/5 p-6 space-y-5">
+                                    <div className="flex items-start gap-4">
+                                        <div className="rounded-xl bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-3 shrink-0">
+                                            <CreditCard className="h-6 w-6 text-psi-primary" />
+                                        </div>
+                                        <div className="flex-1 space-y-2">
+                                            <div>
+                                                <label className="block text-base font-semibold text-psi-dark mb-1">
+                                                    Máximo de parcelas
+                                                </label>
+                                                <p className="text-sm text-psi-dark/60">
+                                                    Permita que compradores parcelem o pagamento no cartão de crédito
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <Controller
                                         name="maxInstallments"
                                         control={form.control}
-                                        render={({ field }) => (
-                                            <Input
-                                                {...field}
-                                                type="number"
-                                                placeholder="1"
-                                                min={1}
-                                                max={12}
-                                                className="w-full max-w-[200px]"
-                                                value={field.value || ""}
-                                                onChange={(e) => {
-                                                    const value = e.target.value
-                                                    if (value === "") {
-                                                        field.onChange(null)
-                                                    } else {
-                                                        const numValue = parseInt(value, 10)
-                                                        if (!isNaN(numValue) && numValue >= 1 && numValue <= 12) {
-                                                            field.onChange(numValue)
-                                                        }
-                                                    }
-                                                }}
-                                            />
-                                        )}
+                                        render={({ field }) => {
+                                            const currentValue = field.value || 1
+                                            const quickOptions = [1, 3, 6, 12]
+                                            
+                                            return (
+                                                <div className="space-y-4">
+                                                    <div className="flex flex-wrap items-center gap-3">
+                                                        <span className="text-sm font-medium text-psi-dark/70">Opções rápidas:</span>
+                                                        {quickOptions.map((option) => (
+                                                            <Button
+                                                                key={option}
+                                                                type="button"
+                                                                variant={currentValue === option ? "primary" : "outline"}
+                                                                size="sm"
+                                                                className={currentValue === option ? "" : "border-psi-primary/30 hover:border-psi-primary/50"}
+                                                                onClick={() => field.onChange(option)}
+                                                            >
+                                                                {option}x
+                                                            </Button>
+                                                        ))}
+                                                    </div>
+                                                    
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-sm font-medium text-psi-dark/70 whitespace-nowrap">Ou escolha:</span>
+                                                        <Input
+                                                            {...field}
+                                                            type="number"
+                                                            placeholder="1"
+                                                            min={1}
+                                                            max={12}
+                                                            className="w-full max-w-[120px]"
+                                                            value={field.value || ""}
+                                                            onChange={(e) => {
+                                                                const value = e.target.value
+                                                                if (value === "") {
+                                                                    field.onChange(null)
+                                                                } else {
+                                                                    const numValue = parseInt(value, 10)
+                                                                    if (!isNaN(numValue) && numValue >= 1 && numValue <= 12) {
+                                                                        field.onChange(numValue)
+                                                                    }
+                                                                }
+                                                            }}
+                                                        />
+                                                        <span className="text-xs text-psi-dark/60">parcelas (máx. 12x)</span>
+                                                    </div>
+
+                                                    {currentValue > 1 && (
+                                                        <div className="rounded-xl border border-psi-secondary/30 bg-linear-to-br from-psi-secondary/10 via-white to-psi-secondary/5 p-4 space-y-2">
+                                                            <div className="flex items-start gap-2">
+                                                                <Info className="h-4 w-4 text-psi-secondary shrink-0 mt-0.5" />
+                                                                <div className="flex-1 space-y-1">
+                                                                    <p className="text-sm font-medium text-psi-dark">
+                                                                        Como funciona o repasse parcelado
+                                                                    </p>
+                                                                    <p className="text-xs text-psi-dark/70 leading-relaxed">
+                                                                        O repasse será feito <strong className="text-psi-dark">conforme as parcelas forem sendo pagas</strong>. 
+                                                                        Por exemplo: se um ingresso foi dividido em 6x e já se passaram 4 meses quando o evento se encerrar, 
+                                                                        será repassado ao organizador o valor das 4 parcelas já pagas. 
+                                                                        As parcelas restantes serão repassadas assim que recebermos a cobrança de cada uma delas.
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )
+                                        }}
                                     />
-                                    <div className="mt-3 rounded-lg border border-psi-primary/20 bg-psi-primary/5 p-3">
-                                        <p className="text-xs text-psi-dark/70 leading-relaxed">
-                                            <strong className="text-psi-dark">Importante:</strong> Para compras parceladas no cartão de crédito, o repasse será feito <strong className="text-psi-dark">conforme as parcelas forem sendo pagas</strong>. 
-                                            Por exemplo: se um ingresso foi dividido em 6x e já se passaram 4 meses quando o evento se encerrar, será repassado ao organizador o valor das 4 parcelas já pagas. 
-                                            As parcelas restantes serão repassadas assim que recebermos a cobrança de cada uma delas.
-                                        </p>
-                                    </div>
                                     <FieldError message={form.formState.errors.maxInstallments?.message || ""} />
                                 </div>
 
@@ -1788,6 +1947,58 @@ const CriarEventoForm = () => {
                 open={isMarkdownDialogOpen}
                 onOpenChange={setMarkdownDialogOpen}
             />
+
+            <Dialog open={isAIMissingFieldsDialogOpen} onOpenChange={setIsAIMissingFieldsDialogOpen}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <div className="flex flex-col items-center text-center space-y-4">
+                            <div className="size-20 rounded-full bg-linear-to-br from-psi-secondary/30 via-psi-secondary/10 to-psi-secondary/30 flex items-center justify-center border-2 border-psi-secondary/30">
+                                <Sparkles className="size-10 text-psi-secondary" />
+                            </div>
+                            <div className="space-y-2">
+                                <DialogTitle className="text-2xl font-semibold text-psi-dark">
+                                    Informações necessárias
+                                </DialogTitle>
+                                <DialogDescription className="text-base text-psi-dark/70">
+                                    Para criar uma descrição com IA, precisamos de algumas informações básicas sobre o evento.
+                                </DialogDescription>
+                            </div>
+                        </div>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-4">
+                        <div className="rounded-xl border border-psi-primary/20 bg-linear-to-br from-psi-primary/5 via-white to-psi-primary/5 p-4 space-y-3">
+                            <div className="flex items-center gap-2 mb-2">
+                                <AlertCircle className="h-5 w-5 text-psi-secondary shrink-0" />
+                                <p className="text-sm font-medium text-psi-dark">
+                                    Preencha os seguintes campos:
+                                </p>
+                            </div>
+                            <ul className="space-y-2">
+                                {missingFields.map((field, index) => (
+                                    <li key={index} className="flex items-start gap-2">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-psi-secondary mt-2 shrink-0" />
+                                        <span className="text-sm text-psi-dark/70">{field}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                        <div className="rounded-lg bg-psi-primary/5 border border-psi-primary/10 p-3">
+                            <p className="text-xs text-psi-dark/60 leading-relaxed">
+                                <strong className="text-psi-secondary">Dica:</strong> Após preencher essas informações, você poderá gerar uma descrição profissional e atrativa para o seu evento usando inteligência artificial.
+                            </p>
+                        </div>
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            className="w-full"
+                            size="lg"
+                            onClick={() => setIsAIMissingFieldsDialogOpen(false)}
+                        >
+                            Entendi, vou preencher
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             {eventDataToSubmit && (
                 <DialogEventSummary

@@ -60,7 +60,7 @@ const faqItems: TFAQItem[] = [
     },
     {
         question: "Há taxas adicionais na compra?",
-        answer: "Sim, aplicamos uma taxa de serviço única de R$ 1,90 por ingresso. Taxas adicionais podem ser aplicadas pelo organizador. As taxas de cartão de crédito (quando parcelado) são repassadas ao comprador. Todos os valores são informados antes da finalização da compra.",
+        answer: "Sim, aplicamos uma taxa de serviço única de R$ 1,99 por ingresso. Taxas adicionais podem ser aplicadas pelo organizador. As taxas de cartão de crédito (quando parcelado) são repassadas ao comprador. Todos os valores são informados antes da finalização da compra.",
         icon: <CreditCard className="h-5 w-5" />
     }
 ]

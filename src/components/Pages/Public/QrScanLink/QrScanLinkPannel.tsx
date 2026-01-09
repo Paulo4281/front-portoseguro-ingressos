@@ -5,7 +5,8 @@ import { Html5Qrcode } from "html5-qrcode"
 import { Button } from "@/components/ui/button"
 import { Background } from "@/components/Background/Background"
 import { Input } from "@/components/Input/Input"
-import { QrCode, Scan, Lock, Search, CheckCircle2, XCircle, Info, MoreVertical, Check, LogOut, ImageUp } from "lucide-react"
+import { QrCode, Scan, Lock, Search, CheckCircle2, XCircle, Info, MoreVertical, Check, LogOut, ImageUp, Calendar, Ticket, CircleMinus } from "lucide-react"
+import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 import { Toast } from "@/components/Toast/Toast"
 import { useSearchParams } from "next/navigation"
 import { useForm, Controller } from "react-hook-form"
@@ -689,10 +690,49 @@ const QrScanLinkPannel = () => {
                         </div>
                     </div>
 
+                    {eventCacheData?.data && (
+                        <div className="rounded-xl border border-psi-primary/20 bg-white p-6 mb-6">
+                            <div className="rounded-xl overflow-hidden border border-psi-primary/20 bg-white">
+                                <div className="relative h-48 w-full overflow-hidden bg-linear-to-br from-psi-primary/10 to-psi-secondary/10">
+                                    {eventCacheData.data.image ? (
+                                        <img
+                                            src={ImageUtils.getEventImageUrl(eventCacheData.data.image)}
+                                            alt={eventCacheData.data.name}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center">
+                                            <Ticket className="h-16 w-16 text-psi-primary/30" />
+                                        </div>
+                                    )}
+                                    <div className="absolute inset-0 bg-linear-to-t from-psi-dark/60 via-psi-dark/20 to-transparent" />
+                                    <div className="absolute bottom-0 left-0 right-0 p-4">
+                                        <h3 className="text-lg font-semibold text-white mb-1 drop-shadow-lg">
+                                            {eventCacheData.data.name}
+                                        </h3>
+                                        {eventCacheData.data.EventDates && eventCacheData.data.EventDates.length > 0 && (
+                                            <div className="flex items-center gap-2 text-white/90 text-sm">
+                                                <Calendar className="h-4 w-4" />
+                                                <span className="drop-shadow">
+                                                    {eventCacheData.data.EventDates.length} {eventCacheData.data.EventDates.length === 1 ? "data" : "datas"}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {eventDates.length > 0 && (
                             <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
-                                <h2 className="text-lg font-medium text-psi-dark mb-4">Filtrar por Data do Evento</h2>
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="rounded-xl bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-2">
+                                        <Calendar className="h-5 w-5 text-psi-primary" />
+                                    </div>
+                                    <h2 className="text-lg font-semibold text-psi-dark">Filtrar por Data</h2>
+                                </div>
                                 <Select value={selectedEventDateId} onValueChange={setSelectedEventDateId}>
                                     <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Selecione uma data" />
@@ -711,56 +751,96 @@ const QrScanLinkPannel = () => {
                         )}
 
                         <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
-                            <h2 className="text-lg font-medium text-psi-dark mb-4">Estatísticas</h2>
+                            <div className="flex items-center gap-3 mb-5">
+                                <div className="rounded-lg bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-2">
+                                    <Ticket className="h-5 w-5 text-psi-primary" />
+                                </div>
+                                <h2 className="text-lg font-semibold text-psi-dark">Estatísticas de Validação</h2>
+                            </div>
                             <div className="space-y-3">
-                                <div className="flex items-center justify-between p-3 rounded-lg bg-psi-primary/5">
-                                    <span className="text-sm text-psi-dark/70">Total de ingressos</span>
-                                    <span className="text-lg font-medium text-psi-primary">{validationStats.total}</span>
+                                <div className="flex items-center justify-between p-4 rounded-xl bg-linear-to-br from-psi-primary/10 via-psi-primary/5 to-psi-primary/10 border border-psi-primary/20">
+                                    <div className="flex items-center gap-3">
+                                        <div className="rounded-lg bg-psi-primary/20 p-2">
+                                            <Ticket className="h-5 w-5 text-psi-primary" />
+                                        </div>
+                                        <span className="text-sm font-medium text-psi-dark/80">Total de ingressos</span>
+                                    </div>
+                                    <span className="text-2xl font-bold text-psi-primary">{validationStats.total}</span>
                                 </div>
-                                <div className="flex items-center justify-between p-3 rounded-lg bg-green-50">
-                                    <span className="text-sm text-psi-dark/70 flex items-center gap-2">
-                                        <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                        Validados
-                                    </span>
-                                    <span className="text-lg font-medium text-green-600">{validationStats.validated}</span>
+                                <div className="flex items-center justify-between p-4 rounded-xl bg-linear-to-br from-green-50 via-green-50/50 to-green-50 border border-green-200/50">
+                                    <div className="flex items-center gap-3">
+                                        <div className="rounded-lg bg-green-100 p-2">
+                                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                        </div>
+                                        <span className="text-sm font-medium text-psi-dark/80">Validados</span>
+                                    </div>
+                                    <span className="text-2xl font-bold text-green-600">{validationStats.validated}</span>
                                 </div>
-                                <div className="flex items-center justify-between p-3 rounded-lg bg-orange-50">
-                                    <span className="text-sm text-psi-dark/70 flex items-center gap-2">
-                                        <XCircle className="h-4 w-4 text-orange-600" />
-                                        Pendentes
-                                    </span>
-                                    <span className="text-lg font-medium text-orange-600">{validationStats.remaining}</span>
+                                <div className="flex items-center justify-between p-4 rounded-xl bg-linear-to-br from-amber-50 via-amber-50/50 to-amber-50 border border-amber-200/50">
+                                    <div className="flex items-center gap-3">
+                                        <div className="rounded-lg bg-amber-100 p-2">
+                                            <CircleMinus className="h-5 w-5 text-amber-600" />
+                                        </div>
+                                        <span className="text-sm font-medium text-psi-dark/80">Pendentes</span>
+                                    </div>
+                                    <span className="text-2xl font-bold text-amber-600">{validationStats.remaining}</span>
                                 </div>
+                                {validationStats.total > 0 && (
+                                    <div className="mt-4 pt-4 border-t border-psi-primary/10">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-xs font-medium text-psi-dark/60">Progresso de validação</span>
+                                            <span className="text-xs font-semibold text-psi-primary">
+                                                {Math.round((validationStats.validated / validationStats.total) * 100)}%
+                                            </span>
+                                        </div>
+                                        <div className="w-full h-2 bg-psi-primary/10 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-linear-to-r from-green-500 to-green-600 rounded-full transition-all duration-500"
+                                                style={{ width: `${(validationStats.validated / validationStats.total) * 100}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
                         {isScanning && (
-                            <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
+                            <div className="lg:col-span-2 rounded-xl border border-psi-primary/20 bg-white p-6">
                                 <div className="mb-4">
-                                    <p className="text-sm font-medium text-psi-dark">Leitura do QR Code</p>
-                                    <p className="text-xs text-psi-dark/60">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="rounded-lg bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-2">
+                                            <Scan className="h-5 w-5 text-psi-primary animate-pulse" />
+                                        </div>
+                                        <p className="text-base font-semibold text-psi-dark">Leitura do QR Code</p>
+                                    </div>
+                                    <p className="text-sm text-psi-dark/70 ml-11">
                                         {scanFeedback || "Aponte a câmera para o QR Code. Chegue mais perto e mantenha o celular firme."}
                                     </p>
                                 </div>
                                 <div
                                     id={scannerId}
                                     ref={scannerContainerRef}
-                                    className="w-full"
+                                    className="w-full rounded-xl overflow-hidden border border-psi-primary/10"
                                 />
                             </div>
                         )}
                     </div>
 
                     <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-                            <h2 className="text-lg font-medium text-psi-dark">Lista de Compradores</h2>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="rounded-xl bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-2">
+                                    <Search className="h-5 w-5 text-psi-primary" />
+                                </div>
+                                <h2 className="text-lg font-semibold text-psi-dark">Lista de Compradores</h2>
+                            </div>
                             <div className="relative w-full sm:w-64">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-psi-dark/40" />
                                 <Input
                                     placeholder="Buscar comprador..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-10"
+                                    className="pl-10 border-psi-primary/20 focus:border-psi-primary/50"
                                 />
                             </div>
                         </div>
@@ -772,19 +852,24 @@ const QrScanLinkPannel = () => {
                                 <Skeleton className="h-12 w-full" />
                             </div>
                         ) : filteredBuyers.length === 0 ? (
-                            <p className="text-sm text-psi-dark/60 text-center py-8">Nenhum comprador encontrado</p>
+                            <div className="text-center py-12">
+                                <div className="inline-flex rounded-xl bg-psi-primary/10 p-4 mb-4">
+                                    <Search className="h-8 w-8 text-psi-primary/60" />
+                                </div>
+                                <p className="text-sm font-medium text-psi-dark/70">Nenhum comprador encontrado</p>
+                            </div>
                         ) : (
-                            <div className="overflow-x-auto">
+                            <div className="overflow-x-auto rounded-xl border border-psi-primary/10">
                                 <Table>
                                     <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>Nome</TableHead>
-                                            <TableHead>Tipo de Ingresso</TableHead>
-                                            <TableHead>Data do Evento</TableHead>
-                                            <TableHead>Data do Pagamento</TableHead>
-                                            <TableHead>Respostas do Formulário</TableHead>
-                                            <TableHead className="text-right">Ações</TableHead>
+                                        <TableRow className="bg-psi-primary/5">
+                                            <TableHead className="font-semibold text-psi-dark">Status</TableHead>
+                                            <TableHead className="font-semibold text-psi-dark">Nome</TableHead>
+                                            <TableHead className="font-semibold text-psi-dark">Tipo de Ingresso</TableHead>
+                                            <TableHead className="font-semibold text-psi-dark">Data do Evento</TableHead>
+                                            <TableHead className="font-semibold text-psi-dark">Data do Pagamento</TableHead>
+                                            <TableHead className="font-semibold text-psi-dark">Respostas do Formulário</TableHead>
+                                            <TableHead className="text-right font-semibold text-psi-dark">Ações</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -803,28 +888,28 @@ const QrScanLinkPannel = () => {
                                             const validatedLocationText = buyer.validationInfo?.location ? ` • ${buyer.validationInfo.location}` : ""
 
                                             return (
-                                                <TableRow key={index}>
+                                                <TableRow key={index} className="hover:bg-psi-primary/5 transition-colors">
                                                     <TableCell>
-                                                        <div className="space-y-1">
+                                                        <div className="space-y-1.5">
                                                             {isCancelled ? (
-                                                                <Badge variant="destructive">
-                                                                    <XCircle className="h-3 w-3 mr-1" />
+                                                                <Badge variant="destructive" className="font-medium">
+                                                                    <XCircle className="h-3.5 w-3.5 mr-1.5" />
                                                                     Cancelado
                                                                 </Badge>
                                                             ) : isValidated ? (
-                                                                <Badge variant="default" className="bg-green-600">
-                                                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                                                <Badge variant="default" className="bg-linear-to-r from-green-600 to-green-500 text-white font-medium shadow-sm">
+                                                                    <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
                                                                     Validado
                                                                 </Badge>
                                                             ) : (
-                                                                <Badge variant="outline">
-                                                                    <XCircle className="h-3 w-3 mr-1" />
+                                                                <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50 font-medium">
+                                                                    <CircleMinus className="h-3.5 w-3.5 mr-1.5" />
                                                                     Pendente
                                                                 </Badge>
                                                             )}
 
                                                             {buyer.validationInfo && !isCancelled && (
-                                                                <p className="text-[11px] text-psi-dark/60">
+                                                                <p className="text-[11px] text-psi-dark/60 leading-tight">
                                                                     {validatedByText}
                                                                     {validatedLocationText}
                                                                     {validatedWhenText ? ` • ${validatedWhenText}` : ""}
@@ -832,12 +917,12 @@ const QrScanLinkPannel = () => {
                                                             )}
                                                         </div>
                                                     </TableCell>
-                                                    <TableCell className="font-medium">{buyer.customerName}</TableCell>
-                                                    <TableCell>{buyer.ticketTypeName || "-"}</TableCell>
-                                                    <TableCell>
+                                                    <TableCell className="font-semibold text-psi-dark">{buyer.customerName}</TableCell>
+                                                    <TableCell className="text-psi-dark/80">{buyer.ticketTypeName || "-"}</TableCell>
+                                                    <TableCell className="text-psi-dark/80">
                                                         {buyer.eventDates.map((date) => DateUtils.formatDate(date, "DD/MM/YYYY")).join(", ")}
                                                     </TableCell>
-                                                    <TableCell>
+                                                    <TableCell className="text-psi-dark/80">
                                                         {buyer.paymentDate
                                                             ? DateUtils.formatDate(
                                                                 typeof buyer.paymentDate === "string"
@@ -849,14 +934,14 @@ const QrScanLinkPannel = () => {
                                                         }
                                                     </TableCell>
                                                     <TableCell className="max-w-xs">
-                                                        <div className="text-xs text-psi-dark/70 wrap-break-word">
+                                                        <div className="text-xs text-psi-dark/70 wrap-break-word leading-relaxed">
                                                             {formatFormAnswers(buyer.formAnswers || {})}
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="text-right">
                                                         <DropdownMenu>
                                                             <DropdownMenuTrigger asChild>
-                                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-psi-primary/10">
                                                                     <MoreVertical className="h-4 w-4" />
                                                                 </Button>
                                                             </DropdownMenuTrigger>

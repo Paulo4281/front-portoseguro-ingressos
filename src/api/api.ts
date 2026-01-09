@@ -24,7 +24,8 @@ type Prefixes =
     "/dashboard" |
     "/balance" |
     "/payout" |
-    "/meta"
+    "/meta" |
+    "/ai"
 
 type TAPIParams = {
     prefix: Prefixes
