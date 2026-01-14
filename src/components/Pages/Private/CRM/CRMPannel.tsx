@@ -41,7 +41,13 @@ import {
     ThumbsUp,
     TrendingUp,
     Star,
-    Award
+    Award,
+    MailCheck,
+    MailX,
+    MailOpen,
+    MailWarning,
+    Loader2,
+    Code
 } from "lucide-react"
 import { Background } from "@/components/Background/Background"
 import { Button } from "@/components/ui/button"
@@ -61,6 +67,7 @@ import {
     DialogTitle,
     DialogDescription,
     DialogFooter,
+    DialogClose,
 } from "@/components/ui/dialog"
 import {
     Sheet,
@@ -115,6 +122,7 @@ import { useCouponFind } from "@/hooks/Coupon/useCouponFind"
 import type { TCoupon } from "@/types/Coupon/TCoupon"
 import type { ReactNode } from "react"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
+import { cn } from "@/lib/utils"
 
 
 
@@ -149,6 +157,10 @@ type TEmailHistory = {
         id: string
         name: string
         email: string
+        deliveryStatus: "delivered" | "failed" | "pending" | "bounced"
+        opened: boolean
+        openedAt?: string
+        failureReason?: string
     }>
 }
 
@@ -272,19 +284,44 @@ const TAG_COLORS = [
 const mockEmailHistory: TEmailHistory[] = Array.from({ length: 20 }, (_, i) => {
     const templates = getEmailTemplates()
     const template = templates[i % templates.length]
+    const recipientsCount = Math.floor(Math.random() * 100) + 10
+    const recipients = Array.from({ length: 5 }, (_, j) => {
+        const deliveryStatuses: Array<"delivered" | "failed" | "pending" | "bounced"> = ["delivered", "failed", "pending", "bounced"]
+        const deliveryStatus = deliveryStatuses[Math.floor(Math.random() * deliveryStatuses.length)]
+        const opened = deliveryStatus === "delivered" && Math.random() > 0.3
+        const openedAt = opened ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString() : undefined
+        const failureReasons = [
+            "E-mail inválido",
+            "Caixa de entrada cheia",
+            "Domínio não existe",
+            "Servidor de e-mail indisponível",
+            "Filtro de spam bloqueou o e-mail",
+            "Timeout na entrega"
+        ]
+        const failureReason = (deliveryStatus === "failed" || deliveryStatus === "bounced") 
+            ? failureReasons[Math.floor(Math.random() * failureReasons.length)]
+            : undefined
+
+        return {
+            id: `recipient-${j + 1}`,
+            name: `Cliente ${j + 1}`,
+            email: `cliente${j + 1}@email.com`,
+            deliveryStatus,
+            opened,
+            openedAt,
+            failureReason
+        }
+    })
+    
     return {
         id: `email-${i + 1}`,
         templateId: template.id,
         templateName: template.name,
         subject: template.subject,
-        recipientsCount: Math.floor(Math.random() * 100) + 10,
+        recipientsCount,
         sentAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
         status: Math.random() > 0.1 ? "sent" : "failed",
-        recipients: Array.from({ length: 5 }, (_, j) => ({
-            id: `recipient-${j + 1}`,
-            name: `Cliente ${j + 1}`,
-            email: `cliente${j + 1}@email.com`
-        }))
+        recipients
     }
 })
 
@@ -421,6 +458,9 @@ const CRMPannel = () => {
     const [selectedCouponForTemplate, setSelectedCouponForTemplate] = useState<string>("")
     const [exportDialog, setExportDialog] = useState(false)
     const [selectedExportSegment, setSelectedExportSegment] = useState<string>("")
+    const [isGenerating, setIsGenerating] = useState(false)
+    const [selectedFormat, setSelectedFormat] = useState<"pdf" | "xlsx" | "csv" | "json" | null>(null)
+    const [viewSegmentCustomersDialog, setViewSegmentCustomersDialog] = useState(false)
     const [recipientsDialog, setRecipientsDialog] = useState<{
         open: boolean
         segmentIds: string[]
@@ -736,10 +776,26 @@ const CRMPannel = () => {
         }).format(value)
     }
 
-    const handleDownload = (format: "pdf" | "excel" | "csv" | "json", segmentId?: string) => {
-        console.log("Download:", format, "Segmento:", segmentId)
-        setExportDialog(false)
-        setSelectedExportSegment("")
+    const handleDownload = async (format: "pdf" | "xlsx" | "csv" | "json", segmentId?: string) => {
+        setSelectedFormat(format)
+        setIsGenerating(true)
+
+        try {
+            console.log("Download:", format, "Segmento:", segmentId)
+            
+            await new Promise(resolve => setTimeout(resolve, 1000))
+            
+            Toast.success(`Arquivo ${format.toUpperCase()} gerado com sucesso!`)
+            
+            setExportDialog(false)
+            setSelectedExportSegment("")
+        } catch (error) {
+            console.error("Erro ao exportar lista:", error)
+            Toast.error("Erro ao exportar lista de clientes")
+        } finally {
+            setIsGenerating(false)
+            setSelectedFormat(null)
+        }
     }
 
     const selectedEmail = emailHistory.find(e => e.id === emailHistoryDialog.emailId)
@@ -773,7 +829,7 @@ const CRMPannel = () => {
                     </Card>
                     <Card>
                         <div className="p-6">
-                            <p className="text-sm font-medium text-psi-dark/60 mb-2">E-mails Enviados</p>
+                            <p className="text-sm font-medium text-psi-dark/60 mb-2">E-mails Enviados este mês</p>
                             <div className="flex items-baseline gap-2 mb-2">
                                 <div className="text-3xl font-bold text-psi-dark">{emailUsed}</div>
                                 <div className="text-sm text-psi-dark/60">/ {emailLimit}</div>
@@ -862,7 +918,7 @@ const CRMPannel = () => {
                                     </div>
                                     <div className="flex gap-2">
                                         <Button
-                                            variant="outline"
+                                            variant="primary"
                                             size="sm"
                                             onClick={() => setEmailDialog({ open: true })}
                                             className="gap-2"
@@ -882,7 +938,7 @@ const CRMPannel = () => {
                                     </div>
                                 </div>
                                 <div className="space-y-4">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="flex items-center gap-4">
                                     <Input
                                         placeholder="Buscar por nome, e-mail, telefone..."
                                         value={search}
@@ -1319,7 +1375,7 @@ const CRMPannel = () => {
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-2 mb-2">
                                                             <h4 className="font-semibold text-psi-dark">{email.subject}</h4>
-                                                            <Badge variant={email.status === "sent" ? "default" : "destructive"}>
+                                                            <Badge variant={email.status === "sent" ? "psi-secondary" : "destructive"}>
                                                                 {email.status === "sent" ? "Enviado" : "Falhou"}
                                                             </Badge>
                                                         </div>
@@ -1836,7 +1892,7 @@ const CRMPannel = () => {
                             </div>
                             <div>
                                 <h4 className="font-semibold text-psi-dark mb-2">Status</h4>
-                                <Badge variant={selectedEmail.status === "sent" ? "default" : "destructive"}>
+                                <Badge variant={selectedEmail.status === "sent" ? "psi-secondary" : "destructive"}>
                                     {selectedEmail.status === "sent" ? "Enviado" : "Falhou"}
                                 </Badge>
                             </div>
@@ -1847,12 +1903,94 @@ const CRMPannel = () => {
                             <div>
                                 <h4 className="font-semibold text-psi-dark mb-2">Destinatários ({selectedEmail.recipientsCount})</h4>
                                 <div className="h-60 border border-psi-dark/10 rounded-lg p-4 overflow-y-auto">
-                                    <div className="space-y-2">
-                                        {selectedEmail.recipients.map(recipient => (
-                                            <div key={recipient.id} className="text-sm text-psi-dark/70">
-                                                {recipient.name} ({recipient.email})
-                                            </div>
-                                        ))}
+                                    <div className="space-y-3">
+                                        {selectedEmail.recipients.map(recipient => {
+                                            const getDeliveryStatusConfig = () => {
+                                                switch (recipient.deliveryStatus) {
+                                                    case "delivered":
+                                                        return {
+                                                            icon: MailCheck,
+                                                            label: "Entregue",
+                                                            variant: "psi-primary" as const,
+                                                            color: "text-green-600"
+                                                        }
+                                                    case "failed":
+                                                        return {
+                                                            icon: MailX,
+                                                            label: "Falhou",
+                                                            variant: "destructive" as const,
+                                                            color: "text-red-600"
+                                                        }
+                                                    case "bounced":
+                                                        return {
+                                                            icon: MailWarning,
+                                                            label: "Retornou",
+                                                            variant: "destructive" as const,
+                                                            color: "text-orange-600"
+                                                        }
+                                                    case "pending":
+                                                        return {
+                                                            icon: Clock,
+                                                            label: "Pendente",
+                                                            variant: "secondary" as const,
+                                                            color: "text-yellow-600"
+                                                        }
+                                                    default:
+                                                        return {
+                                                            icon: Mail,
+                                                            label: "Desconhecido",
+                                                            variant: "secondary" as const,
+                                                            color: "text-psi-dark/60"
+                                                        }
+                                                }
+                                            }
+
+                                            const statusConfig = getDeliveryStatusConfig()
+                                            const StatusIcon = statusConfig.icon
+
+                                            return (
+                                                <div key={recipient.id} className="border border-psi-dark/10 rounded-lg p-3 hover:bg-psi-primary/5 transition-colors">
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <p className="font-medium text-psi-dark text-sm truncate">
+                                                                    {recipient.name}
+                                                                </p>
+                                                            </div>
+                                                            <p className="text-xs text-psi-dark/60 mb-2 truncate">
+                                                                {recipient.email}
+                                                            </p>
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <Badge variant={statusConfig.variant} className="gap-1 text-xs">
+                                                                    <StatusIcon className="h-3 w-3" />
+                                                                    {statusConfig.label}
+                                                                </Badge>
+                                                                {recipient.opened && (
+                                                                    <Badge variant="outline" className="gap-1 text-xs border-green-500 text-green-700">
+                                                                        <MailOpen className="h-3 w-3" />
+                                                                        Aberto
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                            {recipient.failureReason && (
+                                                                <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                                                                    <div className="flex items-start gap-1">
+                                                                        <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
+                                                                        <span className="font-medium">Motivo da falha:</span>
+                                                                    </div>
+                                                                    <p className="mt-1 ml-4">{recipient.failureReason}</p>
+                                                                </div>
+                                                            )}
+                                                            {recipient.openedAt && (
+                                                                <p className="mt-2 text-xs text-psi-dark/50">
+                                                                    Aberto em: {formatDateTime(recipient.openedAt)}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
                                     </div>
                                 </div>
                             </div>
@@ -2101,85 +2239,312 @@ const CRMPannel = () => {
             </Dialog>
 
             <Dialog open={exportDialog} onOpenChange={setExportDialog}>
-                <DialogContent className="max-w-lg">
+                <DialogContent className="w-full p-6">
                     <DialogHeader>
-                        <DialogTitle>Exportar Lista de Clientes</DialogTitle>
-                        <DialogDescription>
-                            Selecione o formato e o segmento para exportar
+                        <DialogTitle className="flex items-center gap-2 text-psi-dark">
+                            <FileSpreadsheet className="h-5 w-5 text-psi-primary" />
+                            Exportar Lista de Clientes
+                        </DialogTitle>
+                        <DialogDescription className="text-psi-dark/70 mt-2">
+                            Escolha o formato em que deseja exportar a lista de clientes.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-6 py-4">
-                        <div>
-                            <label className="text-sm font-medium text-psi-dark mb-3 block">Selecione o Segmento</label>
-                            <Select
-                                value={selectedExportSegment || "all"}
-                                onValueChange={(value) => setSelectedExportSegment(value)}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Selecione um segmento" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Todos os clientes</SelectItem>
-                                    {emailSegments.map(segment => (
-                                        <SelectItem key={segment.id} value={segment.id}>
-                                            {segment.name} ({segment.count} clientes)
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div>
-                            <label className="text-sm font-medium text-psi-dark mb-3 block">Formato de Exportação</label>
-                            <div className="grid grid-cols-2 gap-3">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => handleDownload("pdf", selectedExportSegment || "all")}
-                                    className="gap-2 h-auto py-3 flex-col"
-                                >
-                                    <FileType className="h-5 w-5" />
-                                    PDF
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => handleDownload("excel", selectedExportSegment || "all")}
-                                    className="gap-2 h-auto py-3 flex-col"
-                                >
-                                    <FileSpreadsheet className="h-5 w-5" />
-                                    Excel
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => handleDownload("csv", selectedExportSegment || "all")}
-                                    className="gap-2 h-auto py-3 flex-col"
-                                >
-                                    <FileDown className="h-5 w-5" />
-                                    CSV
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => handleDownload("json", selectedExportSegment || "all")}
-                                    className="gap-2 h-auto py-3 flex-col"
-                                >
-                                    <FileJson className="h-5 w-5" />
-                                    JSON
-                                </Button>
+                    
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-3 p-4 rounded-xl border border-psi-primary/20 bg-psi-primary/5">
+                            <p className="text-sm font-medium text-psi-dark">Filtros</p>
+                            
+                            <div className="space-y-2">
+                                <label className="text-xs font-medium text-psi-dark/70 flex items-center gap-2">
+                                    <Users className="h-4 w-4" />
+                                    Segmento
+                                </label>
+                                <div className="flex gap-2">
+                                    <Select
+                                        value={selectedExportSegment || "all"}
+                                        onValueChange={(value) => setSelectedExportSegment(value === "all" ? "" : value)}
+                                    >
+                                        <SelectTrigger className="w-full bg-white">
+                                            <SelectValue placeholder="Todos os clientes" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">Todos os clientes</SelectItem>
+                                            {emailSegments.map(segment => (
+                                                <SelectItem key={segment.id} value={segment.id}>
+                                                    {segment.name} ({segment.count} clientes)
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => setViewSegmentCustomersDialog(true)}
+                                        disabled={!selectedExportSegment || selectedExportSegment === "all"}
+                                        className="shrink-0"
+                                        title="Visualizar clientes do segmento"
+                                    >
+                                        <Eye className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
                         </div>
+
+                        <div className="space-y-3">
+                            <button
+                                onClick={() => handleDownload("pdf", selectedExportSegment || "all")}
+                                disabled={isGenerating}
+                                className={cn(
+                                    "w-full p-4 rounded-xl border-2 border-[#E4E6F0] bg-white hover:border-psi-primary hover:bg-psi-primary/5 transition-all duration-200 text-left disabled:opacity-50 disabled:cursor-not-allowed",
+                                )}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 rounded-lg bg-psi-primary/10 flex items-center justify-center">
+                                            {isGenerating && selectedFormat === "pdf" ? (
+                                                <Loader2 className="h-6 w-6 text-psi-primary animate-spin" />
+                                            ) : (
+                                                <FileText className="h-6 w-6 text-psi-primary" />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-sm font-medium text-psi-dark">PDF</p>
+                                                <Badge variant="secondary" className="bg-psi-primary/10 text-psi-primary border-psi-primary/20">
+                                                    Mais utilizado
+                                                </Badge>
+                                            </div>
+                                            <p className="text-xs text-psi-dark/60 mt-1">
+                                                Performance ideal para impressão e compartilhamento
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {isGenerating && selectedFormat === "pdf" ? (
+                                        <Loader2 className="h-5 w-5 text-psi-primary animate-spin" />
+                                    ) : (
+                                        <Download className="h-5 w-5 text-psi-dark/40" />
+                                    )}
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={() => handleDownload("xlsx", selectedExportSegment || "all")}
+                                disabled={isGenerating}
+                                className={cn(
+                                    "w-full p-4 rounded-xl border-2 border-[#E4E6F0] bg-white hover:border-psi-primary hover:bg-psi-primary/5 transition-all duration-200 text-left disabled:opacity-50 disabled:cursor-not-allowed",
+                                )}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 rounded-lg bg-psi-primary/10 flex items-center justify-center">
+                                            {isGenerating && selectedFormat === "xlsx" ? (
+                                                <Loader2 className="h-6 w-6 text-psi-primary animate-spin" />
+                                            ) : (
+                                                <FileSpreadsheet className="h-6 w-6 text-psi-primary/80" />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-sm font-medium text-psi-dark">Excel (xlsx)</p>
+                                            </div>
+                                            <p className="text-xs text-psi-dark/60 mt-1">
+                                                Formato ideal para análise e edição
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {isGenerating && selectedFormat === "xlsx" ? (
+                                        <Loader2 className="h-5 w-5 text-psi-primary animate-spin" />
+                                    ) : (
+                                        <Download className="h-5 w-5 text-psi-dark/40" />
+                                    )}
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={() => handleDownload("csv", selectedExportSegment || "all")}
+                                disabled={isGenerating}
+                                className={cn(
+                                    "w-full p-4 rounded-xl border-2 border-[#E4E6F0] bg-white hover:border-psi-primary hover:bg-psi-primary/5 transition-all duration-200 text-left disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "focus:outline-none focus:ring-2 focus:ring-psi-primary focus:ring-offset-2"
+                                )}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 rounded-lg bg-psi-secondary/10 flex items-center justify-center">
+                                            {isGenerating && selectedFormat === "csv" ? (
+                                                <Loader2 className="h-6 w-6 text-psi-secondary animate-spin" />
+                                            ) : (
+                                                <FileText className="h-6 w-6 text-psi-secondary" />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-psi-dark">CSV</p>
+                                            <p className="text-xs text-psi-dark/60 mt-1">
+                                                Formato simples e compatível
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {isGenerating && selectedFormat === "csv" ? (
+                                        <Loader2 className="h-5 w-5 text-psi-secondary animate-spin" />
+                                    ) : (
+                                        <Download className="h-5 w-5 text-psi-dark/40" />
+                                    )}
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={() => handleDownload("json", selectedExportSegment || "all")}
+                                disabled={isGenerating}
+                                className={cn(
+                                    "w-full p-4 rounded-xl border-2 border-[#E4E6F0] bg-white hover:border-psi-primary hover:bg-psi-primary/5 transition-all duration-200 text-left disabled:opacity-50 disabled:cursor-not-allowed",
+                                    "focus:outline-none focus:ring-2 focus:ring-psi-primary focus:ring-offset-2"
+                                )}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 rounded-lg bg-psi-tertiary/10 flex items-center justify-center">
+                                            {isGenerating && selectedFormat === "json" ? (
+                                                <Loader2 className="h-6 w-6 text-psi-tertiary animate-spin" />
+                                            ) : (
+                                                <Code className="h-6 w-6 text-psi-tertiary" />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-medium text-psi-dark">JSON</p>
+                                            <p className="text-xs text-psi-dark/60 mt-1">
+                                                Formato para integração e desenvolvimento
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {isGenerating && selectedFormat === "json" ? (
+                                        <Loader2 className="h-5 w-5 text-psi-tertiary animate-spin" />
+                                    ) : (
+                                        <Download className="h-5 w-5 text-psi-dark/40" />
+                                    )}
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-3">
+                        <DialogClose asChild>
+                            <Button 
+                                variant="outline" 
+                                className="w-full sm:w-auto"
+                                onClick={() => {
+                                    setSelectedExportSegment("")
+                                }}
+                            >
+                                Cancelar
+                            </Button>
+                        </DialogClose>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={viewSegmentCustomersDialog} onOpenChange={setViewSegmentCustomersDialog}>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Clientes do Segmento</DialogTitle>
+                        <DialogDescription>
+                            {selectedExportSegment && selectedExportSegment !== "all" ? (
+                                <>
+                                    Visualizando clientes do segmento: <strong>{emailSegments.find(s => s.id === selectedExportSegment)?.name}</strong>
+                                </>
+                            ) : (
+                                "Selecione um segmento para visualizar os clientes"
+                            )}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        {!selectedExportSegment || selectedExportSegment === "all" ? (
+                            <p className="text-sm text-psi-dark/60 text-center py-8">
+                                Selecione um segmento específico para visualizar os clientes
+                            </p>
+                        ) : (() => {
+                            const segment = emailSegments.find(s => s.id === selectedExportSegment)
+                            if (!segment) return null
+                            
+                            let segmentCustomers: TCustomer[] = []
+                            
+                            if (segment.type === "event") {
+                                const segmentName = segment.name.replace("Evento: ", "").trim()
+                                segmentCustomers = filteredCustomers.filter(c => 
+                                    c.events.some(e => e.name.toLowerCase().includes(segmentName.toLowerCase()) || e.id === selectedExportSegment)
+                                )
+                            } else if (segment.type === "tag") {
+                                const segmentName = segment.name.replace("Tag: ", "").trim()
+                                segmentCustomers = filteredCustomers.filter(c => 
+                                    c.tags.some(t => t.name.toLowerCase().includes(segmentName.toLowerCase()) || t.id === selectedExportSegment)
+                                )
+                            } else {
+                                segmentCustomers = filteredCustomers
+                            }
+                            
+                            return (
+                                <>
+                                    <div className="border border-psi-dark/10 rounded-lg p-4 bg-psi-primary/5">
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <h4 className="font-semibold text-psi-dark">{segment.name}</h4>
+                                            <Badge variant="outline" className="text-xs">
+                                                {segment.type === "event" ? "Evento" : segment.type === "tag" ? "Tag" : "Personalizado"}
+                                            </Badge>
+                                        </div>
+                                        <p className="text-xs text-psi-dark/60 mb-2">{segment.description}</p>
+                                        <p className="text-sm text-psi-dark/70">
+                                            <strong>Total de clientes:</strong> {segmentCustomers.length}
+                                        </p>
+                                    </div>
+                                    
+                                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                                        {segmentCustomers.length === 0 ? (
+                                            <p className="text-sm text-psi-dark/60 text-center py-8">
+                                                Nenhum cliente encontrado neste segmento
+                                            </p>
+                                        ) : (
+                                            segmentCustomers.map(customer => (
+                                                <div key={customer.id} className="flex items-center justify-between p-3 border border-psi-dark/10 rounded-lg hover:bg-psi-primary/5 transition-colors">
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-medium text-psi-dark text-sm truncate">{customer.name}</p>
+                                                        <p className="text-xs text-psi-dark/60 truncate">{customer.email}</p>
+                                                        {customer.phone && (
+                                                            <p className="text-xs text-psi-dark/50 mt-1">{customer.phone}</p>
+                                                        )}
+                                                    </div>
+                                                    {customer.tags && customer.tags.length > 0 && (
+                                                        <div className="flex gap-1 ml-2 flex-wrap">
+                                                            {customer.tags.slice(0, 2).map(tag => (
+                                                                <Badge
+                                                                    key={tag.id}
+                                                                    variant="outline"
+                                                                    style={{ borderColor: tag.color, color: tag.color }}
+                                                                    className="text-xs"
+                                                                >
+                                                                    {tag.name}
+                                                                </Badge>
+                                                            ))}
+                                                            {customer.tags.length > 2 && (
+                                                                <Badge variant="outline" className="text-xs">
+                                                                    +{customer.tags.length - 2}
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </>
+                            )
+                        })()}
                     </div>
                     <DialogFooter>
                         <Button
                             variant="outline"
-                            onClick={() => {
-                                setExportDialog(false)
-                                setSelectedExportSegment("")
-                            }}
+                            onClick={() => setViewSegmentCustomersDialog(false)}
                         >
-                            Cancelar
+                            Fechar
                         </Button>
                     </DialogFooter>
                 </DialogContent>
