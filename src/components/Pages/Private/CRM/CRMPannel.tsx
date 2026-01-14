@@ -33,7 +33,15 @@ import {
     Crown,
     BarChart3,
     Eye,
-    EyeOff
+    EyeOff,
+    Bell,
+    Gift,
+    Heart,
+    CheckCircle,
+    ThumbsUp,
+    TrendingUp,
+    Star,
+    Award
 } from "lucide-react"
 import { Background } from "@/components/Background/Background"
 import { Button } from "@/components/ui/button"
@@ -100,9 +108,13 @@ import type { TTagResponse } from "@/types/Tag/TTag"
 import type { TObservationResponse } from "@/types/Observation/TObservation"
 import { Toast } from "@/components/Toast/Toast"
 import { ObservationService } from "@/services/CRM/ObservationService"
-import { TagClientService } from "@/services/CRM/TagClientService"
 import { useOrganizerFindClientsCrm } from "@/hooks/Client/useOrganizerFindClientsCrm"
 import type { TCustomer } from "@/types/Client/TClient"
+import { useEventCache } from "@/hooks/Event/useEventCache"
+import { useCouponFind } from "@/hooks/Coupon/useCouponFind"
+import type { TCoupon } from "@/types/Coupon/TCoupon"
+import type { ReactNode } from "react"
+import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 
 
 
@@ -113,7 +125,7 @@ type TEmailTemplate = {
     body: string
     editableFields: string[]
     preview: string
-    icon: string
+    icon: ReactNode
     isPremium?: boolean
 }
 
@@ -142,62 +154,82 @@ type TEmailHistory = {
 
 
 
-const mockEmailTemplates: TEmailTemplate[] = [
+const getEmailTemplates = (): TEmailTemplate[] => [
     {
-        id: "template-1",
-        name: "Boas-vindas",
-        subject: "Bem-vindo ao nosso evento!",
-        body: "Olá {{nome}},\n\nÉ um prazer tê-lo conosco no {{evento}}!\n\nData: {{data}}\nLocal: {{local}}\n\nAguardamos você!",
-        editableFields: ["evento"],
-        preview: "Template de boas-vindas para novos clientes",
-        icon: "👋"
-    },
-    {
-        id: "template-2",
+        id: "template-lembrete",
         name: "Lembrete de evento",
         subject: "Lembrete: {{evento}} está chegando!",
-        body: "Olá {{nome}},\n\nEste é um lembrete de que o evento {{evento}} acontecerá em breve!\n\nData: {{data}}\nLocal: {{local}}\n\nNão perca!",
+        body: "Olá {{nome}},\n\nEste é um lembrete de que o evento {{evento}} acontecerá em breve!\n\nData: {{data}}\nLocal: {{local}}\n\nNão perca esta oportunidade!\n\nAguardamos você!",
         editableFields: ["evento"],
         preview: "Envie lembretes para seus clientes sobre eventos próximos",
-        icon: "⏰"
+        icon: <Bell className="h-6 w-6" />
     },
     {
-        id: "template-3",
+        id: "template-oferta",
         name: "Oferta especial",
         subject: "Oferta especial para você!",
-        body: "Olá {{nome}},\n\nTemos uma oferta especial para você!\n\n{{mensagem}}\n\nAproveite!",
-        editableFields: ["mensagem"],
-        preview: "Compartilhe ofertas e promoções especiais",
-        icon: "🎁"
+        body: "Olá {{nome}},\n\nTemos uma oferta especial para você!\n\nUse o cupom {{cupomCodigo}} e ganhe {{cupomDesconto}} de desconto!\n\n{{cupomDescricao}}\n\nAproveite esta oportunidade única!",
+        editableFields: ["cupom"],
+        preview: "Compartilhe ofertas e promoções especiais com cupons de desconto",
+        icon: <Gift className="h-6 w-6" />
     },
     {
-        id: "template-4",
-        name: "Confirmação de compra",
-        subject: "Sua compra foi confirmada!",
-        body: "Olá {{nome}},\n\nSua compra para o evento {{evento}} foi confirmada com sucesso!\n\nData: {{data}}\nLocal: {{local}}\n\nAguardamos você!",
+        id: "template-nutrir",
+        name: "Nutrir público",
+        subject: "Conheça nossos eventos!",
+        body: "Olá {{nome}},\n\nQue tal conhecer nossos eventos incríveis?\n\n{{eventoTexto}}\n\nAcesse nossa plataforma e descubra todas as opções disponíveis!\n\nSiga-nos nas redes sociais para ficar por dentro de todas as novidades.\n\nEsperamos você!",
         editableFields: ["evento"],
-        preview: "Confirme a compra dos seus clientes",
-        icon: "✅",
-        isPremium: true
+        preview: "Convide seu público a conhecer seus eventos e redes sociais",
+        icon: <Heart className="h-6 w-6" />
     },
     {
-        id: "template-5",
+        id: "template-pos-evento",
         name: "Pós-evento",
         subject: "Obrigado por participar!",
-        body: "Olá {{nome}},\n\nObrigado por participar do {{evento}}!\n\nEsperamos que tenha se divertido. Fique atento aos nossos próximos eventos!\n\nData: {{data}}\nLocal: {{local}}",
-        editableFields: ["evento"],
-        preview: "Agradeça seus clientes após o evento",
-        icon: "🙏",
+        body: "Olá {{nome}},\n\nObrigado por participar do {{evento}}!\n\nEsperamos que tenha se divertido e aproveitado cada momento.\n\nFique atento aos nossos próximos eventos - temos muitas surpresas preparadas para você!\n\nAté breve!",
+        editableFields: [],
+        preview: "Agradeça seus clientes após o evento e mantenha o relacionamento",
+        icon: <CheckCircle className="h-6 w-6" />,
         isPremium: true
     },
     {
-        id: "template-6",
+        id: "template-pesquisa",
         name: "Pesquisa de satisfação",
         subject: "Sua opinião é importante!",
-        body: "Olá {{nome}},\n\nGostaríamos de saber sua opinião sobre o evento {{evento}}.\n\nPor favor, responda nossa pesquisa rápida clicando no link abaixo.\n\nData: {{data}}\nLocal: {{local}}",
+        body: "Olá {{nome}},\n\nGostaríamos muito de saber sua opinião sobre o evento {{evento}} que você participou.\n\nSua avaliação é fundamental para melhorarmos cada vez mais!\n\nPor favor, responda nossa pesquisa rápida clicando no link abaixo.\n\nObrigado pela sua participação!",
+        editableFields: [],
+        preview: "Colete feedback dos seus clientes para melhorar seus eventos",
+        icon: <ThumbsUp className="h-6 w-6" />,
+        isPremium: true
+    },
+    {
+        id: "template-aniversario",
+        name: "Aniversário do cliente",
+        subject: "Feliz aniversário!",
+        body: "Olá {{nome}},\n\nHoje é um dia especial - seu aniversário!\n\nQueremos te parabenizar e oferecer um presente especial: {{cupomDesconto}} de desconto em qualquer um dos nossos eventos!\n\nUse o cupom {{cupomCodigo}} e comemore conosco!\n\nFeliz aniversário e muitas felicidades!",
+        editableFields: [],
+        preview: "Parabenize clientes no aniversário com ofertas especiais",
+        icon: <Star className="h-6 w-6" />,
+        isPremium: true
+    },
+    {
+        id: "template-lancamento",
+        name: "Lançamento de evento",
+        subject: "Novo evento disponível!",
+        body: "Olá {{nome}},\n\nTemos uma novidade incrível para você!\n\nAcabamos de lançar um novo evento: {{evento}}\n\nData: {{data}}\nLocal: {{local}}\n\nSeja um dos primeiros a garantir seu ingresso!\n\nNão perca esta oportunidade!",
         editableFields: ["evento"],
-        preview: "Colete feedback dos seus clientes",
-        icon: "📊",
+        preview: "Anuncie novos eventos para seus clientes",
+        icon: <TrendingUp className="h-6 w-6" />,
+        isPremium: true
+    },
+    {
+        id: "template-fidelidade",
+        name: "Programa de fidelidade",
+        subject: "Você é um cliente especial!",
+        body: "Olá {{nome}},\n\nQueremos agradecer sua fidelidade!\n\nPor ser um cliente especial, você ganhou {{cupomDesconto}} de desconto em qualquer evento!\n\nUse o cupom {{cupomCodigo}} e aproveite!\n\nObrigado por fazer parte da nossa história!",
+        editableFields: [],
+        preview: "Recompense clientes fiéis com ofertas exclusivas",
+        icon: <Award className="h-6 w-6" />,
         isPremium: true
     }
 ]
@@ -237,30 +269,25 @@ const TAG_COLORS = [
     { value: "#AA96DA", label: "Lavanda" }
 ]
 
-const mockEmailHistory: TEmailHistory[] = Array.from({ length: 20 }, (_, i) => ({
-    id: `email-${i + 1}`,
-    templateId: `template-${(i % 3) + 1}`,
-    templateName: mockEmailTemplates[i % 3].name,
-    subject: mockEmailTemplates[i % 3].subject,
-    recipientsCount: Math.floor(Math.random() * 100) + 10,
-    sentAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-    status: Math.random() > 0.1 ? "sent" : "failed",
-    recipients: Array.from({ length: 5 }, (_, j) => ({
-        id: `recipient-${j + 1}`,
-        name: `Cliente ${j + 1}`,
-        email: `cliente${j + 1}@email.com`
-    }))
-}))
-
-const mockEvents = Array.from({ length: 10 }, (_, i) => {
-    const eventDate = new Date(Date.now() + Math.random() * 60 * 24 * 60 * 60 * 1000)
+const mockEmailHistory: TEmailHistory[] = Array.from({ length: 20 }, (_, i) => {
+    const templates = getEmailTemplates()
+    const template = templates[i % templates.length]
     return {
-        id: `event-${i + 1}`,
-        name: `Evento ${i + 1}`,
-        date: eventDate.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }),
-        location: `Local ${i + 1}, Porto Seguro - BA`
+        id: `email-${i + 1}`,
+        templateId: template.id,
+        templateName: template.name,
+        subject: template.subject,
+        recipientsCount: Math.floor(Math.random() * 100) + 10,
+        sentAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+        status: Math.random() > 0.1 ? "sent" : "failed",
+        recipients: Array.from({ length: 5 }, (_, j) => ({
+            id: `recipient-${j + 1}`,
+            name: `Cliente ${j + 1}`,
+            email: `cliente${j + 1}@email.com`
+        }))
     }
 })
+
 
 const TagValidator = z.object({
     name: z.string().min(1, { error: "O nome da tag é obrigatório" }).max(50, { error: "O nome da tag deve ter no máximo 50 caracteres" }),
@@ -282,9 +309,14 @@ type TObservationForm = z.infer<typeof ObservationValidator>
 type TEmailSendForm = z.infer<typeof EmailSendValidator>
 
 const CRMPannel = () => {
-    const [emailTemplates] = useState<TEmailTemplate[]>(mockEmailTemplates)
+    const emailTemplates = getEmailTemplates()
     const [emailHistory] = useState<TEmailHistory[]>(mockEmailHistory)
-    const [events] = useState(mockEvents)
+    
+    const { data: eventsData } = useEventCache()
+    const events = eventsData?.data || []
+    
+    const { data: couponsData } = useCouponFind()
+    const coupons = couponsData?.data || []
 
     const { data: tagsData, isLoading: tagsLoading, refetch: refetchTags } = useTagFind()
     const tags = tagsData?.data || []
@@ -386,6 +418,7 @@ const CRMPannel = () => {
     const [selectedTemplate, setSelectedTemplate] = useState<TEmailTemplate | null>(null)
     const [emailSegments] = useState<TEmailSegment[]>(mockEmailSegments)
     const [selectedEventForTemplate, setSelectedEventForTemplate] = useState<string>("")
+    const [selectedCouponForTemplate, setSelectedCouponForTemplate] = useState<string>("")
     const [exportDialog, setExportDialog] = useState(false)
     const [selectedExportSegment, setSelectedExportSegment] = useState<string>("")
     const [recipientsDialog, setRecipientsDialog] = useState<{
@@ -402,7 +435,6 @@ const CRMPannel = () => {
     const tagLimit = 200
     const tagsUsed = tags.length
 
-    const [tagClientsByCustomer, setTagClientsByCustomer] = useState<Record<string, Array<{ id: string; tagId: string }>>>({})
 
     const tagForm = useForm<TTagForm>({
         resolver: zodResolver(TagValidator),
@@ -554,65 +586,31 @@ const CRMPannel = () => {
 
     const handleAddTagToCustomer = async (customerId: string, tagId: string) => {
         try {
-            const response = await createTagClient({
+            await createTagClient({
                 tagId,
                 userId: customerId
             })
-            if (response?.data?.id) {
-                setTagClientsByCustomer(prev => ({
-                    ...prev,
-                    [customerId]: [...(prev[customerId] || []), { id: response.data!.id, tagId }]
-                }))
-                await refetchCustomers()
-                Toast.success("Tag adicionada ao cliente com sucesso")
-            }
+            await refetchCustomers()
+            Toast.success("Tag adicionada ao cliente com sucesso")
         } catch (error) {
             console.error("Erro ao adicionar tag ao cliente:", error)
         }
     }
 
-    const handleRemoveTagFromCustomerClick = async (customerId: string, tagId: string, tagName: string) => {
-        let tagClient = tagClientsByCustomer[customerId]?.find(tc => tc.tagId === tagId)
-        
-        if (!tagClient) {
-            try {
-                const tagClientsData = await TagClientService.findByUserId(customerId)
-                if (tagClientsData?.data) {
-                    const tagClients = tagClientsData.data.map(tc => ({ id: tc.id, tagId: tc.tagId }))
-                    setTagClientsByCustomer(prev => ({
-                        ...prev,
-                        [customerId]: tagClients
-                    }))
-                    tagClient = tagClients.find(tc => tc.tagId === tagId)
-                }
-            } catch (error) {
-                console.error("Erro ao buscar tags do cliente:", error)
-                Toast.error("Não foi possível encontrar a relação da tag com o cliente")
-                return
-            }
-        }
-
-        if (tagClient) {
-            setRemoveTagFromCustomerDialog({
-                open: true,
-                customerId,
-                tagId,
-                tagClientId: tagClient.id,
-                tagName
-            })
-        } else {
-            Toast.error("Não foi possível encontrar a relação da tag com o cliente")
-        }
+    const handleRemoveTagFromCustomerClick = (customerId: string, tagId: string, tagName: string, tagClientId: string) => {
+        setRemoveTagFromCustomerDialog({
+            open: true,
+            customerId,
+            tagId,
+            tagClientId,
+            tagName
+        })
     }
 
     const confirmRemoveTagFromCustomer = async () => {
         if (removeTagFromCustomerDialog.tagClientId && removeTagFromCustomerDialog.customerId) {
             try {
                 await deleteTagClient(removeTagFromCustomerDialog.tagClientId)
-                setTagClientsByCustomer(prev => ({
-                    ...prev,
-                    [removeTagFromCustomerDialog.customerId!]: (prev[removeTagFromCustomerDialog.customerId!] || []).filter(tc => tc.id !== removeTagFromCustomerDialog.tagClientId)
-                }))
                 setRemoveTagFromCustomerDialog({ open: false })
                 await refetchCustomers()
                 Toast.success("Tag removida do cliente com sucesso")
@@ -649,19 +647,52 @@ const CRMPannel = () => {
     const getPreviewBody = () => {
         if (!selectedTemplate) return ""
         let preview = selectedTemplate.body
-        const selectedEvent = mockEvents.find(e => e.id === selectedEventForTemplate)
+        const selectedEvent = events.find(e => e.id === selectedEventForTemplate)
+        const selectedCoupon = coupons.find((c: TCoupon) => c.id === selectedCouponForTemplate)
         
         preview = preview.replace(/\{\{nome\}\}/g, "{\{nome\}\}")
+        
         if (selectedEvent) {
             preview = preview.replace(/\{\{evento\}\}/g, selectedEvent.name)
-            preview = preview.replace(/\{\{data\}\}/g, selectedEvent.date)
-            preview = preview.replace(/\{\{local\}\}/g, selectedEvent.location)
+            const firstDate = selectedEvent.EventDates?.[0]
+            if (firstDate?.date) {
+                const date = new Date(firstDate.date)
+                preview = preview.replace(/\{\{data\}\}/g, date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }))
+            } else {
+                preview = preview.replace(/\{\{data\}\}/g, "[Data do evento]")
+            }
+            const locationText = selectedEvent.location || "Local ainda não definido"
+            preview = preview.replace(/\{\{local\}\}/g, locationText)
         } else {
             preview = preview.replace(/\{\{evento\}\}/g, "[Selecione um evento]")
             preview = preview.replace(/\{\{data\}\}/g, "[Data do evento]")
             preview = preview.replace(/\{\{local\}\}/g, "[Local do evento]")
         }
-        preview = preview.replace(/\{\{mensagem\}\}/g, emailForm.watch("templateFields.mensagem") || "[Sua mensagem]")
+        
+        if (selectedCoupon) {
+            const discountText = selectedCoupon.discountType === "PERCENTAGE" 
+                ? `${selectedCoupon.discountValue}%` 
+                : `${ValueUtils.centsToCurrency(selectedCoupon.discountValue)}`
+            const couponEvent = events.find(e => e.id === selectedCoupon.eventId)
+            const eventName = couponEvent?.name || "Evento não encontrado"
+            preview = preview.replace(/\{\{cupomCodigo\}\}/g, selectedCoupon.code)
+            preview = preview.replace(/\{\{cupomDesconto\}\}/g, discountText)
+            preview = preview.replace(/\{\{cupomDescricao\}\}/g, `Válido para o evento ${eventName}`)
+        } else {
+            preview = preview.replace(/\{\{cupomCodigo\}\}/g, "[Código do cupom]")
+            preview = preview.replace(/\{\{cupomDesconto\}\}/g, "[Desconto]")
+            preview = preview.replace(/\{\{cupomDescricao\}\}/g, "[Descrição do cupom]")
+        }
+        
+        if (selectedTemplate.id === "template-nutrir" && selectedEvent) {
+            const firstDate = selectedEvent.EventDates?.[0]
+            const dateText = firstDate?.date 
+                ? new Date(firstDate.date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })
+                : "[Data do evento]"
+            preview = preview.replace(/\{\{eventoTexto\}\}/g, `Confira o evento "${selectedEvent.name}" que acontecerá em ${dateText}.`)
+        } else {
+            preview = preview.replace(/\{\{eventoTexto\}\}/g, "[Descrição do evento]")
+        }
         
         return preview
     }
@@ -669,7 +700,7 @@ const CRMPannel = () => {
     const getPreviewSubject = () => {
         if (!selectedTemplate) return ""
         let preview = selectedTemplate.subject
-        const selectedEvent = mockEvents.find(e => e.id === selectedEventForTemplate)
+        const selectedEvent = events.find(e => e.id === selectedEventForTemplate)
         
         if (selectedEvent) {
             preview = preview.replace(/\{\{evento\}\}/g, selectedEvent.name)
@@ -1031,7 +1062,7 @@ const CRMPannel = () => {
                                                                                             <Tag className="h-3 w-3" />
                                                                                             {tag.name}
                                                                                             <button
-                                                                                                onClick={() => handleRemoveTagFromCustomerClick(customer.id, tag.id, tag.name)}
+                                                                                                onClick={() => handleRemoveTagFromCustomerClick(customer.id, tag.id, tag.name, tag.tagClientId)}
                                                                                                 className="ml-1 hover:opacity-70"
                                                                                             >
                                                                                                 <X className="h-3 w-3" />
@@ -1506,6 +1537,7 @@ const CRMPannel = () => {
                 emailForm.reset()
                 setSelectedTemplate(null)
                 setSelectedEventForTemplate("")
+                setSelectedCouponForTemplate("")
             }}>
                 <SheetContent side="right" className="w-[90vw] sm:w-[90vw] lg:w-[1200px] overflow-y-auto">
                     <SheetHeader>
@@ -1532,13 +1564,13 @@ const CRMPannel = () => {
                                     >
                                         {template.isPremium && (
                                             <div className="absolute top-2 right-2">
-                                                <Badge variant="psi-secondary" className="text-xs gap-1">
+                                                <Badge variant="psi-tertiary" className="text-xs gap-1">
                                                     <Crown className="h-3 w-3" />
                                                     Premium
                                                 </Badge>
                                             </div>
                                         )}
-                                        <div className="text-3xl mb-2">{template.icon}</div>
+                                        <div className="mb-2 text-psi-primary">{template.icon}</div>
                                         <h4 className="font-semibold text-psi-dark mb-1">{template.name}</h4>
                                         <p className="text-xs text-psi-dark/60">{template.preview}</p>
                                     </button>
@@ -1590,23 +1622,91 @@ const CRMPannel = () => {
                                                                     <SelectValue placeholder="Selecione um evento" />
                                                                 </SelectTrigger>
                                                                 <SelectContent>
-                                                                    {mockEvents.map(event => (
+                                                                    {events.map(event => (
                                                                         <SelectItem key={event.id} value={event.id}>
                                                                             {event.name}
                                                                         </SelectItem>
                                                                     ))}
                                                                 </SelectContent>
                                                             </Select>
-                                                            {selectedEventForTemplate && (
-                                                                <div className="mt-2 p-2 bg-psi-primary/5 rounded border border-psi-primary/20">
-                                                                    <p className="text-xs text-psi-dark/60">
-                                                                        <strong>Data:</strong> {mockEvents.find(e => e.id === selectedEventForTemplate)?.date}
-                                                                    </p>
-                                                                    <p className="text-xs text-psi-dark/60 mt-1">
-                                                                        <strong>Local:</strong> {mockEvents.find(e => e.id === selectedEventForTemplate)?.location}
-                                                                    </p>
-                                                                </div>
-                                                            )}
+                                                            {selectedEventForTemplate && (() => {
+                                                                const selectedEvent = events.find(e => e.id === selectedEventForTemplate)
+                                                                const firstDate = selectedEvent?.EventDates?.[0]
+                                                                return selectedEvent && (
+                                                                    <div className="mt-2 p-2 bg-psi-primary/5 rounded border border-psi-primary/20 space-y-1">
+                                                                        {firstDate?.date && (
+                                                                            <p className="text-xs text-psi-dark/60">
+                                                                                <strong>Data:</strong> {new Date(firstDate.date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                                                                            </p>
+                                                                        )}
+                                                                        <p className="text-xs text-psi-dark/60">
+                                                                            <strong>Local:</strong> {selectedEvent.location || "Local ainda não definido"}
+                                                                        </p>
+                                                                    </div>
+                                                                )
+                                                            })()}
+                                                        </div>
+                                                    )
+                                                }
+                                                if (field === "cupom") {
+                                                    return (
+                                                        <div key={field}>
+                                                            <label className="text-sm font-medium text-psi-dark mb-1 block">
+                                                                Cupom de Desconto
+                                                            </label>
+                                                            <Select
+                                                                value={selectedCouponForTemplate}
+                                                                onValueChange={(value) => {
+                                                                    setSelectedCouponForTemplate(value)
+                                                                    emailForm.setValue("templateFields.cupom", value)
+                                                                }}
+                                                            >
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="Selecione um cupom" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {coupons.length === 0 ? (
+                                                                        <SelectItem value="no-coupons" disabled>
+                                                                            Nenhum cupom disponível
+                                                                        </SelectItem>
+                                                                    ) : (
+                                                                        coupons.map((coupon: TCoupon) => {
+                                                                            const couponEvent = events.find(e => e.id === coupon.eventId)
+                                                                            const eventName = couponEvent?.name || "Evento não encontrado"
+                                                                            const discountText = coupon.discountType === "PERCENTAGE" 
+                                                                                ? `${coupon.discountValue}%` 
+                                                                                : ValueUtils.centsToCurrency(coupon.discountValue)
+                                                                            return (
+                                                                                <SelectItem key={coupon.id} value={coupon.id}>
+                                                                                    {coupon.code} - {discountText} ({eventName})
+                                                                                </SelectItem>
+                                                                            )
+                                                                        })
+                                                                    )}
+                                                                </SelectContent>
+                                                            </Select>
+                                                            {selectedCouponForTemplate && (() => {
+                                                                const selectedCoupon = coupons.find((c: TCoupon) => c.id === selectedCouponForTemplate)
+                                                                if (!selectedCoupon) return null
+                                                                const couponEvent = events.find(e => e.id === selectedCoupon.eventId)
+                                                                const eventName = couponEvent?.name || "Evento não encontrado"
+                                                                const discountText = selectedCoupon.discountType === "PERCENTAGE" 
+                                                                    ? `${selectedCoupon.discountValue}%` 
+                                                                    : ValueUtils.centsToCurrency(selectedCoupon.discountValue)
+                                                                return (
+                                                                    <div className="mt-2 p-2 bg-psi-primary/5 rounded border border-psi-primary/20">
+                                                                        <p className="text-xs text-psi-dark/60">
+                                                                            <strong>Código:</strong> {selectedCoupon.code}
+                                                                        </p>
+                                                                        <p className="text-xs text-psi-dark/60 mt-1">
+                                                                            <strong>Desconto:</strong> {discountText}
+                                                                        </p>
+                                                                        <p className="text-xs text-psi-dark/60 mt-1">
+                                                                            <strong>Evento:</strong> {eventName}
+                                                                        </p>
+                                                                    </div>
+                                                                )
+                                                            })()}
                                                         </div>
                                                     )
                                                 }
@@ -1691,21 +1791,24 @@ const CRMPannel = () => {
                             </p>
                         </div>
                         <SheetFooter className="gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => {
-                                    setEmailDialog({ open: false })
-                                    emailForm.reset()
-                                    setSelectedTemplate(null)
-                                    setSelectedEventForTemplate("")
-                                }}
-                            >
-                                Cancelar
-                            </Button>
-                            <Button type="submit" variant="primary" disabled={emailUsed >= emailLimit}>
-                                Enviar E-mail
-                            </Button>
+                            <div className="flex items-end justify-end gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => {
+                                        setEmailDialog({ open: false })
+                                        emailForm.reset()
+                                        setSelectedTemplate(null)
+                                        setSelectedEventForTemplate("")
+                                        setSelectedCouponForTemplate("")
+                                    }}
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button type="submit" variant="primary" disabled={emailUsed >= emailLimit}>
+                                    Enviar E-mail
+                                </Button>
+                            </div>
                         </SheetFooter>
                     </form>
                 </SheetContent>
@@ -1890,7 +1993,7 @@ const CRMPannel = () => {
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-2">
-                        <div className="relative overflow-hidden rounded-xl p-8 border border-psi-primary/20 bg-gradient-to-br from-psi-primary/10 via-psi-secondary/5 to-psi-tertiary/10">
+                        <div className="relative overflow-hidden rounded-xl p-8 border border-psi-primary/20 bg-linear-to-br from-psi-primary/10 via-psi-secondary/5 to-psi-tertiary/10">
                             <div className="absolute inset-0 pointer-events-none select-none">
                                 <div
                                     aria-hidden="true"

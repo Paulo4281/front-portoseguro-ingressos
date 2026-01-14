@@ -60,6 +60,7 @@ type TCustomer = {
         id: string
         name: string
         color: string
+        tagClientId: string
     }>
     observations: Array<{
         id: string

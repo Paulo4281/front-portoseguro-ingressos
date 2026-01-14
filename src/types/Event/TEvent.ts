@@ -16,6 +16,7 @@ type TEventCacheResponse = {
     name: string
     slug: string
     image: string
+    location: string | null
     Recurrence: {
         id: string
     } | null
