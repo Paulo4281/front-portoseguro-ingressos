@@ -47,7 +47,8 @@ import {
     MailOpen,
     MailWarning,
     Loader2,
-    Code
+    Code,
+    Lightbulb
 } from "lucide-react"
 import { Background } from "@/components/Background/Background"
 import { Button } from "@/components/ui/button"
@@ -98,6 +99,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { DialogConfirm } from "@/components/Dialog/DialogConfirm/DialogConfirm"
 import { MoreVertical } from "lucide-react"
+import { DatePicker } from "@/components/DatePicker/DatePicker"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -119,6 +121,7 @@ import { useOrganizerFindClientsCrm } from "@/hooks/Client/useOrganizerFindClien
 import type { TCustomer } from "@/types/Client/TClient"
 import { useEventCache } from "@/hooks/Event/useEventCache"
 import { useCouponFind } from "@/hooks/Coupon/useCouponFind"
+import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
 import type { TCoupon } from "@/types/Coupon/TCoupon"
 import type { ReactNode } from "react"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
@@ -328,7 +331,16 @@ const mockEmailHistory: TEmailHistory[] = Array.from({ length: 20 }, (_, i) => {
 
 const TagValidator = z.object({
     name: z.string().min(1, { error: "O nome da tag é obrigatório" }).max(50, { error: "O nome da tag deve ter no máximo 50 caracteres" }),
-    color: z.string().min(1, { error: "A cor é obrigatória" })
+    color: z.string().min(1, { error: "A cor é obrigatória" }),
+    automationRules: z.object({
+        eventId: z.string().optional(),
+        eventCategoryId: z.string().optional(),
+        minTotalSpent: z.number().min(0, { error: "O valor mínimo deve ser maior ou igual a 0" }).optional(),
+        minTicketsCount: z.number().int().min(1, { error: "A quantidade mínima deve ser maior que 0" }).optional(),
+        minEventsCount: z.number().int().min(1, { error: "A quantidade mínima de eventos deve ser maior que 0" }).optional(),
+        purchaseDateFrom: z.string().optional(),
+        purchaseDateTo: z.string().optional()
+    }).optional()
 })
 
 const ObservationValidator = z.object({
@@ -351,6 +363,9 @@ const CRMPannel = () => {
     
     const { data: eventsData } = useEventCache()
     const events = eventsData?.data || []
+    
+    const { data: categoriesData } = useEventCategoryFind()
+    const categories = categoriesData?.data || []
     
     const { data: couponsData } = useCouponFind()
     const coupons = couponsData?.data || []
@@ -452,6 +467,7 @@ const CRMPannel = () => {
         open: false
     })
     const [upgradeDialog, setUpgradeDialog] = useState(false)
+    const [reportsDialog, setReportsDialog] = useState(false)
     const [selectedTemplate, setSelectedTemplate] = useState<TEmailTemplate | null>(null)
     const [emailSegments] = useState<TEmailSegment[]>(mockEmailSegments)
     const [selectedEventForTemplate, setSelectedEventForTemplate] = useState<string>("")
@@ -480,9 +496,12 @@ const CRMPannel = () => {
         resolver: zodResolver(TagValidator),
         defaultValues: {
             name: "",
-            color: "#6C4BFF"
+            color: "#6C4BFF",
+            automationRules: undefined
         }
     })
+
+    const [enableAutomation, setEnableAutomation] = useState(false)
 
     const observationForm = useForm<TObservationForm>({
         resolver: zodResolver(ObservationValidator),
@@ -545,9 +564,30 @@ const CRMPannel = () => {
 
     const handleCreateTag = async (data: TTagForm) => {
         try {
-            await createTag(data)
+            const tagData: any = {
+                name: data.name,
+                color: data.color
+            }
+            
+            if (data.automationRules) {
+                const rules: any = {}
+                if (data.automationRules.eventId) rules.eventId = data.automationRules.eventId
+                if (data.automationRules.eventCategoryId) rules.eventCategoryId = data.automationRules.eventCategoryId
+                if (data.automationRules.minTotalSpent !== undefined) rules.minTotalSpent = data.automationRules.minTotalSpent
+                if (data.automationRules.minTicketsCount !== undefined) rules.minTicketsCount = data.automationRules.minTicketsCount
+                if (data.automationRules.minEventsCount !== undefined) rules.minEventsCount = data.automationRules.minEventsCount
+                if (data.automationRules.purchaseDateFrom) rules.purchaseDateFrom = data.automationRules.purchaseDateFrom
+                if (data.automationRules.purchaseDateTo) rules.purchaseDateTo = data.automationRules.purchaseDateTo
+                
+                if (Object.keys(rules).length > 0) {
+                    tagData.automationRules = rules
+                }
+            }
+            
+            await createTag(tagData)
             setTagDialog({ open: false, mode: "create" })
             tagForm.reset()
+            setEnableAutomation(false)
             Toast.success("Tag criada com sucesso")
         } catch (error) {
             console.error("Erro ao criar tag:", error)
@@ -560,15 +600,17 @@ const CRMPannel = () => {
             tagForm.setValue("name", tag.name)
             tagForm.setValue("color", tag.color)
             setTagDialog({ open: true, mode: "edit", tagId })
+            setEnableAutomation(false)
         }
     }
 
     const handleUpdateTag = async (data: TTagForm) => {
         if (tagDialog.tagId) {
             try {
-                await updateTag({ id: tagDialog.tagId, data })
+                await updateTag({ id: tagDialog.tagId, data: { name: data.name, color: data.color } })
                 setTagDialog({ open: false, mode: "create" })
                 tagForm.reset()
+                setEnableAutomation(false)
                 Toast.success("Tag atualizada com sucesso")
             } catch (error) {
                 console.error("Erro ao atualizar tag:", error)
@@ -934,6 +976,21 @@ const CRMPannel = () => {
                                         >
                                             <Download className="h-4 w-4" />
                                             Exportar
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="gap-2"
+                                            onClick={() => {
+                                                if (!isPro) {
+                                                    setReportsDialog(true)
+                                                } else {
+                                                    console.log("Abrir página de relatórios")
+                                                }
+                                            }}
+                                        >
+                                            <BarChart3 className="h-4 w-4" />
+                                            Relatórios
                                         </Button>
                                     </div>
                                 </div>
@@ -1409,8 +1466,9 @@ const CRMPannel = () => {
             <Dialog open={tagDialog.open} onOpenChange={(open) => {
                 setTagDialog({ open, mode: "create" })
                 tagForm.reset()
+                setEnableAutomation(false)
             }}>
-                <DialogContent>
+                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>
                             {tagDialog.mode === "create" ? "Nova Tag" : "Editar Tag"}
@@ -1455,6 +1513,199 @@ const CRMPannel = () => {
                                 ))}
                             </div>
                         </div>
+
+                        {tagDialog.mode === "create" && (
+                            <div className="pt-4 border-t border-psi-dark/10">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                        <label className="text-sm font-medium text-psi-dark block">Automação (Opcional)</label>
+                                        <p className="text-xs text-psi-dark/60 mt-1">
+                                            Configure regras para atribuir esta tag automaticamente aos clientes
+                                        </p>
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            setEnableAutomation(!enableAutomation)
+                                            if (!enableAutomation) {
+                                                tagForm.setValue("automationRules", {
+                                                    eventId: undefined,
+                                                    eventCategoryId: undefined,
+                                                    minTotalSpent: undefined,
+                                                    minTicketsCount: undefined,
+                                                    minEventsCount: undefined,
+                                                    purchaseDateFrom: undefined,
+                                                    purchaseDateTo: undefined
+                                                })
+                                            } else {
+                                                tagForm.setValue("automationRules", undefined)
+                                            }
+                                        }}
+                                    >
+                                        {enableAutomation ? "Desativar" : "Ativar"}
+                                    </Button>
+                                </div>
+
+                                {enableAutomation && (
+                                    <div className="space-y-4 p-4 bg-psi-primary/5 rounded-lg border border-psi-primary/20">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-sm font-medium text-psi-dark mb-2 block">
+                                                    Evento Específico
+                                                </label>
+                                                <Select
+                                                    value={tagForm.watch("automationRules")?.eventId || undefined}
+                                                    onValueChange={(value) => {
+                                                        const currentRules = tagForm.watch("automationRules") || {}
+                                                        tagForm.setValue("automationRules", {
+                                                            ...currentRules,
+                                                            eventId: value
+                                                        })
+                                                    }}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Selecione um evento (opcional)" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {events.map(event => (
+                                                            <SelectItem key={event.id} value={event.id}>
+                                                                {event.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <p className="text-xs text-psi-dark/50 mt-1">
+                                                    Cliente que comprar ingresso deste evento
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <label className="text-sm font-medium text-psi-dark mb-2 block">
+                                                    Categoria de Evento
+                                                </label>
+                                                <Select
+                                                    value={tagForm.watch("automationRules")?.eventCategoryId || undefined}
+                                                    onValueChange={(value) => {
+                                                        const currentRules = tagForm.watch("automationRules") || {}
+                                                        tagForm.setValue("automationRules", {
+                                                            ...currentRules,
+                                                            eventCategoryId: value
+                                                        })
+                                                    }}
+                                                >
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Selecione uma categoria (opcional)" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {categories.map(category => (
+                                                            <SelectItem key={category.id} value={category.id}>
+                                                                {category.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <p className="text-xs text-psi-dark/50 mt-1">
+                                                    Cliente que comprar ingresso de eventos desta categoria
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <label className="text-sm font-medium text-psi-dark mb-2 block">
+                                                    Valor Mínimo Gasto (R$)
+                                                </label>
+                                                <Input
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0"
+                                                    placeholder="0.00"
+                                                    value={tagForm.getValues("automationRules")?.minTotalSpent ?? ""}
+                                                    onChange={(e) => {
+                                                        const currentRules = tagForm.getValues("automationRules") || {}
+                                                        const value = e.target.value ? parseFloat(e.target.value) : undefined
+                                                        tagForm.setValue("automationRules", {
+                                                            ...currentRules,
+                                                            minTotalSpent: value
+                                                        })
+                                                    }}
+                                                />
+                                                <p className="text-xs text-psi-dark/50 mt-1">
+                                                    Cliente que gastar este valor ou mais
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <label className="text-sm font-medium text-psi-dark mb-2 block">
+                                                    Quantidade Mínima de Ingressos
+                                                </label>
+                                                <Input
+                                                    type="number"
+                                                    min="1"
+                                                    placeholder="1"
+                                                    value={tagForm.getValues("automationRules")?.minTicketsCount ?? ""}
+                                                    onChange={(e) => {
+                                                        const currentRules = tagForm.getValues("automationRules") || {}
+                                                        const value = e.target.value ? parseInt(e.target.value) : undefined
+                                                        tagForm.setValue("automationRules", {
+                                                            ...currentRules,
+                                                            minTicketsCount: value
+                                                        })
+                                                    }}
+                                                />
+                                                <p className="text-xs text-psi-dark/50 mt-1">
+                                                    Cliente que comprar esta quantidade ou mais
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <label className="text-sm font-medium text-psi-dark mb-2 block">
+                                                    Período de Compra - De
+                                                </label>
+                                                <DatePicker
+                                                    value={tagForm.getValues("automationRules")?.purchaseDateFrom || null}
+                                                    onChange={(value) => {
+                                                        const currentRules = tagForm.getValues("automationRules") || {}
+                                                        tagForm.setValue("automationRules", {
+                                                            ...currentRules,
+                                                            purchaseDateFrom: value || undefined
+                                                        })
+                                                    }}
+                                                    className="w-full"
+                                                    absoluteClassName={true}
+                                                />
+                                                <p className="text-xs text-psi-dark/50 mt-1">
+                                                    Data inicial do período
+                                                </p>
+                                            </div>
+
+                                            <div>
+                                                <label className="text-sm font-medium text-psi-dark mb-2 block">
+                                                    Período de Compra - Até
+                                                </label>
+                                                <DatePicker
+                                                    value={tagForm.getValues("automationRules")?.purchaseDateTo || null}
+                                                    onChange={(value) => {
+                                                        const currentRules = tagForm.getValues("automationRules") || {}
+                                                        tagForm.setValue("automationRules", {
+                                                            ...currentRules,
+                                                            purchaseDateTo: value || undefined
+                                                        })
+                                                    }}
+                                                    className="w-full"
+                                                    minDate={tagForm.getValues("automationRules")?.purchaseDateFrom || undefined}
+                                                    absoluteClassName={true}
+                                                />
+                                                <p className="text-xs text-psi-dark/50 mt-1">
+                                                    Data final do período
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         <DialogFooter>
                             <Button
                                 type="button"
@@ -1462,7 +1713,9 @@ const CRMPannel = () => {
                                 onClick={() => {
                                     setTagDialog({ open: false, mode: "create" })
                                     tagForm.reset()
+                                    setEnableAutomation(false)
                                 }}
+                                className="z-0!"
                             >
                                 Cancelar
                             </Button>
@@ -2176,15 +2429,6 @@ const CRMPannel = () => {
                                         <CheckCircle2 className="h-4 w-4 text-psi-primary" />
                                     </div>
                                     <div>
-                                        <p className="font-medium text-psi-dark">Segmentação avançada</p>
-                                        <p className="text-sm text-psi-dark/60">Crie listas personalizadas e segmentos complexos</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <div className="h-6 w-6 rounded-full bg-psi-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                                        <CheckCircle2 className="h-4 w-4 text-psi-primary" />
-                                    </div>
-                                    <div>
                                         <p className="font-medium text-psi-dark">Templates ilimitados</p>
                                         <p className="text-sm text-psi-dark/60">Acesso a todos os templates premium</p>
                                     </div>
@@ -2228,6 +2472,152 @@ const CRMPannel = () => {
                             onClick={() => {
                                 console.log("Redirecionar para checkout CRM Pro")
                                 setUpgradeDialog(false)
+                            }}
+                            className="gap-2"
+                        >
+                            <Crown className="h-4 w-4" />
+                            Assinar CRM Pro
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={reportsDialog} onOpenChange={setReportsDialog}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <div className="flex items-center justify-center mb-4">
+                            <div className="h-20 w-20 rounded-full bg-linear-to-br from-psi-tertiary/40 via-psi-primary/20 to-psi-secondary/40 flex items-center justify-center border-2 border-psi-primary/60">
+                                <BarChart3 className="h-10 w-10 text-psi-primary" />
+                            </div>
+                        </div>
+                        <DialogTitle className="text-2xl text-center">Relatórios Avançados</DialogTitle>
+                        <DialogDescription className="text-center text-base">
+                            Acesse análises detalhadas e insights estratégicos
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="relative overflow-hidden rounded-xl p-8 border border-psi-primary/20 bg-linear-to-br from-psi-primary/10 via-psi-secondary/5 to-psi-tertiary/10">
+                            <div className="absolute inset-0 pointer-events-none select-none">
+                                <div
+                                    aria-hidden="true"
+                                    className="absolute -top-10 -left-10 w-40 h-40 bg-psi-primary/10 blur-2xl rounded-full"
+                                />
+                                <div
+                                    aria-hidden="true"
+                                    className="absolute -bottom-8 -right-8 w-32 h-32 bg-psi-tertiary/20 blur-2xl rounded-full"
+                                />
+                                <div 
+                                    aria-hidden="true"
+                                    className="absolute bottom-1/2 left-1/2 w-36 h-36 bg-psi-secondary/10 blur-3xl rounded-full -translate-x-1/2 translate-y-1/2"
+                                />
+                            </div>
+                            <div className="relative flex flex-col items-center justify-center">
+                                <div className="mb-2">
+                                    <Crown
+                                        className="h-8 w-8 text-psi-primary"
+                                        aria-label="Recurso exclusivo do plano Premium"
+                                    />
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-lg font-semibold text-psi-dark mb-1">
+                                        Disponível no CRM Pro
+                                    </p>
+                                    <p className="text-sm text-psi-dark/60">
+                                        Assine o plano premium para desbloquear
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 className="font-semibold text-psi-dark mb-3">O que você terá acesso:</h4>
+                            <div className="space-y-3">
+                                <div className="flex items-start gap-3">
+                                    <div className="h-6 w-6 rounded-full bg-psi-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                                        <TrendingUp className="h-4 w-4 text-psi-primary" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-psi-dark">Análise de Performance de Campanhas</p>
+                                        <p className="text-sm text-psi-dark/60">
+                                            Taxa de abertura, cliques, conversões e ROI detalhado de cada e-mail enviado
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <div className="h-6 w-6 rounded-full bg-psi-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                                        <Users className="h-4 w-4 text-psi-primary" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-psi-dark">Segmentação e Comportamento do Cliente</p>
+                                        <p className="text-sm text-psi-dark/60">
+                                            Identifique padrões de compra, frequência de eventos e clientes mais valiosos
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <div className="h-6 w-6 rounded-full bg-psi-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                                        <BarChart3 className="h-4 w-4 text-psi-primary" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-psi-dark">Relatórios de Vendas e Receita</p>
+                                        <p className="text-sm text-psi-dark/60">
+                                            Acompanhe receita por evento, ticket médio, sazonalidade e tendências de crescimento
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <div className="h-6 w-6 rounded-full bg-psi-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                                        <Star className="h-4 w-4 text-psi-primary" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-psi-dark">Análise de Satisfação e Engajamento</p>
+                                        <p className="text-sm text-psi-dark/60">
+                                            Avalie feedback dos clientes, pesquisas de opinião e métricas de retenção
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <div className="h-6 w-6 rounded-full bg-psi-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                                        <Calendar className="h-4 w-4 text-psi-primary" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-psi-dark">Relatórios Temporais e Comparativos</p>
+                                        <p className="text-sm text-psi-dark/60">
+                                            Compare períodos, identifique sazonalidade e planeje campanhas baseadas em dados históricos
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-psi-primary/5 border border-psi-primary/20 rounded-lg p-4">
+                            <div className="flex items-start gap-3">
+                                <Lightbulb className="h-5 w-5 text-psi-primary shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="font-medium text-psi-dark mb-1">Como os dados podem ajudar você:</p>
+                                    <ul className="text-sm text-psi-dark/70 space-y-1 list-disc list-inside">
+                                        <li>Identifique quais eventos têm maior potencial de venda</li>
+                                        <li>Otimize seus investimentos em marketing com base em dados reais</li>
+                                        <li>Personalize campanhas para diferentes segmentos de clientes</li>
+                                        <li>Antecipe tendências e planeje eventos com maior chance de sucesso</li>
+                                        <li>Melhore a experiência do cliente com insights de comportamento</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter className="gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setReportsDialog(false)}
+                        >
+                            Fechar
+                        </Button>
+                        <Button
+                            variant="primary"
+                            onClick={() => {
+                                setReportsDialog(false)
+                                setUpgradeDialog(true)
                             }}
                             className="gap-2"
                         >

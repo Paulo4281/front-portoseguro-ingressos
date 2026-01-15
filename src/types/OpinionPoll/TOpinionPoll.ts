@@ -1,31 +1,43 @@
+import type { TOpinionPollCommentResponse } from "@/types/OpinionPollComment/TOpinionPollComment"
+
 type TOpinionPollResponse = {
     id: string
-    customerName: string
-    customerEmail: string
-    rating: number
-    comment?: string
-    createdAt: string
-}
-
-type TOpinionPoll = {
-    id: string
+    code: string
     eventId: string
-    eventName: string
-    eventDate: string
-    link: string
-    totalResponses: number
-    averageRating: number
-    responses: TOpinionPollResponse[]
+    userId: string
     createdAt: string
+    commentsCount: number
+    averageStars: number
+    comments: TOpinionPollCommentResponse[]
+    event: {
+        id: string
+        name: string
+        location: string | null
+    }
 }
 
-type TOpinionPollListResponse = {
-    data: TOpinionPoll[]
-    total: number
+type TOpinionPollByCodeResponse = {
+    id: string
+    code: string
+    eventId: string
+    event: {
+        id: string
+        name: string
+        image: string
+        location: string | null
+        dates: Array<{
+            id: string
+            date: string | null
+            hourStart: string | null
+            hourEnd: string | null
+        }>
+    }
 }
+
+type TOpinionPoll = TOpinionPollResponse
 
 export type {
     TOpinionPoll,
     TOpinionPollResponse,
-    TOpinionPollListResponse
+    TOpinionPollByCodeResponse
 }

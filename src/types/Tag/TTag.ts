@@ -10,6 +10,15 @@ export type TTag = {
 export type TTagCreate = {
     name: string
     color: string
+    automationRules?: {
+        eventId?: string
+        eventCategoryId?: string
+        minTotalSpent?: number
+        minTicketsCount?: number
+        minEventsCount?: number
+        purchaseDateFrom?: string
+        purchaseDateTo?: string
+    }
 }
 
 export type TTagUpdate = {

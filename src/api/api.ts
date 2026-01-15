@@ -26,7 +26,9 @@ type Prefixes =
     "/payout" |
     "/meta" |
     "/ai" |
-    "/crm"
+    "/crm" |
+    "/opinionpoll" |
+    "/opinionpoll-comment"
 
 type TAPIParams = {
     prefix: Prefixes
