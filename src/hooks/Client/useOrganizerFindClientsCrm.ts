@@ -6,6 +6,8 @@ import type { TApiResponse } from "@/types/TApiResponse"
 type TUseOrganizerFindClientsCrmParams = {
     offset: number
     search?: string
+    tagId?: string
+    eventId?: string
 }
 
 export const useOrganizerFindClientsCrm = (params: TUseOrganizerFindClientsCrmParams) => {
@@ -15,7 +17,7 @@ export const useOrganizerFindClientsCrm = (params: TUseOrganizerFindClientsCrmPa
         isError,
         refetch
     } = useQueryHook<TApiResponse<TFindOrganizerClientsCrmResponse>>({
-        queryKey: ["clients-crm", params.offset.toString(), params.search || ""],
+        queryKey: ["clients-crm", params.offset.toString(), params.search || "", params.tagId || "", params.eventId || ""],
         queryFn: () => ClientService.findOrganizerClientsCrm(params)
     })
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import React from "react"
 import {
     Users,
@@ -48,7 +48,14 @@ import {
     MailWarning,
     Loader2,
     Code,
-    Lightbulb
+    Lightbulb,
+    Info,
+    Headphones,
+    PieChart,
+    Cpu,
+    Stars,
+    LayoutPanelTop,
+    Settings
 } from "lucide-react"
 import { Background } from "@/components/Background/Background"
 import { Button } from "@/components/ui/button"
@@ -126,6 +133,12 @@ import type { TCoupon } from "@/types/Coupon/TCoupon"
 import type { ReactNode } from "react"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { cn } from "@/lib/utils"
+import { InputMask } from "@/components/Input/InputMask"
+import { useCardFindByUserId } from "@/hooks/Card/useCardFindByUserId"
+import type { TCard } from "@/types/Card/TCard"
+import { getCardBrand } from "@/utils/Helpers/CardUtils/CardUtils"
+import { CreditCard } from "lucide-react"
+import { useAuthStore } from "@/stores/Auth/AuthStore"
 
 
 
@@ -337,7 +350,6 @@ const TagValidator = z.object({
         eventCategoryId: z.string().optional(),
         minTotalSpent: z.number().min(0, { error: "O valor mínimo deve ser maior ou igual a 0" }).optional(),
         minTicketsCount: z.number().int().min(1, { error: "A quantidade mínima deve ser maior que 0" }).optional(),
-        minEventsCount: z.number().int().min(1, { error: "A quantidade mínima de eventos deve ser maior que 0" }).optional(),
         purchaseDateFrom: z.string().optional(),
         purchaseDateTo: z.string().optional()
     }).optional()
@@ -383,6 +395,7 @@ const CRMPannel = () => {
 
     const [currentPage, setCurrentPage] = useState(1)
     const [openRows, setOpenRows] = useState<Record<string, boolean>>({})
+    const [searchInput, setSearchInput] = useState<string>("")
     const [search, setSearch] = useState<string>("")
     const [filters, setFilters] = useState<{
         tagId?: string
@@ -468,6 +481,14 @@ const CRMPannel = () => {
     })
     const [upgradeDialog, setUpgradeDialog] = useState(false)
     const [reportsDialog, setReportsDialog] = useState(false)
+    const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
+    const [showNewCardForm, setShowNewCardForm] = useState(false)
+    const [cardData, setCardData] = useState({
+        number: "",
+        name: "",
+        expiry: "",
+        cvv: ""
+    })
     const [selectedTemplate, setSelectedTemplate] = useState<TEmailTemplate | null>(null)
     const [emailSegments] = useState<TEmailSegment[]>(mockEmailSegments)
     const [selectedEventForTemplate, setSelectedEventForTemplate] = useState<string>("")
@@ -484,12 +505,88 @@ const CRMPannel = () => {
         open: false,
         segmentIds: []
     })
+    const [emailPreviewDialog, setEmailPreviewDialog] = useState(false)
+    const [reportsSheetOpen, setReportsSheetOpen] = useState(false)
 
-    const isPro = false
+    const { user } = useAuthStore()
+    const organizer = useMemo(() => {
+        return user?.Organizer || null
+    }, [user])
+
+    const isPro = useMemo(() => {
+        return organizer?.crmPlan === "PRO"
+    }, [organizer?.crmPlan])
+
     const emailLimit = isPro ? 5000 : 100
     const emailUsed = 45
     const tagLimit = 200
     const tagsUsed = tags.length
+
+    const { data: cardsData, isLoading: isLoadingCards } = useCardFindByUserId({
+        enabled: upgradeDialog
+    })
+    
+    const cards = useMemo(() => {
+        return cardsData?.data || []
+    }, [cardsData?.data])
+
+    const cardBrand = useMemo(() => {
+        return getCardBrand(cardData.number)
+    }, [cardData.number])
+
+    const getCardBrandIcon = (brand: string | null | undefined): string => {
+        if (!brand) return "/icons/payment/card-brand/card-unknown.png"
+        const brandLower = brand.toLowerCase()
+        const brandMap: Record<string, string> = {
+            amex: "card-amex.png",
+            discover: "card-discover.png",
+            hipercard: "card-hipercard.png",
+            jcb: "card-jcb.png",
+            mastercard: "card-master.png",
+            visa: "card-visa.png",
+            elo: "card-elo.png",
+            cabal: "card-cabal.png",
+            banescard: "card-banescard.png",
+        }
+        const iconName = brandMap[brandLower] || "card-unknown.png"
+        return `/icons/payment/card-brand/${iconName}`
+    }
+
+    useEffect(() => {
+        if (upgradeDialog && cards.length > 0 && !selectedCardId && !showNewCardForm) {
+            setSelectedCardId(cards[0].id)
+        }
+    }, [upgradeDialog, cards, selectedCardId, showNewCardForm])
+
+    const handleUpgradeSubmit = () => {
+        if (selectedCardId) {
+            console.log("Assinatura CRM Pro - Cartão cadastrado:", {
+                cardId: selectedCardId,
+                subscriptionType: "CRM_PRO",
+                monthlyPrice: 99.90
+            })
+        } else {
+            if (!cardData.number || !cardData.name || !cardData.expiry || !cardData.cvv) {
+                Toast.error("Por favor, preencha todos os campos do cartão de crédito ou selecione um cartão cadastrado.")
+                return
+            }
+
+            console.log("Assinatura CRM Pro - Novo cartão:", {
+                number: cardData.number,
+                holderName: cardData.name,
+                exp: cardData.expiry,
+                cvv: cardData.cvv,
+                subscriptionType: "CRM_PRO",
+                monthlyPrice: 99.90
+            })
+        }
+        
+        Toast.success("Assinatura processada com sucesso! (Em desenvolvimento)")
+        setUpgradeDialog(false)
+        setSelectedCardId(null)
+        setShowNewCardForm(false)
+        setCardData({ number: "", name: "", expiry: "", cvv: "" })
+    }
 
 
     const tagForm = useForm<TTagForm>({
@@ -522,6 +619,17 @@ const CRMPannel = () => {
     const limit = 50
     const offset = (currentPage - 1) * limit
 
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setSearch(searchInput)
+            setCurrentPage(1)
+        }, 2500)
+
+        return () => {
+            clearTimeout(timer)
+        }
+    }, [searchInput])
+
     const searchQuery = useMemo(() => {
         const parts: string[] = []
         if (search) parts.push(search)
@@ -530,30 +638,15 @@ const CRMPannel = () => {
 
     const { data: customersData, isLoading: customersLoading, refetch: refetchCustomers } = useOrganizerFindClientsCrm({
         offset,
-        search: searchQuery
+        search: searchQuery,
+        tagId: filters.tagId,
+        eventId: filters.eventId
     })
 
     const customers = customersData?.data?.data || []
     const totalCustomers = customersData?.data?.total || 0
-    const totalPages = Math.ceil(totalCustomers / limit)
-
-    const filteredCustomers = useMemo(() => {
-        let filtered = [...customers]
-
-        if (filters.tagId) {
-            filtered = filtered.filter(c => 
-                c.tags.some(t => t.id === filters.tagId)
-            )
-        }
-
-        if (filters.eventId) {
-            filtered = filtered.filter(c => 
-                c.events.some(e => e.id === filters.eventId)
-            )
-        }
-
-        return filtered
-    }, [customers, filters])
+    const totalFiltered = customersData?.data?.totalFiltered || 0
+    const totalPages = Math.ceil(totalFiltered / limit)
 
     const toggleRow = (customerId: string) => {
         setOpenRows(prev => ({
@@ -575,7 +668,6 @@ const CRMPannel = () => {
                 if (data.automationRules.eventCategoryId) rules.eventCategoryId = data.automationRules.eventCategoryId
                 if (data.automationRules.minTotalSpent !== undefined) rules.minTotalSpent = data.automationRules.minTotalSpent
                 if (data.automationRules.minTicketsCount !== undefined) rules.minTicketsCount = data.automationRules.minTicketsCount
-                if (data.automationRules.minEventsCount !== undefined) rules.minEventsCount = data.automationRules.minEventsCount
                 if (data.automationRules.purchaseDateFrom) rules.purchaseDateFrom = data.automationRules.purchaseDateFrom
                 if (data.automationRules.purchaseDateTo) rules.purchaseDateTo = data.automationRules.purchaseDateTo
                 
@@ -584,6 +676,7 @@ const CRMPannel = () => {
                 }
             }
             
+            console.log(tagData)
             await createTag(tagData)
             setTagDialog({ open: false, mode: "create" })
             tagForm.reset()
@@ -599,15 +692,59 @@ const CRMPannel = () => {
         if (tag) {
             tagForm.setValue("name", tag.name)
             tagForm.setValue("color", tag.color)
+            
+            if (tag.automationRules) {
+                setEnableAutomation(true)
+                tagForm.setValue("automationRules", {
+                    eventId: tag.automationRules.eventId,
+                    eventCategoryId: tag.automationRules.eventCategoryId,
+                    minTotalSpent: tag.automationRules.minTotalSpent,
+                    minTicketsCount: tag.automationRules.minTicketsCount,
+                    purchaseDateFrom: tag.automationRules.purchaseDateFrom,
+                    purchaseDateTo: tag.automationRules.purchaseDateTo
+                })
+            } else {
+                setEnableAutomation(false)
+                tagForm.setValue("automationRules", undefined)
+            }
+            
             setTagDialog({ open: true, mode: "edit", tagId })
-            setEnableAutomation(false)
         }
     }
 
     const handleUpdateTag = async (data: TTagForm) => {
         if (tagDialog.tagId) {
             try {
-                await updateTag({ id: tagDialog.tagId, data: { name: data.name, color: data.color } })
+                const updateData: {
+                    name?: string
+                    color?: string
+                    automationRules?: {
+                        eventId?: string
+                        eventCategoryId?: string
+                        minTotalSpent?: number
+                        minTicketsCount?: number
+                        purchaseDateFrom?: string
+                        purchaseDateTo?: string
+                    } | null
+                } = {
+                    name: data.name,
+                    color: data.color
+                }
+
+                if (enableAutomation && data.automationRules) {
+                    updateData.automationRules = {
+                        eventId: data.automationRules.eventId,
+                        eventCategoryId: data.automationRules.eventCategoryId,
+                        minTotalSpent: data.automationRules.minTotalSpent,
+                        minTicketsCount: data.automationRules.minTicketsCount,
+                        purchaseDateFrom: data.automationRules.purchaseDateFrom,
+                        purchaseDateTo: data.automationRules.purchaseDateTo
+                    }
+                } else {
+                    updateData.automationRules = null
+                }
+
+                await updateTag({ id: tagDialog.tagId, data: updateData })
                 setTagDialog({ open: false, mode: "create" })
                 tagForm.reset()
                 setEnableAutomation(false)
@@ -621,7 +758,7 @@ const CRMPannel = () => {
     const handleDeleteTag = (tagId: string) => {
         const tag = tags.find(t => t.id === tagId)
         if (tag) {
-            const customersWithTag = filteredCustomers.filter(c => c.tags.some(t => t.id === tagId)).length
+            const customersWithTag = totalFiltered
             setDeleteTagDialog({ 
                 open: true, 
                 tagId, 
@@ -899,7 +1036,7 @@ const CRMPannel = () => {
                             <div className="flex items-center gap-2">
                                 {isPro ? (
                                     <>
-                                        <Crown className="h-5 w-5 text-psi-tertiary" />
+                                        <Crown className="h-5.5 w-5.5 text-psi-primary" />
                                         <div className="text-lg font-semibold text-psi-dark">CRM Pro</div>
                                     </>
                                 ) : (
@@ -965,7 +1102,7 @@ const CRMPannel = () => {
                                             onClick={() => setEmailDialog({ open: true })}
                                             className="gap-2"
                                         >
-                                            <Mail className="h-4 w-4" />
+                                            <Send className="h-4 w-4" />
                                             Enviar E-mail
                                         </Button>
                                         <Button
@@ -985,7 +1122,7 @@ const CRMPannel = () => {
                                                 if (!isPro) {
                                                     setReportsDialog(true)
                                                 } else {
-                                                    console.log("Abrir página de relatórios")
+                                                    setReportsSheetOpen(true)
                                                 }
                                             }}
                                         >
@@ -998,10 +1135,9 @@ const CRMPannel = () => {
                                 <div className="flex items-center gap-4">
                                     <Input
                                         placeholder="Buscar por nome, e-mail, telefone..."
-                                        value={search}
+                                        value={searchInput}
                                         onChange={(e) => {
-                                            setSearch(e.target.value)
-                                            setCurrentPage(1)
+                                            setSearchInput(e.target.value)
                                         }}
                                         className="w-full"
                                     />
@@ -1023,7 +1159,10 @@ const CRMPannel = () => {
                                     </Select>
                                     <Select
                                         value={filters.eventId || "all"}
-                                        onValueChange={(value) => setFilters(prev => ({ ...prev, eventId: value === "all" ? undefined : value }))}
+                                        onValueChange={(value) => {
+                                            setFilters(prev => ({ ...prev, eventId: value === "all" ? undefined : value }))
+                                            setCurrentPage(1)
+                                        }}
                                     >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Filtrar por evento" />
@@ -1042,7 +1181,9 @@ const CRMPannel = () => {
                                         size="sm"
                                         onClick={() => {
                                             setFilters({})
+                                            setSearchInput("")
                                             setSearch("")
+                                            setCurrentPage(1)
                                         }}
                                         className="w-full sm:w-auto"
                                     >
@@ -1058,28 +1199,38 @@ const CRMPannel = () => {
                                             ))}
                                         </div>
                                     ) : (
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead className="w-12"></TableHead>
-                                                    <TableHead>Nome</TableHead>
-                                                    <TableHead>E-mail</TableHead>
-                                                    <TableHead>Celular</TableHead>
-                                                    <TableHead>Compras</TableHead>
-                                                    <TableHead>Total Gasto</TableHead>
-                                                    <TableHead>Última Compra</TableHead>
-                                                    <TableHead className="w-24">Ações</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {filteredCustomers.length === 0 ? (
+                                        <>
+                                            <div className="p-4 bg-psi-primary/5 border-b border-psi-dark/10">
+                                                <p className="text-sm text-psi-dark/70">
+                                                    {filters.tagId || filters.eventId ? (
+                                                        <>Mostrando <strong>{totalFiltered}</strong> de <strong>{totalCustomers}</strong> cliente{totalCustomers !== 1 ? "s" : ""} (com filtros aplicados)</>
+                                                    ) : (
+                                                        <>Total de <strong>{totalFiltered}</strong> cliente{totalFiltered !== 1 ? "s" : ""}</>
+                                                    )}
+                                                </p>
+                                            </div>
+                                            <Table>
+                                                <TableHeader>
                                                     <TableRow>
-                                                        <TableCell colSpan={8} className="text-center py-8 text-psi-dark/60">
-                                                            Nenhum cliente encontrado
-                                                        </TableCell>
+                                                        <TableHead className="w-12"></TableHead>
+                                                        <TableHead>Nome</TableHead>
+                                                        <TableHead>E-mail</TableHead>
+                                                        <TableHead>Celular</TableHead>
+                                                        <TableHead>Compras</TableHead>
+                                                        <TableHead>Total Gasto</TableHead>
+                                                        <TableHead>Última Compra</TableHead>
+                                                        <TableHead className="w-24">Ações</TableHead>
                                                     </TableRow>
-                                                ) : (
-                                                    filteredCustomers.map(customer => (
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {customers.length === 0 ? (
+                                                        <TableRow>
+                                                            <TableCell colSpan={8} className="text-center py-8 text-psi-dark/60">
+                                                                Nenhum cliente encontrado
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ) : (
+                                                        customers.map(customer => (
                                                     <React.Fragment key={customer.id}>
                                                         <TableRow>
                                                             <TableCell>
@@ -1100,7 +1251,7 @@ const CRMPannel = () => {
                                                             <TableCell>{customer.email}</TableCell>
                                                             <TableCell>{customer.phone}</TableCell>
                                                             <TableCell>{customer.totalPurchases}</TableCell>
-                                                            <TableCell>{formatCurrency(customer.totalSpent)}</TableCell>
+                                                            <TableCell>{ValueUtils.centsToCurrency(customer.totalSpent)}</TableCell>
                                                             <TableCell>{formatDate(customer.lastPurchaseDate)}</TableCell>
                                                             <TableCell>
                                                                 <DropdownMenu>
@@ -1286,8 +1437,9 @@ const CRMPannel = () => {
                                                     </React.Fragment>
                                                 ))
                                             )}
-                                        </TableBody>
-                                    </Table>
+                                                </TableBody>
+                                            </Table>
+                                        </>
                                     )}
                                 </div>
 
@@ -1381,7 +1533,7 @@ const CRMPannel = () => {
                                                 </div>
                                                 <div className="flex items-center justify-between">
                                                     <div className="text-sm text-psi-dark/60">
-                                                        {filteredCustomers.filter(c => c.tags.some(t => t.id === tag.id)).length} cliente{filteredCustomers.filter(c => c.tags.some(t => t.id === tag.id)).length !== 1 ? "s" : ""}
+                                                        {customers.filter(c => c.tags.some(t => t.id === tag.id)).length} cliente{customers.filter(c => c.tags.some(t => t.id === tag.id)).length !== 1 ? "s" : ""}
                                                     </div>
                                                     <Button
                                                         variant="ghost"
@@ -1514,39 +1666,37 @@ const CRMPannel = () => {
                             </div>
                         </div>
 
-                        {tagDialog.mode === "create" && (
-                            <div className="pt-4 border-t border-psi-dark/10">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div>
-                                        <label className="text-sm font-medium text-psi-dark block">Automação (Opcional)</label>
-                                        <p className="text-xs text-psi-dark/60 mt-1">
-                                            Configure regras para atribuir esta tag automaticamente aos clientes
-                                        </p>
-                                    </div>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                            setEnableAutomation(!enableAutomation)
-                                            if (!enableAutomation) {
-                                                tagForm.setValue("automationRules", {
-                                                    eventId: undefined,
-                                                    eventCategoryId: undefined,
-                                                    minTotalSpent: undefined,
-                                                    minTicketsCount: undefined,
-                                                    minEventsCount: undefined,
-                                                    purchaseDateFrom: undefined,
-                                                    purchaseDateTo: undefined
-                                                })
-                                            } else {
-                                                tagForm.setValue("automationRules", undefined)
-                                            }
-                                        }}
-                                    >
-                                        {enableAutomation ? "Desativar" : "Ativar"}
-                                    </Button>
+                        <div className="pt-4 border-t border-psi-dark/10">
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <label className="text-sm font-medium text-psi-dark block">Automação (Opcional)</label>
+                                    <p className="text-xs text-psi-dark/60 mt-1">
+                                        Configure regras para atribuir esta tag automaticamente aos clientes
+                                    </p>
                                 </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        setEnableAutomation(!enableAutomation)
+                                        if (!enableAutomation) {
+                                            tagForm.setValue("automationRules", {
+                                                eventId: undefined,
+                                                eventCategoryId: undefined,
+                                                minTotalSpent: undefined,
+                                                minTicketsCount: undefined,
+                                                purchaseDateFrom: undefined,
+                                                purchaseDateTo: undefined
+                                            })
+                                        } else {
+                                            tagForm.setValue("automationRules", undefined)
+                                        }
+                                    }}
+                                >
+                                    {enableAutomation ? "Desativar" : "Ativar"}
+                                </Button>
+                            </div>
 
                                 {enableAutomation && (
                                     <div className="space-y-4 p-4 bg-psi-primary/5 rounded-lg border border-psi-primary/20">
@@ -1703,8 +1853,7 @@ const CRMPannel = () => {
                                         </div>
                                     </div>
                                 )}
-                            </div>
-                        )}
+                        </div>
 
                         <DialogFooter>
                             <Button
@@ -1716,11 +1865,24 @@ const CRMPannel = () => {
                                     setEnableAutomation(false)
                                 }}
                                 className="z-0!"
+                                disabled={isCreatingTag || isUpdatingTag}
                             >
                                 Cancelar
                             </Button>
-                            <Button type="submit" variant="primary">
-                                {tagDialog.mode === "create" ? "Criar" : "Salvar"}
+                            <Button 
+                                type="submit" 
+                                variant="primary"
+                                disabled={isCreatingTag || isUpdatingTag}
+                                className="gap-2"
+                            >
+                                {isCreatingTag || isUpdatingTag ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        {tagDialog.mode === "create" ? "Criando..." : "Salvando..."}
+                                    </>
+                                ) : (
+                                    tagDialog.mode === "create" ? "Criar" : "Salvar"
+                                )}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -1894,7 +2056,19 @@ const CRMPannel = () => {
                             <>
                                 <Separator />
                                 <div>
-                                    <h4 className="font-semibold text-psi-dark mb-3">Preview do E-mail</h4>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h4 className="font-semibold text-psi-dark">Preview do E-mail</h4>
+                                        <Button
+                                            type="button"
+                                            variant="primary"
+                                            size="sm"
+                                            onClick={() => setEmailPreviewDialog(true)}
+                                            className="gap-2"
+                                        >
+                                            <Eye className="h-4 w-4" />
+                                            Visualizar
+                                        </Button>
+                                    </div>
                                     <div className="bg-psi-primary/5 border border-psi-primary/20 rounded-lg p-4 space-y-3">
                                         <div>
                                             <p className="text-xs font-medium text-psi-dark/60 mb-1">Assunto:</p>
@@ -2043,7 +2217,7 @@ const CRMPannel = () => {
                                         {emailForm.watch("segments") && emailForm.watch("segments")!.length > 0 && (
                                             <Button
                                                 type="button"
-                                                variant="ghost"
+                                                variant="primary"
                                                 size="sm"
                                                 onClick={() => setRecipientsDialog({ 
                                                     open: true, 
@@ -2122,6 +2296,112 @@ const CRMPannel = () => {
                     </form>
                 </SheetContent>
             </Sheet>
+
+            <Dialog open={emailPreviewDialog} onOpenChange={setEmailPreviewDialog}>
+                <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Visualização do E-mail</DialogTitle>
+                        <DialogDescription>
+                            Veja como o e-mail será exibido para seus clientes em diferentes dispositivos
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-6">
+                        {selectedTemplate && (
+                            <div className="bg-psi-primary/5 border border-psi-primary/20 rounded-lg p-4">
+                                <p className="text-sm font-medium text-psi-dark mb-2">
+                                    Template: {selectedTemplate.name}
+                                </p>
+                                <p className="text-xs text-psi-dark/60 mb-4">
+                                    Assunto: {getPreviewSubject()}
+                                </p>
+                            </div>
+                        )}
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                                    <h5 className="text-sm font-semibold text-psi-dark">Desktop</h5>
+                                </div>
+                                <div className="relative bg-gray-100 rounded-lg p-3 shadow-lg">
+                                    <div className="bg-white rounded border-2 border-gray-300 overflow-hidden">
+                                        <div className="bg-gray-200 h-6 flex items-center gap-1.5 px-2 border-b border-gray-300">
+                                            <div className="h-2 w-2 rounded-full bg-red-500"></div>
+                                            <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
+                                            <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                                            <div className="flex-1 bg-gray-300 rounded h-3 mx-2"></div>
+                                        </div>
+                                        <div className="overflow-x-auto">
+                                            <img
+                                                src="https://i.ibb.co/rG1xCpqM/Captura-de-tela-2026-01-15-170421.png"
+                                                alt="Preview do e-mail - Desktop"
+                                                className="w-full h-auto"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-2 w-2 rounded-full bg-purple-500"></div>
+                                    <h5 className="text-sm font-semibold text-psi-dark">Tablet</h5>
+                                </div>
+                                <div className="relative bg-gray-100 rounded-lg p-4 shadow-lg flex justify-center">
+                                    <div className="bg-white rounded-lg border-3 border-gray-400 overflow-hidden shadow-xl" style={{ width: "100%", maxWidth: "400px" }}>
+                                        <div className="bg-gray-200 h-8 flex items-center justify-center border-b border-gray-300">
+                                            <div className="h-1.5 w-1.5 rounded-full bg-gray-400"></div>
+                                        </div>
+                                        <div className="overflow-x-auto">
+                                            <img
+                                                src="https://i.ibb.co/rG1xCpqM/Captura-de-tela-2026-01-15-170421.png"
+                                                alt="Preview do e-mail - Tablet"
+                                                className="w-full h-auto"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-2 w-2 rounded-full bg-orange-500"></div>
+                                    <h5 className="text-sm font-semibold text-psi-dark">Mobile</h5>
+                                </div>
+                                <div className="relative bg-gray-100 rounded-lg p-3 shadow-lg flex justify-center">
+                                    <div className="bg-black rounded-3xl p-1.5 shadow-2xl" style={{ width: "100%", maxWidth: "200px" }}>
+                                        <div className="bg-white rounded-2xl overflow-hidden">
+                                            <div className="bg-gray-200 h-8 flex items-center justify-center border-b border-gray-300 relative">
+                                                <div className="absolute left-2 h-0.5 w-8 bg-gray-400 rounded"></div>
+                                                <div className="h-4 w-4 rounded-full bg-gray-300"></div>
+                                                <div className="absolute right-2 flex gap-0.5">
+                                                    <div className="h-0.5 w-0.5 rounded-full bg-gray-400"></div>
+                                                    <div className="h-0.5 w-0.5 rounded-full bg-gray-400"></div>
+                                                </div>
+                                            </div>
+                                            <div className="overflow-x-auto">
+                                                <img
+                                                    src="https://i.ibb.co/rG1xCpqM/Captura-de-tela-2026-01-15-170421.png"
+                                                    alt="Preview do e-mail - Mobile"
+                                                    className="w-full h-auto"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setEmailPreviewDialog(false)}
+                        >
+                            Fechar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <Dialog open={emailHistoryDialog.open} onOpenChange={(open) => {
                 setEmailHistoryDialog({ open })
@@ -2267,9 +2547,14 @@ const CRMPannel = () => {
                             {tags.map(tag => (
                                 <div
                                     key={tag.id}
-                                    className="flex items-center justify-between p-3 border border-psi-dark/10 rounded-lg hover:bg-psi-primary/5 cursor-pointer transition-colors"
+                                    className={cn(
+                                        "flex items-center justify-between p-3 border border-psi-dark/10 rounded-lg transition-colors",
+                                        isCreatingTagClient 
+                                            ? "opacity-50 cursor-not-allowed" 
+                                            : "hover:bg-psi-primary/5 cursor-pointer"
+                                    )}
                                     onClick={() => {
-                                        if (addTagToCustomerDialog.customerId) {
+                                        if (!isCreatingTagClient && addTagToCustomerDialog.customerId) {
                                             handleAddTagToCustomer(addTagToCustomerDialog.customerId, tag.id)
                                             setAddTagToCustomerDialog({ open: false })
                                         }
@@ -2284,7 +2569,7 @@ const CRMPannel = () => {
                                         {tag.name}
                                     </Badge>
                                     <span className="text-sm text-psi-dark/60">
-                                        {filteredCustomers.filter(c => c.tags.some(t => t.id === tag.id)).length} cliente{filteredCustomers.filter(c => c.tags.some(t => t.id === tag.id)).length !== 1 ? "s" : ""}
+                                        {customers.filter(c => c.tags.some(t => t.id === tag.id)).length} cliente{customers.filter(c => c.tags.some(t => t.id === tag.id)).length !== 1 ? "s" : ""}
                                     </span>
                                 </div>
                             ))}
@@ -2303,9 +2588,10 @@ const CRMPannel = () => {
                         ? `Tem certeza que deseja excluir a tag "${deleteTagDialog.tagName}"? Esta tag está associada a ${deleteTagDialog.customersCount} cliente${deleteTagDialog.customersCount !== 1 ? "s" : ""}. Todos os clientes associados a esta tag não irão mais possuir essa tag. Esta ação é irreversível.`
                         : `Tem certeza que deseja excluir a tag "${deleteTagDialog.tagName}"? Esta ação não pode ser desfeita.`
                 }
-                confirmText="Excluir"
+                confirmText={isDeletingTag ? "Excluindo..." : "Excluir"}
                 cancelText="Cancelar"
                 variant="destructive"
+                isLoading={isDeletingTag}
             />
 
             <DialogConfirm
@@ -2314,9 +2600,10 @@ const CRMPannel = () => {
                 onConfirm={confirmRemoveTagFromCustomer}
                 title="Remover Tag do Cliente"
                 description={`Tem certeza que deseja remover a tag "${removeTagFromCustomerDialog.tagName}" deste cliente? Esta ação não pode ser desfeita.`}
-                confirmText="Remover"
+                confirmText={isDeletingTagClient ? "Removendo..." : "Remover"}
                 cancelText="Cancelar"
                 variant="destructive"
+                isLoading={isDeletingTagClient}
             />
 
             <DialogConfirm
@@ -2355,7 +2642,7 @@ const CRMPannel = () => {
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-2 max-h-96 overflow-y-auto">
-                        {tagCustomersDialog.tagId && filteredCustomers.filter(c => c.tags.some(t => t.id === tagCustomersDialog.tagId)).map(customer => (
+                        {tagCustomersDialog.tagId && customers.filter(c => c.tags.some(t => t.id === tagCustomersDialog.tagId)).map(customer => (
                             <div key={customer.id} className="p-3 border border-psi-dark/10 rounded-lg hover:bg-psi-primary/5 transition-colors">
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -2370,20 +2657,27 @@ const CRMPannel = () => {
                 </DialogContent>
             </Dialog>
 
-            <Dialog open={upgradeDialog} onOpenChange={setUpgradeDialog}>
-                <DialogContent className="max-w-2xl">
-                    <DialogHeader>
+            <Sheet open={upgradeDialog} onOpenChange={(open) => {
+                setUpgradeDialog(open)
+                if (!open) {
+                    setSelectedCardId(null)
+                    setShowNewCardForm(false)
+                    setCardData({ number: "", name: "", expiry: "", cvv: "" })
+                }
+            }}>
+                <SheetContent side="right" className="w-[90vw] sm:w-[90vw] lg:w-[1000px] overflow-y-auto">
+                    <SheetHeader>
                         <div className="flex items-center justify-center mb-4">
                             <div className="h-20 w-20 rounded-full bg-linear-to-br from-psi-tertiary/40 via-psi-primary/20 to-psi-secondary/40 flex items-center justify-center border-2 border-psi-primary/60">
                                 <Crown className="h-10 w-10 text-psi-primary" />
                             </div>
                         </div>
-                        <DialogTitle className="text-2xl text-center">Upgrade para CRM Pro</DialogTitle>
-                        <DialogDescription className="text-center text-base">
+                        <SheetTitle className="text-2xl text-center">Upgrade para CRM Pro</SheetTitle>
+                        <SheetDescription className="text-center text-base">
                             Potencialize sua comunicação e gestão de clientes
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
+                        </SheetDescription>
+                    </SheetHeader>
+                    <div className="space-y-6 mx-4">
                         <div className="relative overflow-hidden rounded-xl p-8 border border-psi-primary/20 bg-linear-to-br from-psi-primary/10 via-psi-secondary/5 to-psi-tertiary/10">
                             <div className="absolute inset-0 pointer-events-none select-none">
                                 <div
@@ -2400,9 +2694,9 @@ const CRMPannel = () => {
                                 />
                             </div>
                             <div className="relative flex flex-col items-center justify-center">
-                                <div className="">
+                                <div className="mb-2">
                                     <Crown
-                                        className="h-8 w-8 text-psi-primary mb-2"
+                                        className="h-8 w-8 text-psi-primary"
                                         aria-label="Coroa representando exclusividade PRO"
                                     />
                                 </div>
@@ -2412,75 +2706,315 @@ const CRMPannel = () => {
                             </div>
                         </div>
 
+                        <div className="bg-psi-primary/5 border border-psi-primary/20 rounded-lg p-4">
+                            <div className="flex items-start gap-3">
+                                <Info className="h-5 w-5 text-psi-primary shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-sm font-medium text-psi-dark mb-1">Assinatura Mensal</p>
+                                    <p className="text-sm text-psi-dark/70">
+                                        Esta é uma assinatura recorrente mensal. Você será cobrado R$ 99,90 por mês. 
+                                        Você pode cancelar a qualquer momento, sem taxas ou compromissos longos. 
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
                         <div>
-                            <h4 className="font-semibold text-psi-dark mb-3">Benefícios do CRM Pro:</h4>
+                            <h4 className="font-semibold text-psi-dark mb-3">Por que assinar o CRM Pro?</h4>
                             <div className="space-y-3">
                                 <div className="flex items-start gap-3">
                                     <div className="h-6 w-6 rounded-full bg-psi-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                                        <CheckCircle2 className="h-4 w-4 text-psi-primary" />
+                                        <Mail className="h-4 w-4 text-psi-primary" />
                                     </div>
                                     <div>
                                         <p className="font-medium text-psi-dark">Até 5.000 e-mails por mês</p>
-                                        <p className="text-sm text-psi-dark/60">50x mais que o plano básico</p>
+                                        <p className="text-sm text-psi-dark/60">
+                                            50x mais que o plano básico. Marketing agressivo para alcançar mais clientes e aumentar suas vendas.
+                                        </p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <div className="h-6 w-6 rounded-full bg-psi-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                                        <CheckCircle2 className="h-4 w-4 text-psi-primary" />
+                                        <LayoutPanelTop className="h-4 w-4 text-psi-primary" />
                                     </div>
                                     <div>
                                         <p className="font-medium text-psi-dark">Templates ilimitados</p>
-                                        <p className="text-sm text-psi-dark/60">Acesso a todos os templates premium</p>
+                                        <p className="text-sm text-psi-dark/60">
+                                            Acesso a todos os templates premium para campanhas profissionais e personalizadas.
+                                        </p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <div className="h-6 w-6 rounded-full bg-psi-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                                        <CheckCircle2 className="h-4 w-4 text-psi-primary" />
-                                    </div>
-                                    <div>
-                                        <p className="font-medium text-psi-dark">Suporte prioritário</p>
-                                        <p className="text-sm text-psi-dark/60">Atendimento exclusivo e resposta rápida</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <div className="h-6 w-6 rounded-full bg-psi-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                                        <CheckCircle2 className="h-4 w-4 text-psi-primary" />
+                                        <BarChart3 className="h-4 w-4 text-psi-primary" />
                                     </div>
                                     <div>
                                         <p className="font-medium text-psi-dark">Relatórios avançados</p>
-                                        <p className="text-sm text-psi-dark/60">Análises detalhadas de campanhas e engajamento</p>
+                                        <p className="text-sm text-psi-dark/60">
+                                            Análises detalhadas de campanhas e engajamento para tomar decisões estratégicas baseadas em dados.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <div className="h-6 w-6 rounded-full bg-psi-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                                        <PieChart className="h-4 w-4 text-psi-primary" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-psi-dark">Visão estratégica completa</p>
+                                        <p className="text-sm text-psi-dark/60">
+                                            Tenha total controle sobre o desempenho das suas campanhas, visualizando resultados por gráficos intuitivos e focados nos objetivos do seu evento.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <div className="h-6 w-6 rounded-full bg-psi-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                                        <Stars className="h-4 w-4 text-psi-primary" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-psi-dark">Inteligência Artificial integrada</p>
+                                        <p className="text-sm text-psi-dark/60">
+                                            Utilize IA para acompanhar toda a jornada de cada cliente, prever comportamento, otimizar campanhas e aumentar suas conversões. Receba recomendações automáticas e monitore a efetividade de cada entrega.
+                                        </p>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="bg-psi-primary/5 border border-psi-primary/20 rounded-lg p-4">
-                            <p className="text-sm text-psi-dark/70 text-center">
-                                <strong>Cancele quando quiser.</strong> Sem taxas de cancelamento ou compromissos longos.
+                        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                            <div className="flex items-start gap-3">
+                                <TrendingUp className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium text-emerald-900 mb-2">O poder do E-mail Marketing</p>
+                                    <ul className="text-sm text-emerald-800 space-y-1 list-disc list-inside mb-3">
+                                        <li>ROI médio de R$ 42 para cada R$ 1 investido em e-mail marketing</li>
+                                        <li>E-mails personalizados geram 6x mais transações</li>
+                                        <li>Campanhas segmentadas aumentam receita em até 760%</li>
+                                        <li>E-mail marketing é 40x mais eficaz que redes sociais para conversão</li>
+                                        <li>Clientes que recebem e-mails promocionais gastam 83% mais</li>
+                                    </ul>
+                                    <div className="pt-2 border-t border-emerald-200">
+                                        <p className="text-xs text-emerald-700 font-medium mb-1">Fontes:</p>
+                                        <ul className="text-xs text-emerald-600 space-y-0.5">
+                                            <li>• DMA (Data & Marketing Association) - Email Marketing ROI Report</li>
+                                            <li>• Campaign Monitor - Email Marketing Statistics</li>
+                                            <li>• Litmus - State of Email Report</li>
+                                            <li>• McKinsey & Company - The Value of Email Marketing</li>
+                                            <li>• Epsilon - Email Marketing Benchmarks</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <Separator />
+
+                        <div className="max-w-3xl mx-auto border border-psi-dark/20 rounded-lg p-4 shadow-sm">
+                            <h4 className="font-semibold text-psi-dark mb-4">Pagamento</h4>
+                            <p className="text-sm text-psi-dark/60 mb-4">
+                                A assinatura do CRM Pro aceita apenas cartão de crédito. Selecione um cartão cadastrado ou adicione um novo.
                             </p>
+
+                            {isLoadingCards ? (
+                                <div className="space-y-4">
+                                    <Skeleton className="h-32 w-full" />
+                                    <Skeleton className="h-32 w-full" />
+                                </div>
+                            ) : (
+                                <>
+                                    {cards.length > 0 && !showNewCardForm && (
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <h5 className="text-sm font-medium text-psi-dark">Cartões Cadastrados</h5>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setShowNewCardForm(true)
+                                                        setSelectedCardId(null)
+                                                    }}
+                                                >
+                                                    Adicionar novo cartão
+                                                </Button>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {cards.map(card => {
+                                                    const isSelected = selectedCardId === card.id
+                                                    const cardBrandLower = card.brand.toLowerCase()
+                                                    const brandColors: Record<string, { bg: string; text: string }> = {
+                                                        visa: { bg: "bg-[#1A1F71]", text: "text-white" },
+                                                        mastercard: { bg: "bg-[#EB001B]", text: "text-white" },
+                                                        amex: { bg: "bg-[#006FCF]", text: "text-white" },
+                                                        elo: { bg: "bg-[#FFCB05]", text: "text-[#231F20]" },
+                                                        hipercard: { bg: "bg-[#DF0F50]", text: "text-white" },
+                                                        jcb: { bg: "bg-[#052F9C]", text: "text-white" },
+                                                        discover: { bg: "bg-[#00AEEF]", text: "text-white" },
+                                                        cabal: { bg: "bg-[#000000]", text: "text-white" },
+                                                        banescard: { bg: "bg-[#000000]", text: "text-white" },
+                                                    }
+                                                    const brandColor = brandColors[cardBrandLower] || { bg: "bg-gray-600", text: "text-white" }
+
+                                                    return (
+                                                        <button
+                                                            key={card.id}
+                                                            type="button"
+                                                            onClick={() => setSelectedCardId(card.id)}
+                                                            className={`relative p-4 rounded-xl border-2 transition-all text-left overflow-hidden ${
+                                                                isSelected
+                                                                    ? "border-psi-primary bg-psi-primary/5"
+                                                                    : "border-psi-dark/10 hover:border-psi-primary/30 bg-white"
+                                                            }`}
+                                                        >
+                                                            <div className={`absolute top-0 right-0 w-20 h-20 ${brandColor.bg} rounded-full -mr-10 -mt-10 opacity-20`} />
+                                                            <div className="relative space-y-3">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="h-10 flex items-center">
+                                                                        <img
+                                                                            src={getCardBrandIcon(card.brand)}
+                                                                            alt={card.brand}
+                                                                            className="h-full object-contain"
+                                                                        />
+                                                                    </div>
+                                                                    {isSelected && (
+                                                                        <CheckCircle2 className="h-5 w-5 text-psi-primary" />
+                                                                    )}
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-xs text-psi-dark/60 mb-1">Número do Cartão</p>
+                                                                    <p className="text-lg font-medium text-psi-dark font-mono">
+                                                                        •••• •••• •••• {card.last4}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="flex items-center justify-between">
+                                                                    <div>
+                                                                        <p className="text-xs text-psi-dark/60 mb-1">Nome</p>
+                                                                        <p className="text-sm font-medium text-psi-dark">{card.name}</p>
+                                                                    </div>
+                                                                    <div>
+                                                                        <p className="text-xs text-psi-dark/60 mb-1">Validade</p>
+                                                                        <p className="text-sm font-medium text-psi-dark">
+                                                                            {card.expMonth?.padStart(2, "0")}/{card.expYear?.slice(-2)}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </button>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {(showNewCardForm || cards.length === 0) && (
+                                        <div className="space-y-4">
+                                            {cards.length > 0 && (
+                                                <div className="flex items-center justify-between">
+                                                    <h5 className="text-sm font-medium text-psi-dark">Novo Cartão</h5>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            setShowNewCardForm(false)
+                                                            setCardData({ number: "", name: "", expiry: "", cvv: "" })
+                                                            if (cards.length > 0) {
+                                                                setSelectedCardId(cards[0].id)
+                                                            }
+                                                        }}
+                                                    >
+                                                        Usar cartão cadastrado
+                                                    </Button>
+                                                </div>
+                                            )}
+                                            <div>
+                                                <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                    Número do Cartão *
+                                                </label>
+                                                <div className="relative">
+                                                    <InputMask
+                                                        mask="0000 0000 0000 0000"
+                                                        value={cardData.number}
+                                                        onAccept={(value) => setCardData({ ...cardData, number: value as string })}
+                                                        placeholder="0000 0000 0000 0000"
+                                                        icon={CreditCard}
+                                                    />
+                                                    {cardBrand && (
+                                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                                            <img
+                                                                src={getCardBrandIcon(cardBrand)}
+                                                                alt={cardBrand}
+                                                                className="h-10 w-auto object-contain"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                    Nome no Cartão *
+                                                </label>
+                                                <Input
+                                                    value={cardData.name}
+                                                    onChange={(e) => setCardData({ ...cardData, name: e.target.value.toUpperCase() })}
+                                                    placeholder="NOME COMO ESTÁ NO CARTÃO"
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div className="grid gap-4 sm:grid-cols-2">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                        Validade *
+                                                    </label>
+                                                    <InputMask
+                                                        mask="00/00"
+                                                        value={cardData.expiry}
+                                                        onAccept={(value) => setCardData({ ...cardData, expiry: value as string })}
+                                                        placeholder="MM/AA"
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                        CVV *
+                                                    </label>
+                                                    <InputMask
+                                                        mask="000"
+                                                        value={cardData.cvv}
+                                                        onAccept={(value) => setCardData({ ...cardData, cvv: value as string })}
+                                                        placeholder="000"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            )}
                         </div>
                     </div>
-                    <DialogFooter className="gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() => setUpgradeDialog(false)}
-                        >
-                            Talvez depois
-                        </Button>
-                        <Button
-                            variant="primary"
-                            onClick={() => {
-                                console.log("Redirecionar para checkout CRM Pro")
-                                setUpgradeDialog(false)
-                            }}
-                            className="gap-2"
-                        >
-                            <Crown className="h-4 w-4" />
-                            Assinar CRM Pro
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    <Separator />
+                    <SheetFooter className="gap-2">
+                        <div className="flex items-center justify-end gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => setUpgradeDialog(false)}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                variant="primary"
+                                onClick={handleUpgradeSubmit}
+                                className="gap-2"
+                                disabled={!selectedCardId && (!cardData.number || !cardData.name || !cardData.expiry || !cardData.cvv)}
+                            >
+                                <Crown className="h-4 w-4" />
+                                Assinar CRM Pro
+                            </Button>
+                        </div>
+                    </SheetFooter>
+                </SheetContent>
+            </Sheet>
 
             <Dialog open={reportsDialog} onOpenChange={setReportsDialog}>
                 <DialogContent className="max-w-2xl">
@@ -2860,16 +3394,16 @@ const CRMPannel = () => {
                             
                             if (segment.type === "event") {
                                 const segmentName = segment.name.replace("Evento: ", "").trim()
-                                segmentCustomers = filteredCustomers.filter(c => 
+                                segmentCustomers = customers.filter(c => 
                                     c.events.some(e => e.name.toLowerCase().includes(segmentName.toLowerCase()) || e.id === selectedExportSegment)
                                 )
                             } else if (segment.type === "tag") {
                                 const segmentName = segment.name.replace("Tag: ", "").trim()
-                                segmentCustomers = filteredCustomers.filter(c => 
+                                segmentCustomers = customers.filter(c => 
                                     c.tags.some(t => t.name.toLowerCase().includes(segmentName.toLowerCase()) || t.id === selectedExportSegment)
                                 )
                             } else {
-                                segmentCustomers = filteredCustomers
+                                segmentCustomers = customers
                             }
                             
                             return (
@@ -2961,12 +3495,12 @@ const CRMPannel = () => {
                                         if (!segment) return null
                                         
                                         const segmentCustomers = segmentId === "all" 
-                                            ? filteredCustomers 
+                                            ? customers 
                                             : segment.type === "event"
-                                                ? filteredCustomers.filter(c => c.events.some(e => e.id === segmentId))
+                                                ? customers.filter(c => c.events.some(e => e.id === segmentId))
                                                 : segment.type === "tag"
-                                                    ? filteredCustomers.filter(c => c.tags.some(t => t.id === segmentId))
-                                                    : filteredCustomers
+                                                    ? customers.filter(c => c.tags.some(t => t.id === segmentId))
+                                                    : customers
                                         
                                         return (
                                             <div key={segmentId} className="border border-psi-dark/10 rounded-lg p-4">
@@ -3020,6 +3554,23 @@ const CRMPannel = () => {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <Sheet open={reportsSheetOpen} onOpenChange={setReportsSheetOpen}>
+                <SheetContent side="right" className="w-[90vw] sm:w-[90vw] lg:w-[90vw] overflow-y-auto">
+                    <SheetHeader>
+                        <SheetTitle className="text-2xl font-semibold text-psi-primary">Relatórios Avançados</SheetTitle>
+                        <SheetDescription>
+                            Análises detalhadas e insights estratégicos
+                        </SheetDescription>
+                    </SheetHeader>
+                    <div className="mt-6 mx-4">
+                        <div className="flex items-center justify-center py-12">
+                            <p className="text-lg text-psi-dark/60">Em desenvolvimento</p>
+                            <Settings className="h-6 w-6 text-psi-primary ml-2" />
+                        </div>
+                    </div>
+                </SheetContent>
+            </Sheet>
         </Background>
     )
 }

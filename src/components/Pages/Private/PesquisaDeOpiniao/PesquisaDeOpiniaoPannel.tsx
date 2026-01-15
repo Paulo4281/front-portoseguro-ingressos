@@ -119,7 +119,7 @@ const PesquisaDeOpiniaoPannel = () => {
     }
 
     return (
-        <Background variant="light">
+        <Background variant="hero" className="min-h-screen">
             <div className="container mx-auto px-4 py-8 space-y-6 mt-[80px]">
                 <div className="space-y-2">
                     <h1 className="text-3xl font-bold text-psi-primary">Pesquisa de Opinião</h1>

@@ -1,8 +1,18 @@
+export type TTagAutomationRules = {
+    eventId?: string
+    eventCategoryId?: string
+    minTotalSpent?: number
+    minTicketsCount?: number
+    purchaseDateFrom?: string
+    purchaseDateTo?: string
+} | null
+
 export type TTag = {
     id: string
     name: string
     color: string
     userId: string
+    automationRules: TTagAutomationRules
     createdAt: string
     updatedAt: string | null
 }
@@ -10,20 +20,13 @@ export type TTag = {
 export type TTagCreate = {
     name: string
     color: string
-    automationRules?: {
-        eventId?: string
-        eventCategoryId?: string
-        minTotalSpent?: number
-        minTicketsCount?: number
-        minEventsCount?: number
-        purchaseDateFrom?: string
-        purchaseDateTo?: string
-    }
+    automationRules?: TTagAutomationRules
 }
 
 export type TTagUpdate = {
     name?: string
     color?: string
+    automationRules?: TTagAutomationRules
 }
 
 export type TTagResponse = {
@@ -31,6 +34,7 @@ export type TTagResponse = {
     name: string
     color: string
     userId: string
+    automationRules: TTagAutomationRules
     createdAt: string
     updatedAt: string | null
 }

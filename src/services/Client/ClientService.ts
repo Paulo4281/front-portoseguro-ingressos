@@ -11,6 +11,8 @@ type TFindOrganizerClientsParams = {
 type TFindOrganizerClientsCrmParams = {
     offset: number
     search?: string
+    tagId?: string
+    eventId?: string
 }
 
 class ClientServiceClass {
@@ -41,6 +43,14 @@ class ClientServiceClass {
         
         if (params.search) {
             queryParams.search = params.search
+        }
+
+        if (params.tagId) {
+            queryParams.tagId = params.tagId
+        }
+
+        if (params.eventId) {
+            queryParams.eventId = params.eventId
         }
 
         const response = (await API.GET({

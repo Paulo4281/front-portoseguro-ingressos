@@ -72,6 +72,7 @@ type TCustomer = {
 type TFindOrganizerClientsCrmResponse = {
     data: TCustomer[]
     total: number
+    totalFiltered: number
     limit: number
     offset: number
 }

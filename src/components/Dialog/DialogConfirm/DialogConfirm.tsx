@@ -9,7 +9,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { AlertTriangle } from "lucide-react"
+import { AlertTriangle, Loader2 } from "lucide-react"
 
 type TDialogConfirmProps = {
     open: boolean
@@ -66,7 +66,9 @@ const DialogConfirm = ({
                         variant={variant === "destructive" ? "destructive" : "primary"}
                         onClick={handleConfirm}
                         disabled={isLoading}
+                        className="gap-2"
                     >
+                        {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                         {confirmText}
                     </Button>
                 </DialogFooter>
