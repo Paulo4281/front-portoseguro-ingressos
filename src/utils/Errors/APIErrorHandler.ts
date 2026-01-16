@@ -31,6 +31,7 @@ export const APIErrorHandler: Record<number, string> = {
     29: "Identificamos muitas tentativas de login falhas. Por favor, tente novamente mais tarde",
     30: "Este cliente já possui essa tag",
     31: "Você só pode avaliar eventos em que você já participou",
+    32: "É necessário o plano CRM Pro para utilizar esta funcionalidade",
 
     700: "Não é possível alterar datas do evento que já possuem ingressos vendidos. FALE COM O SUPORTE",
     701: "Não é possível alterar datas do evento que começarão em menos de 72 horas e já possuem ingressos vendidos. FALE COM O SUPORTE",

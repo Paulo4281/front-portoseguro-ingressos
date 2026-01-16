@@ -139,6 +139,8 @@ import type { TCard } from "@/types/Card/TCard"
 import { getCardBrand } from "@/utils/Helpers/CardUtils/CardUtils"
 import { CreditCard } from "lucide-react"
 import { useAuthStore } from "@/stores/Auth/AuthStore"
+import { useSubscriptionCreateCRMPro } from "@/hooks/Subscription/useSubscriptionCreateCRMPro"
+import type { TCreateCRMProSubscription } from "@/types/Subscription/TSubscription"
 
 
 
@@ -508,7 +510,7 @@ const CRMPannel = () => {
     const [emailPreviewDialog, setEmailPreviewDialog] = useState(false)
     const [reportsSheetOpen, setReportsSheetOpen] = useState(false)
 
-    const { user } = useAuthStore()
+    const { user, setUser } = useAuthStore()
     const organizer = useMemo(() => {
         return user?.Organizer || null
     }, [user])
@@ -529,6 +531,8 @@ const CRMPannel = () => {
     const cards = useMemo(() => {
         return cardsData?.data || []
     }, [cardsData?.data])
+
+    const { mutateAsync: createCRMProSubscription, isPending: isCreatingSubscription } = useSubscriptionCreateCRMPro()
 
     const cardBrand = useMemo(() => {
         return getCardBrand(cardData.number)
@@ -558,34 +562,86 @@ const CRMPannel = () => {
         }
     }, [upgradeDialog, cards, selectedCardId, showNewCardForm])
 
-    const handleUpgradeSubmit = () => {
-        if (selectedCardId) {
-            console.log("Assinatura CRM Pro - Cartão cadastrado:", {
-                cardId: selectedCardId,
-                subscriptionType: "CRM_PRO",
-                monthlyPrice: 99.90
-            })
-        } else {
-            if (!cardData.number || !cardData.name || !cardData.expiry || !cardData.cvv) {
-                Toast.error("Por favor, preencha todos os campos do cartão de crédito ou selecione um cartão cadastrado.")
-                return
+    const handleUpgradeSubmit = async () => {
+        try {
+            let payload: TCreateCRMProSubscription
+
+            if (selectedCardId) {
+                payload = {
+                    creditCardToken: selectedCardId
+                }
+            } else {
+                if (!cardData.number || !cardData.name || !cardData.expiry || !cardData.cvv) {
+                    Toast.error("Por favor, preencha todos os campos do cartão de crédito ou selecione um cartão cadastrado.")
+                    return
+                }
+
+                if (!user) {
+                    Toast.error("Erro ao obter informações do usuário")
+                    return
+                }
+
+                if (!user.Address) {
+                    Toast.error("Por favor, complete seu endereço no perfil antes de assinar o CRM Pro")
+                    return
+                }
+
+                if (!user.document) {
+                    Toast.error("Por favor, complete seu documento no perfil antes de assinar o CRM Pro")
+                    return
+                }
+
+                if (!user.phone) {
+                    Toast.error("Por favor, complete seu telefone no perfil antes de assinar o CRM Pro")
+                    return
+                }
+
+                const [expMonth, expYear] = cardData.expiry.split("/")
+                const cardNumber = cardData.number.replace(/\s/g, "")
+                const zipCode = user.Address.zipCode.replace(/\D/g, "")
+                const document = user.document.replace(/\D/g, "")
+                const phone = user.phone.replace(/\D/g, "")
+
+                payload = {
+                    creditCard: {
+                        holderName: cardData.name,
+                        number: cardNumber,
+                        expiryMonth: expMonth,
+                        expiryYear: `20${expYear}`,
+                        ccv: cardData.cvv
+                    },
+                    creditCardHolderInfo: {
+                        name: `${user.firstName} ${user.lastName}`,
+                        email: user.email,
+                        cpfCnpj: document,
+                        postalCode: zipCode,
+                        addressNumber: user.Address.number || "",
+                        phone: phone,
+                        addressComplement: user.Address.complement || undefined
+                    }
+                }
             }
 
-            console.log("Assinatura CRM Pro - Novo cartão:", {
-                number: cardData.number,
-                holderName: cardData.name,
-                exp: cardData.expiry,
-                cvv: cardData.cvv,
-                subscriptionType: "CRM_PRO",
-                monthlyPrice: 99.90
-            })
+            await createCRMProSubscription(payload)
+            
+            if (user) {
+                const updatedUser = { ...user }
+                if (updatedUser.Organizer) {
+                    updatedUser.Organizer.crmPlan = "PRO"
+                    setUser(updatedUser)
+                }
+            }
+            
+            Toast.success("Assinatura do CRM Pro criada com sucesso!")
+            setUpgradeDialog(false)
+            setSelectedCardId(null)
+            setShowNewCardForm(false)
+            setCardData({ number: "", name: "", expiry: "", cvv: "" })
+        } catch (error: any) {
+            console.error("Erro ao criar assinatura do CRM Pro:", error)
+            const errorMessage = error?.response?.data?.message || error?.message || "Erro ao criar assinatura do CRM Pro"
+            Toast.error(errorMessage)
         }
-        
-        Toast.success("Assinatura processada com sucesso! (Em desenvolvimento)")
-        setUpgradeDialog(false)
-        setSelectedCardId(null)
-        setShowNewCardForm(false)
-        setCardData({ number: "", name: "", expiry: "", cvv: "" })
     }
 
 
@@ -3006,10 +3062,19 @@ const CRMPannel = () => {
                                 variant="primary"
                                 onClick={handleUpgradeSubmit}
                                 className="gap-2"
-                                disabled={!selectedCardId && (!cardData.number || !cardData.name || !cardData.expiry || !cardData.cvv)}
+                                disabled={isCreatingSubscription || (!selectedCardId && (!cardData.number || !cardData.name || !cardData.expiry || !cardData.cvv))}
                             >
-                                <Crown className="h-4 w-4" />
-                                Assinar CRM Pro
+                                {isCreatingSubscription ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Processando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Crown className="h-4 w-4" />
+                                        Assinar CRM Pro
+                                    </>
+                                )}
                             </Button>
                         </div>
                     </SheetFooter>
