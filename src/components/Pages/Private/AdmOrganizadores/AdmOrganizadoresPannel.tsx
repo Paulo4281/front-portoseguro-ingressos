@@ -54,6 +54,7 @@ import {
     X,
     ZoomIn
 } from "lucide-react"
+import { DocumentUtils } from "@/utils/Helpers/DocumentUtils/DocumentUtils"
 
 const AdmOrganizadoresPannel = () => {
     const [filters, setFilters] = useState<{
@@ -355,7 +356,7 @@ const AdmOrganizadoresPannel = () => {
                                                                     <div className="h-8 w-8 rounded-lg bg-psi-primary/10 flex items-center justify-center">
                                                                         <Phone className="h-3.5 w-3.5 text-psi-primary" />
                                                                     </div>
-                                                                    <span>{organizer.phone}</span>
+                                                                    <span>{DocumentUtils.formatPhone(organizer.phone || "")}</span>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -401,7 +402,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                 CPF
                                                                             </div>
                                                                             <p className="text-base font-medium text-psi-dark break-words overflow-wrap-anywhere">
-                                                                                {organizer.document}
+                                                                                {DocumentUtils.formatCpf(organizer.document || "")}
                                                                             </p>
                                                                         </div>
                                                                     )}
@@ -434,7 +435,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                 CNPJ
                                                                             </div>
                                                                             <p className="text-base font-medium text-psi-dark break-words overflow-wrap-anywhere">
-                                                                                {org.companyDocument}
+                                                                                {DocumentUtils.formatCnpj(org.companyDocument || "")}
                                                                             </p>
                                                                         </div>
                                                                     )}
@@ -456,7 +457,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                 Telefone de suporte
                                                                             </div>
                                                                             <p className="text-base font-medium text-psi-dark break-words overflow-wrap-anywhere">
-                                                                                {org.supportPhone}
+                                                                                {DocumentUtils.formatPhone(org.supportPhone || "")}
                                                                             </p>
                                                                         </div>
                                                                     )}
@@ -520,7 +521,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                             <div>
                                                                                                 <p className="text-xs text-psi-dark/50 uppercase tracking-wide mb-1">CPF/CNPJ do titular</p>
                                                                                                 <p className="text-sm text-psi-dark/70 break-words overflow-wrap-anywhere">
-                                                                                                    {org.bankAccountOwnerDocument}
+                                                                                                    {DocumentUtils.formatCpf(org.bankAccountOwnerDocument || "")}
                                                                                                 </p>
                                                                                             </div>
                                                                                         )}

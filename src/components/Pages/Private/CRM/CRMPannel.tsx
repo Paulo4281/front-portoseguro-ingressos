@@ -55,7 +55,9 @@ import {
     Cpu,
     Stars,
     LayoutPanelTop,
-    Settings
+    Settings,
+    XCircle,
+    AlertTriangle
 } from "lucide-react"
 import { Background } from "@/components/Background/Background"
 import { Button } from "@/components/ui/button"
@@ -105,6 +107,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { DialogConfirm } from "@/components/Dialog/DialogConfirm/DialogConfirm"
+import { DialogPasswordConfirmation } from "@/components/Dialog/DialogPasswordConfirmation/DialogPasswordConfirmation"
 import { MoreVertical } from "lucide-react"
 import { DatePicker } from "@/components/DatePicker/DatePicker"
 import { useForm, Controller } from "react-hook-form"
@@ -140,7 +143,11 @@ import { getCardBrand } from "@/utils/Helpers/CardUtils/CardUtils"
 import { CreditCard } from "lucide-react"
 import { useAuthStore } from "@/stores/Auth/AuthStore"
 import { useSubscriptionCreateCRMPro } from "@/hooks/Subscription/useSubscriptionCreateCRMPro"
-import type { TCreateCRMProSubscription } from "@/types/Subscription/TSubscription"
+import { useSubscriptionInfo } from "@/hooks/Subscription/useSubscriptionInfo"
+import { useSubscriptionCancel } from "@/hooks/Subscription/useSubscriptionCancel"
+import { useSubscriptionUpdateCreditCard } from "@/hooks/Subscription/useSubscriptionUpdateCreditCard"
+import type { TCreateCRMProSubscription, TUpdateSubscriptionCreditCard } from "@/types/Subscription/TSubscription"
+import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 
 
 
@@ -441,7 +448,19 @@ const CRMPannel = () => {
     }>({
         open: false
     })
-    const [activeTab, setActiveTab] = useState<"customers" | "tags" | "emails">("customers")
+    const [activeTab, setActiveTab] = useState<"customers" | "tags" | "emails" | "plan">("customers")
+    const [planDialog, setPlanDialog] = useState(false)
+    const [cancelSubscriptionDialog, setCancelSubscriptionDialog] = useState(false)
+    const [passwordConfirmationDialog, setPasswordConfirmationDialog] = useState(false)
+    const [updateCardDialog, setUpdateCardDialog] = useState(false)
+    const [selectedCardIdForUpdate, setSelectedCardIdForUpdate] = useState<string | null>(null)
+    const [showNewCardFormForUpdate, setShowNewCardFormForUpdate] = useState(false)
+    const [cardDataForUpdate, setCardDataForUpdate] = useState({
+        number: "",
+        name: "",
+        expiry: "",
+        cvv: ""
+    })
     const [deleteTagDialog, setDeleteTagDialog] = useState<{
         open: boolean
         tagId?: string
@@ -525,18 +544,34 @@ const CRMPannel = () => {
     const tagsUsed = tags.length
 
     const { data: cardsData, isLoading: isLoadingCards } = useCardFindByUserId({
-        enabled: upgradeDialog
+        enabled: upgradeDialog || updateCardDialog
     })
     
     const cards = useMemo(() => {
         return cardsData?.data || []
     }, [cardsData?.data])
 
+    const { data: subscriptionInfoData, isLoading: isLoadingSubscriptionInfo, refetch: refetchSubscriptionInfo } = useSubscriptionInfo()
+    
+    const subscriptionInfo = useMemo(() => {
+        if (!subscriptionInfoData?.data) return null
+        if (Array.isArray(subscriptionInfoData.data) && subscriptionInfoData.data.length > 0) {
+            return subscriptionInfoData.data[0]
+        }
+        return null
+    }, [subscriptionInfoData])
+
     const { mutateAsync: createCRMProSubscription, isPending: isCreatingSubscription } = useSubscriptionCreateCRMPro()
+    const { mutateAsync: cancelSubscription, isPending: isCancellingSubscription } = useSubscriptionCancel()
+    const { mutateAsync: updateCreditCard, isPending: isUpdatingCreditCard } = useSubscriptionUpdateCreditCard()
 
     const cardBrand = useMemo(() => {
         return getCardBrand(cardData.number)
     }, [cardData.number])
+
+    const cardBrandForUpdate = useMemo(() => {
+        return getCardBrand(cardDataForUpdate.number)
+    }, [cardDataForUpdate.number])
 
     const getCardBrandIcon = (brand: string | null | undefined): string => {
         if (!brand) return "/icons/payment/card-brand/card-unknown.png"
@@ -1016,14 +1051,14 @@ const CRMPannel = () => {
         setIsGenerating(true)
 
         try {
-            console.log("Download:", format, "Segmento:", segmentId)
+        console.log("Download:", format, "Segmento:", segmentId)
             
             await new Promise(resolve => setTimeout(resolve, 1000))
             
             Toast.success(`Arquivo ${format.toUpperCase()} gerado com sucesso!`)
             
-            setExportDialog(false)
-            setSelectedExportSegment("")
+        setExportDialog(false)
+        setSelectedExportSegment("")
         } catch (error) {
             console.error("Erro ao exportar lista:", error)
             Toast.error("Erro ao exportar lista de clientes")
@@ -1137,6 +1172,16 @@ const CRMPannel = () => {
                             onClick={() => setActiveTab("emails")}
                         >
                             E-mails
+                        </button>
+                        <button
+                            className={`px-4 py-2 font-medium transition-colors ${
+                                activeTab === "plan"
+                                    ? "text-psi-dark border-b-2 border-psi-primary"
+                                    : "text-psi-dark/60 hover:text-psi-dark"
+                            }`}
+                            onClick={() => setActiveTab("plan")}
+                        >
+                            Plano
                         </button>
                     </div>
 
@@ -1265,27 +1310,27 @@ const CRMPannel = () => {
                                                     )}
                                                 </p>
                                             </div>
-                                            <Table>
-                                                <TableHeader>
-                                                    <TableRow>
-                                                        <TableHead className="w-12"></TableHead>
-                                                        <TableHead>Nome</TableHead>
-                                                        <TableHead>E-mail</TableHead>
-                                                        <TableHead>Celular</TableHead>
-                                                        <TableHead>Compras</TableHead>
-                                                        <TableHead>Total Gasto</TableHead>
-                                                        <TableHead>Última Compra</TableHead>
-                                                        <TableHead className="w-24">Ações</TableHead>
-                                                    </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="w-12"></TableHead>
+                                                    <TableHead>Nome</TableHead>
+                                                    <TableHead>E-mail</TableHead>
+                                                    <TableHead>Celular</TableHead>
+                                                    <TableHead>Compras</TableHead>
+                                                    <TableHead>Total Gasto</TableHead>
+                                                    <TableHead>Última Compra</TableHead>
+                                                    <TableHead className="w-24">Ações</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
                                                     {customers.length === 0 ? (
-                                                        <TableRow>
-                                                            <TableCell colSpan={8} className="text-center py-8 text-psi-dark/60">
-                                                                Nenhum cliente encontrado
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    ) : (
+                                                    <TableRow>
+                                                        <TableCell colSpan={8} className="text-center py-8 text-psi-dark/60">
+                                                            Nenhum cliente encontrado
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ) : (
                                                         customers.map(customer => (
                                                     <React.Fragment key={customer.id}>
                                                         <TableRow>
@@ -1493,8 +1538,8 @@ const CRMPannel = () => {
                                                     </React.Fragment>
                                                 ))
                                             )}
-                                                </TableBody>
-                                            </Table>
+                                        </TableBody>
+                                    </Table>
                                         </>
                                     )}
                                 </div>
@@ -1667,6 +1712,240 @@ const CRMPannel = () => {
                             </div>
                         </Card>
                     </div>
+                    )}
+
+                    {activeTab === "plan" && (
+                        <div className="space-y-4">
+                            <Card>
+                                <div className="p-6">
+                                    {isLoadingSubscriptionInfo ? (
+                                        <div className="space-y-4">
+                                            <Skeleton className="h-32 w-full" />
+                                            <Skeleton className="h-32 w-full" />
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-6">
+                                            <div>
+                                                <h2 className="text-xl font-semibold text-psi-dark mb-2">Seu Plano Atual</h2>
+                                                <div className="flex items-center gap-3">
+                                                    {isPro ? (
+                                                        <>
+                                                            <Crown className="h-6 w-6 text-psi-primary" />
+                                                            <div>
+                                                                <p className="text-lg font-semibold text-psi-dark">CRM Pro</p>
+                                                                {subscriptionInfo && (
+                                                                    <p className="text-sm text-psi-dark/80">
+                                                                        Código da assinatura: <span className="text-xs font-medium text-psi-dark/60">{subscriptionInfo.code}</span>
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <BarChart3 className="h-6 w-6 text-psi-dark/40" />
+                                                            <div>
+                                                                <p className="text-lg font-semibold text-psi-dark">CRM Básico</p>
+                                                                <p className="text-sm text-psi-dark/60">Plano gratuito</p>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {subscriptionInfo?.expiresAt && (
+                                                <div className="p-4 rounded-lg border border-amber-200 bg-amber-50">
+                                                    <div className="flex items-start gap-3">
+                                                        <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                                                        <div className="flex-1">
+                                                            <p className="text-sm font-medium text-amber-900 mb-1">
+                                                                Assinatura cancelada
+                                                            </p>
+                                                            <p className="text-sm text-amber-800">
+                                                                Sua assinatura do CRM Pro foi cancelada e voltará para o plano gratuito em{" "}
+                                                                <strong>{DateUtils.formatDate(subscriptionInfo.expiresAt)}</strong>.
+                                                            </p>
+                                                            <p className="text-sm font-medium text-amber-900 mt-2">
+                                                                ✓ Não haverá mais cobranças no seu cartão de crédito
+                                                            </p>
+                                                            <p className="text-xs text-amber-700 mt-1">
+                                                                Você poderá contratar o plano PRO novamente após esta data.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <Separator />
+
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-psi-dark mb-4">Benefícios do seu plano</h3>
+                                                {isPro ? (
+                                                    <div className="space-y-3">
+                                                        <div className="flex items-start gap-3">
+                                                            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <p className="font-medium text-psi-dark">Até 5.000 e-mails por mês</p>
+                                                                <p className="text-sm text-psi-dark/60">50x mais que o plano básico</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start gap-3">
+                                                            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <p className="font-medium text-psi-dark">Até 200 tags</p>
+                                                                <p className="text-sm text-psi-dark/60">Organize seus clientes com tags personalizadas</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start gap-3">
+                                                            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <p className="font-medium text-psi-dark">Clientes ilimitados</p>
+                                                                <p className="text-sm text-psi-dark/60">Gerencie quantos clientes precisar</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start gap-3">
+                                                            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <p className="font-medium text-psi-dark">Com relatórios</p>
+                                                                <p className="text-sm text-psi-dark/60">Análises detalhadas e insights estratégicos</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start gap-3">
+                                                            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <p className="font-medium text-psi-dark">Sugestões por IA frequentes</p>
+                                                                <p className="text-sm text-psi-dark/60">Receba recomendações automáticas e inteligentes</p>
+                                                            </div>
+                                                        </div>
+                                                        {subscriptionInfo?.card && (
+                                                            <div className="mt-4 p-4 bg-psi-primary/5 rounded-lg border border-psi-primary/20">
+                                                                <p className="text-sm font-medium text-psi-dark mb-2">Cartão de Crédito Cadastrado</p>
+                                                                <div className="flex items-center gap-3">
+                                                                    <img
+                                                                        src={getCardBrandIcon(subscriptionInfo.card.brand)}
+                                                                        alt={subscriptionInfo.card.brand}
+                                                                        className="h-8 w-8 object-contain"
+                                                                    />
+                                                                    <div>
+                                                                        <p className="text-sm font-medium text-psi-dark">
+                                                                            {subscriptionInfo.card.name}
+                                                                        </p>
+                                                                        <p className="text-xs text-psi-dark/60">
+                                                                            •••• •••• •••• {subscriptionInfo.card.last4}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-3">
+                                                        <div className="flex items-start gap-3">
+                                                            <CheckCircle2 className="h-5 w-5 text-psi-dark/40 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <p className="font-medium text-psi-dark">Até 100 e-mails por mês</p>
+                                                                <p className="text-sm text-psi-dark/60">Limite mensal de envios</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start gap-3">
+                                                            <CheckCircle2 className="h-5 w-5 text-psi-dark/40 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <p className="font-medium text-psi-dark">Até 200 tags</p>
+                                                                <p className="text-sm text-psi-dark/60">Organize seus clientes com tags personalizadas</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start gap-3">
+                                                            <CheckCircle2 className="h-5 w-5 text-psi-dark/40 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <p className="font-medium text-psi-dark">Clientes ilimitados</p>
+                                                                <p className="text-sm text-psi-dark/60">Gerencie quantos clientes precisar</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start gap-3">
+                                                            <XCircle className="h-5 w-5 text-psi-dark/40 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <p className="font-medium text-psi-dark">Sem relatórios</p>
+                                                                <p className="text-sm text-psi-dark/60">Relatórios avançados não disponíveis</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start gap-3">
+                                                            <XCircle className="h-5 w-5 text-psi-dark/40 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <p className="font-medium text-psi-dark">Poucas sugestões por IA</p>
+                                                                <p className="text-sm text-psi-dark/60">Sugestões limitadas de inteligência artificial</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <Separator />
+
+                                            <div className="flex gap-3">
+                                                {isPro ? (
+                                                    <>
+                                                        {!subscriptionInfo?.expiresAt && (
+                                                            <Button
+                                                                variant="destructive"
+                                                                onClick={() => setCancelSubscriptionDialog(true)}
+                                                                className="gap-2"
+                                                                size="sm"
+                                                            >
+                                                                <XCircle className="h-4 w-4" />
+                                                                Cancelar Assinatura
+                                                            </Button>
+                                                        )}
+                                                        {
+                                                            !subscriptionInfo?.expiresAt && (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    onClick={() => {
+                                                                        setUpdateCardDialog(true)
+                                                                        if (subscriptionInfo?.card) {
+                                                                            setSelectedCardIdForUpdate(subscriptionInfo.card.id)
+                                                                        }
+                                                                    }}
+                                                                    className="gap-2"
+                                                                >
+                                                                    <CreditCard className="h-4 w-4" />
+                                                                    Atualizar Cartão
+                                                                </Button>
+                                                            )
+                                                        }
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        {subscriptionInfo?.expiresAt && new Date(subscriptionInfo.expiresAt) > new Date() ? (
+                                                            <div className="flex flex-col gap-2">
+                                                                <Button
+                                                                    variant="primary"
+                                                                    disabled
+                                                                    className="gap-2"
+                                                                >
+                                                                    <Crown className="h-4 w-4" />
+                                                                    Upgrade para CRM Pro
+                                                                </Button>
+                                                                <p className="text-xs text-psi-dark/60 text-center">
+                                                                    Você poderá contratar o plano PRO novamente após {formatDateTime(subscriptionInfo.expiresAt)}
+                                                                </p>
+                                                            </div>
+                                                        ) : (
+                                                            <Button
+                                                                variant="primary"
+                                                                onClick={() => setUpgradeDialog(true)}
+                                                                className="gap-2"
+                                                            >
+                                                                <Crown className="h-4 w-4" />
+                                                                Upgrade para CRM Pro
+                                                            </Button>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </Card>
+                        </div>
                     )}
                 </div>
             </div>
@@ -2545,7 +2824,7 @@ const CRMPannel = () => {
                                                                 <p className="font-medium text-psi-dark text-sm truncate">
                                                                     {recipient.name}
                                                                 </p>
-                                                            </div>
+                                            </div>
                                                             <p className="text-xs text-psi-dark/60 mb-2 truncate">
                                                                 {recipient.email}
                                                             </p>
@@ -2560,13 +2839,13 @@ const CRMPannel = () => {
                                                                         Aberto
                                                                     </Badge>
                                                                 )}
-                                                            </div>
+                                    </div>
                                                             {recipient.failureReason && (
                                                                 <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
                                                                     <div className="flex items-start gap-1">
                                                                         <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
                                                                         <span className="font-medium">Motivo da falha:</span>
-                                                                    </div>
+                                </div>
                                                                     <p className="mt-1 ml-4">{recipient.failureReason}</p>
                                                                 </div>
                                                             )}
@@ -2765,7 +3044,7 @@ const CRMPannel = () => {
                         <div className="bg-psi-primary/5 border border-psi-primary/20 rounded-lg p-4">
                             <div className="flex items-start gap-3">
                                 <Info className="h-5 w-5 text-psi-primary shrink-0 mt-0.5" />
-                                <div>
+                        <div>
                                     <p className="text-sm font-medium text-psi-dark mb-1">Assinatura Mensal</p>
                                     <p className="text-sm text-psi-dark/70">
                                         Esta é uma assinatura recorrente mensal. Você será cobrado R$ 99,90 por mês. 
@@ -2874,7 +3153,7 @@ const CRMPannel = () => {
                                 <div className="space-y-4">
                                     <Skeleton className="h-32 w-full" />
                                     <Skeleton className="h-32 w-full" />
-                                </div>
+                        </div>
                             ) : (
                                 <>
                                     {cards.length > 0 && !showNewCardForm && (
@@ -2892,7 +3171,7 @@ const CRMPannel = () => {
                                                 >
                                                     Adicionar novo cartão
                                                 </Button>
-                                            </div>
+                    </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {cards.map(card => {
                                                     const isSelected = selectedCardId === card.id
@@ -3052,10 +3331,10 @@ const CRMPannel = () => {
                     <Separator />
                     <SheetFooter className="gap-2">
                         <div className="flex items-center justify-end gap-2">
-                            <Button
-                                variant="outline"
-                                onClick={() => setUpgradeDialog(false)}
-                            >
+                        <Button
+                            variant="outline"
+                            onClick={() => setUpgradeDialog(false)}
+                        >
                                 Cancelar
                             </Button>
                             <Button
@@ -3249,25 +3528,25 @@ const CRMPannel = () => {
                                     Segmento
                                 </label>
                                 <div className="flex gap-2">
-                                    <Select
-                                        value={selectedExportSegment || "all"}
+                            <Select
+                                value={selectedExportSegment || "all"}
                                         onValueChange={(value) => setSelectedExportSegment(value === "all" ? "" : value)}
-                                    >
+                            >
                                         <SelectTrigger className="w-full bg-white">
                                             <SelectValue placeholder="Todos os clientes" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">Todos os clientes</SelectItem>
-                                            {emailSegments.map(segment => (
-                                                <SelectItem key={segment.id} value={segment.id}>
-                                                    {segment.name} ({segment.count} clientes)
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos os clientes</SelectItem>
+                                    {emailSegments.map(segment => (
+                                        <SelectItem key={segment.id} value={segment.id}>
+                                            {segment.name} ({segment.count} clientes)
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                                <Button
+                                    type="button"
+                                    variant="outline"
                                         size="icon"
                                         onClick={() => setViewSegmentCustomersDialog(true)}
                                         disabled={!selectedExportSegment || selectedExportSegment === "all"}
@@ -3275,7 +3554,7 @@ const CRMPannel = () => {
                                         title="Visualizar clientes do segmento"
                                     >
                                         <Eye className="h-4 w-4" />
-                                    </Button>
+                                </Button>
                                 </div>
                             </div>
                         </div>
@@ -3351,7 +3630,7 @@ const CRMPannel = () => {
                             </button>
 
                             <button
-                                onClick={() => handleDownload("csv", selectedExportSegment || "all")}
+                                    onClick={() => handleDownload("csv", selectedExportSegment || "all")}
                                 disabled={isGenerating}
                                 className={cn(
                                     "w-full p-4 rounded-xl border-2 border-[#E4E6F0] bg-white hover:border-psi-primary hover:bg-psi-primary/5 transition-all duration-200 text-left disabled:opacity-50 disabled:cursor-not-allowed",
@@ -3383,7 +3662,7 @@ const CRMPannel = () => {
                             </button>
 
                             <button
-                                onClick={() => handleDownload("json", selectedExportSegment || "all")}
+                                    onClick={() => handleDownload("json", selectedExportSegment || "all")}
                                 disabled={isGenerating}
                                 className={cn(
                                     "w-full p-4 rounded-xl border-2 border-[#E4E6F0] bg-white hover:border-psi-primary hover:bg-psi-primary/5 transition-all duration-200 text-left disabled:opacity-50 disabled:cursor-not-allowed",
@@ -3398,14 +3677,14 @@ const CRMPannel = () => {
                                             ) : (
                                                 <Code className="h-6 w-6 text-psi-tertiary" />
                                             )}
-                                        </div>
+                            </div>
                                         <div>
                                             <p className="text-sm font-medium text-psi-dark">JSON</p>
                                             <p className="text-xs text-psi-dark/60 mt-1">
                                                 Formato para integração e desenvolvimento
                                             </p>
-                                        </div>
-                                    </div>
+                        </div>
+                    </div>
                                     {isGenerating && selectedFormat === "json" ? (
                                         <Loader2 className="h-5 w-5 text-psi-tertiary animate-spin" />
                                     ) : (
@@ -3418,14 +3697,14 @@ const CRMPannel = () => {
 
                     <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-3">
                         <DialogClose asChild>
-                            <Button 
-                                variant="outline" 
+                        <Button
+                            variant="outline"
                                 className="w-full sm:w-auto"
-                                onClick={() => {
-                                    setSelectedExportSegment("")
-                                }}
-                            >
-                                Cancelar
+                            onClick={() => {
+                                setSelectedExportSegment("")
+                            }}
+                        >
+                            Cancelar
                             </Button>
                         </DialogClose>
                     </DialogFooter>
@@ -3636,6 +3915,377 @@ const CRMPannel = () => {
                     </div>
                 </SheetContent>
             </Sheet>
+
+            <Dialog open={cancelSubscriptionDialog} onOpenChange={setCancelSubscriptionDialog}>
+                <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                                <AlertTriangle className="h-5 w-5 text-red-600" />
+                            </div>
+                            Cancelar Assinatura CRM Pro
+                        </DialogTitle>
+                        <DialogDescription className="pt-2 space-y-2">
+                            <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
+                                <p className="text-sm font-medium text-amber-900 mb-1">
+                                    ⚠️ Atenção: Esta ação é irreversível
+                                </p>
+                                <p className="text-xs text-amber-800">
+                                    Ao cancelar sua assinatura, você perderá acesso a todos os benefícios do CRM Pro.
+                                </p>
+                            </div>
+                            <div className="pt-2 space-y-2">
+                                <p className="text-sm font-medium text-psi-dark">Você perderá acesso a:</p>
+                                <ul className="text-sm text-psi-dark/70 space-y-1 list-disc list-inside">
+                                    <li>Envio de até 5.000 e-mails por mês (voltará para 100 e-mails/mês)</li>
+                                    <li>Relatórios avançados e análises detalhadas</li>
+                                    <li>Sugestões frequentes por IA</li>
+                                    <li>Templates premium de e-mail</li>
+                                </ul>
+                                <p className="text-sm text-psi-dark/70 mt-3">
+                                    Sua assinatura será cancelada ao final do período atual. Você continuará tendo acesso ao CRM Pro até o fim do período já pago.
+                                </p>
+                            </div>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setCancelSubscriptionDialog(false)}
+                            disabled={isCancellingSubscription}
+                        >
+                            Manter Assinatura
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={() => {
+                                setCancelSubscriptionDialog(false)
+                                setPasswordConfirmationDialog(true)
+                            }}
+                            disabled={isCancellingSubscription}
+                        >
+                            Confirmar Cancelamento
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={updateCardDialog} onOpenChange={(open) => {
+                setUpdateCardDialog(open)
+                if (!open) {
+                    setSelectedCardIdForUpdate(null)
+                    setShowNewCardFormForUpdate(false)
+                    setCardDataForUpdate({ number: "", name: "", expiry: "", cvv: "" })
+                }
+            }}>
+                <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Atualizar Cartão de Crédito</DialogTitle>
+                        <DialogDescription>
+                            Escolha um cartão cadastrado ou adicione um novo cartão para sua assinatura CRM Pro
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        {isLoadingCards ? (
+                            <div className="space-y-4">
+                                <Skeleton className="h-32 w-full" />
+                                <Skeleton className="h-32 w-full" />
+                            </div>
+                        ) : (
+                            <>
+                                {cards.length > 0 && !showNewCardFormForUpdate && (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h5 className="text-sm font-medium text-psi-dark">Cartões Cadastrados</h5>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setShowNewCardFormForUpdate(true)
+                                                    setSelectedCardIdForUpdate(null)
+                                                }}
+                                            >
+                                                Adicionar novo cartão
+                                            </Button>
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {cards.map(card => {
+                                                const isSelected = selectedCardIdForUpdate === card.id
+                                                const cardBrandLower = card.brand.toLowerCase()
+                                                const brandColors: Record<string, { bg: string; text: string }> = {
+                                                    visa: { bg: "bg-[#1A1F71]", text: "text-white" },
+                                                    mastercard: { bg: "bg-[#EB001B]", text: "text-white" },
+                                                    amex: { bg: "bg-[#006FCF]", text: "text-white" },
+                                                    elo: { bg: "bg-[#FFCB05]", text: "text-[#231F20]" },
+                                                    hipercard: { bg: "bg-[#DF0F50]", text: "text-white" },
+                                                    jcb: { bg: "bg-[#052F9C]", text: "text-white" },
+                                                    discover: { bg: "bg-[#00AEEF]", text: "text-white" },
+                                                    cabal: { bg: "bg-[#000000]", text: "text-white" },
+                                                    banescard: { bg: "bg-[#000000]", text: "text-white" },
+                                                }
+                                                const brandColor = brandColors[cardBrandLower] || { bg: "bg-gray-600", text: "text-white" }
+
+                                                return (
+                                                    <button
+                                                        key={card.id}
+                                                        type="button"
+                                                        onClick={() => setSelectedCardIdForUpdate(card.id)}
+                                                        className={`relative p-4 rounded-xl border-2 transition-all text-left overflow-hidden ${
+                                                            isSelected
+                                                                ? "border-psi-primary bg-psi-primary/5"
+                                                                : "border-psi-dark/10 hover:border-psi-primary/30 bg-white"
+                                                        }`}
+                                                    >
+                                                        <div className={`absolute top-0 right-0 w-20 h-20 ${brandColor.bg} rounded-full -mr-10 -mt-10 opacity-20`} />
+                                                        <div className="relative space-y-3">
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="h-10 flex items-center">
+                                                                    <img
+                                                                        src={getCardBrandIcon(card.brand)}
+                                                                        alt={card.brand}
+                                                                        className="h-full object-contain"
+                                                                    />
+                                                                </div>
+                                                                {isSelected && (
+                                                                    <CheckCircle2 className="h-5 w-5 text-psi-primary" />
+                                                                )}
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-xs text-psi-dark/60 mb-1">Número do Cartão</p>
+                                                                <p className="text-lg font-medium text-psi-dark font-mono">
+                                                                    •••• •••• •••• {card.last4}
+                                                                </p>
+                                                            </div>
+                                                            <div className="flex items-center justify-between">
+                                                                <div>
+                                                                    <p className="text-xs text-psi-dark/60 mb-1">Nome</p>
+                                                                    <p className="text-sm font-medium text-psi-dark">{card.name}</p>
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-xs text-psi-dark/60 mb-1">Validade</p>
+                                                                    <p className="text-sm font-medium text-psi-dark">
+                                                                        {card.expMonth?.padStart(2, "0")}/{card.expYear?.slice(-2)}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </button>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {(showNewCardFormForUpdate || cards.length === 0) && (
+                                    <div className="space-y-4">
+                                        {cards.length > 0 && (
+                                            <div className="flex items-center justify-between">
+                                                <h5 className="text-sm font-medium text-psi-dark">Novo Cartão</h5>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setShowNewCardFormForUpdate(false)
+                                                        setCardDataForUpdate({ number: "", name: "", expiry: "", cvv: "" })
+                                                        if (cards.length > 0) {
+                                                            setSelectedCardIdForUpdate(cards[0].id)
+                                                        }
+                                                    }}
+                                                >
+                                                    Usar cartão cadastrado
+                                                </Button>
+                                            </div>
+                                        )}
+                                        <div>
+                                            <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                Número do Cartão *
+                                            </label>
+                                            <div className="relative">
+                                                <InputMask
+                                                    mask="0000 0000 0000 0000"
+                                                    value={cardDataForUpdate.number}
+                                                    onAccept={(value) => setCardDataForUpdate({ ...cardDataForUpdate, number: value as string })}
+                                                    placeholder="0000 0000 0000 0000"
+                                                    icon={CreditCard}
+                                                />
+                                                {cardBrandForUpdate && (
+                                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                                        <img
+                                                            src={getCardBrandIcon(cardBrandForUpdate)}
+                                                            alt={cardBrandForUpdate}
+                                                            className="h-10 w-auto object-contain"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                Nome no Cartão *
+                                            </label>
+                                            <Input
+                                                value={cardDataForUpdate.name}
+                                                onChange={(e) => setCardDataForUpdate({ ...cardDataForUpdate, name: e.target.value.toUpperCase() })}
+                                                placeholder="NOME COMO ESTÁ NO CARTÃO"
+                                                required
+                                            />
+                                        </div>
+
+                                        <div className="grid gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                    Validade *
+                                                </label>
+                                                <InputMask
+                                                    mask="00/00"
+                                                    value={cardDataForUpdate.expiry}
+                                                    onAccept={(value) => setCardDataForUpdate({ ...cardDataForUpdate, expiry: value as string })}
+                                                    placeholder="MM/AA"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                    CVV *
+                                                </label>
+                                                <InputMask
+                                                    mask="000"
+                                                    value={cardDataForUpdate.cvv}
+                                                    onAccept={(value) => setCardDataForUpdate({ ...cardDataForUpdate, cvv: value as string })}
+                                                    placeholder="000"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+                    <DialogFooter className="gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                                setUpdateCardDialog(false)
+                                setSelectedCardIdForUpdate(null)
+                                setShowNewCardFormForUpdate(false)
+                                setCardDataForUpdate({ number: "", name: "", expiry: "", cvv: "" })
+                            }}
+                            disabled={isUpdatingCreditCard}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="primary"
+                            onClick={async () => {
+                                try {
+                                    let payload: TUpdateSubscriptionCreditCard
+
+                                    if (selectedCardIdForUpdate) {
+                                        payload = {
+                                            creditCardToken: selectedCardIdForUpdate
+                                        }
+                                    } else {
+                                        if (!cardDataForUpdate.number || !cardDataForUpdate.name || !cardDataForUpdate.expiry || !cardDataForUpdate.cvv) {
+                                            Toast.error("Por favor, preencha todos os campos do cartão de crédito ou selecione um cartão cadastrado.")
+                                            return
+                                        }
+
+                                        if (!user) {
+                                            Toast.error("Erro ao obter informações do usuário")
+                                            return
+                                        }
+
+                                        if (!user.Address) {
+                                            Toast.error("Por favor, complete seu endereço no perfil antes de atualizar o cartão")
+                                            return
+                                        }
+
+                                        if (!user.document) {
+                                            Toast.error("Por favor, complete seu documento no perfil antes de atualizar o cartão")
+                                            return
+                                        }
+
+                                        if (!user.phone) {
+                                            Toast.error("Por favor, complete seu telefone no perfil antes de atualizar o cartão")
+                                            return
+                                        }
+
+                                        const [expMonth, expYear] = cardDataForUpdate.expiry.split("/")
+                                        const cardNumber = cardDataForUpdate.number.replace(/\s/g, "")
+                                        const zipCode = user.Address.zipCode.replace(/\D/g, "")
+                                        const document = user.document.replace(/\D/g, "")
+                                        const phone = user.phone.replace(/\D/g, "")
+
+                                        payload = {
+                                            creditCard: {
+                                                holderName: cardDataForUpdate.name,
+                                                number: cardNumber,
+                                                expiryMonth: expMonth,
+                                                expiryYear: `20${expYear}`,
+                                                ccv: cardDataForUpdate.cvv
+                                            }
+                                        }
+                                    }
+
+                                    await updateCreditCard(payload)
+                                    Toast.success("Cartão de crédito atualizado com sucesso")
+                                    setUpdateCardDialog(false)
+                                    setSelectedCardIdForUpdate(null)
+                                    setShowNewCardFormForUpdate(false)
+                                    setCardDataForUpdate({ number: "", name: "", expiry: "", cvv: "" })
+                                    await refetchSubscriptionInfo()
+                                } catch (error: any) {
+                                    console.error("Erro ao atualizar cartão:", error)
+                                    const errorMessage = error?.response?.data?.message || error?.message || "Erro ao atualizar cartão de crédito"
+                                    Toast.error(errorMessage)
+                                }
+                            }}
+                            disabled={isUpdatingCreditCard || (!selectedCardIdForUpdate && (!cardDataForUpdate.number || !cardDataForUpdate.name || !cardDataForUpdate.expiry || !cardDataForUpdate.cvv))}
+                        >
+                            {isUpdatingCreditCard ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                    Atualizando...
+                                </>
+                            ) : (
+                                "Atualizar Cartão"
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <DialogPasswordConfirmation
+                open={passwordConfirmationDialog}
+                onOpenChange={setPasswordConfirmationDialog}
+                onConfirm={async () => {
+                    try {
+                        await cancelSubscription()
+                        Toast.success("Assinatura cancelada com sucesso")
+                        setPasswordConfirmationDialog(false)
+                        await refetchSubscriptionInfo()
+                        if (user) {
+                            const updatedUser = { ...user }
+                            if (updatedUser.Organizer) {
+                                setUser(updatedUser)
+                            }
+                        }
+                    } catch (error: any) {
+                        console.error("Erro ao cancelar assinatura:", error)
+                        const errorMessage = error?.response?.data?.message || error?.message || "Erro ao cancelar assinatura"
+                        Toast.error(errorMessage)
+                    }
+                }}
+                title="Confirmar Cancelamento"
+                description="Por motivos de segurança, digite sua senha para confirmar o cancelamento da assinatura do CRM Pro."
+            />
         </Background>
     )
 }
