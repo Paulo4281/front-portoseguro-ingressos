@@ -153,6 +153,12 @@ import type { TTemplateResponse } from "@/types/Template/TTemplate"
 import { useOpinionPollFind } from "@/hooks/OpinionPoll/useOpinionPollFind"
 import type { TOpinionPoll } from "@/types/OpinionPoll/TOpinionPoll"
 import { useTagFindClients } from "@/hooks/Tag/useTagFindClients"
+import { useCampaignCreate } from "@/hooks/Campaign/useCampaignCreate"
+import { useCampaignFind } from "@/hooks/Campaign/useCampaignFind"
+import { useCampaignLogFindByCampaignId } from "@/hooks/CampaignLog/useCampaignLogFindByCampaignId"
+import { useCampaignLogQuota } from "@/hooks/CampaignLog/useCampaignLogQuota"
+import type { TCampaign } from "@/types/Campaign/TCampaign"
+import type { TCampaignLog } from "@/types/CampaignLog/TCampaignLog"
 
 type TEmailTemplate = {
     id: string
@@ -174,24 +180,6 @@ type TEmailSegment = {
     count: number
 }
 
-type TEmailHistory = {
-    id: string
-    templateId: string
-    templateName: string
-    subject: string
-    recipientsCount: number
-    sentAt: string
-    status: "sent" | "failed"
-    recipients: Array<{
-        id: string
-        name: string
-        email: string
-        deliveryStatus: "delivered" | "failed" | "pending" | "bounced"
-        opened: boolean
-        openedAt?: string
-        failureReason?: string
-    }>
-}
 
 
 
@@ -237,30 +225,6 @@ const getTemplatePreview = (code: string): string => {
     return previewMap[code] || "Template de e-mail"
 }
 
-const mockEmailSegments: TEmailSegment[] = [
-    {
-        id: "segment-1",
-        name: "Todos os clientes",
-        type: "custom",
-        description: "Todos os clientes que já compraram ingressos",
-        count: 150
-    },
-    {
-        id: "segment-2",
-        name: "Evento: Show de Rock",
-        type: "event",
-        description: "Clientes que compraram ingressos para o Show de Rock",
-        count: 45
-    },
-    {
-        id: "segment-3",
-        name: "Tag: VIP",
-        type: "tag",
-        description: "Clientes com a tag VIP",
-        count: 23
-    }
-]
-
 const TAG_COLORS = [
     { value: "#6C4BFF", label: "Roxo" },
     { value: "#FF6F91", label: "Rosa" },
@@ -271,60 +235,6 @@ const TAG_COLORS = [
     { value: "#F38181", label: "Coral" },
     { value: "#AA96DA", label: "Lavanda" }
 ]
-
-const mockEmailHistory: TEmailHistory[] = Array.from({ length: 20 }, (_, i) => {
-    const templateNames = [
-        "Lembrete de evento",
-        "Oferta especial",
-        "Nutrir público",
-        "Pós-evento",
-        "Pesquisa de satisfação",
-        "Aniversário do cliente",
-        "Lançamento de evento",
-        "Programa de fidelidade"
-    ]
-    const templateName = templateNames[i % templateNames.length]
-    const recipientsCount = Math.floor(Math.random() * 100) + 10
-    const recipients = Array.from({ length: 5 }, (_, j) => {
-        const deliveryStatuses: Array<"delivered" | "failed" | "pending" | "bounced"> = ["delivered", "failed", "pending", "bounced"]
-        const deliveryStatus = deliveryStatuses[Math.floor(Math.random() * deliveryStatuses.length)]
-        const opened = deliveryStatus === "delivered" && Math.random() > 0.3
-        const openedAt = opened ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString() : undefined
-        const failureReasons = [
-            "E-mail inválido",
-            "Caixa de entrada cheia",
-            "Domínio não existe",
-            "Servidor de e-mail indisponível",
-            "Filtro de spam bloqueou o e-mail",
-            "Timeout na entrega"
-        ]
-        const failureReason = (deliveryStatus === "failed" || deliveryStatus === "bounced") 
-            ? failureReasons[Math.floor(Math.random() * failureReasons.length)]
-            : undefined
-
-        return {
-            id: `recipient-${j + 1}`,
-            name: `Cliente ${j + 1}`,
-            email: `cliente${j + 1}@email.com`,
-            deliveryStatus,
-            opened,
-            openedAt,
-            failureReason
-        }
-    })
-    
-    return {
-        id: `email-${i + 1}`,
-        templateId: `template-${i + 1}`,
-        templateName: templateName,
-        subject: `Assunto do e-mail ${i + 1}`,
-        recipientsCount,
-        sentAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-        status: Math.random() > 0.1 ? "sent" : "failed",
-        recipients
-    }
-})
-
 
 const TagValidator = z.object({
     name: z.string().min(1, { error: "O nome da tag é obrigatório" }).max(50, { error: "O nome da tag deve ter no máximo 50 caracteres" }),
@@ -371,7 +281,33 @@ const CRMPannel = () => {
         }))
     }, [templates])
     
-    const [emailHistory] = useState<TEmailHistory[]>(mockEmailHistory)
+    const [campaignsPage, setCampaignsPage] = useState(1)
+    const campaignsOffset = (campaignsPage - 1) * 50
+    
+    const { data: campaignsData, isLoading: campaignsLoading, refetch: refetchCampaigns } = useCampaignFind({
+        offset: campaignsOffset
+    })
+    const campaigns = campaignsData?.data?.data || []
+    
+    const { user, setUser } = useAuthStore()
+    const organizer = useMemo(() => {
+        return user?.Organizer || null
+    }, [user])
+
+    const isPro = useMemo(() => {
+        return organizer?.crmPlan === "PRO"
+    }, [organizer?.crmPlan])
+
+    const { data: quotaData, refetch: refetchQuota } = useCampaignLogQuota()
+    const emailUsed = quotaData?.data?.sentCount || 0
+    const emailLimit = isPro ? 5000 : 100
+    const emailRemaining = quotaData?.data?.remainingQuota || 0
+    
+    const { mutateAsync: createCampaign, isPending: isCreatingCampaign } = useCampaignCreate()
+    
+    const [selectedCampaignId, setSelectedCampaignId] = useState<string | undefined>(undefined)
+    const { data: campaignLogsData, isLoading: campaignLogsLoading } = useCampaignLogFindByCampaignId(selectedCampaignId)
+    const campaignLogs = campaignLogsData?.data || []
     
     const { data: eventsData } = useEventCache()
     const events = eventsData?.data || []
@@ -531,17 +467,6 @@ const CRMPannel = () => {
     const [emailPreviewDialog, setEmailPreviewDialog] = useState(false)
     const [reportsSheetOpen, setReportsSheetOpen] = useState(false)
 
-    const { user, setUser } = useAuthStore()
-    const organizer = useMemo(() => {
-        return user?.Organizer || null
-    }, [user])
-
-    const isPro = useMemo(() => {
-        return organizer?.crmPlan === "PRO"
-    }, [organizer?.crmPlan])
-
-    const emailLimit = isPro ? 5000 : 100
-    const emailUsed = 45
     const tagLimit = 200
     const tagsUsed = tags.length
 
@@ -962,41 +887,27 @@ const CRMPannel = () => {
 
     const handleSendEmail = async (data: TEmailSendForm) => {
         try {
-            const payload: {
-                templateId: string
-                tagIds: string[]
-                eventId?: string
-                couponId?: string
-                opinionPollId?: string
-            } = {
+            const tagIds = data.segments.includes("all") ? ["all"] : data.segments.filter(id => id !== "all")
+            
+            await createCampaign({
                 templateId: data.templateId,
-                tagIds: data.segments
-            }
-
-            if (data.templateFields?.evento) {
-                payload.eventId = data.templateFields.evento
-            }
-
-            if (data.templateFields?.cupom) {
-                payload.couponId = data.templateFields.cupom
-            }
-
-            if (data.templateFields?.opinionPoll) {
-                payload.opinionPollId = data.templateFields.opinionPoll
-            }
-
-            console.log("Enviar e-mail - Payload:", payload)
+                tagIds
+            })
             
             setEmailDialog({ open: false })
             emailForm.reset()
             setSelectedTemplate(null)
             setSelectedEventForTemplate("")
             setSelectedCouponForTemplate("")
+            setSelectedOpinionPollForTemplate("")
             
-            Toast.success("E-mail enviado com sucesso!")
+            await refetchCampaigns()
+            await refetchQuota()
+            
+            Toast.success("Campanha de e-mail criada com sucesso!")
         } catch (error: any) {
-            console.error("Erro ao enviar e-mail:", error)
-            const errorMessage = error?.response?.data?.message || error?.message || "Erro ao enviar e-mail"
+            console.error("Erro ao criar campanha:", error)
+            const errorMessage = error?.response?.data?.message || error?.message || "Erro ao criar campanha de e-mail"
             Toast.error(errorMessage)
         }
     }
@@ -1152,7 +1063,8 @@ const CRMPannel = () => {
         }
     }
 
-    const selectedEmail = emailHistory.find(e => e.id === emailHistoryDialog.emailId)
+    const selectedCampaign = campaigns.find(c => c.id === emailHistoryDialog.emailId)
+    const selectedCampaignTemplate = templates.find(t => t.id === selectedCampaign?.templateId)
 
     return (
         <Background variant="light">
@@ -1187,6 +1099,7 @@ const CRMPannel = () => {
                             <div className="flex items-baseline gap-2 mb-2">
                                 <div className="text-3xl font-bold text-psi-dark">{emailUsed}</div>
                                 <div className="text-sm text-psi-dark/60">/ {emailLimit}</div>
+                                <div className="text-xs text-psi-dark/50 mt-1">({emailRemaining} restantes)</div>
                             </div>
                             <div className="h-2 bg-psi-primary/10 rounded-full overflow-hidden">
                                 <div 
@@ -1761,38 +1674,88 @@ const CRMPannel = () => {
                                         Novo E-mail
                                     </Button>
                                 </div>
-                                <div className="space-y-4">
-                                    {emailHistory.map(email => (
-                                        <Card key={email.id}>
-                                            <div className="p-4">
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <h4 className="font-semibold text-psi-dark">{email.subject}</h4>
-                                                            <Badge variant={email.status === "sent" ? "psi-secondary" : "destructive"}>
-                                                                {email.status === "sent" ? "Enviado" : "Falhou"}
-                                                            </Badge>
-                                                        </div>
-                                                        <div className="text-sm text-psi-dark/60 space-y-1">
-                                                            <p>Template: {email.templateName}</p>
-                                                            <p>Destinatários: {email.recipientsCount}</p>
-                                                            <p>Enviado em: {formatDateTime(email.sentAt)}</p>
-                                                        </div>
-                                                    </div>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => setEmailHistoryDialog({ open: true, emailId: email.id })}
-                                                        className="gap-2"
-                                                    >
-                                                        <Eye className="h-4 w-4" />
-                                                        Ver Detalhes
-                                                    </Button>
-                                                </div>
+                                {campaignsLoading ? (
+                                    <div className="space-y-4">
+                                        {Array.from({ length: 5 }).map((_, i) => (
+                                            <Skeleton key={i} className="h-24 w-full" />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <>
+                                        {campaigns.length === 0 ? (
+                                            <div className="text-center py-8 text-psi-dark/60">
+                                                Nenhuma campanha de e-mail enviada ainda
                                             </div>
-                                        </Card>
-                                    ))}
-                                </div>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                {campaigns.map(campaign => {
+                                                    const template = templates.find(t => t.id === campaign.templateId)
+                                                    const templateName = template?.name || "Template não encontrado"
+                                                    
+                                                    return (
+                                                        <Card key={campaign.id}>
+                                                            <div className="p-4">
+                                                                <div className="flex items-start justify-between">
+                                                                    <div className="flex-1">
+                                                                        <div className="flex items-center gap-2 mb-2">
+                                                                            <h4 className="font-semibold text-psi-dark">{templateName}</h4>
+                                                                            <Badge variant={
+                                                                                campaign.status === "SENT" 
+                                                                                    ? "psi-secondary" 
+                                                                                    : campaign.status === "FAILED"
+                                                                                        ? "destructive"
+                                                                                        : campaign.status === "SENDING"
+                                                                                            ? "secondary"
+                                                                                            : "outline"
+                                                                            }>
+                                                                                {campaign.status === "SENT" 
+                                                                                    ? "Enviado" 
+                                                                                    : campaign.status === "FAILED"
+                                                                                        ? "Falhou"
+                                                                                        : campaign.status === "SENDING"
+                                                                                            ? "Enviando"
+                                                                                            : "Pendente"}
+                                                                            </Badge>
+                                                                        </div>
+                                                                        <div className="text-sm text-psi-dark/60 space-y-1">
+                                                                            <p>Template: {templateName}</p>
+                                                                            <p>Destinatários: {campaign.totalRecipients} ({campaign.sentCount} enviados)</p>
+                                                                            <p>Criado em: {formatDateTime(campaign.createdAt)}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() => {
+                                                                            setEmailHistoryDialog({ open: true, emailId: campaign.id })
+                                                                            setSelectedCampaignId(campaign.id)
+                                                                        }}
+                                                                        className="gap-2"
+                                                                    >
+                                                                        <Eye className="h-4 w-4" />
+                                                                        Ver Detalhes
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        </Card>
+                                                    )
+                                                })}
+                                            </div>
+                                        )}
+                                        {campaignsData?.data && campaignsData.data.total > 50 && (
+                                            <div className="mt-4">
+                                                <Pagination
+                                                    currentPage={campaignsPage}
+                                                    totalPages={Math.ceil(campaignsData.data.total / 50)}
+                                                    onPageChange={(page) => {
+                                                        setCampaignsPage(page)
+                                                        window.scrollTo({ top: 0, behavior: "smooth" })
+                                                    }}
+                                                />
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                             </div>
                         </Card>
                     </div>
@@ -2168,11 +2131,14 @@ const CRMPannel = () => {
                                                         <SelectValue placeholder="Selecione uma categoria (opcional)" />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        {categories.map(category => (
-                                                            <SelectItem key={category.id} value={category.id}>
-                                                                {category.name}
-                                                            </SelectItem>
-                                                        ))}
+                                                        {[...categories]
+                                                            .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))
+                                                            .map(category => (
+                                                                <SelectItem key={category.id} value={category.id}>
+                                                                    {category.name}
+                                                                </SelectItem>
+                                                            ))
+                                                        }
                                                     </SelectContent>
                                                 </Select>
                                                 <p className="text-xs text-psi-dark/50 mt-1">
@@ -2767,7 +2733,7 @@ const CRMPannel = () => {
                         )}
                         <div className="bg-psi-primary/5 border border-psi-primary/20 rounded-lg p-3">
                             <p className="text-sm text-psi-dark/70">
-                                <strong>E-mails restantes este mês:</strong> {emailLimit - emailUsed} / {emailLimit}
+                                <strong>E-mails restantes este mês:</strong> {emailRemaining} / {emailLimit}
                             </p>
                         </div>
                         <SheetFooter className="gap-2">
@@ -2785,8 +2751,15 @@ const CRMPannel = () => {
                                 >
                                     Cancelar
                                 </Button>
-                                <Button type="submit" variant="primary" disabled={emailUsed >= emailLimit}>
-                                    Enviar E-mail
+                                <Button type="submit" variant="primary" disabled={emailRemaining <= 0 || isCreatingCampaign}>
+                                    {isCreatingCampaign ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                            Enviando...
+                                        </>
+                                    ) : (
+                                        "Enviar E-mail"
+                                    )}
                                 </Button>
                             </div>
                         </SheetFooter>
@@ -2902,127 +2875,177 @@ const CRMPannel = () => {
 
             <Dialog open={emailHistoryDialog.open} onOpenChange={(open) => {
                 setEmailHistoryDialog({ open })
+                if (!open) {
+                    setSelectedCampaignId(undefined)
+                }
             }}>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Detalhes do E-mail</DialogTitle>
+                        <DialogTitle>Detalhes da Campanha</DialogTitle>
                         <DialogDescription>
-                            Visualize os detalhes e destinatários do e-mail enviado
+                            Visualize os detalhes e destinatários da campanha de e-mail
                         </DialogDescription>
                     </DialogHeader>
-                    {selectedEmail && (
+                    {selectedCampaign && (
                         <div className="space-y-4">
                             <div>
-                                <h4 className="font-semibold text-psi-dark mb-2">Assunto</h4>
-                                <p className="text-psi-dark/70">{selectedEmail.subject}</p>
-                            </div>
-                            <div>
                                 <h4 className="font-semibold text-psi-dark mb-2">Template</h4>
-                                <p className="text-psi-dark/70">{selectedEmail.templateName}</p>
+                                <p className="text-psi-dark/70">{selectedCampaignTemplate?.name || "Template não encontrado"}</p>
                             </div>
                             <div>
                                 <h4 className="font-semibold text-psi-dark mb-2">Status</h4>
-                                <Badge variant={selectedEmail.status === "sent" ? "psi-secondary" : "destructive"}>
-                                    {selectedEmail.status === "sent" ? "Enviado" : "Falhou"}
+                                <Badge variant={
+                                    selectedCampaign.status === "SENT" 
+                                        ? "psi-secondary" 
+                                        : selectedCampaign.status === "FAILED"
+                                            ? "destructive"
+                                            : selectedCampaign.status === "SENDING"
+                                                ? "secondary"
+                                                : "outline"
+                                }>
+                                    {selectedCampaign.status === "SENT" 
+                                        ? "Enviado" 
+                                        : selectedCampaign.status === "FAILED"
+                                            ? "Falhou"
+                                            : selectedCampaign.status === "SENDING"
+                                                ? "Enviando"
+                                                : "Pendente"}
                                 </Badge>
                             </div>
                             <div>
-                                <h4 className="font-semibold text-psi-dark mb-2">Enviado em</h4>
-                                <p className="text-psi-dark/70">{formatDateTime(selectedEmail.sentAt)}</p>
+                                <h4 className="font-semibold text-psi-dark mb-2">Criado em</h4>
+                                <p className="text-psi-dark/70">{formatDateTime(selectedCampaign.createdAt)}</p>
                             </div>
                             <div>
-                                <h4 className="font-semibold text-psi-dark mb-2">Destinatários ({selectedEmail.recipientsCount})</h4>
-                                <div className="h-60 border border-psi-dark/10 rounded-lg p-4 overflow-y-auto">
-                                    <div className="space-y-3">
-                                        {selectedEmail.recipients.map(recipient => {
-                                            const getDeliveryStatusConfig = () => {
-                                                switch (recipient.deliveryStatus) {
-                                                    case "delivered":
-                                                        return {
-                                                            icon: MailCheck,
-                                                            label: "Entregue",
-                                                            variant: "psi-primary" as const,
-                                                            color: "text-green-600"
-                                                        }
-                                                    case "failed":
-                                                        return {
-                                                            icon: MailX,
-                                                            label: "Falhou",
-                                                            variant: "destructive" as const,
-                                                            color: "text-red-600"
-                                                        }
-                                                    case "bounced":
-                                                        return {
-                                                            icon: MailWarning,
-                                                            label: "Retornou",
-                                                            variant: "destructive" as const,
-                                                            color: "text-orange-600"
-                                                        }
-                                                    case "pending":
-                                                        return {
-                                                            icon: Clock,
-                                                            label: "Pendente",
-                                                            variant: "secondary" as const,
-                                                            color: "text-yellow-600"
-                                                        }
-                                                    default:
-                                                        return {
-                                                            icon: Mail,
-                                                            label: "Desconhecido",
-                                                            variant: "secondary" as const,
-                                                            color: "text-psi-dark/60"
-                                                        }
-                                                }
-                                            }
-
-                                            const statusConfig = getDeliveryStatusConfig()
-                                            const StatusIcon = statusConfig.icon
-
-                                            return (
-                                                <div key={recipient.id} className="border border-psi-dark/10 rounded-lg p-3 hover:bg-psi-primary/5 transition-colors">
-                                                    <div className="flex items-start justify-between gap-3">
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <p className="font-medium text-psi-dark text-sm truncate">
-                                                                    {recipient.name}
-                                                                </p>
-                                            </div>
-                                                            <p className="text-xs text-psi-dark/60 mb-2 truncate">
-                                                                {recipient.email}
-                                                            </p>
-                                                            <div className="flex flex-wrap items-center gap-2">
-                                                                <Badge variant={statusConfig.variant} className="gap-1 text-xs">
-                                                                    <StatusIcon className="h-3 w-3" />
-                                                                    {statusConfig.label}
-                                                                </Badge>
-                                                                {recipient.opened && (
-                                                                    <Badge variant="outline" className="gap-1 text-xs border-green-500 text-green-700">
-                                                                        <MailOpen className="h-3 w-3" />
-                                                                        Aberto
-                                                                    </Badge>
-                                                                )}
+                                <h4 className="font-semibold text-psi-dark mb-2">Destinatários ({selectedCampaign.totalRecipients} total, {selectedCampaign.sentCount} enviados)</h4>
+                                {campaignLogsLoading ? (
+                                    <div className="space-y-2">
+                                        {Array.from({ length: 5 }).map((_, i) => (
+                                            <Skeleton key={i} className="h-16 w-full" />
+                                        ))}
                                     </div>
-                                                            {recipient.failureReason && (
-                                                                <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-                                                                    <div className="flex items-start gap-1">
-                                                                        <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
-                                                                        <span className="font-medium">Motivo da falha:</span>
-                                </div>
-                                                                    <p className="mt-1 ml-4">{recipient.failureReason}</p>
+                                ) : (
+                                    <div className="h-60 border border-psi-dark/10 rounded-lg p-4 overflow-y-auto">
+                                        {campaignLogs.length === 0 ? (
+                                            <p className="text-sm text-psi-dark/60 text-center py-8">
+                                                Nenhum log encontrado para esta campanha
+                                            </p>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {campaignLogs.map(log => {
+                                                    const getDeliveryStatusConfig = () => {
+                                                        switch (log.status) {
+                                                            case "DELIVERED":
+                                                                return {
+                                                                    icon: MailCheck,
+                                                                    label: "Entregue",
+                                                                    variant: "psi-primary" as const,
+                                                                    color: "text-green-600"
+                                                                }
+                                                            case "FAILED":
+                                                                return {
+                                                                    icon: MailX,
+                                                                    label: "Falhou",
+                                                                    variant: "destructive" as const,
+                                                                    color: "text-red-600"
+                                                                }
+                                                            case "BOUNCED":
+                                                                return {
+                                                                    icon: MailWarning,
+                                                                    label: "Retornou",
+                                                                    variant: "destructive" as const,
+                                                                    color: "text-orange-600"
+                                                                }
+                                                            case "PENDING":
+                                                            case "ACCEPTED":
+                                                                return {
+                                                                    icon: Clock,
+                                                                    label: log.status === "ACCEPTED" ? "Aceito" : "Pendente",
+                                                                    variant: "secondary" as const,
+                                                                    color: "text-yellow-600"
+                                                                }
+                                                            case "OPENED":
+                                                                return {
+                                                                    icon: MailOpen,
+                                                                    label: "Aberto",
+                                                                    variant: "psi-secondary" as const,
+                                                                    color: "text-blue-600"
+                                                                }
+                                                            case "CLICKED":
+                                                                return {
+                                                                    icon: MailCheck,
+                                                                    label: "Clicado",
+                                                                    variant: "psi-primary" as const,
+                                                                    color: "text-green-600"
+                                                                }
+                                                            case "COMPLAINED":
+                                                                return {
+                                                                    icon: AlertCircle,
+                                                                    label: "Reclamado",
+                                                                    variant: "destructive" as const,
+                                                                    color: "text-red-600"
+                                                                }
+                                                            case "UNSUBSCRIBED":
+                                                                return {
+                                                                    icon: MailX,
+                                                                    label: "Descadastrado",
+                                                                    variant: "destructive" as const,
+                                                                    color: "text-red-600"
+                                                                }
+                                                            default:
+                                                                return {
+                                                                    icon: Mail,
+                                                                    label: "Desconhecido",
+                                                                    variant: "secondary" as const,
+                                                                    color: "text-psi-dark/60"
+                                                                }
+                                                        }
+                                                    }
+
+                                                    const statusConfig = getDeliveryStatusConfig()
+                                                    const StatusIcon = statusConfig.icon
+
+                                                    return (
+                                                        <div key={log.id} className="border border-psi-dark/10 rounded-lg p-3 hover:bg-psi-primary/5 transition-colors">
+                                                            <div className="flex items-start justify-between gap-3">
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-xs text-psi-dark/60 mb-2 truncate">
+                                                                        {log.email}
+                                                                    </p>
+                                                                    <div className="flex flex-wrap items-center gap-2">
+                                                                        <Badge variant={statusConfig.variant} className="gap-1 text-xs">
+                                                                            <StatusIcon className="h-3 w-3" />
+                                                                            {statusConfig.label}
+                                                                        </Badge>
+                                                                    </div>
+                                                                    {log.errorMessage && (
+                                                                        <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                                                                            <div className="flex items-start gap-1">
+                                                                                <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
+                                                                                <span className="font-medium">Motivo da falha:</span>
+                                                                            </div>
+                                                                            <p className="mt-1 ml-4">{log.errorMessage}</p>
+                                                                        </div>
+                                                                    )}
+                                                                    {log.openedAt && (
+                                                                        <p className="mt-2 text-xs text-psi-dark/50">
+                                                                            Aberto em: {formatDateTime(log.openedAt)}
+                                                                        </p>
+                                                                    )}
+                                                                    {log.clickedAt && (
+                                                                        <p className="mt-2 text-xs text-psi-dark/50">
+                                                                            Clicado em: {formatDateTime(log.clickedAt)}
+                                                                        </p>
+                                                                    )}
                                                                 </div>
-                                                            )}
-                                                            {recipient.openedAt && (
-                                                                <p className="mt-2 text-xs text-psi-dark/50">
-                                                                    Aberto em: {formatDateTime(recipient.openedAt)}
-                                                                </p>
-                                                            )}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                </div>
-                                            )
-                                        })}
+                                                    )
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </div>
                     )}
