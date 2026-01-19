@@ -31,7 +31,7 @@ import { DialogConfirm } from "@/components/Dialog/DialogConfirm/DialogConfirm"
 import { Toast } from "@/components/Toast/Toast"
 import { useEventFindByUserId } from "@/hooks/Event/useEventFindByUserId"
 import { useEventListBuyers } from "@/hooks/Event/useEventListBuyers"
-import type { TEvent, TEventCacheResponse, TEventListBuyers } from "@/types/Event/TEvent"
+import type { TEvent, TEventCacheResponse, TEventListBuyers, TEventBuyerValidationInfo } from "@/types/Event/TEvent"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import { Badge } from "@/components/ui/badge"
@@ -126,6 +126,26 @@ const QrScannerPannel = () => {
         })
     }, [selectedEvent])
 
+    const isTodayEventDate = useMemo(() => {
+        if (!selectedEvent?.EventDates || !Array.isArray(selectedEvent.EventDates)) return false
+        
+        const today = new Date()
+        const todayDateString = today.toISOString().split("T")[0]
+        
+        if (selectedEventDateId === "ALL") {
+            return selectedEvent.EventDates.some(eventDate => {
+                if (!eventDate.date) return false
+                const eventDateString = new Date(eventDate.date).toISOString().split("T")[0]
+                return eventDateString === todayDateString
+            })
+        } else {
+            const selectedDate = selectedEvent.EventDates.find(ed => ed.id === selectedEventDateId)
+            if (!selectedDate?.date) return false
+            const eventDateString = new Date(selectedDate.date).toISOString().split("T")[0]
+            return eventDateString === todayDateString
+        }
+    }, [selectedEvent, selectedEventDateId])
+
     const { data: buyersData, isLoading: isLoadingBuyers, refetch: refetchBuyers } = useEventListBuyers({
         eventId: selectedEventId,
         eventDateId: selectedEventDateId !== "ALL" ? selectedEventDateId : undefined,
@@ -141,9 +161,11 @@ const QrScannerPannel = () => {
     useEffect(() => {
         const next = new Set<string>()
         buyers.forEach((buyer) => {
-            if (buyer.status === "USED" || !!buyer.validationInfo) {
-                next.add(`${buyer.customerName}-${buyer.paymentDate}`)
-            }
+            buyer.eventDates.forEach((eventDate) => {
+                if (eventDate.status === "USED" || eventDate.usedAt) {
+                    next.add(`${buyer.customerName}-${buyer.paymentDate}-${eventDate.date}`)
+                }
+            })
         })
         setValidatedTickets(next)
     }, [buyers])
@@ -172,19 +194,54 @@ const QrScannerPannel = () => {
         return buyers.filter((buyer: TEventListBuyers) => 
             buyer.customerName.toLowerCase().includes(query) ||
             buyer.ticketTypeName?.toLowerCase().includes(query) ||
-            buyer.eventDates.some(date => date.toLowerCase().includes(query))
+            buyer.eventDates.some(eventDate => eventDate.date.toLowerCase().includes(query))
         )
     }, [buyers, searchQuery])
 
+    type TExpandedBuyer = TEventListBuyers & {
+        eventDate: string
+        eventDateStatus?: "USED" | "PENDING" | "CANCELLED" | "REFUNDED" | "CONFIRMED" | null
+        eventDateUsedAt?: string | null
+        eventDateValidationInfo?: TEventBuyerValidationInfo
+        uniqueKey: string
+    }
+
+    const expandedBuyers = useMemo(() => {
+        const expanded: TExpandedBuyer[] = []
+        filteredBuyers.forEach((buyer) => {
+            if (buyer.eventDates && buyer.eventDates.length > 0) {
+                buyer.eventDates.forEach((eventDate) => {
+                    expanded.push({
+                        ...buyer,
+                        eventDate: eventDate.date,
+                        eventDateStatus: eventDate.status,
+                        eventDateUsedAt: eventDate.usedAt,
+                        eventDateValidationInfo: eventDate.validationInfo,
+                        uniqueKey: `${buyer.customerName}-${buyer.paymentDate}-${eventDate.date}`
+                    })
+                })
+            } else {
+                expanded.push({
+                    ...buyer,
+                    eventDate: "",
+                    eventDateStatus: undefined,
+                    eventDateUsedAt: undefined,
+                    eventDateValidationInfo: undefined,
+                    uniqueKey: `${buyer.customerName}-${buyer.paymentDate}`
+                })
+            }
+        })
+        return expanded
+    }, [filteredBuyers])
+
     const validationStats = useMemo(() => {
-        const validatable = filteredBuyers.filter((buyer) => buyer.status !== "CANCELLED" && buyer.status !== "REFUNDED")
+        const validatable = expandedBuyers.filter((buyer) => buyer.status !== "CANCELLED" && buyer.status !== "REFUNDED")
         const total = validatable.length
-        const validated = validatable.filter((buyer: TEventListBuyers) => {
-            const key = `${buyer.customerName}-${buyer.paymentDate}`
-            return validatedTickets.has(key)
+        const validated = validatable.filter((buyer: TExpandedBuyer) => {
+            return validatedTickets.has(buyer.uniqueKey)
         }).length
         return { total, validated, remaining: total - validated }
-    }, [filteredBuyers, validatedTickets])
+    }, [expandedBuyers, validatedTickets])
 
     const formatFormAnswers = (formAnswers: Record<string, any>): string => {
         if (!formAnswers || Object.keys(formAnswers).length === 0) {
@@ -250,7 +307,7 @@ const QrScannerPannel = () => {
         title: "",
         description: ""
     })
-    const [confirmValidateDialog, setConfirmValidateDialog] = useState<{ open: boolean; buyer: TEventListBuyers | null }>({
+    const [confirmValidateDialog, setConfirmValidateDialog] = useState<{ open: boolean; buyer: TExpandedBuyer | null }>({
         open: false,
         buyer: null
     })
@@ -406,10 +463,6 @@ const QrScannerPannel = () => {
             })
             if (response?.success && response?.data) {
                 if (response.data.isValid) {
-                    const buyerKey = findBuyerKeyByTicketId(response.data.ticketId) || findBuyerByQrCode(qrData)
-                    if (buyerKey) {
-                        setValidatedTickets((prev) => new Set([...prev, buyerKey]))
-                    }
                     Toast.success("Ingresso validado com sucesso!")
                     refetchBuyers()
                     return
@@ -451,28 +504,8 @@ const QrScannerPannel = () => {
         }
     }
 
-    const findBuyerByQrCode = (qrData: string): string | null => {
-        for (const buyer of buyers) {
-            const key = `${buyer.customerName}-${buyer.paymentDate}`
-            if (qrData.includes(buyer.customerName) || qrData.includes(key)) {
-                return key
-            }
-        }
-        return null
-    }
 
-    const findBuyerKeyByTicketId = (ticketId?: string | null): string | null => {
-        if (!ticketId) {
-            return null
-        }
-        const buyer = buyers.find((b) => b.ticketId === ticketId)
-        if (!buyer) {
-            return null
-        }
-        return `${buyer.customerName}-${buyer.paymentDate}`
-    }
-
-    const handleValidateTicket = async (buyer: TEventListBuyers) => {
+    const handleValidateTicket = async (buyer: TExpandedBuyer) => {
         if (!buyer.ticketId) {
             Toast.error("Não foi possível validar este ingresso")
             return
@@ -482,8 +515,6 @@ const QrScannerPannel = () => {
             const response = await validateTicketById({ ticketId: buyer.ticketId })
             if (response?.success && response?.data) {
                 if (response.data.isValid) {
-                    const key = `${buyer.customerName}-${buyer.paymentDate}`
-                    setValidatedTickets((prev) => new Set([...prev, key]))
                     Toast.success(`Ingresso de ${buyer.customerName} validado com sucesso!`)
                     refetchBuyers()
                     return
@@ -499,12 +530,15 @@ const QrScannerPannel = () => {
         }
     }
 
-    const handleOpenConfirmValidate = (buyer: TEventListBuyers) => {
+    const handleOpenConfirmValidate = (buyer: TExpandedBuyer) => {
         setConfirmValidateDialog({ open: true, buyer })
     }
 
-    const handleViewMoreInfo = (buyer: TEventListBuyers) => {
-        setBuyerInfoDialog({ open: true, buyer })
+    const handleViewMoreInfo = (buyer: TExpandedBuyer) => {
+        const originalBuyer = buyers.find(b => b.ticketId === buyer.ticketId)
+        if (originalBuyer) {
+            setBuyerInfoDialog({ open: true, buyer: originalBuyer })
+        }
     }
 
     const handleCreateLink = async (data: TTicketScanCreateLinkForm) => {
@@ -784,6 +818,31 @@ const QrScannerPannel = () => {
 
                                         {selectedEventId && (
                                             <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
+                                                {isTodayEventDate ? (
+                                                    <div className="mb-4 p-4 rounded-xl bg-linear-to-r from-green-50 to-emerald-50 border-2 border-green-400 shadow-sm">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="rounded-full bg-green-500 p-2">
+                                                                <CheckCircle2 className="h-5 w-5 text-white" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-semibold text-green-900">Hoje é o dia do evento!</p>
+                                                                <p className="text-sm text-green-700">Você pode validar ingressos normalmente.</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ) : selectedEvent && eventDates.length > 0 ? (
+                                                    <div className="mb-4 p-4 rounded-xl bg-linear-to-r from-amber-50 to-orange-50 border-2 border-amber-400 shadow-sm">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="rounded-full bg-amber-500 p-2">
+                                                                <XCircle className="h-5 w-5 text-white" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-semibold text-amber-900">Hoje não é o dia do evento</p>
+                                                                <p className="text-sm text-amber-700">Aguarde a data correta para validar ingressos.</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ) : null}
                                                 <div className="flex items-center gap-3 mb-5">
                                                     <div className="rounded-lg bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-2">
                                                         <Ticket className="h-5 w-5 text-psi-primary" />
@@ -961,7 +1020,7 @@ const QrScannerPannel = () => {
                                                         <Skeleton className="h-12 w-full" />
                                                         <Skeleton className="h-12 w-full" />
                                                     </div>
-                                                ) : filteredBuyers.length === 0 ? (
+                                                ) : expandedBuyers.length === 0 ? (
                                                     <p className="text-sm text-psi-dark/60 text-center py-8">Nenhum comprador encontrado</p>
                                                 ) : (
                                                     <div className="overflow-x-auto">
@@ -978,22 +1037,22 @@ const QrScannerPannel = () => {
                                                                 </TableRow>
                                                             </TableHeader>
                                                             <TableBody>
-                                                                {filteredBuyers.map((buyer: TEventListBuyers, index: number) => {
-                                                                    const key = `${buyer.customerName}-${buyer.paymentDate}`
-                                                                    const isValidated = validatedTickets.has(key)
-                                                                    const isCancelled = buyer.status === "CANCELLED"
-                                                                    const validatedAt = buyer.validationInfo?.validatedAt
-                                                                    const validatedByOrganizer = buyer.validationInfo?.validatedByOrganizer
+                                                                {expandedBuyers.map((buyer: TExpandedBuyer, index: number) => {
+                                                                    const isValidated = validatedTickets.has(buyer.uniqueKey) || buyer.eventDateStatus === "USED" || !!buyer.eventDateUsedAt
+                                                                    const isCancelled = buyer.status === "CANCELLED" || buyer.eventDateStatus === "CANCELLED"
+                                                                    const validationInfo = buyer.eventDateValidationInfo
+                                                                    const validatedAt = buyer.eventDateUsedAt || validationInfo?.validatedAt
+                                                                    const validatedByOrganizer = validationInfo?.validatedByOrganizer
                                                                     const validatedByText = validatedByOrganizer
                                                                         ? "Organizador"
-                                                                        : buyer.validationInfo?.name
-                                                                            ? buyer.validationInfo.name
+                                                                        : validationInfo?.name
+                                                                            ? validationInfo.name
                                                                             : "Equipe"
                                                                     const validatedWhenText = validatedAt ? DateUtils.formatDate(validatedAt, "DD/MM/YYYY HH:mm") : ""
-                                                                    const validatedLocationText = buyer.validationInfo?.location ? ` • ${buyer.validationInfo.location}` : ""
+                                                                    const validatedLocationText = validationInfo?.location ? ` • ${validationInfo.location}` : ""
                                                                     
                                                                     return (
-                                                                        <TableRow key={index}>
+                                                                        <TableRow key={`${buyer.uniqueKey}-${index}`}>
                                                                             <TableCell>
                                                                                 <div className="space-y-1">
                                                                                     {isCancelled ? (
@@ -1013,7 +1072,7 @@ const QrScannerPannel = () => {
                                                                                         </Badge>
                                                                                     )}
 
-                                                                                    {buyer.validationInfo && !isCancelled && (
+                                                                                    {(validationInfo || buyer.eventDateUsedAt) && !isCancelled && (
                                                                                         <p className="text-[11px] text-psi-dark/60">
                                                                                             {validatedByText}
                                                                                             {validatedLocationText}
@@ -1025,7 +1084,7 @@ const QrScannerPannel = () => {
                                                                             <TableCell className="font-medium">{buyer.customerName}</TableCell>
                                                                             <TableCell>{buyer.ticketTypeName || "-"}</TableCell>
                                                                             <TableCell>
-                                                                                {buyer.eventDates.map((date) => DateUtils.formatDate(date, "DD/MM/YYYY")).join(", ")}
+                                                                                {buyer.eventDate ? DateUtils.formatDate(buyer.eventDate, "DD/MM/YYYY") : "-"}
                                                                             </TableCell>
                                                                             <TableCell>
                                                                                 {buyer.paymentDate 
@@ -1429,9 +1488,30 @@ const QrScannerPannel = () => {
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-xs text-psi-dark/60">Datas do evento</p>
-                                            <p className="text-sm font-medium text-psi-dark">
-                                                {buyerInfoDialog.buyer.eventDates.map((date) => DateUtils.formatDate(date, "DD/MM/YYYY")).join(", ")}
-                                            </p>
+                                            <div className="space-y-1">
+                                                {buyerInfoDialog.buyer.eventDates.map((eventDate, idx) => (
+                                                    <div key={idx} className="flex items-center gap-2">
+                                                        <p className="text-sm font-medium text-psi-dark">
+                                                            {DateUtils.formatDate(eventDate.date, "DD/MM/YYYY")}
+                                                        </p>
+                                                        {eventDate.status === "USED" && eventDate.usedAt && (
+                                                            <Badge variant="default" className="bg-green-600 text-xs">
+                                                                Validado em {DateUtils.formatDate(eventDate.usedAt, "DD/MM/YYYY HH:mm")}
+                                                            </Badge>
+                                                        )}
+                                                        {eventDate.status === "CONFIRMED" && (
+                                                            <Badge variant="outline" className="text-xs">
+                                                                Confirmado
+                                                            </Badge>
+                                                        )}
+                                                        {eventDate.status === "PENDING" && (
+                                                            <Badge variant="outline" className="text-xs">
+                                                                Pendente
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-xs text-psi-dark/60">Data do pagamento</p>
@@ -1449,56 +1529,80 @@ const QrScannerPannel = () => {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <p className="text-xs text-psi-dark/60">Validação</p>
-                                        <div className="rounded-lg border border-psi-primary/10 bg-white p-3">
-                                            {buyerInfoDialog.buyer.validationInfo ? (
-                                                <div className="space-y-2">
-                                                    <div className="flex flex-wrap items-center gap-2 text-sm text-psi-dark/80">
-                                                        <Badge variant="outline">
-                                                            {buyerInfoDialog.buyer.validationInfo.validatedByOrganizer ? "Organizador" : "Equipe"}
-                                                        </Badge>
-                                                        <span>
-                                                            {buyerInfoDialog.buyer.validationInfo.validatedAt
-                                                                ? DateUtils.formatDate(buyerInfoDialog.buyer.validationInfo.validatedAt, "DD/MM/YYYY HH:mm")
-                                                                : "-"}
-                                                        </span>
+                                        <p className="text-xs text-psi-dark/60">Validações por Data</p>
+                                        <div className="space-y-3">
+                                            {buyerInfoDialog.buyer.eventDates.map((eventDate, idx) => (
+                                                <div key={idx} className="rounded-lg border border-psi-primary/10 bg-white p-3">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <p className="text-sm font-medium text-psi-dark">
+                                                            {DateUtils.formatDate(eventDate.date, "DD/MM/YYYY")}
+                                                        </p>
+                                                        {eventDate.status === "USED" && eventDate.usedAt ? (
+                                                            <Badge variant="default" className="bg-green-600">
+                                                                Validado
+                                                            </Badge>
+                                                        ) : eventDate.status === "CONFIRMED" ? (
+                                                            <Badge variant="outline">
+                                                                Confirmado
+                                                            </Badge>
+                                                        ) : (
+                                                            <Badge variant="outline">
+                                                                Pendente
+                                                            </Badge>
+                                                        )}
                                                     </div>
+                                                    {eventDate.validationInfo ? (
+                                                        <div className="space-y-2">
+                                                            <div className="flex flex-wrap items-center gap-2 text-sm text-psi-dark/80">
+                                                                <Badge variant="outline">
+                                                                    {eventDate.validationInfo.validatedByOrganizer ? "Organizador" : "Equipe"}
+                                                                </Badge>
+                                                                <span>
+                                                                    {eventDate.validationInfo.validatedAt
+                                                                        ? DateUtils.formatDate(eventDate.validationInfo.validatedAt, "DD/MM/YYYY HH:mm")
+                                                                        : eventDate.usedAt
+                                                                            ? DateUtils.formatDate(eventDate.usedAt, "DD/MM/YYYY HH:mm")
+                                                                            : "-"}
+                                                                </span>
+                                                            </div>
 
-                                                    <div className="text-xs text-psi-dark/70">
-                                                        <span className="font-medium text-psi-dark">Método:</span>{" "}
-                                                        {buyerInfoDialog.buyer.validationInfo.method === "qr-scan"
-                                                            ? "Câmera"
-                                                            : buyerInfoDialog.buyer.validationInfo.method === "qr-image"
-                                                                ? "Foto"
-                                                                : buyerInfoDialog.buyer.validationInfo.method === "button"
-                                                                    ? "Botão"
-                                                                    : "-"}
-                                                    </div>
+                                                            <div className="text-xs text-psi-dark/70">
+                                                                <span className="font-medium text-psi-dark">Método:</span>{" "}
+                                                                {eventDate.validationInfo.method === "qr-scan"
+                                                                    ? "Câmera"
+                                                                    : eventDate.validationInfo.method === "qr-image"
+                                                                        ? "Foto"
+                                                                        : eventDate.validationInfo.method === "button"
+                                                                            ? "Botão"
+                                                                            : "-"}
+                                                            </div>
 
-                                                    {!buyerInfoDialog.buyer.validationInfo.validatedByOrganizer && (
-                                                        <div className="grid gap-3 sm:grid-cols-2 text-xs text-psi-dark/70">
-                                                            <div>
-                                                                <span className="font-medium text-psi-dark">Nome:</span>{" "}
-                                                                {buyerInfoDialog.buyer.validationInfo.name || "-"}
-                                                            </div>
-                                                            <div>
-                                                                <span className="font-medium text-psi-dark">Local:</span>{" "}
-                                                                {buyerInfoDialog.buyer.validationInfo.location || "-"}
-                                                            </div>
-                                                            <div>
-                                                                <span className="font-medium text-psi-dark">IP:</span>{" "}
-                                                                {buyerInfoDialog.buyer.validationInfo.ip || "-"}
-                                                            </div>
-                                                            <div>
-                                                                <span className="font-medium text-psi-dark">Código do link de validação:</span>{" "}
-                                                                {buyerInfoDialog.buyer.validationInfo.code || "-"}
-                                                            </div>
+                                                            {!eventDate.validationInfo.validatedByOrganizer && (
+                                                                <div className="grid gap-3 sm:grid-cols-2 text-xs text-psi-dark/70">
+                                                                    <div>
+                                                                        <span className="font-medium text-psi-dark">Nome:</span>{" "}
+                                                                        {eventDate.validationInfo.name || "-"}
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="font-medium text-psi-dark">Local:</span>{" "}
+                                                                        {eventDate.validationInfo.location || "-"}
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="font-medium text-psi-dark">IP:</span>{" "}
+                                                                        {eventDate.validationInfo.ip || "-"}
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className="font-medium text-psi-dark">Código do link de validação:</span>{" "}
+                                                                        {eventDate.validationInfo.code || "-"}
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
+                                                    ) : (
+                                                        <p className="text-xs text-psi-dark/60">Ainda não validado.</p>
                                                     )}
                                                 </div>
-                                            ) : (
-                                                <p className="text-sm text-psi-dark/60">Ainda não validado.</p>
-                                            )}
+                                            ))}
                                         </div>
                                     </div>
 

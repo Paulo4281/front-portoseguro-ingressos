@@ -159,6 +159,7 @@ import { useCampaignLogFindByCampaignId } from "@/hooks/CampaignLog/useCampaignL
 import { useCampaignLogQuota } from "@/hooks/CampaignLog/useCampaignLogQuota"
 import type { TCampaign } from "@/types/Campaign/TCampaign"
 import type { TCampaignLog } from "@/types/CampaignLog/TCampaignLog"
+import { DocumentUtils } from "@/utils/Helpers/DocumentUtils/DocumentUtils"
 
 type TEmailTemplate = {
     id: string
@@ -1347,7 +1348,7 @@ const CRMPannel = () => {
                                                             </TableCell>
                                                             <TableCell className="font-medium">{customer.name}</TableCell>
                                                             <TableCell>{customer.email}</TableCell>
-                                                            <TableCell>{customer.phone}</TableCell>
+                                                            <TableCell>{DocumentUtils.formatPhone(customer.phone || "")}</TableCell>
                                                             <TableCell>{customer.totalPurchases}</TableCell>
                                                             <TableCell>{ValueUtils.centsToCurrency(customer.totalSpent)}</TableCell>
                                                             <TableCell>{formatDate(customer.lastPurchaseDate)}</TableCell>
