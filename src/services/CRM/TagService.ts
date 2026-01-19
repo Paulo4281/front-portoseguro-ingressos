@@ -57,6 +57,28 @@ class TagServiceClass {
 
         return response
     }
+
+    async findClientsByTagId(id: string): Promise<TApiResponse<Array<{
+        id: string
+        userId: string
+        firstName: string
+        lastName: string
+        email: string
+        phone: string | null
+        tagClientId: string
+        createdAt: string
+    }>>> {
+        const response = (await API.GET({
+            prefix: "/crm",
+            url: `/tag/list-clients/${id}`
+        }))?.data
+
+        if (!response) {
+            throw new Error("Erro ao buscar clientes da tag")
+        }
+
+        return response
+    }
 }
 
 export const TagService = new TagServiceClass()

@@ -148,11 +148,15 @@ import { useSubscriptionCancel } from "@/hooks/Subscription/useSubscriptionCance
 import { useSubscriptionUpdateCreditCard } from "@/hooks/Subscription/useSubscriptionUpdateCreditCard"
 import type { TCreateCRMProSubscription, TUpdateSubscriptionCreditCard } from "@/types/Subscription/TSubscription"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
-
-
+import { useTemplateFind } from "@/hooks/Template/useTemplateFind"
+import type { TTemplateResponse } from "@/types/Template/TTemplate"
+import { useOpinionPollFind } from "@/hooks/OpinionPoll/useOpinionPollFind"
+import type { TOpinionPoll } from "@/types/OpinionPoll/TOpinionPoll"
+import { useTagFindClients } from "@/hooks/Tag/useTagFindClients"
 
 type TEmailTemplate = {
     id: string
+    code: string
     name: string
     subject: string
     body: string
@@ -191,85 +195,47 @@ type TEmailHistory = {
 
 
 
-const getEmailTemplates = (): TEmailTemplate[] => [
-    {
-        id: "template-lembrete",
-        name: "Lembrete de evento",
-        subject: "Lembrete: {{evento}} está chegando!",
-        body: "Olá {{nome}},\n\nEste é um lembrete de que o evento {{evento}} acontecerá em breve!\n\nData: {{data}}\nLocal: {{local}}\n\nNão perca esta oportunidade!\n\nAguardamos você!",
-        editableFields: ["evento"],
-        preview: "Envie lembretes para seus clientes sobre eventos próximos",
-        icon: <Bell className="h-6 w-6" />
-    },
-    {
-        id: "template-oferta",
-        name: "Oferta especial",
-        subject: "Oferta especial para você!",
-        body: "Olá {{nome}},\n\nTemos uma oferta especial para você!\n\nUse o cupom {{cupomCodigo}} e ganhe {{cupomDesconto}} de desconto!\n\n{{cupomDescricao}}\n\nAproveite esta oportunidade única!",
-        editableFields: ["cupom"],
-        preview: "Compartilhe ofertas e promoções especiais com cupons de desconto",
-        icon: <Gift className="h-6 w-6" />
-    },
-    {
-        id: "template-nutrir",
-        name: "Nutrir público",
-        subject: "Conheça nossos eventos!",
-        body: "Olá {{nome}},\n\nQue tal conhecer nossos eventos incríveis?\n\n{{eventoTexto}}\n\nAcesse nossa plataforma e descubra todas as opções disponíveis!\n\nSiga-nos nas redes sociais para ficar por dentro de todas as novidades.\n\nEsperamos você!",
-        editableFields: ["evento"],
-        preview: "Convide seu público a conhecer seus eventos e redes sociais",
-        icon: <Heart className="h-6 w-6" />
-    },
-    {
-        id: "template-pos-evento",
-        name: "Pós-evento",
-        subject: "Obrigado por participar!",
-        body: "Olá {{nome}},\n\nObrigado por participar do {{evento}}!\n\nEsperamos que tenha se divertido e aproveitado cada momento.\n\nFique atento aos nossos próximos eventos - temos muitas surpresas preparadas para você!\n\nAté breve!",
-        editableFields: [],
-        preview: "Agradeça seus clientes após o evento e mantenha o relacionamento",
-        icon: <CheckCircle className="h-6 w-6" />,
-        isPremium: true
-    },
-    {
-        id: "template-pesquisa",
-        name: "Pesquisa de satisfação",
-        subject: "Sua opinião é importante!",
-        body: "Olá {{nome}},\n\nGostaríamos muito de saber sua opinião sobre o evento {{evento}} que você participou.\n\nSua avaliação é fundamental para melhorarmos cada vez mais!\n\nPor favor, responda nossa pesquisa rápida clicando no link abaixo.\n\nObrigado pela sua participação!",
-        editableFields: [],
-        preview: "Colete feedback dos seus clientes para melhorar seus eventos",
-        icon: <ThumbsUp className="h-6 w-6" />,
-        isPremium: true
-    },
-    {
-        id: "template-aniversario",
-        name: "Aniversário do cliente",
-        subject: "Feliz aniversário!",
-        body: "Olá {{nome}},\n\nHoje é um dia especial - seu aniversário!\n\nQueremos te parabenizar e oferecer um presente especial: {{cupomDesconto}} de desconto em qualquer um dos nossos eventos!\n\nUse o cupom {{cupomCodigo}} e comemore conosco!\n\nFeliz aniversário e muitas felicidades!",
-        editableFields: [],
-        preview: "Parabenize clientes no aniversário com ofertas especiais",
-        icon: <Star className="h-6 w-6" />,
-        isPremium: true
-    },
-    {
-        id: "template-lancamento",
-        name: "Lançamento de evento",
-        subject: "Novo evento disponível!",
-        body: "Olá {{nome}},\n\nTemos uma novidade incrível para você!\n\nAcabamos de lançar um novo evento: {{evento}}\n\nData: {{data}}\nLocal: {{local}}\n\nSeja um dos primeiros a garantir seu ingresso!\n\nNão perca esta oportunidade!",
-        editableFields: ["evento"],
-        preview: "Anuncie novos eventos para seus clientes",
-        icon: <TrendingUp className="h-6 w-6" />,
-        isPremium: true
-    },
-    {
-        id: "template-fidelidade",
-        name: "Programa de fidelidade",
-        subject: "Você é um cliente especial!",
-        body: "Olá {{nome}},\n\nQueremos agradecer sua fidelidade!\n\nPor ser um cliente especial, você ganhou {{cupomDesconto}} de desconto em qualquer evento!\n\nUse o cupom {{cupomCodigo}} e aproveite!\n\nObrigado por fazer parte da nossa história!",
-        editableFields: [],
-        preview: "Recompense clientes fiéis com ofertas exclusivas",
-        icon: <Award className="h-6 w-6" />,
-        isPremium: true
+const getTemplateIcon = (code: string): ReactNode => {
+    const iconMap: Record<string, ReactNode> = {
+        "template-lembrete": <Bell className="h-6 w-6" />,
+        "template-oferta": <Gift className="h-6 w-6" />,
+        "template-nutrir": <Heart className="h-6 w-6" />,
+        "template-pos-evento": <CheckCircle className="h-6 w-6" />,
+        "template-pesquisa": <ThumbsUp className="h-6 w-6" />,
+        "template-aniversario": <Star className="h-6 w-6" />,
+        "template-lancamento": <TrendingUp className="h-6 w-6" />,
+        "template-fidelidade": <Award className="h-6 w-6" />
     }
-]
+    return iconMap[code] || <Mail className="h-6 w-6" />
+}
+
+const getTemplateEditableFields = (code: string): string[] => {
+    const fieldsMap: Record<string, string[]> = {
+        "template-lembrete": ["evento"],
+        "template-oferta": ["cupom"],
+        "template-nutrir": ["evento"],
+        "template-pos-evento": ["evento"],
+        "template-pesquisa": ["opinionPoll"],
+        "template-aniversario": [],
+        "template-lancamento": ["evento"],
+        "template-fidelidade": []
+    }
+    return fieldsMap[code] || []
+}
+
+const getTemplatePreview = (code: string): string => {
+    const previewMap: Record<string, string> = {
+        "template-lembrete": "Envie lembretes para seus clientes sobre eventos próximos",
+        "template-oferta": "Compartilhe ofertas e promoções especiais com cupons de desconto",
+        "template-nutrir": "Convide seu público a conhecer seus eventos e redes sociais",
+        "template-pos-evento": "Agradeça seus clientes após o evento e mantenha o relacionamento",
+        "template-pesquisa": "Colete feedback dos seus clientes para melhorar seus eventos",
+        "template-aniversario": "Parabenize clientes no aniversário com ofertas especiais",
+        "template-lancamento": "Anuncie novos eventos para seus clientes",
+        "template-fidelidade": "Recompense clientes fiéis com ofertas exclusivas"
+    }
+    return previewMap[code] || "Template de e-mail"
+}
 
 const mockEmailSegments: TEmailSegment[] = [
     {
@@ -307,8 +273,17 @@ const TAG_COLORS = [
 ]
 
 const mockEmailHistory: TEmailHistory[] = Array.from({ length: 20 }, (_, i) => {
-    const templates = getEmailTemplates()
-    const template = templates[i % templates.length]
+    const templateNames = [
+        "Lembrete de evento",
+        "Oferta especial",
+        "Nutrir público",
+        "Pós-evento",
+        "Pesquisa de satisfação",
+        "Aniversário do cliente",
+        "Lançamento de evento",
+        "Programa de fidelidade"
+    ]
+    const templateName = templateNames[i % templateNames.length]
     const recipientsCount = Math.floor(Math.random() * 100) + 10
     const recipients = Array.from({ length: 5 }, (_, j) => {
         const deliveryStatuses: Array<"delivered" | "failed" | "pending" | "bounced"> = ["delivered", "failed", "pending", "bounced"]
@@ -340,9 +315,9 @@ const mockEmailHistory: TEmailHistory[] = Array.from({ length: 20 }, (_, i) => {
     
     return {
         id: `email-${i + 1}`,
-        templateId: template.id,
-        templateName: template.name,
-        subject: template.subject,
+        templateId: `template-${i + 1}`,
+        templateName: templateName,
+        subject: `Assunto do e-mail ${i + 1}`,
         recipientsCount,
         sentAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
         status: Math.random() > 0.1 ? "sent" : "failed",
@@ -379,7 +354,23 @@ type TObservationForm = z.infer<typeof ObservationValidator>
 type TEmailSendForm = z.infer<typeof EmailSendValidator>
 
 const CRMPannel = () => {
-    const emailTemplates = getEmailTemplates()
+    const { data: templatesData, isLoading: templatesLoading } = useTemplateFind()
+    const templates = templatesData?.data || []
+    
+    const emailTemplates = useMemo<TEmailTemplate[]>(() => {
+        return templates.map((template: TTemplateResponse) => ({
+            id: template.id,
+            code: template.code,
+            name: template.name,
+            subject: template.subject,
+            body: template.body,
+            editableFields: getTemplateEditableFields(template.code),
+            preview: getTemplatePreview(template.code),
+            icon: getTemplateIcon(template.code),
+            isPremium: template.plan === "PRO"
+        }))
+    }, [templates])
+    
     const [emailHistory] = useState<TEmailHistory[]>(mockEmailHistory)
     
     const { data: eventsData } = useEventCache()
@@ -390,6 +381,9 @@ const CRMPannel = () => {
     
     const { data: couponsData } = useCouponFind()
     const coupons = couponsData?.data || []
+
+    const { data: opinionPollsData, isLoading: opinionPollsLoading } = useOpinionPollFind()
+    const opinionPolls = opinionPollsData?.data || []
 
     const { data: tagsData, isLoading: tagsLoading, refetch: refetchTags } = useTagFind()
     const tags = tagsData?.data || []
@@ -511,9 +505,17 @@ const CRMPannel = () => {
         cvv: ""
     })
     const [selectedTemplate, setSelectedTemplate] = useState<TEmailTemplate | null>(null)
-    const [emailSegments] = useState<TEmailSegment[]>(mockEmailSegments)
     const [selectedEventForTemplate, setSelectedEventForTemplate] = useState<string>("")
     const [selectedCouponForTemplate, setSelectedCouponForTemplate] = useState<string>("")
+    const [selectedOpinionPollForTemplate, setSelectedOpinionPollForTemplate] = useState<string>("")
+    const [viewTagClientsDialog, setViewTagClientsDialog] = useState<{
+        open: boolean
+        tagId?: string
+        tagName?: string
+    }>({
+        open: false
+    })
+    const [selectedTagIdForClients, setSelectedTagIdForClients] = useState<string | undefined>(undefined)
     const [exportDialog, setExportDialog] = useState(false)
     const [selectedExportSegment, setSelectedExportSegment] = useState<string>("")
     const [isGenerating, setIsGenerating] = useState(false)
@@ -739,6 +741,34 @@ const CRMPannel = () => {
     const totalFiltered = customersData?.data?.totalFiltered || 0
     const totalPages = Math.ceil(totalFiltered / limit)
 
+    const { data: tagClientsData, isLoading: tagClientsLoading } = useTagFindClients(selectedTagIdForClients)
+    const tagClients = tagClientsData?.data || []
+
+    const emailSegments = useMemo<TEmailSegment[]>(() => {
+        const segments: TEmailSegment[] = [
+            {
+                id: "all",
+                name: "Todos os clientes",
+                type: "custom",
+                description: "Todos os clientes que já compraram ingressos",
+                count: totalCustomers
+            }
+        ]
+        
+        tags.forEach(tag => {
+            const clientsWithTag = customers.filter(c => c.tags.some(t => t.id === tag.id)).length
+            segments.push({
+                id: tag.id,
+                name: tag.name,
+                type: "tag",
+                description: `Clientes com a tag ${tag.name}`,
+                count: clientsWithTag
+            })
+        })
+        
+        return segments
+    }, [tags, customers, totalCustomers])
+
     const toggleRow = (customerId: string) => {
         setOpenRows(prev => ({
             ...prev,
@@ -930,10 +960,45 @@ const CRMPannel = () => {
         }
     }
 
-    const handleSendEmail = (data: TEmailSendForm) => {
-        console.log("Enviar e-mail:", data)
-        setEmailDialog({ open: false })
-        emailForm.reset()
+    const handleSendEmail = async (data: TEmailSendForm) => {
+        try {
+            const payload: {
+                templateId: string
+                tagIds: string[]
+                eventId?: string
+                couponId?: string
+                opinionPollId?: string
+            } = {
+                templateId: data.templateId,
+                tagIds: data.segments
+            }
+
+            if (data.templateFields?.evento) {
+                payload.eventId = data.templateFields.evento
+            }
+
+            if (data.templateFields?.cupom) {
+                payload.couponId = data.templateFields.cupom
+            }
+
+            if (data.templateFields?.opinionPoll) {
+                payload.opinionPollId = data.templateFields.opinionPoll
+            }
+
+            console.log("Enviar e-mail - Payload:", payload)
+            
+            setEmailDialog({ open: false })
+            emailForm.reset()
+            setSelectedTemplate(null)
+            setSelectedEventForTemplate("")
+            setSelectedCouponForTemplate("")
+            
+            Toast.success("E-mail enviado com sucesso!")
+        } catch (error: any) {
+            console.error("Erro ao enviar e-mail:", error)
+            const errorMessage = error?.response?.data?.message || error?.message || "Erro ao enviar e-mail"
+            Toast.error(errorMessage)
+        }
     }
 
     const handleTemplateSelect = (templateId: string) => {
@@ -959,20 +1024,29 @@ const CRMPannel = () => {
         let preview = selectedTemplate.body
         const selectedEvent = events.find(e => e.id === selectedEventForTemplate)
         const selectedCoupon = coupons.find((c: TCoupon) => c.id === selectedCouponForTemplate)
+        const selectedPoll = opinionPolls.find((p: TOpinionPoll) => p.id === selectedOpinionPollForTemplate)
         
         preview = preview.replace(/\{\{nome\}\}/g, "{\{nome\}\}")
         
         if (selectedEvent) {
             preview = preview.replace(/\{\{evento\}\}/g, selectedEvent.name)
             const firstDate = selectedEvent.EventDates?.[0]
+            const dateText = firstDate?.date 
+                ? new Date(firstDate.date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })
+                : "[Data do evento]"
+            const eventDescription = `Confira o evento "${selectedEvent.name}" que acontecerá em ${dateText}.`
+            preview = preview.replace(/\[Descrição do evento\]/g, eventDescription)
             if (firstDate?.date) {
-                const date = new Date(firstDate.date)
-                preview = preview.replace(/\{\{data\}\}/g, date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" }))
+                preview = preview.replace(/\{\{data\}\}/g, dateText)
             } else {
                 preview = preview.replace(/\{\{data\}\}/g, "[Data do evento]")
             }
             const locationText = selectedEvent.location || "Local ainda não definido"
             preview = preview.replace(/\{\{local\}\}/g, locationText)
+        } else if (selectedPoll) {
+            const eventName = selectedPoll.event.name.split(" -")[0].trim()
+            preview = preview.replace(/\{\{evento\}\}/g, eventName)
+            preview = preview.replace(/\[Selecione um evento\]/g, eventName)
         } else {
             preview = preview.replace(/\{\{evento\}\}/g, "[Selecione um evento]")
             preview = preview.replace(/\{\{data\}\}/g, "[Data do evento]")
@@ -994,14 +1068,24 @@ const CRMPannel = () => {
             preview = preview.replace(/\{\{cupomDescricao\}\}/g, "[Descrição do cupom]")
         }
         
-        if (selectedTemplate.id === "template-nutrir" && selectedEvent) {
+        if (selectedTemplate.code === "template-nutrir" && selectedEvent) {
             const firstDate = selectedEvent.EventDates?.[0]
             const dateText = firstDate?.date 
                 ? new Date(firstDate.date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })
                 : "[Data do evento]"
-            preview = preview.replace(/\{\{eventoTexto\}\}/g, `Confira o evento "${selectedEvent.name}" que acontecerá em ${dateText}.`)
-        } else {
+            const eventDescription = `Confira o evento "${selectedEvent.name}" que acontecerá em ${dateText}.`
+            preview = preview.replace(/\{\{eventoTexto\}\}/g, eventDescription)
+            preview = preview.replace(/\[Descrição do evento\]/g, eventDescription)
+        } else if (selectedTemplate.code === "template-nutrir") {
             preview = preview.replace(/\{\{eventoTexto\}\}/g, "[Descrição do evento]")
+        }
+        
+        if (selectedTemplate.code === "template-pesquisa" && selectedPoll) {
+            const eventName = selectedPoll.event.name.split(" -")[0].trim()
+            preview = preview.replace(/\[Selecione um evento\]/g, eventName)
+            preview = preview.replace(/\{\{evento\}\}/g, eventName)
+        } else if (selectedTemplate.code === "template-pesquisa") {
+            preview = preview.replace(/\[Selecione um evento\]/g, "[Selecione um evento]")
         }
         
         return preview
@@ -2355,33 +2439,41 @@ const CRMPannel = () => {
                     <form onSubmit={emailForm.handleSubmit(handleSendEmail)} className="space-y-6 mt-6 mx-4">
                         <div>
                             <label className="text-sm font-medium text-psi-dark mb-3 block">Selecione um Template</label>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {emailTemplates.map(template => (
-                                    <button
-                                        key={template.id}
-                                        type="button"
-                                        onClick={() => handleTemplateSelect(template.id)}
-                                        disabled={template.isPremium && !isPro}
-                                        className={`p-4 rounded-lg border-2 text-left transition-all relative ${
-                                            selectedTemplate?.id === template.id
-                                                ? "border-psi-primary bg-psi-primary/5"
-                                                : "border-psi-dark/10 hover:border-psi-primary/50"
-                                        } ${template.isPremium && !isPro ? "opacity-60 cursor-not-allowed" : ""}`}
-                                    >
-                                        {template.isPremium && (
-                                            <div className="absolute top-2 right-2">
-                                                <Badge variant="psi-tertiary" className="text-xs gap-1">
-                                                    <Crown className="h-3 w-3" />
-                                                    Premium
-                                                </Badge>
-                                            </div>
-                                        )}
-                                        <div className="mb-2 text-psi-primary">{template.icon}</div>
-                                        <h4 className="font-semibold text-psi-dark mb-1">{template.name}</h4>
-                                        <p className="text-xs text-psi-dark/60">{template.preview}</p>
-                                    </button>
-                                ))}
-                            </div>
+                            {templatesLoading ? (
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {Array.from({ length: 6 }).map((_, i) => (
+                                        <Skeleton key={i} className="h-32 w-full" />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {emailTemplates.map((template: TEmailTemplate) => (
+                                        <button
+                                            key={template.id}
+                                            type="button"
+                                            onClick={() => handleTemplateSelect(template.id)}
+                                            disabled={template.isPremium && !isPro}
+                                            className={`p-4 rounded-lg border-2 text-left transition-all relative ${
+                                                selectedTemplate?.id === template.id
+                                                    ? "border-psi-primary bg-psi-primary/5"
+                                                    : "border-psi-dark/10 hover:border-psi-primary/50"
+                                            } ${template.isPremium && !isPro ? "opacity-60 cursor-not-allowed" : ""}`}
+                                        >
+                                            {template.isPremium && (
+                                                <div className="absolute top-2 right-2">
+                                                    <Badge variant="psi-tertiary" className="text-xs gap-1">
+                                                        <Crown className="h-3 w-3" />
+                                                        Premium
+                                                    </Badge>
+                                                </div>
+                                            )}
+                                            <div className="mb-2 text-psi-primary">{template.icon}</div>
+                                            <h4 className="font-semibold text-psi-dark mb-1">{template.name}</h4>
+                                            <p className="text-xs text-psi-dark/60">{template.preview}</p>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                             {emailForm.formState.errors.templateId && (
                                 <p className="text-sm text-destructive mt-2">{emailForm.formState.errors.templateId.message}</p>
                             )}
@@ -2528,6 +2620,56 @@ const CRMPannel = () => {
                                                         </div>
                                                     )
                                                 }
+                                                if (field === "opinionPoll") {
+                                                    return (
+                                                        <div key={field}>
+                                                            <label className="text-sm font-medium text-psi-dark mb-1 block">
+                                                                Pesquisa de Opinião
+                                                            </label>
+                                                            <Select
+                                                                value={selectedOpinionPollForTemplate}
+                                                                onValueChange={(value) => {
+                                                                    setSelectedOpinionPollForTemplate(value)
+                                                                    emailForm.setValue("templateFields.opinionPoll", value)
+                                                                }}
+                                                            >
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="Selecione uma pesquisa de opinião" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {opinionPolls.length === 0 ? (
+                                                                        <SelectItem value="no-polls" disabled>
+                                                                            Nenhuma pesquisa disponível
+                                                                        </SelectItem>
+                                                                    ) : (
+                                                                        opinionPolls.map((poll: TOpinionPoll) => (
+                                                                            <SelectItem key={poll.id} value={poll.id}>
+                                                                                {poll.event.name} - {poll.commentsCount} comentários
+                                                                            </SelectItem>
+                                                                        ))
+                                                                    )}
+                                                                </SelectContent>
+                                                            </Select>
+                                                            {selectedOpinionPollForTemplate && (() => {
+                                                                const selectedPoll = opinionPolls.find((p: TOpinionPoll) => p.id === selectedOpinionPollForTemplate)
+                                                                if (!selectedPoll) return null
+                                                                return (
+                                                                    <div className="mt-2 p-2 bg-psi-primary/5 rounded border border-psi-primary/20">
+                                                                        <p className="text-xs text-psi-dark/60">
+                                                                            <strong>Evento:</strong> {selectedPoll.event.name}
+                                                                        </p>
+                                                                        <p className="text-xs text-psi-dark/60 mt-1">
+                                                                            <strong>Comentários:</strong> {selectedPoll.commentsCount}
+                                                                        </p>
+                                                                        <p className="text-xs text-psi-dark/60 mt-1">
+                                                                            <strong>Avaliação média:</strong> {selectedPoll.averageStars.toFixed(1)} ⭐
+                                                                        </p>
+                                                                    </div>
+                                                                )
+                                                            })()}
+                                                        </div>
+                                                    )
+                                                }
                                                 return (
                                                     <div key={field}>
                                                         <label className="text-sm font-medium text-psi-dark mb-1 block capitalize">
@@ -2575,25 +2717,45 @@ const CRMPannel = () => {
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <h5 className="font-medium text-psi-dark">{segment.name}</h5>
                                                         <Badge variant="outline" className="text-xs">
-                                                            {segment.type === "event" ? "Evento" : segment.type === "tag" ? "Tag" : "Personalizado"}
+                                                            {segment.type === "tag" ? "Tag" : "Todos"}
                                                         </Badge>
                                                     </div>
                                                     <p className="text-xs text-psi-dark/60">{segment.description}</p>
                                                     <p className="text-xs text-psi-dark/50 mt-1">{segment.count} destinatários</p>
                                                 </div>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={emailForm.watch("segments")?.includes(segment.id) || false}
-                                                    onChange={(e) => {
-                                                        const current = emailForm.watch("segments") || []
-                                                        if (e.target.checked) {
-                                                            emailForm.setValue("segments", [...current, segment.id])
-                                                        } else {
-                                                            emailForm.setValue("segments", current.filter(id => id !== segment.id))
-                                                        }
-                                                    }}
-                                                    className="ml-4"
-                                                />
+                                                <div className="flex items-center gap-2">
+                                                    {segment.type === "tag" && segment.id !== "all" && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setViewTagClientsDialog({
+                                                                    open: true,
+                                                                    tagId: segment.id,
+                                                                    tagName: segment.name
+                                                                })
+                                                                setSelectedTagIdForClients(segment.id)
+                                                            }}
+                                                            className="h-7 w-7 p-0"
+                                                        >
+                                                            <Eye className="h-3 w-3" />
+                                                        </Button>
+                                                    )}
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={emailForm.watch("segments")?.includes(segment.id) || false}
+                                                        onChange={(e) => {
+                                                            const current = emailForm.watch("segments") || []
+                                                            if (e.target.checked) {
+                                                                emailForm.setValue("segments", [...current, segment.id])
+                                                            } else {
+                                                                emailForm.setValue("segments", current.filter(id => id !== segment.id))
+                                                            }
+                                                        }}
+                                                        className="ml-4"
+                                                    />
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -4286,6 +4448,62 @@ const CRMPannel = () => {
                 title="Confirmar Cancelamento"
                 description="Por motivos de segurança, digite sua senha para confirmar o cancelamento da assinatura do CRM Pro."
             />
+
+            <Dialog open={viewTagClientsDialog.open} onOpenChange={(open) => {
+                setViewTagClientsDialog({ open })
+                if (!open) {
+                    setSelectedTagIdForClients(undefined)
+                }
+            }}>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Clientes com a Tag "{viewTagClientsDialog.tagName}"</DialogTitle>
+                        <DialogDescription>
+                            Lista de todos os clientes que possuem esta tag
+                        </DialogDescription>
+                    </DialogHeader>
+                    {tagClientsLoading ? (
+                        <div className="space-y-4 py-4">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                                <Skeleton key={i} className="h-16 w-full" />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="space-y-2 max-h-96 overflow-y-auto">
+                            {tagClients.length === 0 ? (
+                                <p className="text-sm text-psi-dark/60 text-center py-8">
+                                    Nenhum cliente encontrado com esta tag
+                                </p>
+                            ) : (
+                                tagClients.map(client => (
+                                    <div key={client.id} className="p-3 border border-psi-dark/10 rounded-lg hover:bg-psi-primary/5 transition-colors">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="font-medium text-psi-dark">{client.firstName} {client.lastName}</p>
+                                                <p className="text-sm text-psi-dark/60">{client.email}</p>
+                                                {client.phone && (
+                                                    <p className="text-xs text-psi-dark/50 mt-1">{client.phone}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setViewTagClientsDialog({ open: false })
+                                setSelectedTagIdForClients(undefined)
+                            }}
+                        >
+                            Fechar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </Background>
     )
 }
