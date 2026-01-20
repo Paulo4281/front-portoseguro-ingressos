@@ -15,6 +15,9 @@ export type TCampaign = {
 export type TCampaignCreate = {
     templateId: string
     tagIds: string[]
+    eventId?: string | null
+    opinionPollId?: string | null
+    couponId?: string | null
 }
 
 export type TCampaignListResponse = {

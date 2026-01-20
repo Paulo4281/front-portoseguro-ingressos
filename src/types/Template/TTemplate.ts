@@ -5,7 +5,7 @@ type TTemplateResponse = {
     code: string
     name: string
     subject: string
-    body: string
+    variables: Record<string, string>
     plan: TTemplatePlan
     createdAt: string
     updatedAt: string | null

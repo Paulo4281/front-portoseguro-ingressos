@@ -51,13 +51,15 @@ import {
     Lightbulb,
     Info,
     Headphones,
-    PieChart,
     Cpu,
     Stars,
     LayoutPanelTop,
     Settings,
     XCircle,
-    AlertTriangle
+    AlertTriangle,
+    MousePointer,
+    DollarSign,
+    Ticket
 } from "lucide-react"
 import { Background } from "@/components/Background/Background"
 import { Button } from "@/components/ui/button"
@@ -160,6 +162,11 @@ import { useCampaignLogQuota } from "@/hooks/CampaignLog/useCampaignLogQuota"
 import type { TCampaign } from "@/types/Campaign/TCampaign"
 import type { TCampaignLog } from "@/types/CampaignLog/TCampaignLog"
 import { DocumentUtils } from "@/utils/Helpers/DocumentUtils/DocumentUtils"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { BarChart, Bar, LineChart, Line, ComposedChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
+import { useReportGet } from "@/hooks/Report/useReportGet"
+import { ReportService } from "@/services/CRM/ReportService"
+import type { TReportFilters } from "@/types/Report/TReport"
 
 type TEmailTemplate = {
     id: string
@@ -186,44 +193,92 @@ type TEmailSegment = {
 
 const getTemplateIcon = (code: string): ReactNode => {
     const iconMap: Record<string, ReactNode> = {
-        "template-lembrete": <Bell className="h-6 w-6" />,
-        "template-oferta": <Gift className="h-6 w-6" />,
-        "template-nutrir": <Heart className="h-6 w-6" />,
-        "template-pos-evento": <CheckCircle className="h-6 w-6" />,
-        "template-pesquisa": <ThumbsUp className="h-6 w-6" />,
-        "template-aniversario": <Star className="h-6 w-6" />,
-        "template-lancamento": <TrendingUp className="h-6 w-6" />,
-        "template-fidelidade": <Award className="h-6 w-6" />
+        "crm-template-lembrete": <Bell className="h-6 w-6" />,
+        "crm-template-oferta": <Gift className="h-6 w-6" />,
+        "crm-template-nutrir": <Heart className="h-6 w-6" />,
+        "crm-template-pos-evento": <CheckCircle className="h-6 w-6" />,
+        "crm-template-pesquisa": <ThumbsUp className="h-6 w-6" />,
+        "crm-template-aniversario": <Star className="h-6 w-6" />,
+        "crm-template-lancamento": <TrendingUp className="h-6 w-6" />,
+        "crm-template-fidelidade": <Award className="h-6 w-6" />
     }
     return iconMap[code] || <Mail className="h-6 w-6" />
 }
 
 const getTemplateEditableFields = (code: string): string[] => {
     const fieldsMap: Record<string, string[]> = {
-        "template-lembrete": ["evento"],
-        "template-oferta": ["cupom"],
-        "template-nutrir": ["evento"],
-        "template-pos-evento": ["evento"],
-        "template-pesquisa": ["opinionPoll"],
-        "template-aniversario": [],
-        "template-lancamento": ["evento"],
-        "template-fidelidade": []
+        "crm-template-lembrete": ["evento"],
+        "crm-template-oferta": ["cupom"],
+        "crm-template-nutrir": ["evento"],
+        "crm-template-pos-evento": ["evento"],
+        "crm-template-pesquisa": ["opinionPoll"],
+        "crm-template-aniversario": [],
+        "crm-template-lancamento": ["evento"],
+        "crm-template-fidelidade": []
     }
     return fieldsMap[code] || []
 }
 
 const getTemplatePreview = (code: string): string => {
     const previewMap: Record<string, string> = {
-        "template-lembrete": "Envie lembretes para seus clientes sobre eventos próximos",
-        "template-oferta": "Compartilhe ofertas e promoções especiais com cupons de desconto",
-        "template-nutrir": "Convide seu público a conhecer seus eventos e redes sociais",
-        "template-pos-evento": "Agradeça seus clientes após o evento e mantenha o relacionamento",
-        "template-pesquisa": "Colete feedback dos seus clientes para melhorar seus eventos",
-        "template-aniversario": "Parabenize clientes no aniversário com ofertas especiais",
-        "template-lancamento": "Anuncie novos eventos para seus clientes",
-        "template-fidelidade": "Recompense clientes fiéis com ofertas exclusivas"
+        "crm-template-lembrete": "Envie lembretes para seus clientes sobre eventos próximos",
+        "crm-template-oferta": "Compartilhe ofertas e promoções especiais com cupons de desconto",
+        "crm-template-nutrir": "Convide seu público a conhecer seus eventos e redes sociais",
+        "crm-template-pos-evento": "Agradeça seus clientes após o evento e mantenha o relacionamento",
+        "crm-template-pesquisa": "Colete feedback dos seus clientes para melhorar seus eventos",
+        "crm-template-aniversario": "Parabenize clientes no aniversário com ofertas especiais",
+        "crm-template-lancamento": "Anuncie novos eventos para seus clientes",
+        "crm-template-fidelidade": "Recompense clientes fiéis com ofertas exclusivas"
     }
     return previewMap[code] || "Template de e-mail"
+}
+
+const getTemplateBody = (code: string): string => {
+    const bodyMap: Record<string, string> = {
+        "crm-template-lembrete": `
+            <p>Olá {{nome}},</p>
+            <p>Queremos lembrá-lo que o evento <strong>{{evento}}</strong> está chegando!</p>
+            <p><strong>Data:</strong> {{data}}</p>
+            <p><strong>Local:</strong> {{local}}</p>
+            <p>Não perca essa oportunidade única! Garanta seu ingresso agora.</p>
+            <p>Esperamos você lá!</p>
+        `,
+        "crm-template-oferta": `
+            <p>Olá {{nome}},</p>
+            <p>Temos uma oferta especial para você!</p>
+            <p><strong>Código do cupom:</strong> {{cupomCodigo}}</p>
+            <p><strong>Desconto:</strong> {{cupomDesconto}}</p>
+            <p>{{cupomDescricao}}</p>
+            <p>Aproveite essa oportunidade única!</p>
+        `,
+        "crm-template-nutrir": `
+            <p>Olá {{nome}},</p>
+            <p>Queremos convidá-lo a conhecer nossos eventos!</p>
+            <p>{{eventoTexto}}</p>
+            <p>Acompanhe-nos e fique por dentro de todas as novidades.</p>
+        `,
+        "crm-template-pos-evento": `
+            <p>Olá {{nome}},</p>
+            <p>Obrigado por participar do evento <strong>{{evento}}</strong>!</p>
+            <p>Sua presença foi muito importante para nós.</p>
+            <p>Esperamos vê-lo novamente em nossos próximos eventos!</p>
+        `,
+        "crm-template-pesquisa": `
+            <p>Olá {{nome}},</p>
+            <p>Sua opinião é muito importante para nós!</p>
+            <p>Gostaríamos de saber sua experiência no evento <strong>{{evento}}</strong>.</p>
+            <p>Por favor, compartilhe sua opinião clicando no link abaixo.</p>
+        `,
+        "crm-template-lancamento": `
+            <p>Olá {{nome}},</p>
+            <p>Temos uma novidade incrível para você!</p>
+            <p>Acabamos de lançar o evento <strong>{{evento}}</strong>.</p>
+            <p><strong>Data:</strong> {{data}}</p>
+            <p><strong>Local:</strong> {{local}}</p>
+            <p>Garanta seu ingresso com antecedência e aproveite!</p>
+        `
+    }
+    return bodyMap[code] || "<p>Olá {{nome}},</p><p>Este é um template de e-mail personalizado.</p>"
 }
 
 const TAG_COLORS = [
@@ -274,7 +329,7 @@ const CRMPannel = () => {
             code: template.code,
             name: template.name,
             subject: template.subject,
-            body: template.body,
+            body: getTemplateBody(template.code),
             editableFields: getTemplateEditableFields(template.code),
             preview: getTemplatePreview(template.code),
             icon: getTemplateIcon(template.code),
@@ -433,6 +488,59 @@ const CRMPannel = () => {
     })
     const [upgradeDialog, setUpgradeDialog] = useState(false)
     const [reportsDialog, setReportsDialog] = useState(false)
+    const [reportFilters, setReportFilters] = useState<TReportFilters>({})
+    const [reportDateFrom, setReportDateFrom] = useState<string | null>(null)
+    const [reportDateTo, setReportDateTo] = useState<string | null>(null)
+    const [selectedReportTags, setSelectedReportTags] = useState<string[]>([])
+    const [selectedReportEvents, setSelectedReportEvents] = useState<string[]>([])
+    const [isDownloadingReport, setIsDownloadingReport] = useState(false)
+    const [selectedReportYear, setSelectedReportYear] = useState<string>(new Date().getFullYear().toString())
+    const [selectedStatsMonth, setSelectedStatsMonth] = useState<string>("")
+    const [selectedStatsYear, setSelectedStatsYear] = useState<string>(new Date().getFullYear().toString())
+    const [engagementDialog, setEngagementDialog] = useState(false)
+    
+    const { data: reportData, isLoading: reportLoading } = useReportGet(reportFilters)
+    
+    const filteredCustomerEntries = useMemo(() => {
+        if (!reportData) return []
+        return reportData.customerEntries.filter(entry => entry.year.toString() === selectedReportYear)
+    }, [reportData, selectedReportYear])
+    
+    const availableYears = useMemo(() => {
+        if (!reportData) return []
+        const years = [...new Set(reportData.customerEntries.map(entry => entry.year))]
+        return years.sort((a, b) => b - a)
+    }, [reportData])
+    
+    const availableStatsMonths = useMemo(() => {
+        if (!reportData) return []
+        const months = [...new Set(reportData.campaignStatsOverTime.filter(stat => stat.year.toString() === selectedStatsYear).map(stat => stat.month))]
+        return months.sort((a, b) => {
+            const monthOrder = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+            return monthOrder.indexOf(a) - monthOrder.indexOf(b)
+        })
+    }, [reportData, selectedStatsYear])
+    
+    useEffect(() => {
+        if (reportData && availableStatsMonths.length > 0 && !selectedStatsMonth) {
+            setSelectedStatsMonth(availableStatsMonths[0])
+        }
+    }, [reportData, availableStatsMonths, selectedStatsMonth])
+    
+    const filteredCampaignStats = useMemo(() => {
+        if (!reportData || !selectedStatsMonth) return []
+        return reportData.campaignStatsOverTime.filter(stat => {
+            const matchesYear = stat.year.toString() === selectedStatsYear
+            const matchesMonth = stat.month === selectedStatsMonth
+            return matchesYear && matchesMonth
+        })
+    }, [reportData, selectedStatsMonth, selectedStatsYear])
+    
+    const availableStatsYears = useMemo(() => {
+        if (!reportData) return []
+        const years = [...new Set(reportData.campaignStatsOverTime.map(stat => stat.year))]
+        return years.sort((a, b) => b - a)
+    }, [reportData])
     const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
     const [showNewCardForm, setShowNewCardForm] = useState(false)
     const [cardData, setCardData] = useState({
@@ -890,10 +998,30 @@ const CRMPannel = () => {
         try {
             const tagIds = data.segments.includes("all") ? ["all"] : data.segments.filter(id => id !== "all")
             
-            await createCampaign({
+            const campaignData: any = {
                 templateId: data.templateId,
                 tagIds
-            })
+            }
+
+            if (selectedTemplate) {
+                if (selectedTemplate.code === "crm-template-pesquisa" && selectedOpinionPollForTemplate) {
+                    campaignData.opinionPollId = selectedOpinionPollForTemplate
+                    const selectedPoll = opinionPolls.find((p: TOpinionPoll) => p.id === selectedOpinionPollForTemplate)
+                    if (selectedPoll?.eventId) {
+                        campaignData.eventId = selectedPoll.eventId
+                    }
+                } else if (selectedTemplate.code === "crm-template-oferta" && selectedCouponForTemplate) {
+                    campaignData.couponId = selectedCouponForTemplate
+                    const selectedCoupon = coupons.find((c: TCoupon) => c.id === selectedCouponForTemplate)
+                    if (selectedCoupon?.eventId) {
+                        campaignData.eventId = selectedCoupon.eventId
+                    }
+                } else if (selectedEventForTemplate) {
+                    campaignData.eventId = selectedEventForTemplate
+                }
+            }
+            
+            await createCampaign(campaignData)
             
             setEmailDialog({ open: false })
             emailForm.reset()
@@ -933,7 +1061,7 @@ const CRMPannel = () => {
 
     const getPreviewBody = () => {
         if (!selectedTemplate) return ""
-        let preview = selectedTemplate.body
+        let preview = getTemplateBody(selectedTemplate.code)
         const selectedEvent = events.find(e => e.id === selectedEventForTemplate)
         const selectedCoupon = coupons.find((c: TCoupon) => c.id === selectedCouponForTemplate)
         const selectedPoll = opinionPolls.find((p: TOpinionPoll) => p.id === selectedOpinionPollForTemplate)
@@ -980,7 +1108,7 @@ const CRMPannel = () => {
             preview = preview.replace(/\{\{cupomDescricao\}\}/g, "[Descrição do cupom]")
         }
         
-        if (selectedTemplate.code === "template-nutrir" && selectedEvent) {
+        if (selectedTemplate.code === "crm-template-nutrir" && selectedEvent) {
             const firstDate = selectedEvent.EventDates?.[0]
             const dateText = firstDate?.date 
                 ? new Date(firstDate.date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })
@@ -988,15 +1116,15 @@ const CRMPannel = () => {
             const eventDescription = `Confira o evento "${selectedEvent.name}" que acontecerá em ${dateText}.`
             preview = preview.replace(/\{\{eventoTexto\}\}/g, eventDescription)
             preview = preview.replace(/\[Descrição do evento\]/g, eventDescription)
-        } else if (selectedTemplate.code === "template-nutrir") {
+        } else if (selectedTemplate.code === "crm-template-nutrir") {
             preview = preview.replace(/\{\{eventoTexto\}\}/g, "[Descrição do evento]")
         }
         
-        if (selectedTemplate.code === "template-pesquisa" && selectedPoll) {
+        if (selectedTemplate.code === "crm-template-pesquisa" && selectedPoll) {
             const eventName = selectedPoll.event.name.split(" -")[0].trim()
             preview = preview.replace(/\[Selecione um evento\]/g, eventName)
             preview = preview.replace(/\{\{evento\}\}/g, eventName)
-        } else if (selectedTemplate.code === "template-pesquisa") {
+        } else if (selectedTemplate.code === "crm-template-pesquisa") {
             preview = preview.replace(/\[Selecione um evento\]/g, "[Selecione um evento]")
         }
         
@@ -1219,9 +1347,10 @@ const CRMPannel = () => {
                                             className="gap-2"
                                             onClick={() => {
                                                 if (!isPro) {
-                                                    setReportsDialog(true)
-                                                } else {
+                                                    // setReportsDialog(true)
                                                     setReportsSheetOpen(true)
+                                                } else {
+                                                    setReportsDialog(true)
                                                 }
                                             }}
                                         >
@@ -2396,7 +2525,7 @@ const CRMPannel = () => {
                 setSelectedEventForTemplate("")
                 setSelectedCouponForTemplate("")
             }}>
-                <SheetContent side="right" className="w-[90vw] sm:w-[90vw] lg:w-[1200px] overflow-y-auto">
+                <SheetContent side="right" className="w-[90vw] sm:w-[90vw] lg:w-[1200px] 3xl:w-[1400px] overflow-y-auto">
                     <SheetHeader>
                         <SheetTitle className="text-2xl font-semibold text-psi-primary">Enviar E-mail</SheetTitle>
                         <SheetDescription>
@@ -2469,10 +2598,17 @@ const CRMPannel = () => {
                                             <p className="text-sm font-medium text-psi-dark">{getPreviewSubject()}</p>
                                         </div>
                                         <div>
-                                            <p className="text-xs font-medium text-psi-dark/60 mb-1">Corpo:</p>
-                                            <div className="bg-white p-3 rounded border border-psi-dark/10 text-sm text-psi-dark/70 whitespace-pre-line">
+                                            <Collapsible>
+                                                <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 mb-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-psi-primary" aria-label="Mostrar corpo do e-mail">
+                                                    Corpo:
+                                                    <ChevronDown className="h-4 w-4 transition-transform data-[state=open]:rotate-180" />
+                                                </CollapsibleTrigger>
+                                                <CollapsibleContent>
+                                                    <div className="bg-white p-3 rounded border border-psi-dark/10 text-sm text-psi-dark/70 whitespace-pre-line mt-2">
                                                 {getPreviewBody()}
                                             </div>
+                                                </CollapsibleContent>
+                                            </Collapsible>
                                         </div>
                                     </div>
                                 </div>
@@ -3546,97 +3682,539 @@ const CRMPannel = () => {
                 </SheetContent>
             </Sheet>
 
-            <Dialog open={reportsDialog} onOpenChange={setReportsDialog}>
-                <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                        <div className="flex items-center justify-center mb-4">
-                            <div className="h-20 w-20 rounded-full bg-linear-to-br from-psi-tertiary/40 via-psi-primary/20 to-psi-secondary/40 flex items-center justify-center border-2 border-psi-primary/60">
-                                <BarChart3 className="h-10 w-10 text-psi-primary" />
+            <Sheet open={reportsDialog} onOpenChange={setReportsDialog}>
+                <SheetContent side="right" className="w-[95vw] sm:w-[95vw] lg:w-[1400px] 3xl:w-[1800px] p-4 overflow-y-auto">
+                    <SheetHeader>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <SheetTitle className="text-2xl font-semibold text-psi-primary flex items-center gap-2">
+                                    <BarChart3 className="h-6 w-6" />
+                                    Relatórios Avançados
+                                </SheetTitle>
+                                <SheetDescription className="text-base mt-2">
+                                    Análises detalhadas e insights estratégicos do seu CRM
+                                </SheetDescription>
                             </div>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2"
+                                    onClick={async () => {
+                                        setIsDownloadingReport(true)
+                                        try {
+                                            const blob = await ReportService.downloadReport("pdf", reportFilters)
+                                            const url = window.URL.createObjectURL(blob)
+                                            const a = document.createElement("a")
+                                            a.href = url
+                                            a.download = `relatorio-crm-${new Date().toISOString().split("T")[0]}.pdf`
+                                            document.body.appendChild(a)
+                                            a.click()
+                                            document.body.removeChild(a)
+                                            window.URL.revokeObjectURL(url)
+                                            Toast.success("Relatório PDF baixado com sucesso!")
+                                        } catch (error) {
+                                            Toast.error("Erro ao baixar relatório")
+                                        } finally {
+                                            setIsDownloadingReport(false)
+                                        }
+                                    }}
+                                    disabled={isDownloadingReport}
+                                >
+                                    <Download className="h-4 w-4" />
+                                    Exportar PDF
+                                </Button>
                         </div>
-                        <DialogTitle className="text-2xl text-center">Relatórios Avançados</DialogTitle>
-                        <DialogDescription className="text-center text-base">
-                            Acesse análises detalhadas e insights estratégicos
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="relative overflow-hidden rounded-xl p-8 border border-psi-primary/20 bg-linear-to-br from-psi-primary/10 via-psi-secondary/5 to-psi-tertiary/10">
-                            <div className="absolute inset-0 pointer-events-none select-none">
-                                <div
-                                    aria-hidden="true"
-                                    className="absolute -top-10 -left-10 w-40 h-40 bg-psi-primary/10 blur-2xl rounded-full"
-                                />
-                                <div
-                                    aria-hidden="true"
-                                    className="absolute -bottom-8 -right-8 w-32 h-32 bg-psi-tertiary/20 blur-2xl rounded-full"
-                                />
-                                <div 
-                                    aria-hidden="true"
-                                    className="absolute bottom-1/2 left-1/2 w-36 h-36 bg-psi-secondary/10 blur-3xl rounded-full -translate-x-1/2 translate-y-1/2"
-                                />
+                        </div>
+                    </SheetHeader>
+
+                    <div className="mt-6 space-y-6">
+                        <div className="bg-white rounded-lg border border-psi-dark/10 p-4">
+                            <div className="flex items-center gap-2 mb-4">
+                                <Filter className="h-5 w-5 text-psi-primary" />
+                                <h3 className="font-semibold text-psi-dark">Filtros</h3>
                             </div>
-                            <div className="relative flex flex-col items-center justify-center">
-                                <div className="mb-2">
-                                    <Crown
-                                        className="h-8 w-8 text-psi-primary"
-                                        aria-label="Recurso exclusivo do plano Premium"
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div className="flex flex-col">
+                                    <label className="text-sm font-medium text-psi-dark/70 mb-1.5">Data Inicial</label>
+                                    <DatePicker
+                                        value={reportDateFrom}
+                                        onChange={setReportDateFrom}
+                                        absoluteClassName={true}
                                     />
                                 </div>
-                                <div className="text-center">
-                                    <p className="text-lg font-semibold text-psi-dark mb-1">
-                                        Disponível no CRM Pro
-                                    </p>
-                                    <p className="text-sm text-psi-dark/60">
-                                        Assine o plano premium para desbloquear
-                                    </p>
+                                <div className="flex flex-col">
+                                    <label className="text-sm font-medium text-psi-dark/70 mb-1.5">Data Final</label>
+                                    <DatePicker
+                                        value={reportDateTo}
+                                        onChange={setReportDateTo}
+                                        absoluteClassName={true}
+                                    />
                                 </div>
+                                <div className="flex flex-col">
+                                    <label className="text-sm font-medium text-psi-dark/70 mb-1.5">Tags</label>
+                                    <Select
+                                        value={selectedReportTags.length > 0 ? selectedReportTags[0] : ""}
+                                        onValueChange={(value) => {
+                                            if (value && !selectedReportTags.includes(value)) {
+                                                setSelectedReportTags([...selectedReportTags, value])
+                                            }
+                                        }}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione tags" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {tags.map((tag) => (
+                                                <SelectItem key={tag.id} value={tag.id}>
+                                                    {tag.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {selectedReportTags.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                            {selectedReportTags.map((tagId) => {
+                                                const tag = tags.find((t) => t.id === tagId)
+                                                return tag ? (
+                                                    <Badge
+                                                        key={tagId}
+                                                        className="gap-1"
+                                                        style={{ backgroundColor: tag.color + "20", borderColor: tag.color, color: tag.color }}
+                                                    >
+                                                        {tag.name}
+                                                        <X
+                                                            className="h-3 w-3 cursor-pointer"
+                                                            onClick={() => setSelectedReportTags(selectedReportTags.filter((id) => id !== tagId))}
+                                                        />
+                                                    </Badge>
+                                                ) : null
+                                            })}
+                            </div>
+                                    )}
+                                </div>
+                                <div className="flex flex-col">
+                                    <label className="text-sm font-medium text-psi-dark/70 mb-1.5">Eventos</label>
+                                    <Select
+                                        value={selectedReportEvents.length > 0 ? selectedReportEvents[0] : ""}
+                                        onValueChange={(value) => {
+                                            if (value && !selectedReportEvents.includes(value)) {
+                                                setSelectedReportEvents([...selectedReportEvents, value])
+                                            }
+                                        }}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione eventos" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {events.map((event) => (
+                                                <SelectItem key={event.id} value={event.id}>
+                                                    {event.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {selectedReportEvents.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                            {selectedReportEvents.map((eventId) => {
+                                                const event = events.find((e) => e.id === eventId)
+                                                return event ? (
+                                                    <Badge key={eventId} variant="outline" className="gap-1">
+                                                        {event.name}
+                                                        <X
+                                                            className="h-3 w-3 cursor-pointer"
+                                                            onClick={() => setSelectedReportEvents(selectedReportEvents.filter((id) => id !== eventId))}
+                                                        />
+                                                    </Badge>
+                                                ) : null
+                                            })}
+                                </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="mt-4 flex justify-end">
+                                <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={() => {
+                                        setReportFilters({
+                                            dateFrom: reportDateFrom || undefined,
+                                            dateTo: reportDateTo || undefined,
+                                            tagIds: selectedReportTags.length > 0 ? selectedReportTags : undefined,
+                                            eventIds: selectedReportEvents.length > 0 ? selectedReportEvents : undefined
+                                        })
+                                    }}
+                                >
+                                    Aplicar Filtros
+                                </Button>
                             </div>
                         </div>
 
+                        {reportLoading ? (
+                            <div className="space-y-4">
+                                {[1, 2, 3].map((i) => (
+                                    <Skeleton key={i} className="h-64 w-full" />
+                                ))}
+                                    </div>
+                        ) : !reportData ? null : (
+                            (() => {
+                                const COLORS = ["#6C4BFF", "#FF6F91", "#FFD447", "#4ECDC4", "#FF6B6B"]
+                                return (
+                                <>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                        <Card className="p-4">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <p className="text-sm text-psi-dark/60">Total de Campanhas</p>
+                                                <Mail className="h-4 w-4 text-psi-primary" />
+                                    </div>
+                                            <p className="text-2xl font-bold text-psi-dark">{reportData.overview.totalCampaigns}</p>
+                                        </Card>
+                                        <Card className="p-4">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <p className="text-sm text-psi-dark/60">Taxa de Abertura</p>
+                                                <MailOpen className="h-4 w-4 text-psi-primary" />
+                                </div>
+                                            <p className="text-2xl font-bold text-psi-dark">{reportData.overview.averageOpenRate.toFixed(1)}%</p>
+                                        </Card>
+                                        <Card className="p-4">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <p className="text-sm text-psi-dark/60">Taxa de Clique</p>
+                                                <MousePointer className="h-4 w-4 text-psi-primary" />
+                                    </div>
+                                            <p className="text-2xl font-bold text-psi-dark">{reportData.overview.averageClickRate.toFixed(1)}%</p>
+                                        </Card>
+                                        <Card className="p-4">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <p className="text-sm text-psi-dark/60">Receita Total</p>
+                                                <DollarSign className="h-4 w-4 text-psi-primary" />
+                                    </div>
+                                            <p className="text-2xl font-bold text-psi-dark">{ValueUtils.centsToCurrency(reportData.overview.totalRevenue)}</p>
+                                        </Card>
+                                </div>
+
+                                    <div className="bg-white rounded-lg border border-psi-dark/10 p-6">
+                                        <h3 className="font-semibold text-psi-dark mb-4 flex items-center gap-2">
+                                            <Sparkles className="h-5 w-5 text-psi-primary" />
+                                            Sugestões por IA
+                                        </h3>
+                            <div className="space-y-3">
+                                            {reportData.aiSuggestions.map((suggestion) => (
+                                                <div
+                                                    key={suggestion.id}
+                                                    className={`p-4 rounded-lg border ${
+                                                        suggestion.priority === "high"
+                                                            ? "border-psi-primary/30 bg-psi-primary/5"
+                                                            : suggestion.priority === "medium"
+                                                            ? "border-psi-secondary/30 bg-psi-secondary/5"
+                                                            : "border-psi-dark/10 bg-psi-dark/5"
+                                                    }`}
+                                                >
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <h4 className="font-medium text-psi-dark">{suggestion.title}</h4>
+                                                            <Badge
+                                                                variant={
+                                                                    suggestion.priority === "high"
+                                                                        ? "destructive"
+                                                                        : suggestion.priority === "medium"
+                                                                        ? "default"
+                                                                        : "secondary"
+                                                                }
+                                                                className="text-xs"
+                                                            >
+                                                                {suggestion.priority === "high" ? "Alta" : suggestion.priority === "medium" ? "Média" : "Baixa"}
+                                                            </Badge>
+                                    </div>
+                                                        <p className="text-sm text-psi-dark/70">{suggestion.description}</p>
+                                    </div>
+                                </div>
+                                            ))}
+                                    </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <div className="bg-white rounded-lg border border-psi-dark/10 p-6">
+                                            <h3 className="font-semibold text-psi-dark mb-4">Performance de Campanhas</h3>
+                                            <div className="space-y-4 max-h-[500px] overflow-y-auto">
+                                                {reportData.campaignPerformance.map((campaign) => (
+                                                    <div key={campaign.campaignId} className="border-b border-psi-dark/10 pb-4 last:border-0 last:pb-0">
+                                                        <div className="flex items-start justify-between mb-2">
+                                    <div>
+                                                                <p className="font-medium text-psi-dark">{campaign.templateName}</p>
+                                                                <p className="text-xs text-psi-dark/60 mt-1">{campaign.subject}</p>
+                                    </div>
+                                                            <Badge variant="outline" className="text-xs">
+                                                                {new Date(campaign.sentAt).toLocaleDateString("pt-BR")}
+                                                            </Badge>
+                                </div>
+                                                        <div className="mt-4">
+                                                            <div className="flex items-end gap-1.5 h-36">
+                                                                <div className="flex-1 flex flex-col items-center justify-end min-w-0">
+                                                                    <div className="w-full bg-psi-dark/10 rounded-t-lg p-2.5 text-center h-full flex flex-col justify-end">
+                                                                        <p className="text-xs text-psi-dark/60 mb-1">Enviados</p>
+                                                                        <p className="text-base font-bold text-psi-dark">{campaign.totalRecipients}</p>
+                                                                        <p className="text-xs text-psi-dark/50 mt-0.5">100%</p>
+                                    </div>
+                                    </div>
+                                                                <div className="flex-1 flex flex-col items-center justify-end min-w-0" style={{ flex: `${campaign.deliveredRate / 100}` }}>
+                                                                    <div className="w-full bg-psi-primary/20 rounded-t-lg p-2.5 text-center border-t-2 border-psi-primary h-full flex flex-col justify-end">
+                                                                        <p className="text-xs text-psi-dark/60 mb-1">Entregues</p>
+                                                                        <p className="text-base font-bold text-psi-primary">{campaign.deliveredCount}</p>
+                                                                        <p className="text-xs text-psi-dark/50 mt-0.5">{campaign.deliveredRate.toFixed(1)}%</p>
+                                </div>
+                                    </div>
+                                                                <div className="flex-1 flex flex-col items-center justify-end min-w-0" style={{ flex: `${campaign.acceptedRate / 100}` }}>
+                                                                    <div className="w-full bg-psi-secondary/20 rounded-t-lg p-2.5 text-center border-t-2 border-psi-secondary h-full flex flex-col justify-end">
+                                                                        <p className="text-xs text-psi-dark/60 mb-1">Aceitos</p>
+                                                                        <p className="text-base font-bold text-psi-secondary">{campaign.acceptedCount}</p>
+                                                                        <p className="text-xs text-psi-dark/50 mt-0.5">{campaign.acceptedRate.toFixed(1)}%</p>
+                                    </div>
+                                </div>
+                                                                <div className="flex-1 flex flex-col items-center justify-end min-w-0" style={{ flex: `${campaign.openRate / 100}` }}>
+                                                                    <div className="w-full bg-psi-tertiary/20 rounded-t-lg p-2.5 text-center border-t-2 border-psi-tertiary h-full flex flex-col justify-end">
+                                                                        <p className="text-xs text-psi-dark/60 mb-1">Abertos</p>
+                                                                        <p className="text-base font-bold text-psi-tertiary">{campaign.openedCount}</p>
+                                                                        <p className="text-xs text-psi-dark/50 mt-0.5">{campaign.openRate.toFixed(1)}%</p>
+                                    </div>
+                                    </div>
+                                                                <div className="flex-1 flex flex-col items-center justify-end min-w-0" style={{ flex: `${campaign.clickRate / 100}` }}>
+                                                                    <div className="w-full bg-psi-primary/30 rounded-t-lg p-2.5 text-center border-t-2 border-psi-primary h-full flex flex-col justify-end">
+                                                                        <p className="text-xs text-psi-dark/60 mb-1">Cliques</p>
+                                                                        <p className="text-base font-bold text-psi-primary">{campaign.clickedCount}</p>
+                                                                        <p className="text-xs text-psi-dark/50 mt-0.5">{campaign.clickRate.toFixed(1)}%</p>
+                                </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                </div>
+                                                ))}
+                            </div>
+                        </div>
+
+                                        <div className="bg-white rounded-lg border border-psi-dark/10 p-6">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="font-semibold text-psi-dark">Estatísticas ao Longo do Tempo</h3>
+                                                <div className="flex items-center gap-2">
+                                                    <Select value={selectedStatsMonth} onValueChange={setSelectedStatsMonth}>
+                                                        <SelectTrigger className="w-[140px]">
+                                                            <SelectValue placeholder="Selecione o mês" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {availableStatsMonths.map((month) => (
+                                                                <SelectItem key={month} value={month}>
+                                                                    {month}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <Select value={selectedStatsYear} onValueChange={setSelectedStatsYear}>
+                                                        <SelectTrigger className="w-[100px]">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {availableStatsYears.map((year) => (
+                                                                <SelectItem key={year} value={year.toString()}>
+                                                                    {year}
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                </div>
+                            </div>
+                                            <ResponsiveContainer width="100%" height={300}>
+                                                <ComposedChart data={filteredCampaignStats}>
+                                                    <CartesianGrid strokeDasharray="3 3" stroke="#E4E6F0" />
+                                                    <XAxis dataKey="week" tick={{ fontSize: 11 }} />
+                                                    <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
+                                                    <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
+                                                    <Tooltip />
+                                                    <Legend />
+                                                    <Bar yAxisId="left" dataKey="sent" fill="#6C4BFF" name="Enviados" radius={[4, 4, 0, 0]} />
+                                                    <Bar yAxisId="left" dataKey="opened" fill="#FF6F91" name="Abertos" radius={[4, 4, 0, 0]} />
+                                                    <Line yAxisId="right" type="monotone" dataKey="clicked" stroke="#FFD447" strokeWidth={3} name="Cliques" dot={{ fill: "#FFD447", r: 4 }} />
+                                                </ComposedChart>
+                                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                                    <div className="bg-white rounded-lg border border-psi-dark/10 p-6">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="font-semibold text-psi-dark">Entrada de Clientes</h3>
+                                            <Select value={selectedReportYear} onValueChange={setSelectedReportYear}>
+                                                <SelectTrigger className="w-[120px]">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {availableYears.map((year) => (
+                                                        <SelectItem key={year} value={year.toString()}>
+                                                            {year}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                        </div>
+                                        <ResponsiveContainer width="100%" height={300}>
+                                            <BarChart data={filteredCustomerEntries}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#E4E6F0" />
+                                                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                                                <YAxis tick={{ fontSize: 11 }} />
+                                                <Tooltip />
+                                                <Legend />
+                                                <Bar dataKey="newCustomers" fill="#6C4BFF" name="Novos Clientes" radius={[4, 4, 0, 0]} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                    </div>
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <div className="bg-white rounded-lg border border-psi-dark/10 p-6">
+                                            <h3 className="font-semibold text-psi-dark mb-4">Vendas por Evento</h3>
+                                            <ResponsiveContainer width="100%" height={300}>
+                                                <BarChart data={reportData.salesByEvent} layout="vertical">
+                                                    <CartesianGrid strokeDasharray="3 3" stroke="#E4E6F0" />
+                                                    <XAxis type="number" tick={{ fontSize: 11 }} />
+                                                    <YAxis dataKey="eventName" type="category" width={150} tick={{ fontSize: 11 }} />
+                                                    <Tooltip />
+                                                    <Legend />
+                                                    <Bar dataKey="ticketsSold" fill="#6C4BFF" name="Ingressos Vendidos" radius={[0, 4, 4, 0]} />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                    </div>
+
+                                        <div className="bg-white rounded-lg border border-psi-dark/10 p-6">
+                                            <h3 className="font-semibold text-psi-dark mb-4">Segmentos de Clientes</h3>
+                                            <ResponsiveContainer width="100%" height={300}>
+                                                <PieChart>
+                                                    <Pie
+                                                        data={reportData.customerSegments}
+                                                        cx="50%"
+                                                        cy="50%"
+                                                        labelLine={false}
+                                                        label={(props: any) => {
+                                                            const { segmentName, customerCount } = props
+                                                            return `${segmentName}: ${customerCount}`
+                                                        }}
+                                                        outerRadius={80}
+                                                        fill="#8884d8"
+                                                        dataKey="customerCount"
+                                                    >
+                                                        {reportData.customerSegments.map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip />
+                                                    <Legend />
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-lg border border-psi-dark/10 p-6">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="font-semibold text-psi-dark">Segmentos de Clientes - Detalhes</h3>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setEngagementDialog(true)}
+                                                className="gap-2 text-psi-primary hover:text-psi-primary/80"
+                                            >
+                                                <Info className="h-4 w-4" />
+                                                Como funciona o cálculo de engajamento?
+                                            </Button>
+                                        </div>
+                                        <div className="overflow-x-auto">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Segmento</TableHead>
+                                                        <TableHead>Clientes</TableHead>
+                                                        <TableHead>Ticket Médio</TableHead>
+                                                        <TableHead>Receita Total</TableHead>
+                                                        <TableHead>Engajamento</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {reportData.customerSegments.map((segment) => (
+                                                        <TableRow key={segment.segmentName}>
+                                                            <TableCell className="font-medium">{segment.segmentName}</TableCell>
+                                                            <TableCell>{segment.customerCount}</TableCell>
+                                                            <TableCell>{ValueUtils.centsToCurrency(segment.averageTicketPrice)}</TableCell>
+                                                            <TableCell>{ValueUtils.centsToCurrency(segment.totalRevenue)}</TableCell>
+                                                            <TableCell>
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="flex-1 bg-psi-dark/10 rounded-full h-2">
+                                                                        <div
+                                                                            className="bg-psi-primary h-2 rounded-full"
+                                                                            style={{ width: `${(segment.engagementScore / 10) * 100}%` }}
+                                                                        />
+                                                                    </div>
+                                                                    <span className="text-sm text-psi-dark/70">{segment.engagementScore.toFixed(1)}</span>
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </div>
+                                </>
+                                )
+                            })()
+                        )}
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            <Dialog open={engagementDialog} onOpenChange={setEngagementDialog}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-semibold text-psi-dark flex items-center gap-2">
+                            <Info className="h-5 w-5 text-psi-primary" />
+                            Como funciona o cálculo de engajamento?
+                        </DialogTitle>
+                        <DialogDescription className="text-base mt-2">
+                            Entenda como é calculado o score de engajamento dos segmentos de clientes
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="bg-psi-primary/5 border border-psi-primary/20 rounded-lg p-4">
+                            <h4 className="font-semibold text-psi-dark mb-2">O que é o Score de Engajamento?</h4>
+                            <p className="text-sm text-psi-dark/70">
+                                O score de engajamento é uma métrica que varia de 0 a 10 e indica o nível de interação e participação dos clientes de um segmento com suas campanhas e eventos.
+                            </p>
+                        </div>
                         <div>
-                            <h4 className="font-semibold text-psi-dark mb-3">O que você terá acesso:</h4>
+                            <h4 className="font-semibold text-psi-dark mb-3">Fatores que influenciam o cálculo:</h4>
                             <div className="space-y-3">
                                 <div className="flex items-start gap-3">
                                     <div className="h-6 w-6 rounded-full bg-psi-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                                        <TrendingUp className="h-4 w-4 text-psi-primary" />
+                                        <MailOpen className="h-4 w-4 text-psi-primary" />
                                     </div>
                                     <div>
-                                        <p className="font-medium text-psi-dark">Análise de Performance de Campanhas</p>
-                                        <p className="text-sm text-psi-dark/60">
-                                            Taxa de abertura, cliques, conversões e ROI detalhado de cada e-mail enviado
+                                        <p className="font-medium text-psi-dark">Taxa de Abertura de E-mails</p>
+                                        <p className="text-sm text-psi-dark/70">
+                                            Percentual de e-mails abertos pelos clientes do segmento. Quanto maior a taxa, maior o engajamento.
                                         </p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <div className="h-6 w-6 rounded-full bg-psi-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                                        <Users className="h-4 w-4 text-psi-primary" />
+                                        <MousePointer className="h-4 w-4 text-psi-primary" />
                                     </div>
                                     <div>
-                                        <p className="font-medium text-psi-dark">Segmentação e Comportamento do Cliente</p>
-                                        <p className="text-sm text-psi-dark/60">
-                                            Identifique padrões de compra, frequência de eventos e clientes mais valiosos
+                                        <p className="font-medium text-psi-dark">Taxa de Clique em Links</p>
+                                        <p className="text-sm text-psi-dark/70">
+                                            Percentual de cliques em links dos e-mails. Indica interesse ativo no conteúdo.
                                         </p>
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <div className="h-6 w-6 rounded-full bg-psi-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                                        <BarChart3 className="h-4 w-4 text-psi-primary" />
+                                        <Ticket className="h-4 w-4 text-psi-primary" />
                                     </div>
                                     <div>
-                                        <p className="font-medium text-psi-dark">Relatórios de Vendas e Receita</p>
-                                        <p className="text-sm text-psi-dark/60">
-                                            Acompanhe receita por evento, ticket médio, sazonalidade e tendências de crescimento
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <div className="h-6 w-6 rounded-full bg-psi-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                                        <Star className="h-4 w-4 text-psi-primary" />
-                                    </div>
-                                    <div>
-                                        <p className="font-medium text-psi-dark">Análise de Satisfação e Engajamento</p>
-                                        <p className="text-sm text-psi-dark/60">
-                                            Avalie feedback dos clientes, pesquisas de opinião e métricas de retenção
+                                        <p className="font-medium text-psi-dark">Frequência de Compra</p>
+                                        <p className="text-sm text-psi-dark/70">
+                                            Quantidade de ingressos comprados por cliente no período analisado. Clientes mais frequentes têm maior engajamento.
                                         </p>
                                     </div>
                                 </div>
@@ -3645,48 +4223,27 @@ const CRMPannel = () => {
                                         <Calendar className="h-4 w-4 text-psi-primary" />
                                     </div>
                                     <div>
-                                        <p className="font-medium text-psi-dark">Relatórios Temporais e Comparativos</p>
-                                        <p className="text-sm text-psi-dark/60">
-                                            Compare períodos, identifique sazonalidade e planeje campanhas baseadas em dados históricos
+                                        <p className="font-medium text-psi-dark">Recência de Interação</p>
+                                        <p className="text-sm text-psi-dark/70">
+                                            Tempo desde a última compra ou interação. Clientes que interagiram recentemente têm maior engajamento.
                                         </p>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
-                        <div className="bg-psi-primary/5 border border-psi-primary/20 rounded-lg p-4">
-                            <div className="flex items-start gap-3">
-                                <Lightbulb className="h-5 w-5 text-psi-primary shrink-0 mt-0.5" />
-                                <div>
-                                    <p className="font-medium text-psi-dark mb-1">Como os dados podem ajudar você:</p>
-                                    <ul className="text-sm text-psi-dark/70 space-y-1 list-disc list-inside">
-                                        <li>Identifique quais eventos têm maior potencial de venda</li>
-                                        <li>Otimize seus investimentos em marketing com base em dados reais</li>
-                                        <li>Personalize campanhas para diferentes segmentos de clientes</li>
-                                        <li>Antecipe tendências e planeje eventos com maior chance de sucesso</li>
-                                        <li>Melhore a experiência do cliente com insights de comportamento</li>
-                                    </ul>
-                                </div>
-                            </div>
+                        <div className="bg-psi-secondary/5 border border-psi-secondary/20 rounded-lg p-4">
+                            <h4 className="font-semibold text-psi-dark mb-2">Interpretação do Score</h4>
+                            <ul className="text-sm text-psi-dark/70 space-y-1 list-disc list-inside">
+                                <li><strong>8.0 - 10.0:</strong> Engajamento muito alto - Clientes altamente ativos e engajados</li>
+                                <li><strong>6.0 - 7.9:</strong> Engajamento alto - Clientes regulares e interessados</li>
+                                <li><strong>4.0 - 5.9:</strong> Engajamento médio - Clientes com participação moderada</li>
+                                <li><strong>0.0 - 3.9:</strong> Engajamento baixo - Clientes pouco ativos ou inativos</li>
+                            </ul>
                         </div>
                     </div>
-                    <DialogFooter className="gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() => setReportsDialog(false)}
-                        >
-                            Fechar
-                        </Button>
-                        <Button
-                            variant="primary"
-                            onClick={() => {
-                                setReportsDialog(false)
-                                setUpgradeDialog(true)
-                            }}
-                            className="gap-2"
-                        >
-                            <Crown className="h-4 w-4" />
-                            Assinar CRM Pro
+                    <DialogFooter>
+                        <Button variant="primary" onClick={() => setEngagementDialog(false)}>
+                            Entendi
                         </Button>
                     </DialogFooter>
                 </DialogContent>
