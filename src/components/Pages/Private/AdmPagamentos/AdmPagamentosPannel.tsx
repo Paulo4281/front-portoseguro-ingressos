@@ -37,7 +37,8 @@ import {
     Eye,
     EyeOff,
     AlertTriangle,
-    Crown
+    Crown,
+    Shield
 } from "lucide-react"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import { usePaymentRefund } from "@/hooks/Payment/usePaymentRefund"
@@ -1121,11 +1122,25 @@ const AdmPagamentosPannel = () => {
                                                                                                     </p>
                                                                                                 </div>
                                                                                             )}
+                                                                                            {ticket.isInsured !== null && ticket.isInsured !== undefined && (
+                                                                                                <div className="flex items-center gap-1.5 mt-2">
+                                                                                                    <Shield className={`h-3.5 w-3.5 ${ticket.isInsured ? "text-emerald-600" : "text-psi-dark/40"}`} />
+                                                                                                    <p className={`text-xs ${ticket.isInsured ? "text-emerald-600 font-medium" : "text-psi-dark/60"}`}>
+                                                                                                        {ticket.isInsured ? "Com seguro" : "Sem seguro"}
+                                                                                                    </p>
+                                                                                                </div>
+                                                                                            )}
                                                                                         </div>
                                                                                         <div className="flex flex-col gap-2">
                                                                                             <Badge className={ticketStatusConfig[ticket.status]?.badgeClass || "bg-gray-50 text-gray-600 border-gray-200"}>
                                                                                                 {ticketStatusConfig[ticket.status]?.label || ticket.status}
                                                                                             </Badge>
+                                                                                            {ticket.isInsured && (
+                                                                                                <Badge className="bg-emerald-50 text-emerald-600 border-emerald-200 text-xs">
+                                                                                                    <Shield className="h-3 w-3 mr-1" />
+                                                                                                    Segurado
+                                                                                                </Badge>
+                                                                                            )}
                                                                                             {ticket.cancelledBy && (
                                                                                                 <Badge className={ticketCancelledByConfig[ticket.cancelledBy]?.badgeClass || "bg-gray-50 text-gray-600 border-gray-200"}>
                                                                                                     {ticketCancelledByConfig[ticket.cancelledBy]?.label || ticket.cancelledBy}

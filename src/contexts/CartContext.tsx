@@ -8,6 +8,7 @@ import { CheckoutUtils } from "@/utils/Helpers/CheckoutUtils/CheckoutUtils"
 import { StoreManager } from "@/stores"
 import { useRouter } from "next/navigation"
 import { useTicketHoldDeleteByUserId } from "@/hooks/TicketHold/useTicketHoldDeleteByUserId"
+import { useAuthStore } from "@/stores/Auth/AuthStore"
 
 type TCartItemTicketType = {
     ticketTypeId: string
@@ -140,7 +141,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             prev.filter((item) => !(item.eventId === eventId && item.batchId === batchId))
         )
 
-        deleteTicketHoldByUserId()
+        const { isAuthenticated } = useAuthStore()
+
+        if (isAuthenticated) {
+            deleteTicketHoldByUserId()
+        }
     }, [])
 
     const updateQuantity = useCallback((eventId: string, batchId: string | undefined, quantity: number) => {

@@ -24,6 +24,18 @@ class ValueUtilsClass {
         }
         return this.centsToCurrency(value)
     }
+
+    calculateInsuranceValue(totalInCents: number): number {
+        const INSURANCE_THRESHOLD = 49999
+        const FIXED_INSURANCE_VALUE = 1990
+        const PERCENTAGE_INSURANCE = 5
+
+        if (totalInCents < INSURANCE_THRESHOLD) {
+            return FIXED_INSURANCE_VALUE
+        }
+
+        return Math.round(totalInCents * (PERCENTAGE_INSURANCE / 100))
+    }
 }
 
 export const ValueUtils = new ValueUtilsClass()

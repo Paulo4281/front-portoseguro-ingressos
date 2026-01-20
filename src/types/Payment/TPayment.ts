@@ -109,6 +109,7 @@ type TPaymentAdminListResponse = {
         price: number
         status: string
         ticketTypeId: string | null
+        isInsured: boolean | null
         cancelledBy: typeof TicketCancelledBy[number] | null
         cancelledAt: string | null
         refundReason: string | null

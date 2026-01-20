@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { BarChart, Bar, LineChart, Line, ComposedChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { DollarSign, Ticket, Calendar, TrendingUp, Calendar as CalendarIcon, Clock, AlertCircle, CheckCircle2, Loader2 } from "lucide-react"
 import useDashboardGetData from "@/hooks/Dashboard/useDashboardGetData"
 import useDashboardGetPayouts from "@/hooks/Dashboard/useDashboardGetPayouts"
@@ -279,54 +279,60 @@ const DashboardPannel = () => {
                                 </div>
 
                                 <div className="space-y-4">
-                                    {payoutsData.data.upcomingPayouts.map((payout, index) => (
-                                        <div
-                                            key={index}
-                                            className={`p-4 rounded-xl border ${
-                                                index === 0
-                                                    ? "bg-emerald-100/50 border-emerald-200"
-                                                    : "bg-white border-[#E4E6F0]"
-                                            }`}
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        {index === 0 && (
-                                                            <span className="px-2 py-0.5 bg-emerald-600 text-white text-xs font-medium rounded-full">
-                                                                Próximo
-                                                            </span>
-                                                        )}
-                                                        <p className="text-sm font-medium text-psi-dark">
-                                                            {new Date(payout.date).toLocaleDateString("pt-BR", {
-                                                                day: "2-digit",
-                                                                month: "long",
-                                                                year: "numeric"
-                                                            })}
+                                    {payoutsData.data.upcomingPayouts.map((payout, index) => {
+                                        const payoutDate = new Date(payout.date)
+                                        payoutDate.setDate(payoutDate.getDate() + 2)
+                                        const adjustedDate = payoutDate.toISOString().split("T")[0]
+                                        
+                                        return (
+                                            <div
+                                                key={index}
+                                                className={`p-4 rounded-xl border ${
+                                                    index === 0
+                                                        ? "bg-emerald-100/50 border-emerald-200"
+                                                        : "bg-white border-[#E4E6F0]"
+                                                }`}
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            {index === 0 && (
+                                                                <span className="px-2 py-0.5 bg-emerald-600 text-white text-xs font-medium rounded-full">
+                                                                    Próximo
+                                                                </span>
+                                                            )}
+                                                            <p className="text-sm font-medium text-psi-dark">
+                                                                {new Date(adjustedDate).toLocaleDateString("pt-BR", {
+                                                                    day: "2-digit",
+                                                                    month: "long",
+                                                                    year: "numeric"
+                                                                })}
+                                                            </p>
+                                                        </div>
+                                                        <p className="text-xs text-psi-dark/60">
+                                                            {(() => {
+                                                                const daysDiff = Math.ceil(
+                                                                    (new Date(adjustedDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                                                                )
+                                                                if (daysDiff === 0) return "Hoje"
+                                                                if (daysDiff === 1) return "Amanhã"
+                                                                if (daysDiff < 7) return `Em ${daysDiff} dias`
+                                                                if (daysDiff < 30) return `Em ${Math.floor(daysDiff / 7)} semanas`
+                                                                return `Em ${Math.floor(daysDiff / 30)} meses`
+                                                            })()}
                                                         </p>
                                                     </div>
-                                                    <p className="text-xs text-psi-dark/60">
-                                                        {(() => {
-                                                            const daysDiff = Math.ceil(
-                                                                (new Date(payout.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-                                                            )
-                                                            if (daysDiff === 0) return "Hoje"
-                                                            if (daysDiff === 1) return "Amanhã"
-                                                            if (daysDiff < 7) return `Em ${daysDiff} dias`
-                                                            if (daysDiff < 30) return `Em ${Math.floor(daysDiff / 7)} semanas`
-                                                            return `Em ${Math.floor(daysDiff / 30)} meses`
-                                                        })()}
-                                                    </p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className={`text-lg font-semibold ${
-                                                        index === 0 ? "text-emerald-600" : "text-psi-dark"
-                                                    }`}>
-                                                        {ValueUtils.centsToCurrency(payout.value)}
-                                                    </p>
+                                                    <div className="text-right">
+                                                        <p className={`text-lg font-semibold ${
+                                                            index === 0 ? "text-emerald-600" : "text-psi-dark"
+                                                        }`}>
+                                                            {ValueUtils.centsToCurrency(payout.value)}
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                                 </div>
                             </div>
                         )}
@@ -421,7 +427,9 @@ const DashboardPannel = () => {
                             <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6 shadow-sm">
                                 <h3 className="text-lg font-medium text-psi-dark mb-4">Evolução da Receita</h3>
                                 <ResponsiveContainer width="100%" height={300}>
-                                    <LineChart data={dashboardData.revenueOverTime}>
+                                    <LineChart data={dashboardData.revenueOverTime}
+                                    margin={{ top: 0, right: 30, left: 30, bottom: 0 }}
+                                    >
                                         <CartesianGrid strokeDasharray="3 3" stroke="#E4E6F0" />
                                         <XAxis
                                             dataKey="date"
@@ -498,21 +506,41 @@ const DashboardPannel = () => {
                 )}
 
                 {dashboardData && (
-                    <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6 shadow-sm">
+                    <div className="rounded-2xl border h-[600px] border-[#E4E6F0] bg-white p-6 shadow-sm">
                         <h3 className="text-lg font-medium text-psi-dark mb-4">Vendas por Evento</h3>
-                        <ResponsiveContainer width="100%" height={400}>
-                            <BarChart 
+                        <ResponsiveContainer width="100%" height={550}>
+                            <ComposedChart 
                                 data={dashboardData.salesByEvent}
-                                layout="vertical"
-                                margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
+                                margin={{
+                                    top: 5,
+                                    right: typeof window !== "undefined" && window.innerWidth < 640 ? 0 : 70,
+                                    left: typeof window !== "undefined" && window.innerWidth < 640 ? 0 : 70,
+                                    bottom: 100
+                                }}
                             >
                                 <CartesianGrid strokeDasharray="3 3" stroke="#E4E6F0" />
-                                <XAxis type="number" tick={{ fontSize: 12 }} />
-                                <YAxis 
-                                    type="category" 
-                                    dataKey="eventName" 
+                                <XAxis 
+                                    dataKey="eventName"
                                     tick={{ fontSize: 11 }}
-                                    width={90}
+                                    angle={-45}
+                                    textAnchor="end"
+                                    height={80}
+                                />
+                                <YAxis 
+                                    yAxisId="tickets"
+                                    tick={{ fontSize: 12 }}
+                                    label={{ value: "Ingressos", angle: -90, position: "insideLeft" }}
+                                />
+                                <YAxis 
+                                    yAxisId="revenue"
+                                    orientation="right"
+                                    tick={{ fontSize: 12 }}
+                                    tickFormatter={(value) => {
+                                        if (value >= 1000000) return `R$ ${(value / 10000).toFixed(1)}K`
+                                        if (value >= 1000) return `R$ ${(value / 100).toFixed(0)}`
+                                        return `R$ ${value}`
+                                    }}
+                                    label={{ value: "Receita", angle: 90, position: "insideRight" }}
                                 />
                                 <Tooltip
                                     formatter={(value: number, name: string) => {
@@ -531,9 +559,24 @@ const DashboardPannel = () => {
                                     }}
                                 />
                                 <Legend />
-                                <Bar dataKey="tickets" fill="#6C4BFF" radius={[0, 8, 8, 0]} name="Ingressos" />
-                                <Bar dataKey="revenue" fill="#FF6F91" radius={[0, 8, 8, 0]} name="Receita" />
-                            </BarChart>
+                                <Bar 
+                                    yAxisId="tickets"
+                                    dataKey="tickets" 
+                                    fill="#6C4BFF" 
+                                    radius={[8, 8, 0, 0]} 
+                                    name="Ingressos"
+                                />
+                                <Line 
+                                    yAxisId="revenue"
+                                    type="monotone" 
+                                    dataKey="revenue" 
+                                    stroke="#FF6F91" 
+                                    strokeWidth={3}
+                                    dot={{ fill: "#FF6F91", r: 5 }}
+                                    activeDot={{ r: 7 }}
+                                    name="Receita"
+                                />
+                            </ComposedChart>
                         </ResponsiveContainer>
                     </div>
                 )}

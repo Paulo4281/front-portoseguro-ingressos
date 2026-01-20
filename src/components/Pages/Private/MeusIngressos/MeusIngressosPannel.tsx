@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Ticket, QrCode, Copy, Share2, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, Eye, EyeOff, FileText, Loader2, Check, AlertTriangle, TicketCheck, RefreshCw } from "lucide-react"
+import { Calendar, Clock, MapPin, Ticket, QrCode, Copy, Share2, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, Eye, EyeOff, FileText, Loader2, Check, AlertTriangle, TicketCheck, RefreshCw, Shield } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import { TicketService } from "@/services/Ticket/TicketService"
 import { Toast } from "@/components/Toast/Toast"
@@ -782,9 +782,10 @@ const MeusIngressosPannel = () => {
                                                             {group.tickets.map((ticket, ticketIndex) => {
                                                                 const ticketSchedule = getEventSchedule(ticket)
                                                                 const ticketStatus = statusConfig[ticket.status]
-                                                                const canShowQRCode = ticket.status === "CONFIRMED" || ticket.status === "USED"
+                                                                const canShowQRCode = ticket.status === "CONFIRMED"
                                                                 const isQRCodeVisible = visibleQRCodes[ticket.id] || false
                                                                 const isPendingPayment = ticket.status === "PENDING"
+                                                                const isUsed = ticket.status === "USED" || ticket.status === "PARTIALLY_USED"
                                                                 
                                                                 return (
                                                                     <div
@@ -815,6 +816,15 @@ const MeusIngressosPannel = () => {
                                                                                         <p className="text-sm font-medium text-psi-dark">
                                                                                             {ValueUtils.centsToCurrency(ticket.price)}
                                                                                         </p>
+                                                                                    </div>
+                                                                                )}
+                                                                                {ticket.isInsured && (
+                                                                                    <div className="flex items-center gap-2 mt-2 p-2 rounded-lg bg-emerald-50 border border-emerald-200">
+                                                                                        <Shield className="h-4 w-4 text-emerald-600 shrink-0" />
+                                                                                        <div>
+                                                                                            <p className="text-xs font-medium text-emerald-900">Ingresso segurado</p>
+                                                                                            <p className="text-xs text-emerald-700">Este ingresso possui seguro da compra</p>
+                                                                                        </div>
                                                                                     </div>
                                                                                 )}
                                                                             </div>
@@ -884,6 +894,11 @@ const MeusIngressosPannel = () => {
                                                                                                 />
                                                                                             </div>
                                                                                         )}
+                                                                                    </div>
+                                                                                ) : isUsed ? (
+                                                                                    <div className="p-3 rounded-lg bg-psi-primary/10 border border-psi-primary/20">
+                                                                                        <p className="text-xs font-medium text-psi-dark mb-1">Ingresso já utilizado</p>
+                                                                                        <p className="text-xs text-psi-dark/70">{ticketStatus.description}</p>
                                                                                     </div>
                                                                                 ) : (
                                                                                     <p className="text-xs text-psi-dark/60">{ticketStatus.description}</p>
