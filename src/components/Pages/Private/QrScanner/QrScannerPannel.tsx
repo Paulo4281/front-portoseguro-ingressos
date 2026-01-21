@@ -359,6 +359,11 @@ const QrScannerPannel = () => {
         
         await new Promise(resolve => setTimeout(resolve, 100))
         
+        const scannerContainer = document.getElementById("qr-scanner-container")
+        if (scannerContainer) {
+            scannerContainer.scrollIntoView({ behavior: "smooth", block: "center" })
+        }
+        
         if (!scannerContainerRef.current) {
             setIsScanning(false)
             setScanFeedback("")
@@ -374,11 +379,22 @@ const QrScannerPannel = () => {
                 { facingMode: "environment" },
                 {
                     fps: 15,
-                    qrbox: { width: 300, height: 300 },
-                    videoConstraints: {
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 }
-                    }
+                    ...(typeof window !== "undefined" && window.innerWidth > 1024
+                        ? {
+                            qrbox: { width: 400, height: 400 },
+                            videoConstraints: {
+                                width: { ideal: 1920 },
+                                height: { ideal: 1080 }
+                            }
+                        }
+                        : {
+                            qrbox: { width: 280, height: 330 },
+                            videoConstraints: {
+                                width: { ideal: 390 },
+                                height: { ideal: 490 }
+                            }
+                        }
+                    )
                 },
                 (decodedText) => {
                     handleScanSuccess(decodedText)
@@ -983,8 +999,12 @@ const QrScannerPannel = () => {
 
                                 <div className="lg:col-span-2 space-y-6">
                                     {isScanning && (
-                                        <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
-                                            <div className="mb-4">
+                                        <div 
+                                            id="qr-scanner-container"
+                                            className="rounded-xl border border-psi-primary/20 bg-white p-4
+                                                sm:p-6">
+                                            <div className="mb-3
+                                                sm:mb-4">
                                                 <p className="text-sm font-medium text-psi-dark">Leitura do QR Code</p>
                                                 <p className="text-xs text-psi-dark/60">
                                                     {scanFeedback || "Aponte a câmera para o QR Code. Chegue mais perto e mantenha o celular firme."}
@@ -993,7 +1013,8 @@ const QrScannerPannel = () => {
                                             <div
                                                 id={scannerId}
                                                 ref={scannerContainerRef}
-                                                className="w-full"
+                                                className="w-full min-h-[400px]
+                                                    sm:min-h-[400px]"
                                             />
                                         </div>
                                     )}
