@@ -376,9 +376,9 @@ const QrScannerPannel = () => {
             scannerRef.current = scanner
 
             await scanner.start(
-                { facingMode: "environment" },
+                { facingMode: { exact: "environment" } },
                 {
-                    fps: 15,
+                    fps: 10,
                     ...(typeof window !== "undefined" && window.innerWidth > 1024
                         ? {
                             qrbox: { width: 400, height: 400 },
