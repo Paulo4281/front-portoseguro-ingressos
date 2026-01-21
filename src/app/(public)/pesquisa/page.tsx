@@ -1,5 +1,6 @@
 import { PesquisaPannel } from "@/components/Pages/Public/Pesquisa/PesquisaPannel"
 import { Metadata } from "next"
+import { Suspense } from "react"
 
 export const metadata: Metadata = {
     title: "Pesquisa de Satisfação | Porto Seguro Ingressos",
@@ -8,9 +9,9 @@ export const metadata: Metadata = {
 
 const PesquisaPage = () => {
     return (
-        <>
-        <PesquisaPannel />
-        </>
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Carregando...</div>}>
+            <PesquisaPannel />
+        </Suspense>
     )
 }
 

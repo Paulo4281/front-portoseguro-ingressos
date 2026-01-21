@@ -14,7 +14,7 @@ export const useCampaignFind = (params?: TUseCampaignFindParams) => {
         isError,
         refetch
     } = useQueryHook<TApiResponse<TCampaignListResponse>>({
-        queryKey: ["campaigns", params?.offset || 0],
+        queryKey: ["campaigns", params?.offset?.toString() || "0"],
         queryFn: () => CampaignService.findAll(params?.offset || 0)
     })
 
