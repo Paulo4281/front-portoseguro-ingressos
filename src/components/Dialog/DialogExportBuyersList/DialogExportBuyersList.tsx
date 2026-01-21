@@ -181,7 +181,7 @@ const DialogExportBuyersList = ({
             (index + 1).toString(),
             buyer.customerName || "-",
             buyer.ticketTypeName || "-",
-            buyer.eventDates?.map((date) => DateUtils.formatDate(date, "DD/MM/YYYY")).join(", ") || "-",
+            buyer.eventDates?.map((eventDate) => DateUtils.formatDate(eventDate.date, "DD/MM/YYYY")).join(", ") || "-",
             buyer.paymentDate ? DateUtils.formatDate(typeof buyer.paymentDate === "string" ? buyer.paymentDate : buyer.paymentDate.toISOString(), "DD/MM/YYYY HH:mm") : "-",
             formatFormAnswers(buyer.formAnswers || {}, "pdf")
         ])
@@ -253,7 +253,7 @@ const DialogExportBuyersList = ({
                 index + 1,
                 buyer.customerName || "-",
                 buyer.ticketTypeName || "-",
-                buyer.eventDates?.map((date) => DateUtils.formatDate(date, "DD/MM/YYYY")).join(", ") || "-",
+                buyer.eventDates?.map((eventDate) => DateUtils.formatDate(eventDate.date, "DD/MM/YYYY")).join(", ") || "-",
                 buyer.paymentDate 
                     ? DateUtils.formatDate(
                         typeof buyer.paymentDate === "string" 
@@ -322,7 +322,7 @@ const DialogExportBuyersList = ({
                 (index + 1).toString(),
                 buyer.customerName || "-",
                 buyer.ticketTypeName || "-",
-                buyer.eventDates?.map((date) => DateUtils.formatDate(date, "DD/MM/YYYY")).join(", ") || "-",
+                buyer.eventDates?.map((eventDate) => DateUtils.formatDate(eventDate.date, "DD/MM/YYYY")).join(", ") || "-",
                 buyer.paymentDate 
                     ? DateUtils.formatDate(
                         typeof buyer.paymentDate === "string" 
@@ -362,7 +362,7 @@ const DialogExportBuyersList = ({
                 numero: index + 1,
                 nome: buyer.customerName || null,
                 tipoIngresso: buyer.ticketTypeName || null,
-                datasEvento: buyer.eventDates?.map((date) => DateUtils.formatDate(date, "DD/MM/YYYY")) || [],
+                datasEvento: buyer.eventDates?.map((eventDate) => DateUtils.formatDate(eventDate.date, "DD/MM/YYYY")) || [],
                 dataPagamento: buyer.paymentDate 
                     ? DateUtils.formatDate(
                         typeof buyer.paymentDate === "string" 

@@ -93,6 +93,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 })(window,document,'script','dataLayer','GTM-TG44WF8Q');`,
           }}
         />
+      <link rel="icon" href="/favicon.ico" />
       </head>
       <body
         className={`${systemFont.variable} font-sans antialiased overflow-x-hidden`}

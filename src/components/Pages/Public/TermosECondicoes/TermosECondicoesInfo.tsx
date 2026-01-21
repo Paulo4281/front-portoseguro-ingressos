@@ -46,6 +46,29 @@ const TermosECondicoesInfo = () => {
                                     <p className="text-psi-dark/70 leading-relaxed">
                                         Estes termos se aplicam a todos os usuários da plataforma, incluindo compradores de ingressos e organizadores de eventos.
                                     </p>
+                                    <div className="bg-psi-primary/5 rounded-lg p-4 border border-psi-primary/10 mt-4">
+                                        <h3 className="font-medium text-psi-dark mb-2">1.1. Consentimento para Comunicações de Marketing</h3>
+                                        <p className="text-psi-dark/70 text-sm leading-relaxed">
+                                            Ao se cadastrar na plataforma, você concorda e autoriza o recebimento de comunicações de marketing por e-mail, incluindo:
+                                        </p>
+                                        <ul className="space-y-1 text-psi-dark/70 text-sm mt-2 ml-4">
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-psi-primary mt-1">•</span>
+                                                <span>Campanhas promocionais e ofertas especiais da plataforma</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-psi-primary mt-1">•</span>
+                                                <span>Comunicações de marketing dos organizadores dos eventos que você demonstrou interesse ou comprou ingressos</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-psi-primary mt-1">•</span>
+                                                <span>Informações sobre novos eventos, lembretes de eventos próximos e pesquisas de satisfação</span>
+                                            </li>
+                                        </ul>
+                                        <p className="text-psi-dark/70 text-sm leading-relaxed mt-2">
+                                            <strong className="text-psi-dark">Você pode descadastrar-se</strong> das comunicações de marketing a qualquer momento através do link de descadastramento presente em cada e-mail ou através das configurações da sua conta.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </section>
@@ -198,28 +221,95 @@ const TermosECondicoesInfo = () => {
                         sm:p-8 space-y-4">
                             <div className="flex items-start gap-4">
                                 <div className="p-3 rounded-lg bg-psi-primary/10 shrink-0">
+                                    <Shield className="h-6 w-6 text-psi-primary" />
+                                </div>
+                                <div className="flex-1 space-y-3">
+                                    <h2 className="text-2xl font-semibold text-psi-dark">5. Seguro da Compra</h2>
+                                    <p className="text-psi-dark/70 leading-relaxed">
+                                        Oferecemos um seguro opcional para proteger sua compra de ingressos contra imprevistos que possam impedir sua participação no evento.
+                                    </p>
+                                    <div className="space-y-4 pt-2">
+                                        <div className="bg-psi-primary/5 rounded-lg p-4 border border-psi-primary/10">
+                                            <h3 className="font-medium text-psi-dark mb-2">5.1. Contratação do Seguro</h3>
+                                            <p className="text-psi-dark/70 text-sm leading-relaxed">
+                                                O seguro da compra é <strong className="text-psi-dark">opcional</strong> e pode ser contratado durante o processo de finalização da compra. 
+                                                Você pode escolher incluir ou não o seguro antes de finalizar o pagamento.
+                                            </p>
+                                        </div>
+                                        <div className="bg-psi-primary/5 rounded-lg p-4 border border-psi-primary/10">
+                                            <h3 className="font-medium text-psi-dark mb-2">5.2. Valor do Seguro</h3>
+                                            <p className="text-psi-dark/70 text-sm leading-relaxed mb-2">
+                                                O valor do seguro é calculado com base no valor total da compra (incluindo taxas da plataforma, mas antes das taxas de pagamento do gateway):
+                                            </p>
+                                            <ul className="space-y-2 text-psi-dark/70 text-sm ml-4">
+                                                <li className="flex items-start gap-2">
+                                                    <span className="text-psi-primary mt-1">•</span>
+                                                    <span><strong>Para compras abaixo de R$ 499,99:</strong> seguro fixo de <strong className="text-psi-primary">R$ 19,90</strong></span>
+                                                </li>
+                                                <li className="flex items-start gap-2">
+                                                    <span className="text-psi-primary mt-1">•</span>
+                                                    <span><strong>Para compras acima de R$ 499,99:</strong> seguro de <strong className="text-psi-primary">5% do valor total</strong> da compra</span>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                        <div className="bg-psi-primary/5 rounded-lg p-4 border border-psi-primary/10">
+                                            <h3 className="font-medium text-psi-dark mb-2">5.3. Cobertura do Seguro</h3>
+                                            <p className="text-psi-dark/70 text-sm leading-relaxed">
+                                                O seguro cobre situações imprevistas que possam impedir sua participação no evento, como problemas de saúde, emergências familiares, 
+                                                entre outras situações cobertas pela apólice. O seguro oferece proteção adicional para sua compra, facilitando o processo de reembolso 
+                                                em caso de imprevistos.
+                                            </p>
+                                        </div>
+                                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                            <div className="flex items-start gap-3">
+                                                <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                                                <div className="flex-1">
+                                                    <h4 className="font-medium text-amber-900 mb-1">Importante sobre o Seguro</h4>
+                                                    <p className="text-amber-800 text-sm leading-relaxed">
+                                                        O seguro é <strong>opcional</strong> e não é obrigatório para finalizar sua compra. No entanto, recomendamos fortemente a contratação 
+                                                        do seguro para evitar dores de cabeça em caso de imprevistos. Imprevistos podem acontecer e ter o seguro pode facilitar muito sua vida.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="bg-psi-primary/5 rounded-lg p-4 border border-psi-primary/10">
+                                            <h3 className="font-medium text-psi-dark mb-2">5.4. Aplicação do Seguro</h3>
+                                            <p className="text-psi-dark/70 text-sm leading-relaxed">
+                                                O seguro é aplicado a cada ingresso individualmente. Quando você contrata o seguro, ele é vinculado a cada ingresso da compra, 
+                                                garantindo proteção individual para cada um deles.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section className="bg-white rounded-xl border border-psi-primary/20 p-6
+                        sm:p-8 space-y-4">
+                            <div className="flex items-start gap-4">
+                                <div className="p-3 rounded-lg bg-psi-primary/10 shrink-0">
                                     <Wallet className="h-6 w-6 text-psi-primary" />
                                 </div>
                                 <div className="flex-1 space-y-3">
-                                    <h2 className="text-2xl font-semibold text-psi-dark">5. Repasse aos Organizadores</h2>
+                                    <h2 className="text-2xl font-semibold text-psi-dark">6. Repasse aos Organizadores</h2>
                                     <p className="text-psi-dark/70 leading-relaxed">
                                         O repasse do valor das vendas de ingressos aos organizadores segue as seguintes regras:
                                     </p>
                                     <div className="space-y-3 pt-2">
                                         <div className="bg-psi-primary/5 rounded-lg p-4 border border-psi-primary/10">
-                                            <h3 className="font-medium text-psi-dark mb-2">5.1. Prazo de Repasse</h3>
+                                            <h3 className="font-medium text-psi-dark mb-2">6.1. Prazo de Repasse</h3>
                                             <p className="text-psi-dark/70 text-sm leading-relaxed">
                                                 O repasse é realizado <strong className="text-psi-dark">após a conclusão do evento</strong>, em até <strong className="text-psi-primary">72 horas</strong>.
                                             </p>
                                         </div>
                                         <div className="bg-psi-primary/5 rounded-lg p-4 border border-psi-primary/10">
-                                            <h3 className="font-medium text-psi-dark mb-2">5.2. Pagamentos via PIX</h3>
+                                            <h3 className="font-medium text-psi-dark mb-2">6.2. Pagamentos via PIX</h3>
                                             <p className="text-psi-dark/70 text-sm leading-relaxed">
                                                 Para pagamentos realizados via PIX, que são recebidos integralmente, o repasse será feito em até <strong className="text-psi-primary">72 horas</strong> após o término do evento.
                                             </p>
                                         </div>
                                         <div className="bg-psi-primary/5 rounded-lg p-4 border border-psi-primary/10">
-                                            <h3 className="font-medium text-psi-dark mb-2">5.3. Pagamentos via Cartão de Crédito</h3>
+                                            <h3 className="font-medium text-psi-dark mb-2">6.3. Pagamentos via Cartão de Crédito</h3>
                                             <p className="text-psi-dark/70 text-sm leading-relaxed">
                                                 Para compras parceladas no cartão de crédito, o repasse será feito <strong className="text-psi-dark">conforme as parcelas forem sendo pagas</strong>. 
                                                 Por exemplo: se um ingresso foi dividido em 6x e já se passaram 4 meses quando o evento se encerrou, será repassado ao organizador o valor das 4 parcelas já pagas. 
@@ -238,7 +328,7 @@ const TermosECondicoesInfo = () => {
                                     <Users className="h-6 w-6 text-psi-primary" />
                                 </div>
                                 <div className="flex-1 space-y-3">
-                                    <h2 className="text-2xl font-semibold text-psi-dark">6. Responsabilidades dos Organizadores</h2>
+                                    <h2 className="text-2xl font-semibold text-psi-dark">7. Responsabilidades dos Organizadores</h2>
                                     <p className="text-psi-dark/70 leading-relaxed">
                                         Os organizadores são responsáveis por:
                                     </p>
@@ -275,7 +365,7 @@ const TermosECondicoesInfo = () => {
                                     <Shield className="h-6 w-6 text-psi-primary" />
                                 </div>
                                 <div className="flex-1 space-y-3">
-                                    <h2 className="text-2xl font-semibold text-psi-dark">7. Segurança e Proteção</h2>
+                                    <h2 className="text-2xl font-semibold text-psi-dark">8. Segurança e Proteção</h2>
                                     <p className="text-psi-dark/70 leading-relaxed">
                                         Nossa plataforma utiliza tecnologia de ponta para garantir a segurança de todas as transações:
                                     </p>
@@ -308,7 +398,7 @@ const TermosECondicoesInfo = () => {
                                     <AlertCircle className="h-6 w-6 text-psi-primary" />
                                 </div>
                                 <div className="flex-1 space-y-3">
-                                    <h2 className="text-2xl font-semibold text-psi-dark">8. Limitação de Responsabilidade</h2>
+                                    <h2 className="text-2xl font-semibold text-psi-dark">9. Limitação de Responsabilidade</h2>
                                     <p className="text-psi-dark/70 leading-relaxed">
                                         A plataforma Porto Seguro Ingressos atua como intermediária entre compradores e organizadores. 
                                         Não nos responsabilizamos por:
@@ -342,7 +432,7 @@ const TermosECondicoesInfo = () => {
                                     <FileText className="h-6 w-6 text-psi-primary" />
                                 </div>
                                 <div className="flex-1 space-y-3">
-                                    <h2 className="text-2xl font-semibold text-psi-dark">9. Alterações nos Termos</h2>
+                                    <h2 className="text-2xl font-semibold text-psi-dark">10. Alterações nos Termos</h2>
                                     <p className="text-psi-dark/70 leading-relaxed">
                                         Reservamo-nos o direito de modificar estes Termos e Condições a qualquer momento. 
                                         Alterações significativas serão comunicadas através da plataforma. 

@@ -76,6 +76,7 @@ type TTicket = {
     refundStatus: string | null
     refundReceiptUrl: string | null
     refundEndToEndIndentifier: string | null
+    isInsured?: boolean | null
     createdAt: string
     updatedAt: string | null
 
@@ -194,6 +195,7 @@ type TTicketBuy = {
     }[] | null
     removeTicketHoldIds: string[] | null
     vfc: number | null
+    isInsured?: boolean
 }
 
 type TTicketToOrganizer = {

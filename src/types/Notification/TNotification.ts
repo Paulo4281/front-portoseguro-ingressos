@@ -17,7 +17,8 @@ const NotificationSubjects = [
     "EVENT_BALANCE_RELEASED_TO_ORGANIZER",
     "EVENT_BATCH_ONLINE",
     "REGISTER_APPROVED",
-    "REGISTER_REJECTED"
+    "REGISTER_REJECTED",
+    "SUBSCRIPTION_CRM_PRO_EXPIRED"
 ] as const
 
 type TNotificationSubject = typeof NotificationSubjects[number]

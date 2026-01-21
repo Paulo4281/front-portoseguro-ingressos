@@ -16,6 +16,7 @@ type TEventCacheResponse = {
     name: string
     slug: string
     image: string
+    location: string | null
     Recurrence: {
         id: string
     } | null
@@ -170,15 +171,21 @@ type TEventBuyerTicketStatus =
     "EXPIRED" |
     "FAILED"
 
+type TEventListBuyersEventDate = {
+    date: string
+    status?: "USED" | "PENDING" | "CANCELLED" | "REFUNDED" | "CONFIRMED" | null
+    usedAt?: string | null
+    validationInfo: TEventBuyerValidationInfo
+}
+
 type TEventListBuyers = {
     ticketId: string
     status: TEventBuyerTicketStatus
     customerName: string
     paymentDate: Date | string
     ticketTypeName: string | null
-    eventDates: string[]
+    eventDates: TEventListBuyersEventDate[]
     formAnswers: Record<string, any>
-    validationInfo: TEventBuyerValidationInfo
 }
 
 export type {
@@ -195,6 +202,8 @@ export type {
     TEventVerifySoldResponse,
     TEventSoldInValueResponse,
     TEventListBuyers,
+    TEventListBuyersEventDate,
+    TEventBuyerValidationInfo,
     TEventSearchResponse,
     TEventCacheResponse
 }

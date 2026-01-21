@@ -27,6 +27,7 @@ import { InputMask } from "@/components/Input/InputMask"
 import { QuantitySelector } from "@/components/QuantitySelector/QuantitySelector"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Switch } from "@/components/ui/switch"
 import {
     Select,
     SelectContent,
@@ -196,6 +197,8 @@ const CheckoutInfo = () => {
     const [paymentVerified, setPaymentVerified] = useState(false)
     const [selectedCardId, setSelectedCardId] = useState<string | null>(null)
     const [showNewCardForm, setShowNewCardForm] = useState(false)
+    const [isInsured, setIsInsured] = useState(false)
+    const [showInsuranceDialog, setShowInsuranceDialog] = useState(false)
 
     const loginForm = useForm<TAuth>({
         resolver: zodResolver(AuthValidator),
@@ -672,12 +675,18 @@ const CheckoutInfo = () => {
         return subtotalBeforeDiscount - totalDiscount
     }, [subtotalBeforeDiscount, totalDiscount])
 
+    const insuranceValue = useMemo(() => {
+        if (!isInsured || items?.[0]?.isFree) return 0
+        return ValueUtils.calculateInsuranceValue(subtotal)
+    }, [isInsured, subtotal, items])
+
     const total = useMemo(() => {
-        if (paymentMethod === "credit") {
-            return calculateTotalWithInstallmentFee(subtotal, installments)
-        }
-        return subtotal
-    }, [subtotal, paymentMethod, installments])
+        const baseTotal = paymentMethod === "credit"
+            ? calculateTotalWithInstallmentFee(subtotal, installments)
+            : subtotal
+        
+        return baseTotal + insuranceValue
+    }, [subtotal, paymentMethod, installments, insuranceValue])
 
     useEffect(() => {
         if (paymentMethod === "pix") {
@@ -1057,6 +1066,7 @@ const CheckoutInfo = () => {
 
 
         data["removeTicketHoldIds"] = ticketHoldData?.map((th) => th.id) || null
+        data["isInsured"] = isInsured
 
         const response = await buyTicket(data)
 
@@ -2448,6 +2458,37 @@ const CheckoutInfo = () => {
                                                 )
                                         }
 
+                                        {!items?.[0]?.isFree && (
+                                            <div className="p-4 rounded-xl border border-psi-dark/10 bg-white">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <h3 className="font-medium text-psi-dark">Seguro da Compra</h3>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setShowInsuranceDialog(true)}
+                                                                className="text-psi-primary hover:underline text-xs font-medium"
+                                                            >
+                                                                Entenda como funciona o seguro
+                                                            </button>
+                                                        </div>
+                                                        <p className="text-xs text-psi-dark/60">
+                                                            Proteja sua compra contra imprevistos
+                                                        </p>
+                                                        {isInsured && (
+                                                            <p className="text-xs text-emerald-600 font-medium mt-1">
+                                                                + {ValueUtils.centsToCurrency(insuranceValue)}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <Switch
+                                                        checked={isInsured}
+                                                        onCheckedChange={setIsInsured}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
                                         <div className="p-4 rounded-xl bg-psi-dark/5">
                                             <h3 className="font-medium text-psi-dark mb-2">Resumo</h3>
                                             <div className="space-y-2 text-sm">
@@ -2458,6 +2499,24 @@ const CheckoutInfo = () => {
                                                             <span>{ValueUtils.centsToCurrency(subtotal)}</span>
                                                         </div>
                                                     </>
+                                                )}
+                                                {paymentMethod === "credit" && installments > 1 && (
+                                                    <div className="flex items-center justify-between text-psi-dark/70">
+                                                        <span>Subtotal após desconto:</span>
+                                                        <span>{ValueUtils.centsToCurrency(subtotal)}</span>
+                                                    </div>
+                                                )}
+                                                {paymentMethod === "credit" && (
+                                                    <div className="flex items-center justify-between text-psi-dark/70">
+                                                        <span>Taxa de parcelamento ({installments}x):</span>
+                                                        <span>{ValueUtils.centsToCurrency(calculateTotalWithInstallmentFee(subtotal, installments) - subtotal)}</span>
+                                                    </div>
+                                                )}
+                                                {isInsured && !items?.[0]?.isFree && (
+                                                    <div className="flex items-center justify-between text-psi-dark/70">
+                                                        <span>Seguro da Compra:</span>
+                                                        <span>{ValueUtils.centsToCurrency(insuranceValue)}</span>
+                                                    </div>
                                                 )}
                                                 <div className="flex items-center justify-between font-medium text-psi-dark pt-2 border-t border-psi-dark/10">
                                                     <span>Total:</span>
@@ -2629,7 +2688,13 @@ const CheckoutInfo = () => {
                                     {paymentMethod === "credit" && (
                                         <div className="flex items-center justify-between text-sm">
                                             <span className="text-psi-dark/70">Taxa de parcelamento ({installments}x):</span>
-                                            <span className="text-psi-dark/70">{ValueUtils.centsToCurrency(total - subtotal)}</span>
+                                            <span className="text-psi-dark/70">{ValueUtils.centsToCurrency(calculateTotalWithInstallmentFee(subtotal, installments) - subtotal)}</span>
+                                        </div>
+                                    )}
+                                    {isInsured && !items?.[0]?.isFree && (
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-psi-dark/70">Seguro da Compra:</span>
+                                            <span className="text-psi-dark/70">{ValueUtils.centsToCurrency(insuranceValue)}</span>
                                         </div>
                                     )}
                                     <div className="flex items-center justify-between pt-2 border-t border-psi-dark/10">
@@ -2645,7 +2710,7 @@ const CheckoutInfo = () => {
                                     )}
                                     {paymentMethod === "credit" && installments === 1 && (
                                         <p className="text-psi-dark/70 text-xs">
-                                            À vista com taxa de {ValueUtils.centsToCurrency(total - subtotal)}
+                                            À vista com taxa de {ValueUtils.centsToCurrency(calculateTotalWithInstallmentFee(subtotal, installments) - subtotal)}
                                         </p>
                                     )}
                                 </div>
@@ -3101,6 +3166,7 @@ const CheckoutInfo = () => {
                                                 mask="(00) 00000-0000"
                                                 placeholder="(00) 00000-0000"
                                                 icon={Phone}
+                                                inputMode="tel"
                                             />
                                         )}
                                     />
@@ -3123,6 +3189,7 @@ const CheckoutInfo = () => {
                                                 icon={FileText}
                                                 disabled={field.value ? true : false}
                                                 className={`${field.value ? "bg-psi-dark/5" : ""}`}
+                                                inputMode="numeric"
                                             />
                                         )}
                                     />
@@ -3204,6 +3271,7 @@ const CheckoutInfo = () => {
                                                 value={field.value || ""}
                                                 mask="00/00/0000"
                                                 placeholder="DD/MM/AAAA"
+                                                inputMode="numeric"
                                             />
                                         )}
                                     />
@@ -3231,6 +3299,7 @@ const CheckoutInfo = () => {
                                                 onAccept={(value) => updateAddressField("zipCode", value as string)}
                                                 placeholder="00000-000"
                                                 icon={Hash}
+                                                inputMode="numeric"
                                             />
                                         )}
                                     />
@@ -3289,6 +3358,7 @@ const CheckoutInfo = () => {
                                                 value={field.value || ""}
                                                 onChange={(e) => updateAddressField("number", e.target.value)}
                                                 placeholder="123"
+                                                inputMode="numeric"
                                             />
                                         )}
                                     />
@@ -3707,6 +3777,79 @@ const CheckoutInfo = () => {
                             type="button"
                             variant="primary"
                             onClick={() => setShowRegulamentoDialog(false)}
+                        >
+                            Entendi
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showInsuranceDialog} onOpenChange={setShowInsuranceDialog}>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Seguro da Compra</DialogTitle>
+                        <DialogDescription>
+                            Entenda como funciona o seguro para proteger sua compra de ingressos
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-6 text-psi-dark/70">
+                        <div className="p-4 rounded-xl bg-psi-primary/5 border border-psi-primary/20">
+                            <div className="flex items-start gap-3">
+                                <CheckCircle2 className="h-5 w-5 text-psi-primary shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="font-medium text-psi-dark mb-1">
+                                        O que é o Seguro da Compra?
+                                    </p>
+                                    <p className="text-sm leading-relaxed">
+                                        O seguro da compra é uma proteção adicional que você pode contratar para proteger sua compra de ingressos contra imprevistos que possam impedir sua participação no evento.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p className="font-medium text-psi-dark mb-4">Como funciona o seguro?</p>
+                            <div className="space-y-4">
+                                <div className="p-4 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
+                                    <p className="text-sm leading-relaxed mb-2">
+                                        <strong className="text-psi-dark">Valor do Seguro:</strong>
+                                    </p>
+                                    <ul className="text-sm space-y-2 list-disc list-inside ml-2">
+                                        <li>Para compras abaixo de R$ 499,99: seguro fixo de R$ 19,90</li>
+                                        <li>Para compras acima de R$ 499,99: seguro de 5% do valor total da compra</li>
+                                    </ul>
+                                </div>
+
+                                <div className="p-4 rounded-lg bg-psi-dark/5 border border-psi-dark/10">
+                                    <p className="text-sm leading-relaxed mb-2">
+                                        <strong className="text-psi-dark">Proteção oferecida:</strong>
+                                    </p>
+                                    <p className="text-sm leading-relaxed">
+                                        O seguro cobre situações imprevistas que possam impedir sua participação no evento, como problemas de saúde, emergências familiares, entre outras situações cobertas pela apólice.
+                                    </p>
+                                </div>
+
+                                <div className="p-4 rounded-lg bg-amber-50 border border-amber-200">
+                                    <div className="flex items-start gap-3">
+                                        <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-medium text-amber-900 mb-1">
+                                                Importante
+                                            </p>
+                                            <p className="text-sm text-amber-700 leading-relaxed">
+                                                O seguro é opcional e não é obrigatório para finalizar sua compra. No entanto, recomendamos fortemente a contratação do seguro para evitar dores de cabeça em caso de imprevistos. Imprevistos podem acontecer e ter o seguro pode facilitar muito sua vida.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex justify-end pt-4 border-t border-psi-dark/10">
+                        <Button
+                            type="button"
+                            variant="primary"
+                            onClick={() => setShowInsuranceDialog(false)}
                         >
                             Entendi
                         </Button>

@@ -225,7 +225,6 @@ const SupportAdminPannel = () => {
                         sm:justify-between">
                             <div className="flex flex-col gap-4
                             sm:flex-row
-                            sm:flex-1
                             sm:max-w-2xl">
                                 <div className="flex-1">
                                     <Input
@@ -335,7 +334,7 @@ const SupportAdminPannel = () => {
                                                             </TableCell>
                                                             <TableCell className="py-4 px-6">
                                                                 <span className="font-mono text-sm font-medium text-psi-primary">
-                                                                    #{support.code}
+                                                                    {support.code}
                                                                 </span>
                                                             </TableCell>
                                                             <TableCell className="py-4 px-6">

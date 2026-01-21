@@ -50,11 +50,12 @@ type TPaymentAdminListResponse = {
     id: string
     code: string
     method: typeof PaymentMethods[number]
-    type: "TICKET"
+    type: "TICKET" | "CRM_PRO"
     status: "RECEIVED" | "CONFIRMED" | "PENDING" | "FAILED" | "REFUNDED" | "OVERDUE" | "REFUND_REQUESTED"
     externalPaymentId: string | null
-    eventId: string
+    eventId: string | null
     eventInfo: any
+    subscriptionId: string | null
     grossValue: number
     netValue: number | null
     discountedValue: number | null
@@ -108,6 +109,7 @@ type TPaymentAdminListResponse = {
         price: number
         status: string
         ticketTypeId: string | null
+        isInsured: boolean | null
         cancelledBy: typeof TicketCancelledBy[number] | null
         cancelledAt: string | null
         refundReason: string | null
@@ -148,7 +150,17 @@ type TPaymentAdminListResponse = {
             companyName: string
             companyDocument: string
         }
-    }
+    } | null
+    Subscription: {
+        id: string
+        code: string
+        type: "CRM"
+        status: "ACTIVE" | "PENDING" | "OVERDUE" | "FAILED" | "CANCELLED"
+        grossValue: number
+        netValue: number | null
+        createdAt: string
+        updatedAt: string | null
+    } | null
 }
 
 type TPayment = {

@@ -30,6 +30,7 @@ type TUser = {
     image: string | null
     payCustomerId: string | null
     isCompleteInfo: boolean
+    isMarketingConsent: boolean
     role: typeof UserRoles[number]
     createdAt: string
     updatedAt: string | null

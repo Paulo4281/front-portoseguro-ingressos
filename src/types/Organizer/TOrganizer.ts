@@ -29,6 +29,7 @@ type TOrganizer = {
     identityDocumentFront: string | null
     identityDocumentBack: string | null
     identityDocumentSelfie: string | null
+    crmPlan: "FREE" | "PRO"
     instagramUrl: string | null
     facebookUrl: string | null
     supportEmail: string | null

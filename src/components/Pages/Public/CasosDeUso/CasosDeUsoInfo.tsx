@@ -147,8 +147,8 @@ const platformFeatures = [
     },
     {
         icon: Users,
-        title: "Gestão de Clientes",
-        description: "Administre todos os seus clientes, histórico de compras e comunicações"
+        title: "CRM e Relacionamento",
+        description: "Tenha controle total sobre seus clientes, histórico de interações, vendas, preferências e comunicações, gerenciando o relacionamento para fidelizar e impulsionar novas vendas"
     },
     {
         icon: FileText,

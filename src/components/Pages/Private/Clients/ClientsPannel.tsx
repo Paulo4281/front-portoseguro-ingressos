@@ -182,7 +182,7 @@ const ClientsPannel = () => {
                                                     <Users className="h-8 w-8 text-psi-primary/60" />
                                                 </div>
                                                 <div className="space-y-1">
-                                                    <p className="text-base font-medium text-psi-dark">Nenhum lead encontrado</p>
+                                                    <p className="text-base font-medium text-psi-dark">Nenhum cliente encontrado</p>
                                                     <p className="text-sm text-psi-dark/50">Os clientes que comprarem ingressos aparecerão aqui.</p>
                                                 </div>
                                             </div>

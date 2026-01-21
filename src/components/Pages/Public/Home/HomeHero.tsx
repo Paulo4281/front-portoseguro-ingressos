@@ -387,10 +387,10 @@ const HomeHero = () => {
 
                             {!isAuthenticated && (
                                 <div className="w-full mb-12">
-                                    <div className="relative overflow-hidden border-2 border-psi-primary/20 bg-linear-to-br from-psi-primary/10 via-white to-psi-light/50 p-8
+                                    <div className="relative overflow-hidden bg-linear-to-t bg-[#EAE7FE] p-8 border-2 border-psi-primary/10
                                     sm:p-10
-                                    lg:p-12 shadow-xl shadow-psi-primary/10 neon-border">
-                                        <div className="absolute top-0 right-0 w-64 h-64 bg-psi-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                                    lg:p-12 neon-border">
+                                        <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                                         <div className="relative space-y-6">
                                             <div className="text-center space-y-2">
                                                 <h3 className="text-2xl font-bold text-psi-dark
@@ -418,6 +418,7 @@ const HomeHero = () => {
                                                                         type="email"
                                                                         placeholder="seu@email.com"
                                                                         icon={Mail}
+                                                                        className="bg-white/90 rounded-full"
                                                                         required
                                                                     />
                                                                 )}
@@ -436,6 +437,7 @@ const HomeHero = () => {
                                                                         type="password"
                                                                         placeholder="Sua senha"
                                                                         icon={Lock}
+                                                                        className="bg-white/90 rounded-full"
                                                                         required
                                                                     />
                                                                 )}
@@ -467,7 +469,7 @@ const HomeHero = () => {
                                                             <div className="w-full border-t border-border" />
                                                         </div>
                                                         <div className="relative flex justify-center text-xs uppercase">
-                                                            <span className="bg-white
+                                                            <span className="
                                                             dark:bg-psi-dark
                                                             px-2
                                                             text-muted-foreground">

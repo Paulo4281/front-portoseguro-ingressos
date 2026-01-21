@@ -83,6 +83,23 @@ class UserServiceClass {
         return response
     }
 
+    async updateEmailMarketingConsentByToken(token: string): Promise<AxiosResponse["data"]> {
+        const response = (await API.PATCH({
+            prefix: "/user",
+            url: "/update-email-marketing-consent-by-token",
+            data: { token }
+        }))?.data
+        return response
+    }
+
+    async updateEmailMarketingConsentByUser(): Promise<AxiosResponse["data"]> {
+        const response = (await API.PATCH({
+            prefix: "/user",
+            url: "/update-email-marketing-consent-by-user"
+        }))?.data
+        return response
+    }
+
     async uploadProfilePicture(file: File): Promise<AxiosResponse["data"]> {
         const formData = new FormData()
         formData.append("image", file)

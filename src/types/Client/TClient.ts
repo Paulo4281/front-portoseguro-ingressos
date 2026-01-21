@@ -38,8 +38,50 @@ type TFindOrganizerClientsResponse = {
     offset: number
 }
 
+type TCustomer = {
+    id: string
+    name: string
+    email: string
+    phone: string
+    isMarketingConsent: boolean
+    totalPurchases: number
+    totalSpent: number
+    lastPurchaseDate: string
+    lastPurchaseTime: string
+    events: Array<{
+        id: string
+        name: string
+        date: string
+        tickets: Array<{
+            type: string
+            quantity: number
+        }>
+    }>
+    tags: Array<{
+        id: string
+        name: string
+        color: string
+        tagClientId: string
+    }>
+    observations: Array<{
+        id: string
+        text: string
+        createdAt: string
+    }>
+}
+
+type TFindOrganizerClientsCrmResponse = {
+    data: TCustomer[]
+    total: number
+    totalFiltered: number
+    limit: number
+    offset: number
+}
+
 export type {
     TClient,
     TClientEvent,
-    TFindOrganizerClientsResponse
+    TFindOrganizerClientsResponse,
+    TCustomer,
+    TFindOrganizerClientsCrmResponse
 }

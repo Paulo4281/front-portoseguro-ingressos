@@ -36,7 +36,9 @@ import {
     Lock,
     Eye,
     EyeOff,
-    AlertTriangle
+    AlertTriangle,
+    Crown,
+    Shield
 } from "lucide-react"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import { usePaymentRefund } from "@/hooks/Payment/usePaymentRefund"
@@ -56,6 +58,7 @@ import { Toast } from "@/components/Toast/Toast"
 import { LoadingButton } from "@/components/Loading/LoadingButton"
 import { DialogUnderstandValues } from "@/components/Dialog/DialogUnderstandValues/DialogUnderstandValues"
 import { HelpCircle } from "lucide-react"
+import { DocumentUtils } from "@/utils/Helpers/DocumentUtils/DocumentUtils"
 
 export const ticketCancelledByConfig: Record<string, { label: string; badgeClass: string }> = {
     ORGANIZER: {
@@ -532,7 +535,7 @@ const AdmPagamentosPannel = () => {
                                                                         {payment.method === "PIX" ? "PIX" : "Cartão de Crédito"}
                                                                     </p>
                                                                     <p className="text-sm text-psi-dark/80">
-                                                                        {formatDateTime(payment.createdAt)}
+                                                                        {DateUtils.formatDate(payment.createdAt, "DD/MM/YYYY HH:mm")}
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -548,20 +551,33 @@ const AdmPagamentosPannel = () => {
                                                             </p>
                                                             {user.phone && (
                                                                 <p className="text-xs text-psi-dark/50">
-                                                                    {user.phone}
+                                                                    {DocumentUtils.formatPhone(user.phone || "")}
                                                                 </p>
                                                             )}
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="py-5 px-6">
-                                                        <div className="space-y-1">
-                                                            <p className="font-medium text-psi-dark text-sm">
-                                                                {payment.Event.name}
-                                                            </p>
-                                                            <p className="text-xs text-psi-dark/50">
-                                                                {payment.Event.location || "Sem localização"}
-                                                            </p>
-                                                        </div>
+                                                        {payment.type === "CRM_PRO" ? (
+                                                            <div className="space-y-1">
+                                                                <p className="font-medium text-psi-dark text-sm">
+                                                                    Assinatura CRM Pro
+                                                                </p>
+                                                                {payment.Subscription && (
+                                                                    <p className="text-xs text-psi-dark/50">
+                                                                        {payment.Subscription.code}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="space-y-1">
+                                                                <p className="font-medium text-psi-dark text-sm">
+                                                                    {payment.Event?.name || "Evento não encontrado"}
+                                                                </p>
+                                                                <p className="text-xs text-psi-dark/50">
+                                                                    {payment.Event?.location || "Sem localização"}
+                                                                </p>
+                                                            </div>
+                                                        )}
                                                     </TableCell>
                                                     <TableCell className="py-5 px-6">
                                                         <div className="space-y-1">
@@ -612,53 +628,77 @@ const AdmPagamentosPannel = () => {
                                                                             </p>
                                                                             {user.phone && (
                                                                                 <p className="text-sm text-psi-dark/70">
-                                                                                    {user.phone}
+                                                                                    {DocumentUtils.formatPhone(user.phone || "")}
                                                                                 </p>
                                                                             )}
                                                                             {user.document && (
                                                                                 <p className="text-sm text-psi-dark/70">
-                                                                                    {user.document}
+                                                                                    {DocumentUtils.formatCpf(user.document || "")}
                                                                                 </p>
                                                                             )}
                                                                         </div>
                                                                     </div>
 
-                                                                    <div className="rounded-2xl border border-psi-dark/10 bg-white/80 p-4 space-y-2 shadow-sm">
-                                                                        <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
-                                                                            <Building2 className="h-4 w-4 text-psi-primary" />
-                                                                            Organizador
-                                                                        </div>
-                                                                        <div className="space-y-1">
-                                                                            <p className="text-base font-medium text-psi-dark">
-                                                                                {payment.Event.Organizer.companyName}
-                                                                            </p>
-                                                                            <p className="text-sm text-psi-dark/70">
-                                                                                {payment.Event.Organizer.companyDocument}
-                                                                            </p>
-                                                                        </div>
-                                                                    </div>
+                                                                    {payment.type === "TICKET" && payment.Event && (
+                                                                        <>
+                                                                            <div className="rounded-2xl border border-psi-dark/10 bg-white/80 p-4 space-y-2 shadow-sm">
+                                                                                <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
+                                                                                    <Building2 className="h-4 w-4 text-psi-primary" />
+                                                                                    Organizador
+                                                                                </div>
+                                                                                <div className="space-y-1">
+                                                                                    <p className="text-base font-medium text-psi-dark">
+                                                                                        {payment.Event.Organizer.companyName}
+                                                                                    </p>
+                                                                                    <p className="text-sm text-psi-dark/70">
+                                                                                        {DocumentUtils.formatCnpj(payment.Event.Organizer.companyDocument || "")}
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
 
-                                                                    <div className="rounded-2xl border border-psi-dark/10 bg-white/80 p-4 space-y-2 shadow-sm">
-                                                                        <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
-                                                                            <Ticket className="h-4 w-4 text-psi-primary" />
-                                                                            Evento
-                                                                        </div>
-                                                                        <div className="space-y-1">
-                                                                            <p className="text-base font-medium text-psi-dark">
-                                                                                {payment.Event.name}
-                                                                            </p>
-                                                                            {payment.Event.location && (
+                                                                            <div className="rounded-2xl border border-psi-dark/10 bg-white/80 p-4 space-y-2 shadow-sm">
+                                                                                <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
+                                                                                    <Ticket className="h-4 w-4 text-psi-primary" />
+                                                                                    Evento
+                                                                                </div>
+                                                                                <div className="space-y-1">
+                                                                                    <p className="text-base font-medium text-psi-dark">
+                                                                                        {payment.Event.name}
+                                                                                    </p>
+                                                                                    {payment.Event.location && (
+                                                                                        <p className="text-sm text-psi-dark/70">
+                                                                                            {payment.Event.location}
+                                                                                        </p>
+                                                                                    )}
+                                                                                    {payment.Event.isOnline && (
+                                                                                        <Badge className="bg-blue-50 text-blue-600 border-blue-200 text-xs">
+                                                                                            Online
+                                                                                        </Badge>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        </>
+                                                                    )}
+
+                                                                    {payment.type === "CRM_PRO" && payment.Subscription && (
+                                                                        <div className="rounded-2xl border border-psi-dark/10 bg-white/80 p-4 space-y-2 shadow-sm">
+                                                                            <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
+                                                                                <Crown className="h-4 w-4 text-psi-primary" />
+                                                                                Assinatura CRM Pro
+                                                                            </div>
+                                                                            <div className="space-y-1">
+                                                                                <p className="text-base font-medium text-psi-dark">
+                                                                                    CRM Pro
+                                                                                </p>
                                                                                 <p className="text-sm text-psi-dark/70">
-                                                                                    {payment.Event.location}
+                                                                                    Código: {payment.Subscription.code}
                                                                                 </p>
-                                                                            )}
-                                                                            {payment.Event.isOnline && (
-                                                                                <Badge className="bg-blue-50 text-blue-600 border-blue-200 text-xs">
-                                                                                    Online
+                                                                                <Badge className={payment.Subscription.status === "ACTIVE" ? "bg-emerald-50 text-emerald-600 border-emerald-200" : payment.Subscription.status === "PENDING" ? "bg-amber-50 text-amber-600 border-amber-200" : payment.Subscription.status === "CANCELLED" ? "bg-red-50 text-red-600 border-red-200" : "bg-gray-50 text-gray-600 border-gray-200"}>
+                                                                                    {payment.Subscription.status === "ACTIVE" ? "Ativa" : payment.Subscription.status === "PENDING" ? "Pendente" : payment.Subscription.status === "CANCELLED" ? "Cancelada" : payment.Subscription.status}
                                                                                 </Badge>
-                                                                            )}
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
+                                                                    )}
 
                                                                     <div className="rounded-2xl border border-psi-dark/10 bg-white/80 p-4 space-y-2 shadow-sm">
                                                                         <div className="flex items-center justify-between">
@@ -767,16 +807,16 @@ const AdmPagamentosPannel = () => {
                                                                         </div>
                                                                         <div className="space-y-1">
                                                                             <p className="text-sm text-psi-dark/70">
-                                                                                Criado: {formatDateTime(payment.createdAt)}
+                                                                                Criado: {DateUtils.formatDate(payment.createdAt, "DD/MM/YYYY HH:mm")}
                                                                             </p>
                                                                             {payment.paidAt && (
                                                                                 <p className="text-sm text-psi-dark/70">
-                                                                                    Pago: {formatDateTime(payment.paidAt)}
+                                                                                    Pago: {DateUtils.formatDate(payment.paidAt, "DD/MM/YYYY HH:mm")}
                                                                                 </p>
                                                                             )}
                                                                             {payment.updatedAt && (
                                                                                 <p className="text-sm text-psi-dark/70">
-                                                                                    Atualizado: {formatDateTime(payment.updatedAt)}
+                                                                                    Atualizado: {DateUtils.formatDate(payment.updatedAt, "DD/MM/YYYY HH:mm")}
                                                                                 </p>
                                                                             )}
                                                                         </div>
@@ -1038,7 +1078,7 @@ const AdmPagamentosPannel = () => {
                                                                     </div>
                                                                 )}
 
-                                                                {payment.Tickets && payment.Tickets.length > 0 && (
+                                                                {payment.type === "TICKET" && payment.Tickets && payment.Tickets.length > 0 && (
                                                                     <div className="space-y-4 pt-6 border-t border-psi-dark/10">
                                                                         <div className="flex items-center gap-3">
                                                                             <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
@@ -1082,11 +1122,25 @@ const AdmPagamentosPannel = () => {
                                                                                                     </p>
                                                                                                 </div>
                                                                                             )}
+                                                                                            {ticket.isInsured !== null && ticket.isInsured !== undefined && (
+                                                                                                <div className="flex items-center gap-1.5 mt-2">
+                                                                                                    <Shield className={`h-3.5 w-3.5 ${ticket.isInsured ? "text-emerald-600" : "text-psi-dark/40"}`} />
+                                                                                                    <p className={`text-xs ${ticket.isInsured ? "text-emerald-600 font-medium" : "text-psi-dark/60"}`}>
+                                                                                                        {ticket.isInsured ? "Com seguro" : "Sem seguro"}
+                                                                                                    </p>
+                                                                                                </div>
+                                                                                            )}
                                                                                         </div>
                                                                                         <div className="flex flex-col gap-2">
                                                                                             <Badge className={ticketStatusConfig[ticket.status]?.badgeClass || "bg-gray-50 text-gray-600 border-gray-200"}>
                                                                                                 {ticketStatusConfig[ticket.status]?.label || ticket.status}
                                                                                             </Badge>
+                                                                                            {ticket.isInsured && (
+                                                                                                <Badge className="bg-emerald-50 text-emerald-600 border-emerald-200 text-xs">
+                                                                                                    <Shield className="h-3 w-3 mr-1" />
+                                                                                                    Segurado
+                                                                                                </Badge>
+                                                                                            )}
                                                                                             {ticket.cancelledBy && (
                                                                                                 <Badge className={ticketCancelledByConfig[ticket.cancelledBy]?.badgeClass || "bg-gray-50 text-gray-600 border-gray-200"}>
                                                                                                     {ticketCancelledByConfig[ticket.cancelledBy]?.label || ticket.cancelledBy}
@@ -1223,7 +1277,7 @@ const AdmPagamentosPannel = () => {
                                                                 )}
 
                                                                 {(payment.status === "REFUND_REQUESTED" || payment.status === "REFUNDED" || payment.refundStatus || payment.refundReason || payment.refundedBy) && 
-                                                                 !payment.Tickets?.some(ticket => ticket.refundStatus !== null && ticket.refundStatus !== undefined) && (
+                                                                 (payment.type === "CRM_PRO" || !payment.Tickets?.some(ticket => ticket.refundStatus !== null && ticket.refundStatus !== undefined)) && (
                                                                     <div className="space-y-4 pt-6 border-t border-psi-dark/10">
                                                                         <div className="flex items-center gap-3">
                                                                             <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
@@ -1306,9 +1360,11 @@ const AdmPagamentosPannel = () => {
                                                                             </Button>
                                                                         )
                                                                     }
-                                                                    <Button variant="primary" size="lg" disabled>
-                                                                        Solicitar nota fiscal
-                                                                    </Button>
+                                                                    {payment.type === "TICKET" && (
+                                                                        <Button variant="primary" size="lg" disabled>
+                                                                            Solicitar nota fiscal
+                                                                        </Button>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         </TableCell>

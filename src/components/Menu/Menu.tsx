@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent, Wallet, QrCode, HeartPlus, Info, HouseHeart, CreditCard, Book, Download, SquareArrowRight } from "lucide-react"
+import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent, Wallet, QrCode, HeartPlus, Info, HouseHeart, CreditCard, Book, Download, SquareArrowRight, Target, SearchCheck, CalendarCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Logo from "@/components/Logo/Logo"
 import { Avatar } from "@/components/Avatar/Avatar"
@@ -92,6 +92,18 @@ const menuLinks: TMenuLink[] = [
         ]
     },
     {
+        label: "CRM",
+        href: "/crm",
+        icon: Target,
+        roles: ["ORGANIZER"]
+    },
+    {
+        label: "Pesquisa de Opinião",
+        href: "/pesquisa-de-opiniao",
+        icon: SearchCheck,
+        roles: ["ORGANIZER"]
+    },
+    {
         label: "Carteira",
         href: "/carteira",
         icon: Wallet,
@@ -143,6 +155,12 @@ const menuLinks: TMenuLink[] = [
         href: "/adm-pagamentos",
         label: "Pagamentos",
         icon: CreditCard,
+        roles: ["ADMIN"]
+    },
+    {
+        href: "/adm-assinaturas",
+        label: "Assinaturas",
+        icon: CalendarCheck,
         roles: ["ADMIN"]
     },
     {
@@ -922,6 +940,8 @@ const NotificationBell = () => {
                 return "Registro aprovado"
             case "REGISTER_REJECTED":
                 return "Registro rejeitado"
+            case "SUBSCRIPTION_CRM_PRO_EXPIRED":
+                return "Assinatura CRM Pro expirada"
             default:
                 return "Notificação"
         }
@@ -1025,6 +1045,9 @@ const NotificationBell = () => {
             }
             case "REGISTER_REJECTED": {
                 return "Seu cadastro foi rejeitado. Por favor, contate o suporte para mais informações."
+            }
+            case "SUBSCRIPTION_CRM_PRO_EXPIRED": {
+                return "Sua assinatura CRM Pro expirou. Por favor, renove sua assinatura para continuar usando o CRM Pro."
             }
             default:
                 return notification.message || "Você possui uma atualização importante."

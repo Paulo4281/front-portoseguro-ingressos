@@ -94,6 +94,10 @@ const PoliticaDePrivacidadeInfo = () => {
                                         </li>
                                         <li className="flex items-start gap-2">
                                             <span className="text-psi-primary mt-1">•</span>
+                                            <span>Disparar campanhas de marketing por e-mail, incluindo promoções, ofertas especiais, novos eventos e comunicações relevantes tanto da plataforma quanto dos organizadores dos eventos que você demonstrou interesse</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-psi-primary mt-1">•</span>
                                             <span>Aprimorar nossos serviços através de análises e feedbacks</span>
                                         </li>
                                         <li className="flex items-start gap-2">
@@ -102,7 +106,8 @@ const PoliticaDePrivacidadeInfo = () => {
                                         </li>
                                     </ul>
                                     <p className="text-psi-dark/70 leading-relaxed pt-2">
-                                        <strong className="text-psi-dark">Importante:</strong> Nunca vendemos, alugamos ou compartilhamos seus dados pessoais com terceiros para fins comerciais.
+                                        <strong className="text-psi-dark">Importante:</strong> Nunca vendemos, alugamos ou compartilhamos seus dados pessoais com terceiros para fins comerciais. 
+                                        As campanhas de marketing são enviadas exclusivamente pela plataforma e pelos organizadores dos eventos que você demonstrou interesse, sempre com a opção de descadastramento.
                                     </p>
                                 </div>
                             </div>
