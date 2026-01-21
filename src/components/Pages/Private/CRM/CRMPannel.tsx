@@ -59,7 +59,8 @@ import {
     AlertTriangle,
     MousePointer,
     DollarSign,
-    Ticket
+    Ticket,
+    ChartArea
 } from "lucide-react"
 import { Background } from "@/components/Background/Background"
 import { Button } from "@/components/ui/button"
@@ -121,6 +122,8 @@ import { useTagUpdate } from "@/hooks/Tag/useTagUpdate"
 import { useTagDelete } from "@/hooks/Tag/useTagDelete"
 import { useTagClientCreate } from "@/hooks/TagClient/useTagClientCreate"
 import { useTagClientDelete } from "@/hooks/TagClient/useTagClientDelete"
+import { TagClientService } from "@/services/CRM/TagClientService"
+import type { TTagClientListResponse } from "@/types/TagClient/TTagClient"
 import { useObservationCreate } from "@/hooks/Observation/useObservationCreate"
 import { useObservationFindByUserId } from "@/hooks/Observation/useObservationFindByUserId"
 import { useObservationUpdate } from "@/hooks/Observation/useObservationUpdate"
@@ -167,6 +170,9 @@ import { BarChart, Bar, LineChart, Line, ComposedChart, XAxis, YAxis, CartesianG
 import { useReportGet } from "@/hooks/Report/useReportGet"
 import { ReportService } from "@/services/CRM/ReportService"
 import type { TReportFilters } from "@/types/Report/TReport"
+import jsPDF from "jspdf"
+import autoTable from "jspdf-autotable"
+import * as XLSX from "xlsx"
 
 type TEmailTemplate = {
     id: string
@@ -488,6 +494,7 @@ const CRMPannel = () => {
     })
     const [upgradeDialog, setUpgradeDialog] = useState(false)
     const [reportsDialog, setReportsDialog] = useState(false)
+    const [reportsProDialog, setReportsProDialog] = useState(false)
     const [reportFilters, setReportFilters] = useState<TReportFilters>({})
     const [reportDateFrom, setReportDateFrom] = useState<string | null>(null)
     const [reportDateTo, setReportDateTo] = useState<string | null>(null)
@@ -574,6 +581,7 @@ const CRMPannel = () => {
         segmentIds: []
     })
     const [emailPreviewDialog, setEmailPreviewDialog] = useState(false)
+    const [emailSuccessDialog, setEmailSuccessDialog] = useState(false)
     const [reportsSheetOpen, setReportsSheetOpen] = useState(false)
 
     const tagLimit = 200
@@ -1010,13 +1018,20 @@ const CRMPannel = () => {
                     if (selectedPoll?.eventId) {
                         campaignData.eventId = selectedPoll.eventId
                     }
-                } else if (selectedTemplate.code === "crm-template-oferta" && selectedCouponForTemplate) {
-                    campaignData.couponId = selectedCouponForTemplate
-                    const selectedCoupon = coupons.find((c: TCoupon) => c.id === selectedCouponForTemplate)
-                    if (selectedCoupon?.eventId) {
-                        campaignData.eventId = selectedCoupon.eventId
+                }
+                
+                if (selectedTemplate.code === "crm-template-oferta") {
+                    const couponId = selectedCouponForTemplate || data.templateFields?.cupom
+                    if (couponId) {
+                        campaignData.couponId = couponId
+                        const selectedCoupon = coupons.find((c: TCoupon) => c.id === couponId)
+                        if (selectedCoupon?.eventId) {
+                            campaignData.eventId = selectedCoupon.eventId
+                        }
                     }
-                } else if (selectedEventForTemplate) {
+                }
+                
+                if (selectedTemplate.code !== "crm-template-pesquisa" && selectedTemplate.code !== "crm-template-oferta" && selectedEventForTemplate) {
                     campaignData.eventId = selectedEventForTemplate
                 }
             }
@@ -1033,6 +1048,7 @@ const CRMPannel = () => {
             await refetchCampaigns()
             await refetchQuota()
             
+            setEmailSuccessDialog(true)
             Toast.success("Campanha de e-mail criada com sucesso!")
         } catch (error: any) {
             console.error("Erro ao criar campanha:", error)
@@ -1170,22 +1186,329 @@ const CRMPannel = () => {
         }).format(value)
     }
 
+    const formatClientName = (client: TTagClientListResponse): string => {
+        return `${client.firstName} ${client.lastName}`.trim()
+    }
+
+    const formatClientAddress = (client: TTagClientListResponse): string => {
+        if (!client.address) return "-"
+        const addr = client.address
+        const parts: string[] = []
+        if (addr.street) parts.push(addr.street)
+        if (addr.number) parts.push(addr.number)
+        if (addr.complement) parts.push(addr.complement)
+        if (addr.neighborhood) parts.push(addr.neighborhood)
+        if (addr.city) parts.push(addr.city)
+        if (addr.state) parts.push(addr.state)
+        if (addr.zipCode) parts.push(addr.zipCode)
+        return parts.length > 0 ? parts.join(", ") : "-"
+    }
+
+    const formatEvents = (client: TTagClientListResponse): string => {
+        if (!client.events || client.events.length === 0) return "-"
+        const uniqueEventNames = [...new Set(client.events.map(e => e.eventName))]
+        return uniqueEventNames.join(", ")
+    }
+
+    const formatLastPurchaseDate = (lastPurchaseDate: string | null): string => {
+        if (!lastPurchaseDate) return "-"
+        if (lastPurchaseDate.includes("/")) {
+            return lastPurchaseDate
+        }
+        try {
+            return DateUtils.formatDate(lastPurchaseDate, "DD/MM/YYYY")
+        } catch {
+            return lastPurchaseDate
+        }
+    }
+
+    const generatePDF = (clients: TTagClientListResponse[], tagName: string) => {
+        const doc = new jsPDF("landscape", "mm", "a4")
+        
+        doc.setFontSize(16)
+        doc.text("Lista de Clientes", 14, 15)
+        
+        doc.setFontSize(10)
+        doc.text(`Tag: ${tagName}`, 14, 22)
+        doc.text(`Data de geração: ${DateUtils.formatDate(new Date().toISOString(), "DD/MM/YYYY HH:mm")}`, 14, 27)
+        doc.text(`Total de clientes: ${clients.length}`, 14, 32)
+
+        const tableData = clients.map((client, index) => [
+            (index + 1).toString(),
+            formatClientName(client),
+            client.email || "-",
+            client.phone || "-",
+            client.document || "-",
+            client.nationality || "-",
+            client.birth ? DateUtils.formatDate(client.birth, "DD/MM/YYYY") : "-",
+            formatClientAddress(client),
+            formatEvents(client),
+            client.totalPurchases.toString(),
+            ValueUtils.centsToCurrency(client.totalSpent),
+            formatLastPurchaseDate(client.lastPurchaseDate),
+            client.lastPurchaseTime || "-"
+        ])
+
+        autoTable(doc, {
+            startY: 38,
+            head: [["#", "Nome", "E-mail", "Telefone", "Documento", "Nacionalidade", "Nascimento", "Endereço", "Eventos", "Compras", "Total Gasto", "Última Compra", "Hora"]],
+            body: tableData,
+            styles: { 
+                fontSize: 7,
+                cellPadding: 1.5,
+                overflow: "linebreak",
+                cellWidth: "wrap",
+                lineWidth: 0.1,
+                lineColor: [200, 200, 200],
+                textColor: [0, 0, 0]
+            },
+            headStyles: { 
+                fillColor: [108, 75, 255],
+                textColor: [255, 255, 255],
+                fontStyle: "bold",
+                fontSize: 7,
+                cellPadding: 2
+            },
+            columnStyles: {
+                0: { cellWidth: 8, halign: "center" },
+                1: { cellWidth: 28 },
+                2: { cellWidth: 32 },
+                3: { cellWidth: 22 },
+                4: { cellWidth: 22 },
+                5: { cellWidth: 18 },
+                6: { cellWidth: 18 },
+                7: { cellWidth: 35 },
+                8: { cellWidth: 35 },
+                9: { cellWidth: 12, halign: "center" },
+                10: { cellWidth: 18, halign: "right" },
+                11: { cellWidth: 18 },
+                12: { cellWidth: 12 }
+            },
+            margin: { left: 10, right: 10, top: 38 },
+            alternateRowStyles: {
+                fillColor: [250, 250, 250]
+            },
+            showHead: "everyPage",
+            showFoot: "never"
+        })
+
+        const fileName = `lista-clientes-${tagName.replace(/[^a-z0-9]/gi, "-").toLowerCase()}-${Date.now()}.pdf`
+        doc.save(fileName)
+        
+        Toast.success("PDF gerado com sucesso!")
+    }
+
+    const generateXLSX = (clients: TTagClientListResponse[], tagName: string) => {
+        const worksheetData: any[] = []
+
+        worksheetData.push(["Lista de Clientes"])
+        worksheetData.push([])
+        worksheetData.push(["Tag", tagName])
+        worksheetData.push(["Data de geração", DateUtils.formatDate(new Date().toISOString(), "DD/MM/YYYY HH:mm")])
+        worksheetData.push(["Total de clientes", clients.length])
+        worksheetData.push([])
+
+        const headers = ["#", "Nome", "E-mail", "Telefone", "Documento", "Nacionalidade", "Nascimento", "Endereço", "Eventos", "Compras", "Total Gasto", "Última Compra", "Hora"]
+        worksheetData.push(headers)
+
+        clients.forEach((client, index) => {
+            worksheetData.push([
+                index + 1,
+                formatClientName(client),
+                client.email || "-",
+                client.phone || "-",
+                client.document || "-",
+                client.nationality || "-",
+                client.birth ? DateUtils.formatDate(client.birth, "DD/MM/YYYY") : "-",
+                formatClientAddress(client),
+                formatEvents(client),
+                client.totalPurchases,
+                ValueUtils.centsToCurrency(client.totalSpent),
+                formatLastPurchaseDate(client.lastPurchaseDate),
+                client.lastPurchaseTime || "-"
+            ])
+        })
+
+        const worksheet = XLSX.utils.aoa_to_sheet(worksheetData)
+
+        const columnWidths = [
+            { wch: 5 },
+            { wch: 30 },
+            { wch: 35 },
+            { wch: 20 },
+            { wch: 20 },
+            { wch: 15 },
+            { wch: 15 },
+            { wch: 50 },
+            { wch: 50 },
+            { wch: 10 },
+            { wch: 15 },
+            { wch: 15 },
+            { wch: 10 }
+        ]
+        worksheet["!cols"] = columnWidths
+
+        const workbook = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Clientes")
+
+        const fileName = `lista-clientes-${tagName.replace(/[^a-z0-9]/gi, "-").toLowerCase()}-${Date.now()}.xlsx`
+        XLSX.writeFile(workbook, fileName)
+        
+        Toast.success("Arquivo Excel gerado com sucesso!")
+    }
+
+    const escapeCSVField = (field: string): string => {
+        if (field.includes(",") || field.includes('"') || field.includes("\n")) {
+            return `"${field.replace(/"/g, '""')}"`
+        }
+        return field
+    }
+
+    const generateCSV = (clients: TTagClientListResponse[], tagName: string) => {
+        const csvRows: string[] = []
+
+        csvRows.push("Lista de Clientes")
+        csvRows.push("")
+        csvRows.push(`Tag,${escapeCSVField(tagName)}`)
+        csvRows.push(`Data de geração,${escapeCSVField(DateUtils.formatDate(new Date().toISOString(), "DD/MM/YYYY HH:mm"))}`)
+        csvRows.push(`Total de clientes,${clients.length}`)
+        csvRows.push("")
+
+        const headers = ["#", "Nome", "E-mail", "Telefone", "Documento", "Nacionalidade", "Nascimento", "Endereço", "Eventos", "Compras", "Total Gasto", "Última Compra", "Hora"]
+        csvRows.push(headers.map(escapeCSVField).join(","))
+
+        clients.forEach((client, index) => {
+            const row = [
+                (index + 1).toString(),
+                formatClientName(client),
+                client.email || "-",
+                client.phone || "-",
+                client.document || "-",
+                client.nationality || "-",
+                client.birth ? DateUtils.formatDate(client.birth, "DD/MM/YYYY") : "-",
+                formatClientAddress(client),
+                formatEvents(client),
+                client.totalPurchases.toString(),
+                ValueUtils.centsToCurrency(client.totalSpent),
+                formatLastPurchaseDate(client.lastPurchaseDate),
+                client.lastPurchaseTime || "-"
+            ]
+            csvRows.push(row.map(escapeCSVField).join(","))
+        })
+
+        const csvContent = csvRows.join("\n")
+        const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement("a")
+        link.href = url
+        link.download = `lista-clientes-${tagName.replace(/[^a-z0-9]/gi, "-").toLowerCase()}-${Date.now()}.csv`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+        
+        Toast.success("Arquivo CSV gerado com sucesso!")
+    }
+
+    const generateJSON = (clients: TTagClientListResponse[], tagName: string) => {
+        const jsonData = {
+            tag: {
+                id: selectedExportSegment,
+                nome: tagName,
+                dataGeracao: DateUtils.formatDate(new Date().toISOString(), "DD/MM/YYYY HH:mm"),
+                totalClientes: clients.length
+            },
+            clientes: clients.map((client, index) => ({
+                numero: index + 1,
+                id: client.id,
+                nome: formatClientName(client),
+                email: client.email || null,
+                telefone: client.phone || null,
+                documento: client.document || null,
+                nacionalidade: client.nationality || null,
+                nascimento: client.birth ? DateUtils.formatDate(client.birth, "DD/MM/YYYY") : null,
+                endereco: client.address ? {
+                    rua: client.address.street || null,
+                    numero: client.address.number || null,
+                    complemento: client.address.complement || null,
+                    bairro: client.address.neighborhood || null,
+                    cidade: client.address.city || null,
+                    estado: client.address.state || null,
+                    pais: client.address.country || null,
+                    cep: client.address.zipCode || null
+                } : null,
+                eventos: client.events.map(e => ({
+                    id: e.id,
+                    eventId: e.eventId,
+                    eventName: e.eventName,
+                    paymentId: e.paymentId,
+                    paymentDate: DateUtils.formatDate(e.paymentDate, "DD/MM/YYYY"),
+                    paymentValue: ValueUtils.centsToCurrency(e.paymentValue),
+                    ticketsCount: e.ticketsCount
+                })),
+                totalCompras: client.totalPurchases,
+                totalGasto: ValueUtils.centsToCurrency(client.totalSpent),
+                ultimaCompra: formatLastPurchaseDate(client.lastPurchaseDate) !== "-" ? formatLastPurchaseDate(client.lastPurchaseDate) : null,
+                horaUltimaCompra: client.lastPurchaseTime || null,
+                dataCriacao: DateUtils.formatDate(client.createdAt, "DD/MM/YYYY HH:mm")
+            }))
+        }
+
+        const jsonContent = JSON.stringify(jsonData, null, 2)
+        const blob = new Blob([jsonContent], { type: "application/json;charset=utf-8;" })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement("a")
+        link.href = url
+        link.download = `lista-clientes-${tagName.replace(/[^a-z0-9]/gi, "-").toLowerCase()}-${Date.now()}.json`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+        
+        Toast.success("Arquivo JSON gerado com sucesso!")
+    }
+
     const handleDownload = async (format: "pdf" | "xlsx" | "csv" | "json", segmentId?: string) => {
+        if (!segmentId) {
+            Toast.error("Selecione uma tag para exportar os dados")
+            return
+        }
+
+        const segment = emailSegments.find(s => s.id === segmentId)
+        
+        if (!segment || segment.type !== "tag") {
+            Toast.error("Selecione uma tag para exportar os dados")
+            return
+        }
+
         setSelectedFormat(format)
         setIsGenerating(true)
 
         try {
-        console.log("Download:", format, "Segmento:", segmentId)
+            const response = await TagClientService.listClients(segmentId)
+            const clientsData = response.data || []
             
-            await new Promise(resolve => setTimeout(resolve, 1000))
+            if (clientsData.length === 0) {
+                Toast.error("Nenhum cliente encontrado para esta tag")
+                return
+            }
+
+            if (format === "pdf") {
+                generatePDF(clientsData, segment.name)
+            } else if (format === "xlsx") {
+                generateXLSX(clientsData, segment.name)
+            } else if (format === "csv") {
+                generateCSV(clientsData, segment.name)
+            } else if (format === "json") {
+                generateJSON(clientsData, segment.name)
+            }
             
-            Toast.success(`Arquivo ${format.toUpperCase()} gerado com sucesso!`)
-            
-        setExportDialog(false)
-        setSelectedExportSegment("")
-        } catch (error) {
+            setExportDialog(false)
+            setSelectedExportSegment("")
+        } catch (error: any) {
             console.error("Erro ao exportar lista:", error)
-            Toast.error("Erro ao exportar lista de clientes")
+            const errorMessage = error?.response?.data?.message || error?.message || "Erro ao exportar lista de clientes"
+            Toast.error(errorMessage)
         } finally {
             setIsGenerating(false)
             setSelectedFormat(null)
@@ -1224,7 +1547,7 @@ const CRMPannel = () => {
                     </Card>
                     <Card>
                         <div className="p-6">
-                            <p className="text-sm font-medium text-psi-dark/60 mb-2">E-mails Enviados este mês</p>
+                            <p className="text-sm font-medium text-psi-dark/60 mb-2">E-mails Enviados (últimos 30 dias)</p>
                             <div className="flex items-baseline gap-2 mb-2">
                                 <div className="text-3xl font-bold text-psi-dark">{emailUsed}</div>
                                 <div className="text-sm text-psi-dark/60">/ {emailLimit}</div>
@@ -1347,8 +1670,7 @@ const CRMPannel = () => {
                                             className="gap-2"
                                             onClick={() => {
                                                 if (!isPro) {
-                                                    // setReportsDialog(true)
-                                                    setReportsSheetOpen(true)
+                                                    setReportsProDialog(true)
                                                 } else {
                                                     setReportsDialog(true)
                                                 }
@@ -1444,6 +1766,7 @@ const CRMPannel = () => {
                                                     <TableHead>Nome</TableHead>
                                                     <TableHead>E-mail</TableHead>
                                                     <TableHead>Celular</TableHead>
+                                                    <TableHead>E-mail Marketing</TableHead>
                                                     <TableHead>Compras</TableHead>
                                                     <TableHead>Total Gasto</TableHead>
                                                     <TableHead>Última Compra</TableHead>
@@ -1453,7 +1776,7 @@ const CRMPannel = () => {
                                             <TableBody>
                                                     {customers.length === 0 ? (
                                                     <TableRow>
-                                                        <TableCell colSpan={8} className="text-center py-8 text-psi-dark/60">
+                                                        <TableCell colSpan={9} className="text-center py-8 text-psi-dark/60">
                                                             Nenhum cliente encontrado
                                                         </TableCell>
                                                     </TableRow>
@@ -1478,8 +1801,30 @@ const CRMPannel = () => {
                                                             <TableCell className="font-medium">{customer.name}</TableCell>
                                                             <TableCell>{customer.email}</TableCell>
                                                             <TableCell>{DocumentUtils.formatPhone(customer.phone || "")}</TableCell>
+                                                            <TableCell>
+                                                                <Badge variant={customer.isMarketingConsent ? "psi-secondary" : "outline"}>
+                                                                    {customer.isMarketingConsent ? (
+                                                                        <span className="flex items-center gap-1">
+                                                                            <MailCheck className="h-3 w-3" />
+                                                                            Ativo
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="flex items-center gap-1">
+                                                                            <MailX className="h-3 w-3" />
+                                                                            Inativo
+                                                                        </span>
+                                                                    )}
+                                                                </Badge>
+                                                            </TableCell>
                                                             <TableCell>{customer.totalPurchases}</TableCell>
-                                                            <TableCell>{ValueUtils.centsToCurrency(customer.totalSpent)}</TableCell>
+                                                            <TableCell>
+                                                                <span className="inline-block rounded-lg bg-psi-primary/10 text-psi-primary font-semibold px-2 py-0.5
+                                                                text-sm
+                                                                sm:text-base
+                                                                tracking-tight">
+                                                                    {ValueUtils.centsToCurrency(customer.totalSpent)}
+                                                                </span>
+                                                            </TableCell>
                                                             <TableCell>{formatDate(customer.lastPurchaseDate)}</TableCell>
                                                             <TableCell>
                                                                 <DropdownMenu>
@@ -1506,7 +1851,7 @@ const CRMPannel = () => {
                                                         </TableRow>
                                                         {openRows[customer.id] && (
                                                             <TableRow>
-                                                                <TableCell colSpan={8} className="bg-psi-primary/5">
+                                                                <TableCell colSpan={9} className="bg-psi-primary/5">
                                                                     <div className="p-4 space-y-4">
                                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                             <div>
@@ -2924,80 +3269,87 @@ const CRMPannel = () => {
                             </div>
                         )}
                         
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                                    <h5 className="text-sm font-semibold text-psi-dark">Desktop</h5>
-                                </div>
-                                <div className="relative bg-gray-100 rounded-lg p-3 shadow-lg">
-                                    <div className="bg-white rounded border-2 border-gray-300 overflow-hidden">
-                                        <div className="bg-gray-200 h-6 flex items-center gap-1.5 px-2 border-b border-gray-300">
-                                            <div className="h-2 w-2 rounded-full bg-red-500"></div>
-                                            <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
+                        {selectedTemplate && (() => {
+                            const templateName = selectedTemplate.code.replace("crm-template-", "")
+                            const imagePath = `/images/crm/visualizar-crm-template-${templateName}.png`
+                            
+                            return (
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
                                             <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                                            <div className="flex-1 bg-gray-300 rounded h-3 mx-2"></div>
+                                            <h5 className="text-sm font-semibold text-psi-dark">Desktop</h5>
                                         </div>
-                                        <div className="overflow-x-auto">
-                                            <img
-                                                src="https://i.ibb.co/rG1xCpqM/Captura-de-tela-2026-01-15-170421.png"
-                                                alt="Preview do e-mail - Desktop"
-                                                className="w-full h-auto"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <div className="h-2 w-2 rounded-full bg-purple-500"></div>
-                                    <h5 className="text-sm font-semibold text-psi-dark">Tablet</h5>
-                                </div>
-                                <div className="relative bg-gray-100 rounded-lg p-4 shadow-lg flex justify-center">
-                                    <div className="bg-white rounded-lg border-3 border-gray-400 overflow-hidden shadow-xl" style={{ width: "100%", maxWidth: "400px" }}>
-                                        <div className="bg-gray-200 h-8 flex items-center justify-center border-b border-gray-300">
-                                            <div className="h-1.5 w-1.5 rounded-full bg-gray-400"></div>
-                                        </div>
-                                        <div className="overflow-x-auto">
-                                            <img
-                                                src="https://i.ibb.co/rG1xCpqM/Captura-de-tela-2026-01-15-170421.png"
-                                                alt="Preview do e-mail - Tablet"
-                                                className="w-full h-auto"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <div className="h-2 w-2 rounded-full bg-orange-500"></div>
-                                    <h5 className="text-sm font-semibold text-psi-dark">Mobile</h5>
-                                </div>
-                                <div className="relative bg-gray-100 rounded-lg p-3 shadow-lg flex justify-center">
-                                    <div className="bg-black rounded-3xl p-1.5 shadow-2xl" style={{ width: "100%", maxWidth: "200px" }}>
-                                        <div className="bg-white rounded-2xl overflow-hidden">
-                                            <div className="bg-gray-200 h-8 flex items-center justify-center border-b border-gray-300 relative">
-                                                <div className="absolute left-2 h-0.5 w-8 bg-gray-400 rounded"></div>
-                                                <div className="h-4 w-4 rounded-full bg-gray-300"></div>
-                                                <div className="absolute right-2 flex gap-0.5">
-                                                    <div className="h-0.5 w-0.5 rounded-full bg-gray-400"></div>
-                                                    <div className="h-0.5 w-0.5 rounded-full bg-gray-400"></div>
+                                        <div className="relative bg-gray-100 rounded-lg p-3 shadow-lg">
+                                            <div className="bg-white rounded border-2 border-gray-300 overflow-hidden">
+                                                <div className="bg-gray-200 h-6 flex items-center gap-1.5 px-2 border-b border-gray-300">
+                                                    <div className="h-2 w-2 rounded-full bg-red-500"></div>
+                                                    <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
+                                                    <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                                                    <div className="flex-1 bg-gray-300 rounded h-3 mx-2"></div>
+                                                </div>
+                                                <div className="overflow-x-auto">
+                                                    <img
+                                                        src={imagePath}
+                                                        alt="Preview do e-mail - Desktop"
+                                                        className="w-full h-auto"
+                                                    />
                                                 </div>
                                             </div>
-                                            <div className="overflow-x-auto">
-                                                <img
-                                                    src="https://i.ibb.co/rG1xCpqM/Captura-de-tela-2026-01-15-170421.png"
-                                                    alt="Preview do e-mail - Mobile"
-                                                    className="w-full h-auto"
-                                                />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-2 w-2 rounded-full bg-purple-500"></div>
+                                            <h5 className="text-sm font-semibold text-psi-dark">Tablet</h5>
+                                        </div>
+                                        <div className="relative bg-gray-100 rounded-lg p-4 shadow-lg flex justify-center">
+                                            <div className="bg-white rounded-lg border-3 border-gray-400 overflow-hidden shadow-xl" style={{ width: "100%", maxWidth: "400px" }}>
+                                                <div className="bg-gray-200 h-8 flex items-center justify-center border-b border-gray-300">
+                                                    <div className="h-1.5 w-1.5 rounded-full bg-gray-400"></div>
+                                                </div>
+                                                <div className="overflow-x-auto">
+                                                    <img
+                                                        src={imagePath}
+                                                        alt="Preview do e-mail - Tablet"
+                                                        className="w-full h-auto"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="h-2 w-2 rounded-full bg-orange-500"></div>
+                                            <h5 className="text-sm font-semibold text-psi-dark">Mobile</h5>
+                                        </div>
+                                        <div className="relative bg-gray-100 rounded-lg p-3 shadow-lg flex justify-center">
+                                            <div className="bg-black rounded-3xl p-1.5 shadow-2xl" style={{ width: "100%", maxWidth: "200px" }}>
+                                                <div className="bg-white rounded-2xl overflow-hidden">
+                                                    <div className="bg-gray-200 h-8 flex items-center justify-center border-b border-gray-300 relative">
+                                                        <div className="absolute left-2 h-0.5 w-8 bg-gray-400 rounded"></div>
+                                                        <div className="h-4 w-4 rounded-full bg-gray-300"></div>
+                                                        <div className="absolute right-2 flex gap-0.5">
+                                                            <div className="h-0.5 w-0.5 rounded-full bg-gray-400"></div>
+                                                            <div className="h-0.5 w-0.5 rounded-full bg-gray-400"></div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="overflow-x-auto">
+                                                        <img
+                                                            src={imagePath}
+                                                            alt="Preview do e-mail - Mobile"
+                                                            className="w-full h-auto"
+                                                        />
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
+                            )
+                        })()}
                     </div>
                     <DialogFooter>
                         <Button
@@ -3005,6 +3357,33 @@ const CRMPannel = () => {
                             onClick={() => setEmailPreviewDialog(false)}
                         >
                             Fechar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={emailSuccessDialog} onOpenChange={setEmailSuccessDialog}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <CheckCircle2 className="h-5 w-5 text-green-500" />
+                            Campanha Criada com Sucesso!
+                        </DialogTitle>
+                        <DialogDescription>
+                            Sua campanha de e-mail foi criada e os e-mails estão sendo disparados com sucesso.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <p className="text-sm text-psi-dark/70">
+                            Os destinatários selecionados receberão o e-mail em breve. Você pode acompanhar o progresso da campanha na aba "E-mails".
+                        </p>
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            variant="primary"
+                            onClick={() => setEmailSuccessDialog(false)}
+                        >
+                            Entendi
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -3414,7 +3793,7 @@ const CRMPannel = () => {
                                 </div>
                                 <div className="flex items-start gap-3">
                                     <div className="h-6 w-6 rounded-full bg-psi-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                                        <PieChart className="h-4 w-4 text-psi-primary" />
+                                        <Eye className="h-4 w-4 text-psi-primary" />
                                     </div>
                                     <div>
                                         <p className="font-medium text-psi-dark">Visão estratégica completa</p>
@@ -3734,7 +4113,7 @@ const CRMPannel = () => {
                                 <Filter className="h-5 w-5 text-psi-primary" />
                                 <h3 className="font-semibold text-psi-dark">Filtros</h3>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="flex gap-4">
                                 <div className="flex flex-col">
                                     <label className="text-sm font-medium text-psi-dark/70 mb-1.5">Data Inicial</label>
                                     <DatePicker
@@ -3859,38 +4238,95 @@ const CRMPannel = () => {
                         ) : !reportData ? null : (
                             (() => {
                                 const COLORS = ["#6C4BFF", "#FF6F91", "#FFD447", "#4ECDC4", "#FF6B6B"]
+                                
+                                const averageDeliveryRate = reportData.campaignPerformance.length > 0
+                                    ? reportData.campaignPerformance.reduce((sum, campaign) => sum + campaign.deliveredRate, 0) / reportData.campaignPerformance.length
+                                    : 0
+                                
                                 return (
                                 <>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
                                         <Card className="p-4">
                                             <div className="flex items-center justify-between mb-2">
                                                 <p className="text-sm text-psi-dark/60">Total de Campanhas</p>
                                                 <Mail className="h-4 w-4 text-psi-primary" />
-                                    </div>
+                                            </div>
                                             <p className="text-2xl font-bold text-psi-dark">{reportData.overview.totalCampaigns}</p>
                                         </Card>
-                                        <Card className="p-4">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <p className="text-sm text-psi-dark/60">Taxa de Abertura</p>
-                                                <MailOpen className="h-4 w-4 text-psi-primary" />
-                                </div>
-                                            <p className="text-2xl font-bold text-psi-dark">{reportData.overview.averageOpenRate.toFixed(1)}%</p>
-                                        </Card>
-                                        <Card className="p-4">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <p className="text-sm text-psi-dark/60">Taxa de Clique</p>
-                                                <MousePointer className="h-4 w-4 text-psi-primary" />
                                     </div>
-                                            <p className="text-2xl font-bold text-psi-dark">{reportData.overview.averageClickRate.toFixed(1)}%</p>
-                                        </Card>
-                                        <Card className="p-4">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <p className="text-sm text-psi-dark/60">Receita Total</p>
-                                                <DollarSign className="h-4 w-4 text-psi-primary" />
+
+                                    <div className="bg-white rounded-lg border border-psi-dark/10 p-6 mb-6">
+                                        <h3 className="font-semibold text-psi-dark mb-4">Funil de Engajamento</h3>
+                                        <div className="space-y-6">
+                                            <div className="flex flex-col items-center">
+                                                <div className="w-full max-w-4xl">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <MailCheck className="h-4 w-4 text-psi-primary" />
+                                                            <p className="text-sm font-medium text-psi-dark">Taxa de Entrega</p>
+                                                        </div>
+                                                        <p className="text-lg font-bold text-psi-dark">{averageDeliveryRate.toFixed(1)}%</p>
+                                                    </div>
+                                                    <div className="w-full bg-psi-dark/10 rounded-lg h-12 overflow-hidden relative">
+                                                        <div 
+                                                            className="bg-psi-primary h-full rounded-lg transition-all flex items-center justify-end pr-4"
+                                                            style={{ width: `${averageDeliveryRate}%` }}
+                                                        >
+                                                            <span className="text-white text-xs font-medium">{averageDeliveryRate.toFixed(1)}%</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex flex-col items-center">
+                                                <div className="w-full max-w-3xl">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <MailOpen className="h-4 w-4 text-psi-secondary" />
+                                                            <p className="text-sm font-medium text-psi-dark">Taxa de Abertura</p>
+                                                        </div>
+                                                        <p className="text-lg font-bold text-psi-dark">{reportData.overview.averageOpenRate.toFixed(1)}%</p>
+                                                    </div>
+                                                    <div className="w-full bg-psi-dark/10 rounded-lg h-12 overflow-hidden relative">
+                                                        <div 
+                                                            className="bg-psi-secondary h-full rounded-lg transition-all flex items-center justify-end pr-4"
+                                                            style={{ width: `${reportData.overview.averageOpenRate}%` }}
+                                                        >
+                                                            <span className="text-white text-xs font-medium">{reportData.overview.averageOpenRate.toFixed(1)}%</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex flex-col items-center">
+                                                <div className="w-full max-w-2xl">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <MousePointer className="h-4 w-4 text-psi-tertiary" />
+                                                            <p className="text-sm font-medium text-psi-dark">Taxa de Clique</p>
+                                                        </div>
+                                                        <p className="text-lg font-bold text-psi-dark">{reportData.overview.averageClickRate.toFixed(1)}%</p>
+                                                    </div>
+                                                    <div className="w-full bg-psi-dark/10 rounded-lg h-12 overflow-hidden relative">
+                                                        <div 
+                                                            className="bg-psi-tertiary h-full rounded-lg transition-all flex items-center justify-end pr-4"
+                                                            style={{ width: `${reportData.overview.averageClickRate}%` }}
+                                                        >
+                                                            <span className="text-white text-xs font-medium">{reportData.overview.averageClickRate.toFixed(1)}%</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="mt-6 pt-6 border-t border-psi-dark/10">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <DollarSign className="h-5 w-5 text-emerald-600" />
+                                                <p className="text-sm font-medium text-psi-dark/70">Receita Total:</p>
+                                                <p className="text-xl font-bold text-psi-dark">{ValueUtils.centsToCurrency(reportData.overview.totalRevenue)}</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                            <p className="text-2xl font-bold text-psi-dark">{ValueUtils.centsToCurrency(reportData.overview.totalRevenue)}</p>
-                                        </Card>
-                                </div>
 
                                     <div className="bg-white rounded-lg border border-psi-dark/10 p-6">
                                         <h3 className="font-semibold text-psi-dark mb-4 flex items-center gap-2">
@@ -4021,8 +4457,8 @@ const CRMPannel = () => {
                                                     </Select>
                                 </div>
                             </div>
-                                            <ResponsiveContainer width="100%" height={300}>
-                                                <ComposedChart data={filteredCampaignStats}>
+                                            <ResponsiveContainer width="100%" height={500}>
+                                                <ComposedChart data={filteredCampaignStats} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                                                     <CartesianGrid strokeDasharray="3 3" stroke="#E4E6F0" />
                                                     <XAxis dataKey="week" tick={{ fontSize: 11 }} />
                                                     <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
@@ -4054,14 +4490,22 @@ const CRMPannel = () => {
                                             </Select>
                         </div>
                                         <ResponsiveContainer width="100%" height={300}>
-                                            <BarChart data={filteredCustomerEntries}>
+                                            <LineChart data={filteredCustomerEntries} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                                                 <CartesianGrid strokeDasharray="3 3" stroke="#E4E6F0" />
                                                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                                                 <YAxis tick={{ fontSize: 11 }} />
                                                 <Tooltip />
                                                 <Legend />
-                                                <Bar dataKey="newCustomers" fill="#6C4BFF" name="Novos Clientes" radius={[4, 4, 0, 0]} />
-                                            </BarChart>
+                                                <Line 
+                                                    type="monotone" 
+                                                    dataKey="newCustomers" 
+                                                    stroke="#6C4BFF" 
+                                                    strokeWidth={3}
+                                                    name="Novos Clientes"
+                                                    dot={{ fill: "#6C4BFF", r: 5 }}
+                                                    activeDot={{ r: 7 }}
+                                                />
+                                            </LineChart>
                                         </ResponsiveContainer>
                     </div>
 
@@ -4272,31 +4716,32 @@ const CRMPannel = () => {
                                 </label>
                                 <div className="flex gap-2">
                             <Select
-                                value={selectedExportSegment || "all"}
-                                        onValueChange={(value) => setSelectedExportSegment(value === "all" ? "" : value)}
+                                value={selectedExportSegment || ""}
+                                onValueChange={(value) => setSelectedExportSegment(value)}
                             >
-                                        <SelectTrigger className="w-full bg-white">
-                                            <SelectValue placeholder="Todos os clientes" />
+                                <SelectTrigger className="w-full bg-white">
+                                    <SelectValue placeholder="Selecione uma tag" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">Todos os clientes</SelectItem>
-                                    {emailSegments.map(segment => (
-                                        <SelectItem key={segment.id} value={segment.id}>
-                                            {segment.name} ({segment.count} clientes)
-                                        </SelectItem>
-                                    ))}
+                                    {emailSegments
+                                        .filter(segment => segment.type === "tag")
+                                        .map(segment => (
+                                            <SelectItem key={segment.id} value={segment.id}>
+                                                {segment.name} ({segment.count} clientes)
+                                            </SelectItem>
+                                        ))}
                                 </SelectContent>
                             </Select>
                                 <Button
                                     type="button"
                                     variant="outline"
-                                        size="icon"
-                                        onClick={() => setViewSegmentCustomersDialog(true)}
-                                        disabled={!selectedExportSegment || selectedExportSegment === "all"}
-                                        className="shrink-0"
-                                        title="Visualizar clientes do segmento"
-                                    >
-                                        <Eye className="h-4 w-4" />
+                                    size="icon"
+                                    onClick={() => setViewSegmentCustomersDialog(true)}
+                                    disabled={!selectedExportSegment}
+                                    className="shrink-0"
+                                    title="Visualizar clientes da tag"
+                                >
+                                    <Eye className="h-4 w-4" />
                                 </Button>
                                 </div>
                             </div>
@@ -4304,8 +4749,8 @@ const CRMPannel = () => {
 
                         <div className="space-y-3">
                             <button
-                                onClick={() => handleDownload("pdf", selectedExportSegment || "all")}
-                                disabled={isGenerating}
+                                onClick={() => handleDownload("pdf", selectedExportSegment)}
+                                disabled={isGenerating || !selectedExportSegment}
                                 className={cn(
                                     "w-full p-4 rounded-xl border-2 border-[#E4E6F0] bg-white hover:border-psi-primary hover:bg-psi-primary/5 transition-all duration-200 text-left disabled:opacity-50 disabled:cursor-not-allowed",
                                 )}
@@ -4340,8 +4785,8 @@ const CRMPannel = () => {
                             </button>
 
                             <button
-                                onClick={() => handleDownload("xlsx", selectedExportSegment || "all")}
-                                disabled={isGenerating}
+                                onClick={() => handleDownload("xlsx", selectedExportSegment)}
+                                disabled={isGenerating || !selectedExportSegment}
                                 className={cn(
                                     "w-full p-4 rounded-xl border-2 border-[#E4E6F0] bg-white hover:border-psi-primary hover:bg-psi-primary/5 transition-all duration-200 text-left disabled:opacity-50 disabled:cursor-not-allowed",
                                 )}
@@ -4373,8 +4818,8 @@ const CRMPannel = () => {
                             </button>
 
                             <button
-                                    onClick={() => handleDownload("csv", selectedExportSegment || "all")}
-                                disabled={isGenerating}
+                                onClick={() => handleDownload("csv", selectedExportSegment)}
+                                disabled={isGenerating || !selectedExportSegment}
                                 className={cn(
                                     "w-full p-4 rounded-xl border-2 border-[#E4E6F0] bg-white hover:border-psi-primary hover:bg-psi-primary/5 transition-all duration-200 text-left disabled:opacity-50 disabled:cursor-not-allowed",
                                     "focus:outline-none focus:ring-2 focus:ring-psi-primary focus:ring-offset-2"
@@ -4405,8 +4850,8 @@ const CRMPannel = () => {
                             </button>
 
                             <button
-                                    onClick={() => handleDownload("json", selectedExportSegment || "all")}
-                                disabled={isGenerating}
+                                onClick={() => handleDownload("json", selectedExportSegment)}
+                                disabled={isGenerating || !selectedExportSegment}
                                 className={cn(
                                     "w-full p-4 rounded-xl border-2 border-[#E4E6F0] bg-white hover:border-psi-primary hover:bg-psi-primary/5 transition-all duration-200 text-left disabled:opacity-50 disabled:cursor-not-allowed",
                                     "focus:outline-none focus:ring-2 focus:ring-psi-primary focus:ring-offset-2"
@@ -4642,22 +5087,90 @@ const CRMPannel = () => {
                 </DialogContent>
             </Dialog>
 
-            <Sheet open={reportsSheetOpen} onOpenChange={setReportsSheetOpen}>
-                <SheetContent side="right" className="w-[90vw] sm:w-[90vw] lg:w-[90vw] overflow-y-auto">
-                    <SheetHeader>
-                        <SheetTitle className="text-2xl font-semibold text-psi-primary">Relatórios Avançados</SheetTitle>
-                        <SheetDescription>
-                            Análises detalhadas e insights estratégicos
-                        </SheetDescription>
-                    </SheetHeader>
-                    <div className="mt-6 mx-4">
-                        <div className="flex items-center justify-center py-12">
-                            <p className="text-lg text-psi-dark/60">Em desenvolvimento</p>
-                            <Settings className="h-6 w-6 text-psi-primary ml-2" />
+            <Dialog open={reportsProDialog} onOpenChange={setReportsProDialog}>
+                <DialogContent className="max-w-lg p-0 overflow-hidden">
+                    <div className="relative overflow-hidden bg-gradient-to-br from-psi-primary/10 via-psi-secondary/5 to-psi-tertiary/10 p-6">
+                        <div className="absolute inset-0 pointer-events-none">
+                            <div className="absolute -top-10 -right-10 w-40 h-40 bg-psi-primary/20 rounded-full blur-3xl" />
+                            <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-psi-tertiary/20 rounded-full blur-3xl" />
+                        </div>
+                        <div className="relative flex flex-col items-center text-center">
+                            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-psi-primary to-psi-secondary flex items-center justify-center mb-4 shadow-lg">
+                                <Crown className="h-8 w-8 text-white" />
+                            </div>
+                            <DialogTitle className="text-2xl font-bold text-psi-dark mb-2">
+                                Relatórios Avançados
+                            </DialogTitle>
+                            <DialogDescription className="text-base text-psi-dark/70">
+                                Exclusivo do plano <span className="font-semibold text-psi-primary">CRM Pro</span>
+                            </DialogDescription>
                         </div>
                     </div>
-                </SheetContent>
-            </Sheet>
+                    
+                    <div className="p-6 space-y-4">
+                        <div className="space-y-4">
+                            <div className="flex items-start gap-4 p-4 rounded-xl border border-psi-primary/20 bg-psi-primary/5 hover:bg-psi-primary/10 transition-colors">
+                                <div className="h-12 w-12 rounded-lg bg-psi-primary/20 flex items-center justify-center shrink-0">
+                                    <BarChart3 className="h-6 w-6 text-psi-primary" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-semibold text-psi-dark mb-1">Análises Detalhadas</p>
+                                    <p className="text-sm text-psi-dark/60 leading-relaxed">
+                                        Visualize métricas completas de suas campanhas, clientes e performance com gráficos interativos e insights profundos.
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-start gap-4 p-4 rounded-xl border border-psi-secondary/20 bg-psi-secondary/5 hover:bg-psi-secondary/10 transition-colors">
+                                <div className="h-12 w-12 rounded-lg bg-psi-secondary/20 flex items-center justify-center shrink-0">
+                                    <Sparkles className="h-6 w-6 text-psi-secondary" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-semibold text-psi-dark mb-1">Sugestões por IA</p>
+                                    <p className="text-sm text-psi-dark/60 leading-relaxed">
+                                        Receba recomendações inteligentes e personalizadas para otimizar suas campanhas e aumentar o engajamento dos clientes.
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-start gap-4 p-4 rounded-xl border border-psi-tertiary/20 bg-psi-tertiary/5 hover:bg-psi-tertiary/10 transition-colors">
+                                <div className="h-12 w-12 rounded-lg bg-psi-tertiary/20 flex items-center justify-center shrink-0">
+                                    <TrendingUp className="h-6 w-6 text-psi-dark/80" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-semibold text-psi-dark mb-1">Insights Estratégicos</p>
+                                    <p className="text-sm text-psi-dark/60 leading-relaxed">
+                                        Tome decisões baseadas em dados reais e aumente sua receita com análises de funil de conversão e segmentação avançada.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="px-6 pb-6 pt-0">
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={() => setReportsProDialog(false)}
+                                className="flex-1"
+                            >
+                                Fechar
+                            </Button>
+                            <Button
+                                variant="primary"
+                                onClick={() => {
+                                    setReportsProDialog(false)
+                                    setUpgradeDialog(true)
+                                }}
+                                className="flex-1 gap-2"
+                            >
+                                <Crown className="h-4 w-4" />
+                                Assinar CRM Pro
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             <Dialog open={cancelSubscriptionDialog} onOpenChange={setCancelSubscriptionDialog}>
                 <DialogContent className="sm:max-w-[600px]">

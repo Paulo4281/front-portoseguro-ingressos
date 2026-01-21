@@ -3166,6 +3166,7 @@ const CheckoutInfo = () => {
                                                 mask="(00) 00000-0000"
                                                 placeholder="(00) 00000-0000"
                                                 icon={Phone}
+                                                inputMode="tel"
                                             />
                                         )}
                                     />
@@ -3188,6 +3189,7 @@ const CheckoutInfo = () => {
                                                 icon={FileText}
                                                 disabled={field.value ? true : false}
                                                 className={`${field.value ? "bg-psi-dark/5" : ""}`}
+                                                inputMode="numeric"
                                             />
                                         )}
                                     />
@@ -3269,6 +3271,7 @@ const CheckoutInfo = () => {
                                                 value={field.value || ""}
                                                 mask="00/00/0000"
                                                 placeholder="DD/MM/AAAA"
+                                                inputMode="numeric"
                                             />
                                         )}
                                     />
@@ -3296,6 +3299,7 @@ const CheckoutInfo = () => {
                                                 onAccept={(value) => updateAddressField("zipCode", value as string)}
                                                 placeholder="00000-000"
                                                 icon={Hash}
+                                                inputMode="numeric"
                                             />
                                         )}
                                     />
@@ -3354,6 +3358,7 @@ const CheckoutInfo = () => {
                                                 value={field.value || ""}
                                                 onChange={(e) => updateAddressField("number", e.target.value)}
                                                 placeholder="123"
+                                                inputMode="numeric"
                                             />
                                         )}
                                     />

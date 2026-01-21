@@ -46,6 +46,29 @@ const TermosECondicoesInfo = () => {
                                     <p className="text-psi-dark/70 leading-relaxed">
                                         Estes termos se aplicam a todos os usuários da plataforma, incluindo compradores de ingressos e organizadores de eventos.
                                     </p>
+                                    <div className="bg-psi-primary/5 rounded-lg p-4 border border-psi-primary/10 mt-4">
+                                        <h3 className="font-medium text-psi-dark mb-2">1.1. Consentimento para Comunicações de Marketing</h3>
+                                        <p className="text-psi-dark/70 text-sm leading-relaxed">
+                                            Ao se cadastrar na plataforma, você concorda e autoriza o recebimento de comunicações de marketing por e-mail, incluindo:
+                                        </p>
+                                        <ul className="space-y-1 text-psi-dark/70 text-sm mt-2 ml-4">
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-psi-primary mt-1">•</span>
+                                                <span>Campanhas promocionais e ofertas especiais da plataforma</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-psi-primary mt-1">•</span>
+                                                <span>Comunicações de marketing dos organizadores dos eventos que você demonstrou interesse ou comprou ingressos</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-psi-primary mt-1">•</span>
+                                                <span>Informações sobre novos eventos, lembretes de eventos próximos e pesquisas de satisfação</span>
+                                            </li>
+                                        </ul>
+                                        <p className="text-psi-dark/70 text-sm leading-relaxed mt-2">
+                                            <strong className="text-psi-dark">Você pode descadastrar-se</strong> das comunicações de marketing a qualquer momento através do link de descadastramento presente em cada e-mail ou através das configurações da sua conta.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </section>

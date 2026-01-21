@@ -470,6 +470,7 @@ const MeuPerfilOrganizer = () => {
                                                     mask="00/00/0000"
                                                     placeholder="DD/MM/AAAA"
                                                     icon={FileText}
+                                                    inputMode="numeric"
                                                 />
                                             )}
                                         />
@@ -492,6 +493,7 @@ const MeuPerfilOrganizer = () => {
                                                     icon={FileText}
                                                     disabled={ field.value ? true : false }
                                                     className={`${field.value ? "bg-psi-dark/5" : ""}`}
+                                                    inputMode="numeric"
                                                 />
                                             )}
                                         />
@@ -604,6 +606,7 @@ const MeuPerfilOrganizer = () => {
                                                     }}
                                                     placeholder="00000-000"
                                                     icon={Hash}
+                                                    inputMode="numeric"
                                                 />
                                             )}
                                         />
@@ -655,6 +658,7 @@ const MeuPerfilOrganizer = () => {
                                                             })
                                                         }}
                                                         placeholder="123"
+                                                        inputMode="numeric"
                                                     />
                                                 )}
                                             />
@@ -896,6 +900,7 @@ const MeuPerfilOrganizer = () => {
                                                     mask="00.000.000/0000-00"
                                                     placeholder="00.000.000/0000-00"
                                                     icon={FileText}
+                                                    inputMode="numeric"
                                                 />
                                             )}
                                         />
@@ -1109,6 +1114,7 @@ const MeuPerfilOrganizer = () => {
                                                             {...field}
                                                             value={field.value || ""}
                                                             placeholder="Número da agência"
+                                                            inputMode="numeric"
                                                         />
                                                     )}
                                                 />
@@ -1131,6 +1137,7 @@ const MeuPerfilOrganizer = () => {
                                                             {...field}
                                                             value={field.value || ""}
                                                             placeholder="Número da conta"
+                                                            inputMode="numeric"
                                                         />
                                                     )}
                                                 />
@@ -1150,6 +1157,7 @@ const MeuPerfilOrganizer = () => {
                                                             value={field.value || ""}
                                                             placeholder="Dígito"
                                                             maxLength={2}
+                                                            inputMode="numeric"
                                                         />
                                                     )}
                                                 />
@@ -1209,6 +1217,7 @@ const MeuPerfilOrganizer = () => {
                                                             mask="00/00/0000"
                                                             placeholder="DD/MM/AAAA"
                                                             icon={FileText}
+                                                            inputMode="numeric"
                                                         />
                                                     )}
                                                 />
@@ -1269,6 +1278,7 @@ const MeuPerfilOrganizer = () => {
                                                                 placeholder={placeholder}
                                                                 icon={FileText}
                                                                 disabled={!documentType}
+                                                                inputMode="numeric"
                                                             />
                                                         )
                                                     }}
@@ -1637,6 +1647,7 @@ const MeuPerfilOrganizer = () => {
                                                             mask="(00) 00000-0000"
                                                             placeholder="(00) 00000-0000"
                                                             icon={Phone}
+                                                            inputMode="tel"
                                                         />
                                                     )}
                                                 />

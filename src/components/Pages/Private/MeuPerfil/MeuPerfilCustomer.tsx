@@ -2,7 +2,7 @@
 
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Phone, FileText, Globe, MapPin, Building2, Hash, User, Mail } from "lucide-react"
+import { Phone, FileText, Globe, MapPin, Building2, Hash, User, Mail, MailX } from "lucide-react"
 import { UserProfileUpdateValidator, type TUserProfileUpdate } from "@/validators/User/UserProfileUpdateValidator"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/Input/Input"
@@ -18,12 +18,22 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 import type { TUser } from "@/types/User/TUser"
 import { getStates, getCitiesByState } from "@/utils/Helpers/IBGECitiesAndStates/IBGECitiesAndStates"
 import { getCountries, getCountriesSync } from "@/utils/Helpers/Countries/Countries"
 import { useMemo, useEffect, useRef, useState } from "react"
 import { useUserUpdate } from "@/hooks/User/useUserUpdate"
 import { useUserUploadProfilePicture } from "@/hooks/User/useUserUploadProfilePicture"
+import { useUserUpdateEmailMarketingConsent } from "@/hooks/User/useUserUpdateEmailMarketingConsent"
 import { Toast } from "@/components/Toast/Toast"
 import { useAuthStore } from "@/stores/Auth/AuthStore"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
@@ -39,7 +49,9 @@ const MeuPerfilCustomer = () => {
     const states = getStates()
     const { mutateAsync: updateUser, isPending: isUpdating } = useUserUpdate()
     const { mutateAsync: uploadProfilePicture, isPending: isUploading } = useUserUploadProfilePicture()
+    const { mutateAsync: updateEmailMarketingConsent, isPending: isUpdatingConsent } = useUserUpdateEmailMarketingConsent()
     const [countries, setCountries] = useState(getCountriesSync())
+    const [disableConsentDialog, setDisableConsentDialog] = useState(false)
 
     const formatBirthForForm = (birth: string | null | undefined): string => {
         if (!birth) return ""
@@ -313,6 +325,7 @@ const MeuPerfilCustomer = () => {
                                                         mask="(00) 00000-0000"
                                                         placeholder="(00) 00000-0000"
                                                         icon={Phone}
+                                                        inputMode="tel"
                                                     />
                                                 )}
                                             />
@@ -335,6 +348,7 @@ const MeuPerfilCustomer = () => {
                                                         icon={FileText}
                                                         disabled={ field.value ? true : false }
                                                         className={`${field.value ? "bg-psi-dark/5" : ""}`}
+                                                        inputMode="numeric"
                                                     />
                                                 )}
                                             />
@@ -416,6 +430,7 @@ const MeuPerfilCustomer = () => {
                                                         value={field.value || ""}
                                                         mask="00/00/0000"
                                                         placeholder="DD/MM/AAAA"
+                                                        inputMode="numeric"
                                                     />
                                                 )}
                                             />
@@ -443,6 +458,7 @@ const MeuPerfilCustomer = () => {
                                                         onAccept={(value) => updateAddressField("zipCode", value as string)}
                                                         placeholder="00000-000"
                                                         icon={Hash}
+                                                        inputMode="numeric"
                                                     />
                                                 )}
                                             />
@@ -501,6 +517,7 @@ const MeuPerfilCustomer = () => {
                                                         value={field.value || ""}
                                                         onChange={(e) => updateAddressField("number", e.target.value)}
                                                         placeholder="123"
+                                                        inputMode="numeric"
                                                     />
                                                 )}
                                             />
@@ -630,6 +647,42 @@ const MeuPerfilCustomer = () => {
                                     </div>
                                 </div>
 
+                                <div className="space-y-4 pt-6 border-t border-psi-dark/10">
+                                    <h2 className="text-xl font-medium text-psi-dark">Preferências de Comunicação</h2>
+                                    
+                                    <div className="flex items-center justify-between p-4 rounded-lg border border-psi-dark/10 bg-psi-primary/5">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Mail className="h-5 w-5 text-psi-primary" />
+                                                <h3 className="font-medium text-psi-dark">E-mail Marketing</h3>
+                                            </div>
+                                            <p className="text-sm text-psi-dark/60">
+                                                Receber e-mails promocionais, ofertas especiais e novidades da plataforma e dos organizadores
+                                            </p>
+                                        </div>
+                                        <Switch
+                                            checked={user?.isMarketingConsent ?? true}
+                                            onCheckedChange={async (checked) => {
+                                                if (checked) {
+                                                    try {
+                                                        await updateEmailMarketingConsent()
+                                                        if (user) {
+                                                            setUser({ ...user, isMarketingConsent: true })
+                                                        }
+                                                        Toast.success("E-mail marketing ativado com sucesso!")
+                                                    } catch (error: any) {
+                                                        Toast.error(error?.response?.data?.message || "Erro ao ativar e-mail marketing")
+                                                    }
+                                                } else {
+                                                    setDisableConsentDialog(true)
+                                                }
+                                            }}
+                                            disabled={isUpdatingConsent}
+                                            aria-label="Ativar/desativar e-mail marketing"
+                                        />
+                                    </div>
+                                </div>
+
                                 <div className="pt-6 border-t border-psi-dark/10 flex justify-end">
                                     <Button
                                         type="submit"
@@ -649,6 +702,66 @@ const MeuPerfilCustomer = () => {
                     </div>
                 </div>
             </div>
+
+            <Dialog open={disableConsentDialog} onOpenChange={setDisableConsentDialog}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <MailX className="h-5 w-5 text-amber-600" />
+                            Desativar E-mail Marketing?
+                        </DialogTitle>
+                        <DialogDescription>
+                            Tem certeza que deseja desativar o recebimento de e-mails de marketing?
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                            <p className="text-sm font-medium text-amber-900 mb-2">Você deixará de receber:</p>
+                            <ul className="text-sm text-amber-800 space-y-1 list-disc list-inside">
+                                <li>Ofertas especiais e promoções exclusivas</li>
+                                <li>Novidades sobre eventos e lançamentos</li>
+                                <li>Cupons de desconto e vantagens</li>
+                                <li>Lembretes de eventos que você pode gostar</li>
+                                <li>Pesquisas de satisfação e feedback</li>
+                            </ul>
+                        </div>
+                        <p className="text-sm text-psi-dark/70">
+                            Você ainda receberá e-mails importantes sobre seus ingressos, confirmações de compra e informações essenciais sobre eventos que você já comprou.
+                        </p>
+                    </div>
+                    <DialogFooter className="gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setDisableConsentDialog(false)}
+                            disabled={isUpdatingConsent}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={async () => {
+                                try {
+                                    await updateEmailMarketingConsent()
+                                    if (user) {
+                                        setUser({ ...user, isMarketingConsent: false })
+                                    }
+                                    setDisableConsentDialog(false)
+                                    Toast.success("E-mail marketing desativado")
+                                } catch (error: any) {
+                                    Toast.error(error?.response?.data?.message || "Erro ao desativar e-mail marketing")
+                                }
+                            }}
+                            disabled={isUpdatingConsent}
+                        >
+                            {isUpdatingConsent ? (
+                                <LoadingButton message="Desativando..." />
+                            ) : (
+                                "Sim, Desativar"
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </Background>
     )
 }

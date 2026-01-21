@@ -1,7 +1,7 @@
 import { API } from "@/api/api"
 import type { AxiosResponse } from "axios"
 import type { TApiResponse } from "@/types/TApiResponse"
-import type { TTagClientCreate, TTagClientResponse } from "@/types/TagClient/TTagClient"
+import type { TTagClientCreate, TTagClientResponse, TTagClientListResponse } from "@/types/TagClient/TTagClient"
 
 class TagClientServiceClass {
     async create(data: TTagClientCreate): Promise<TApiResponse<TTagClientResponse>> {
@@ -39,6 +39,19 @@ class TagClientServiceClass {
 
         if (!response) {
             throw new Error("Erro ao remover tag do cliente")
+        }
+
+        return response
+    }
+
+    async listClients(tagId: string): Promise<TApiResponse<TTagClientListResponse[]>> {
+        const response = (await API.GET({
+            prefix: "/crm",
+            url: `/tag-client/list-clients/${tagId}`
+        }))?.data
+
+        if (!response) {
+            throw new Error("Erro ao buscar clientes da tag")
         }
 
         return response

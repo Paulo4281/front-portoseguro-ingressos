@@ -43,6 +43,7 @@ type TCustomer = {
     name: string
     email: string
     phone: string
+    isMarketingConsent: boolean
     totalPurchases: number
     totalSpent: number
     lastPurchaseDate: string
