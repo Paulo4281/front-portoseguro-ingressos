@@ -412,16 +412,21 @@ const QrScannerPannel = () => {
                 await scanner.start(cameraConfig, config, onScanSuccess, onScanFailure)
             }
 
+            const isMobileDevice = typeof window !== "undefined" && window.innerWidth <= 1024
+            const cameras = isMobileDevice ? await Html5Qrcode.getCameras() : []
+            const backCamera = cameras.find(camera => /back|rear|traseira|environment/i.test(camera.label))
+            const fallbackCamera = cameras.length > 0 ? cameras[cameras.length - 1] : null
+
             try {
-                await startWithCamera({ facingMode: { ideal: "environment" } })
-            } catch (startError) {
-                const cameras = await Html5Qrcode.getCameras()
-                if (cameras.length > 0) {
-                    const backCamera = cameras.find(camera => /back|rear|traseira|environment/i.test(camera.label)) || cameras[cameras.length - 1]
+                if (backCamera) {
                     await startWithCamera({ deviceId: { exact: backCamera.id } })
+                } else if (fallbackCamera) {
+                    await startWithCamera({ deviceId: { exact: fallbackCamera.id } })
                 } else {
-                    throw startError
+                    await startWithCamera({ facingMode: { exact: "environment" } })
                 }
+            } catch (startError) {
+                await startWithCamera({ facingMode: { ideal: "environment" } })
             }
 
             setScanFeedback("Procurando QR Code...")
