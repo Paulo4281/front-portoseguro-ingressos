@@ -386,11 +386,11 @@ const QrScannerPannel = () => {
                         }
                     }
                     : {
-                        qrbox: { width: 280, height: 330 },
-                        videoConstraints: {
-                            width: { ideal: 390 },
-                            height: { ideal: 490 }
-                        }
+                        qrbox: { width: 200, height: 250 },
+                        // videoConstraints: {
+                        //     width: { ideal: 390 },
+                        //     height: { ideal: 490 }
+                        // }
                     }
                 )
             }
