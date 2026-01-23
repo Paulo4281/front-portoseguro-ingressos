@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Ticket, QrCode, Copy, Share2, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, Eye, EyeOff, FileText, Loader2, Check, AlertTriangle, TicketCheck, RefreshCw, Shield } from "lucide-react"
+import { Calendar, Clock, MapPin, Ticket, QrCode, Copy, Share2, AlertCircle, CheckCircle2, ArrowRight, ShieldCheck, Eye, EyeOff, FileText, Loader2, Check, AlertTriangle, TicketCheck, RefreshCw, Shield, Download } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import { TicketService } from "@/services/Ticket/TicketService"
 import { Toast } from "@/components/Toast/Toast"
@@ -260,6 +260,9 @@ const MeusIngressosPannel = () => {
     const [copiedPayload, setCopiedPayload] = useState(false)
     const [qrCodeZoomOpen, setQrCodeZoomOpen] = useState(false)
     const [selectedTicketForZoom, setSelectedTicketForZoom] = useState<TTicket | null>(null)
+    const [qrCodeDownloadDialogOpen, setQrCodeDownloadDialogOpen] = useState(false)
+    const [selectedTicketForDownload, setSelectedTicketForDownload] = useState<TTicket | null>(null)
+    const [isDownloadingQrCode, setIsDownloadingQrCode] = useState(false)
     const [postponedRefundDialogOpen, setPostponedRefundDialogOpen] = useState(false)
     const [selectedTicketForRefund, setSelectedTicketForRefund] = useState<TTicket | null>(null)
 
@@ -359,6 +362,102 @@ const MeusIngressosPannel = () => {
                 ...prev,
                 [ticketId]: true
             }))
+        }
+    }
+
+    const ensureQrCodeData = async (ticketId: string) => {
+        if (qrCodeData[ticketId]) {
+            return qrCodeData[ticketId]
+        }
+
+        setLoadingQRCodes(prev => ({
+            ...prev,
+            [ticketId]: true
+        }))
+
+        try {
+            const response = await TicketService.getTicketQRCode(ticketId)
+            if (response?.success && response?.data?.token) {
+                setQrCodeData(prev => ({
+                    ...prev,
+                    [ticketId]: response.data.token
+                }))
+                return response.data.token
+            }
+            Toast.error("Erro ao carregar QR Code")
+            return null
+        } catch (error) {
+            console.error("Erro ao buscar QR Code:", error)
+            Toast.error("Erro ao carregar QR Code")
+            return null
+        } finally {
+            setLoadingQRCodes(prev => ({
+                ...prev,
+                [ticketId]: false
+            }))
+        }
+    }
+
+    const handleOpenQrCodeDownloadDialog = (ticket: TTicket) => {
+        setSelectedTicketForDownload(ticket)
+        setQrCodeDownloadDialogOpen(true)
+    }
+
+    const handleDownloadQrCode = async () => {
+        if (!selectedTicketForDownload) return
+        setIsDownloadingQrCode(true)
+
+        try {
+            const token = await ensureQrCodeData(selectedTicketForDownload.id)
+            if (!token) {
+                return
+            }
+
+            const qrCodeElement = document.getElementById(`ticket-qr-download-${selectedTicketForDownload.id}`)
+            if (!qrCodeElement) {
+                Toast.error("Erro ao gerar QR Code")
+                return
+            }
+
+            const svg = qrCodeElement.querySelector("svg")
+            if (!svg) {
+                Toast.error("Erro ao gerar QR Code")
+                return
+            }
+
+            const svgData = new XMLSerializer().serializeToString(svg)
+            const canvas = document.createElement("canvas")
+            const ctx = canvas.getContext("2d")
+            const img = new Image()
+
+            img.onload = () => {
+                canvas.width = img.width
+                canvas.height = img.height
+                ctx?.drawImage(img, 0, 0)
+                
+                canvas.toBlob((blob) => {
+                    if (!blob) return
+                    
+                    const url = URL.createObjectURL(blob)
+                    const link = document.createElement("a")
+                    link.href = url
+                    link.download = `qrcode-ingresso-${selectedTicketForDownload.Event.slug}.jpg`
+                    document.body.appendChild(link)
+                    link.click()
+                    document.body.removeChild(link)
+                    URL.revokeObjectURL(url)
+                    
+                    Toast.success("QR Code baixado com sucesso!")
+                    setQrCodeDownloadDialogOpen(false)
+                    setSelectedTicketForDownload(null)
+                }, "image/jpeg", 0.95)
+            }
+
+            img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)))
+        } catch (error) {
+            Toast.error("Erro ao baixar QR Code")
+        } finally {
+            setIsDownloadingQrCode(false)
         }
     }
 
@@ -894,6 +993,15 @@ const MeusIngressosPannel = () => {
                                                                                                 />
                                                                                             </div>
                                                                                         )}
+                                                                                        <Button
+                                                                                            variant="secondary"
+                                                                                            size="sm"
+                                                                                            className="w-full text-xs"
+                                                                                            onClick={() => handleOpenQrCodeDownloadDialog(ticket)}
+                                                                                        >
+                                                                                            <Download className="h-3 w-3 mr-1" />
+                                                                                            Baixar QR Code
+                                                                                        </Button>
                                                                                     </div>
                                                                                 ) : isUsed ? (
                                                                                     <div className="p-3 rounded-lg bg-psi-primary/10 border border-psi-primary/20">
@@ -1223,6 +1331,56 @@ const MeusIngressosPannel = () => {
                             </div>
                         </div>
                     )}
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={qrCodeDownloadDialogOpen} onOpenChange={setQrCodeDownloadDialogOpen}>
+                <DialogContent className="max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Baixar QR Code</DialogTitle>
+                        <DialogDescription>
+                            Este QR Code dá acesso direto ao evento. Mantenha-o em segurança e compartilhe apenas com quem realmente irá utilizá-lo.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-4">
+                        <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-4">
+                            <p className="text-sm text-amber-900 font-medium mb-2">
+                                Aviso de segurança
+                            </p>
+                            <p className="text-sm text-amber-800">
+                                Não compartilhe este QR Code em nenhuma hipótese. O uso é de total responsabilidade do usuário. Caso seja compartilhado indevidamente, o acesso ao evento poderá ser comprometido.
+                            </p>
+                        </div>
+                        {selectedTicketForDownload && qrCodeData[selectedTicketForDownload.id] && (
+                            <div id={`ticket-qr-download-${selectedTicketForDownload.id}`} className="hidden">
+                                <QRCodeSVG
+                                    value={qrCodeData[selectedTicketForDownload.id]}
+                                    size={600}
+                                    level="H"
+                                    includeMargin={true}
+                                />
+                            </div>
+                        )}
+                        <div className="flex items-center justify-end gap-3">
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setQrCodeDownloadDialogOpen(false)
+                                    setSelectedTicketForDownload(null)
+                                }}
+                                disabled={isDownloadingQrCode}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                variant="primary"
+                                onClick={handleDownloadQrCode}
+                                disabled={isDownloadingQrCode}
+                            >
+                                {isDownloadingQrCode ? "Baixando..." : "Baixar QR Code"}
+                            </Button>
+                        </div>
+                    </div>
                 </DialogContent>
             </Dialog>
 
