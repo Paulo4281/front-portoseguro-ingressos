@@ -375,39 +375,55 @@ const QrScannerPannel = () => {
             const scanner = new Html5Qrcode(scannerId)
             scannerRef.current = scanner
 
-            await scanner.start(
-                { facingMode: { exact: "environment" } },
-                {
-                    fps: 10,
-                    ...(typeof window !== "undefined" && window.innerWidth > 1024
-                        ? {
-                            qrbox: { width: 400, height: 400 },
-                            videoConstraints: {
-                                width: { ideal: 1920 },
-                                height: { ideal: 1080 }
-                            }
+            const config = {
+                fps: 10,
+                ...(typeof window !== "undefined" && window.innerWidth > 1024
+                    ? {
+                        qrbox: { width: 400, height: 400 },
+                        videoConstraints: {
+                            width: { ideal: 1920 },
+                            height: { ideal: 1080 }
                         }
-                        : {
-                            qrbox: { width: 280, height: 330 },
-                            videoConstraints: {
-                                width: { ideal: 390 },
-                                height: { ideal: 490 }
-                            }
-                        }
-                    )
-                },
-                (decodedText) => {
-                    handleScanSuccess(decodedText)
-                },
-                (errorMessage) => {
-                    const now = Date.now()
-                    if (now - lastScanFeedbackAtRef.current < 900) {
-                        return
                     }
-                    lastScanFeedbackAtRef.current = now
-                    setScanFeedback(getScanFeedbackMessage(errorMessage))
+                    : {
+                        qrbox: { width: 280, height: 330 },
+                        videoConstraints: {
+                            width: { ideal: 390 },
+                            height: { ideal: 490 }
+                        }
+                    }
+                )
+            }
+
+            const onScanSuccess = (decodedText: string) => {
+                handleScanSuccess(decodedText)
+            }
+
+            const onScanFailure = (errorMessage: string) => {
+                const now = Date.now()
+                if (now - lastScanFeedbackAtRef.current < 900) {
+                    return
                 }
-            )
+                lastScanFeedbackAtRef.current = now
+                setScanFeedback(getScanFeedbackMessage(errorMessage))
+            }
+
+            const startWithCamera = async (cameraConfig: any) => {
+                await scanner.start(cameraConfig, config, onScanSuccess, onScanFailure)
+            }
+
+            try {
+                await startWithCamera({ facingMode: { ideal: "environment" } })
+            } catch (startError) {
+                const cameras = await Html5Qrcode.getCameras()
+                if (cameras.length > 0) {
+                    const backCamera = cameras.find(camera => /back|rear|traseira|environment/i.test(camera.label)) || cameras[cameras.length - 1]
+                    await startWithCamera({ deviceId: { exact: backCamera.id } })
+                } else {
+                    throw startError
+                }
+            }
+
             setScanFeedback("Procurando QR Code...")
         } catch (error) {
             console.error("Erro ao iniciar scanner:", error)
