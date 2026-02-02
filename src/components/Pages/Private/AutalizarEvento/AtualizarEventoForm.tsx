@@ -918,6 +918,8 @@ const AtualizarEventoForm = () => {
         )
     }
 
+    const isEventFinished = eventData?.data?.isFinished === true
+
     return (
         <Background variant="light">
             <div className="min-h-screen pt-32 pb-16 px-4
@@ -938,11 +940,21 @@ const AtualizarEventoForm = () => {
                         </h1>
                         <p className="text-base
                         sm:text-lg text-psi-dark/60">
-                            Edite as informações do seu evento
+                            {isEventFinished ? "Visualize as informações do seu evento (evento finalizado)" : "Edite as informações do seu evento"}
                         </p>
                     </div>
 
+                    {isEventFinished && (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 mb-6 flex items-center gap-3">
+                            <Info className="h-5 w-5 text-amber-600 shrink-0" />
+                            <p className="text-sm font-medium text-amber-900">
+                                Este evento está finalizado. Apenas visualização — não é possível editar.
+                            </p>
+                        </div>
+                    )}
+
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+                        <fieldset disabled={isEventFinished} className="border-0 p-0 m-0 min-w-0 space-y-8 disabled:opacity-100">
                         <div className="rounded-2xl border border-[#E4E6F0] bg-white/95 shadow-lg shadow-black/5 p-6
                         sm:p-8 space-y-6">
                             <div className="flex items-center gap-3 mb-4">
@@ -2573,6 +2585,7 @@ const AtualizarEventoForm = () => {
                             </div>
                         </div>
 
+                        </fieldset>
                         <div className="flex items-center justify-end gap-4 pt-4">
                             <Button
                                 type="button"
@@ -2583,17 +2596,19 @@ const AtualizarEventoForm = () => {
                                     Cancelar
                                 </Link>
                             </Button>
-                            <Button
-                                type="submit"
-                                variant="primary"
-                                disabled={isUpdatingEvent}
-                            >
-                                {isUpdatingEvent ? (
-                                    <LoadingButton message="Atualizando evento..." />
-                                ) : (
-                                    "Atualizar Evento"
-                                )}
-                            </Button>
+                            {!isEventFinished && (
+                                <Button
+                                    type="submit"
+                                    variant="primary"
+                                    disabled={isUpdatingEvent}
+                                >
+                                    {isUpdatingEvent ? (
+                                        <LoadingButton message="Atualizando evento..." />
+                                    ) : (
+                                        "Atualizar Evento"
+                                    )}
+                                </Button>
+                            )}
                         </div>
                     </form>
                 </div>

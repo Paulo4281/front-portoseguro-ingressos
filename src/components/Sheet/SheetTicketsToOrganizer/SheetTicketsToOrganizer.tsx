@@ -553,7 +553,7 @@ const SheetTicketsToOrganizer = ({
                                                                             </Button>
                                                                         </DropdownMenuTrigger>
                                                                         <DropdownMenuContent align="end" className="w-56">
-                                                                            {ticket.status === "CONFIRMED" && (
+                                                                            {ticket.status === "CONFIRMED" && !eventData?.data?.isFinished && (
                                                                                 <DropdownMenuItem
                                                                                     className="cursor-pointer text-destructive"
                                                                                     onClick={() => handleCancelTicket(ticket)}

@@ -284,43 +284,74 @@ const CuponsPannel = () => {
 
     return (
         <Background variant="light" className="min-h-screen py-10 mt-[80px] container">
-            <section className="space-y-10 px-4
-            sm:px-6
-            lg:px-8">
-            <div className="space-y-4">
-                <div className="space-y-3">
-                    <h1 className="text-3xl font-semibold text-psi-primary
-                    sm:text-4xl">
-                        Cupons e incentivos
-                    </h1>
-                    <p className="text-psi-dark/70 max-w-3xl">
-                        Crie incentivos exclusivos para seus eventos, controle vigência, limite de uso e acompanhe os resultados em tempo real.
-                    </p>
+            <section className="space-y-10 px-4 sm:px-6 lg:px-8">
+                <div className="space-y-4">
+                    <div className="space-y-3">
+                        <h1 className="text-3xl font-semibold text-psi-primary sm:text-4xl">
+                            Cupons e incentivos
+                        </h1>
+                        <p className="text-psi-dark/70 max-w-3xl">
+                            Crie incentivos exclusivos para seus eventos, controle vigência, limite de uso e acompanhe os resultados em tempo real.
+                        </p>
+                    </div>
                 </div>
-            </div>
 
-            <div className="grid gap-4
-            md:grid-cols-2
-            xl:grid-cols-3">
-                <StatCard
-                    icon={Gift}
-                    title="Cupons ativos"
-                    value={`${stats.active}/${stats.total}`}
-                    subtitle="Disponíveis agora"
-                />
-                <StatCard
-                    icon={TicketPercent}
-                    title="Total utilizados"
-                    value={stats.totalUsage.toString()}
-                    subtitle="Desde o início"
-                />
-                <StatCard
-                    icon={TimerReset}
-                    title="Expiram em breve"
-                    value={stats.expiringSoon.toString()}
-                    subtitle="Próximos 7 dias"
-                />
-            </div>
+                <div className="rounded-3xl border border-[#E4E6F0] bg-white/80 p-6 shadow-lg shadow-black/5">
+                    <div className="flex items-center gap-3 mb-4">
+                        <Gift className="h-5 w-5 text-psi-primary" />
+                        <h2 className="text-lg font-medium text-psi-dark">Como criar um cupom</h2>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <div className="flex items-start gap-3 rounded-2xl border border-psi-primary/10 bg-white/90 p-4">
+                            <div className="h-9 w-9 rounded-2xl bg-psi-primary/10 text-psi-primary flex items-center justify-center">
+                                <TicketPercent className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-psi-dark">Escolha evento e código</p>
+                                <p className="text-xs text-psi-dark/60">Defina para qual evento o desconto será aplicado.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3 rounded-2xl border border-psi-primary/10 bg-white/90 p-4">
+                            <div className="h-9 w-9 rounded-2xl bg-psi-primary/10 text-psi-primary flex items-center justify-center">
+                                <Percent className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-psi-dark">Configure o desconto</p>
+                                <p className="text-xs text-psi-dark/60">Escolha percentual ou valor fixo e limites de uso.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3 rounded-2xl border border-psi-primary/10 bg-white/90 p-4">
+                            <div className="h-9 w-9 rounded-2xl bg-psi-primary/10 text-psi-primary flex items-center justify-center">
+                                <TimerReset className="h-4 w-4" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-psi-dark">Ative e acompanhe</p>
+                                <p className="text-xs text-psi-dark/60">Controle status, expiração e uso em tempo real.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <StatCard
+                        icon={Gift}
+                        title="Cupons ativos"
+                        value={`${stats.active}/${stats.total}`}
+                        subtitle="Disponíveis agora"
+                    />
+                    <StatCard
+                        icon={TicketPercent}
+                        title="Total utilizados"
+                        value={stats.totalUsage.toString()}
+                        subtitle="Desde o início"
+                    />
+                    <StatCard
+                        icon={TimerReset}
+                        title="Expiram em breve"
+                        value={stats.expiringSoon.toString()}
+                        subtitle="Próximos 7 dias"
+                    />
+                </div>
 
             <div className="rounded-3xl border border-[#E4E6F0] bg-white/90 p-8 space-y-8 shadow-lg shadow-black/5">
                 <div className="flex flex-col gap-2">
@@ -487,6 +518,19 @@ const CuponsPannel = () => {
                             Gerencie status, valores e regras de utilização
                         </p>
                     </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="secondary" className="bg-psi-dark/5 text-psi-dark/70">
+                            {stats.total} no total
+                        </Badge>
+                        <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">
+                            {stats.active} ativos
+                        </Badge>
+                        {stats.expiringSoon > 0 && (
+                            <Badge variant="secondary" className="bg-amber-100 text-amber-700">
+                                {stats.expiringSoon} expiram em breve
+                            </Badge>
+                        )}
+                    </div>
                 </div>
 
                 {isLoading ? (
@@ -497,15 +541,26 @@ const CuponsPannel = () => {
                     </div>
                 ) : (
                     <div className="space-y-5">
-                        {coupons.map((coupon) => {
-                            const isDirty = dirtyCoupons[coupon.id]
-                            const isSaving = savingCoupons[coupon.id]
+                        {coupons.length === 0 ? (
+                            <div className="rounded-3xl border border-[#E4E6F0] bg-white/80 p-10 text-center shadow-lg shadow-black/5">
+                                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-psi-primary/10 text-psi-primary">
+                                    <TicketPercent className="h-5 w-5" />
+                                </div>
+                                <h3 className="mt-4 text-lg font-medium text-psi-dark">Nenhum cupom cadastrado</h3>
+                                <p className="text-sm text-psi-dark/60 mt-1">
+                                    Crie seu primeiro cupom acima e acompanhe o uso por aqui.
+                                </p>
+                            </div>
+                        ) : (
+                            coupons.map((coupon) => {
+                                const isDirty = dirtyCoupons[coupon.id]
+                                const isSaving = savingCoupons[coupon.id]
 
-                            return (
-                                <div
-                                    key={coupon.id}
-                                    className="rounded-3xl border border-[#E4E6F0] bg-white/90 p-8 space-y-6 shadow-lg shadow-black/5"
-                                >
+                                return (
+                                    <div
+                                        key={coupon.id}
+                                        className="rounded-3xl border border-[#E4E6F0] bg-white/90 p-8 space-y-6 shadow-lg shadow-black/5"
+                                    >
                                     <div className="flex flex-wrap items-start justify-between gap-4 pb-6 border-b border-psi-dark/10">
                                         <div className="space-y-2">
                                             <div className="flex items-center gap-3">
@@ -681,15 +736,8 @@ const CuponsPannel = () => {
                                         </div>
                                     </div>
                                 </div>
-                            )
-                        })}
-
-                        {coupons.length === 0 && (
-                            <div className="rounded-3xl border border-dashed border-psi-dark/20 bg-white/60 p-8 text-center space-y-3">
-                                <Gift className="h-10 w-10 text-psi-primary mx-auto" />
-                                <p className="text-lg font-medium text-psi-dark">Nenhum cupom disponível</p>
-                                <p className="text-sm text-psi-dark/60">Crie sua primeira campanha para aumentar a conversão dos seus eventos.</p>
-                            </div>
+                                    )
+                            })
                         )}
                     </div>
                 )}

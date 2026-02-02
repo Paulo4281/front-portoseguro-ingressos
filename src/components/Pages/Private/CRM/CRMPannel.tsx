@@ -164,6 +164,14 @@ import { useCampaignLogFindByCampaignId } from "@/hooks/CampaignLog/useCampaignL
 import { useCampaignLogQuota } from "@/hooks/CampaignLog/useCampaignLogQuota"
 import type { TCampaign } from "@/types/Campaign/TCampaign"
 import type { TCampaignLog } from "@/types/CampaignLog/TCampaignLog"
+import { useWebpushTemplateFind } from "@/hooks/WebpushTemplate/useWebpushTemplateFind"
+import { useWebpushCampaignCreate } from "@/hooks/WebpushCampaign/useWebpushCampaignCreate"
+import { useWebpushCampaignFind } from "@/hooks/WebpushCampaign/useWebpushCampaignFind"
+import { useWebpushCampaignLogFindByCampaignId } from "@/hooks/WebpushCampaignLog/useWebpushCampaignLogFindByCampaignId"
+import { useWebpushCampaignLogQuota } from "@/hooks/WebpushCampaignLog/useWebpushCampaignLogQuota"
+import type { TWebpushTemplateResponse } from "@/types/Webpush/TWebpushTemplate"
+import type { TWebpushCampaign } from "@/types/Webpush/TWebpushCampaign"
+import type { TWebpushCampaignLog } from "@/types/Webpush/TWebpushCampaignLog"
 import { DocumentUtils } from "@/utils/Helpers/DocumentUtils/DocumentUtils"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { BarChart, Bar, LineChart, Line, ComposedChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
@@ -186,6 +194,18 @@ type TEmailTemplate = {
     isPremium?: boolean
 }
 
+type TWebpushTemplate = {
+    id: string
+    code: string
+    name: string
+    title: string
+    body: string
+    editableFields: string[]
+    preview: string
+    icon: ReactNode
+    isPremium?: boolean
+}
+
 type TEmailSegment = {
     id: string
     name: string
@@ -193,9 +213,6 @@ type TEmailSegment = {
     description: string
     count: number
 }
-
-
-
 
 const getTemplateIcon = (code: string): ReactNode => {
     const iconMap: Record<string, ReactNode> = {
@@ -218,6 +235,20 @@ const getTemplateEditableFields = (code: string): string[] => {
         "crm-template-nutrir": ["evento"],
         "crm-template-pos-evento": ["evento"],
         "crm-template-pesquisa": ["opinionPoll"],
+        "crm-template-aniversario": [],
+        "crm-template-lancamento": ["evento"],
+        "crm-template-fidelidade": []
+    }
+    return fieldsMap[code] || []
+}
+
+const getWebpushTemplateEditableFields = (code: string): string[] => {
+    const fieldsMap: Record<string, string[]> = {
+        "crm-template-lembrete": ["evento"],
+        "crm-template-oferta": ["cupom"],
+        "crm-template-nutrir": ["evento"],
+        "crm-template-pos-evento": ["evento"],
+        "crm-template-pesquisa": ["evento"],
         "crm-template-aniversario": [],
         "crm-template-lancamento": ["evento"],
         "crm-template-fidelidade": []
@@ -321,13 +352,22 @@ const EmailSendValidator = z.object({
     templateFields: z.record(z.string(), z.string()).optional()
 })
 
+const WebpushSendValidator = z.object({
+    templateId: z.string().min(1, { error: "Selecione um template" }),
+    segments: z.array(z.string()).min(1, { error: "Selecione pelo menos um segmento" }),
+    templateFields: z.record(z.string(), z.string()).optional()
+})
+
 type TTagForm = z.infer<typeof TagValidator>
 type TObservationForm = z.infer<typeof ObservationValidator>
 type TEmailSendForm = z.infer<typeof EmailSendValidator>
+type TWebpushSendForm = z.infer<typeof WebpushSendValidator>
 
 const CRMPannel = () => {
     const { data: templatesData, isLoading: templatesLoading } = useTemplateFind()
     const templates = templatesData?.data || []
+    const { data: webpushTemplatesData, isLoading: webpushTemplatesLoading } = useWebpushTemplateFind()
+    const webpushTemplatesRaw = webpushTemplatesData?.data || []
     
     const emailTemplates = useMemo<TEmailTemplate[]>(() => {
         return templates.map((template: TTemplateResponse) => ({
@@ -342,6 +382,20 @@ const CRMPannel = () => {
             isPremium: template.plan === "PRO"
         }))
     }, [templates])
+
+    const webpushTemplates = useMemo<TWebpushTemplate[]>(() => {
+        return webpushTemplatesRaw.map((template: TWebpushTemplateResponse) => ({
+            id: template.id,
+            code: template.code,
+            name: template.name,
+            title: template.title,
+            body: template.body,
+            editableFields: getWebpushTemplateEditableFields(template.code),
+            preview: getTemplatePreview(template.code),
+            icon: getTemplateIcon(template.code),
+            isPremium: template.plan === "PRO"
+        }))
+    }, [webpushTemplatesRaw])
     
     const [campaignsPage, setCampaignsPage] = useState(1)
     const campaignsOffset = (campaignsPage - 1) * 50
@@ -350,6 +404,13 @@ const CRMPannel = () => {
         offset: campaignsOffset
     })
     const campaigns = campaignsData?.data?.data || []
+
+    const [webpushCampaignsPage, setWebpushCampaignsPage] = useState(1)
+    const webpushCampaignsOffset = (webpushCampaignsPage - 1) * 50
+    const { data: webpushCampaignsData, isLoading: webpushCampaignsLoading, refetch: refetchWebpushCampaigns } = useWebpushCampaignFind({
+        offset: webpushCampaignsOffset
+    })
+    const webpushCampaigns = webpushCampaignsData?.data?.data || []
     
     const { user, setUser } = useAuthStore()
     const organizer = useMemo(() => {
@@ -361,15 +422,24 @@ const CRMPannel = () => {
     }, [organizer?.crmPlan])
 
     const { data: quotaData, refetch: refetchQuota } = useCampaignLogQuota()
+    const { data: webpushQuotaData, refetch: refetchWebpushQuota } = useWebpushCampaignLogQuota()
     const emailUsed = quotaData?.data?.sentCount || 0
     const emailLimit = isPro ? 5000 : 100
     const emailRemaining = quotaData?.data?.remainingQuota || 0
+    const webpushUsed = webpushQuotaData?.data?.sentCount || 0
+    const webpushLimit = isPro ? 5000 : 100
+    const webpushRemaining = webpushQuotaData?.data?.remainingQuota || 0
     
     const { mutateAsync: createCampaign, isPending: isCreatingCampaign } = useCampaignCreate()
+    const { mutateAsync: createWebpushCampaign, isPending: isCreatingWebpushCampaign } = useWebpushCampaignCreate()
     
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | undefined>(undefined)
     const { data: campaignLogsData, isLoading: campaignLogsLoading } = useCampaignLogFindByCampaignId(selectedCampaignId)
     const campaignLogs = campaignLogsData?.data || []
+
+    const [selectedWebpushCampaignId, setSelectedWebpushCampaignId] = useState<string | undefined>(undefined)
+    const { data: webpushCampaignLogsData, isLoading: webpushCampaignLogsLoading } = useWebpushCampaignLogFindByCampaignId(selectedWebpushCampaignId)
+    const webpushCampaignLogs = webpushCampaignLogsData?.data || []
     
     const { data: eventsData } = useEventCache()
     const events = eventsData?.data || []
@@ -425,9 +495,22 @@ const CRMPannel = () => {
         open: false
     })
 
+    const [webpushDialog, setWebpushDialog] = useState<{
+        open: boolean
+    }>({
+        open: false
+    })
+
     const [emailHistoryDialog, setEmailHistoryDialog] = useState<{
         open: boolean
         emailId?: string
+    }>({
+        open: false
+    })
+
+    const [webpushHistoryDialog, setWebpushHistoryDialog] = useState<{
+        open: boolean
+        webpushId?: string
     }>({
         open: false
     })
@@ -440,7 +523,7 @@ const CRMPannel = () => {
     }>({
         open: false
     })
-    const [activeTab, setActiveTab] = useState<"customers" | "tags" | "emails" | "plan">("customers")
+    const [activeTab, setActiveTab] = useState<"customers" | "tags" | "emails" | "webpush" | "plan">("customers")
     const [planDialog, setPlanDialog] = useState(false)
     const [cancelSubscriptionDialog, setCancelSubscriptionDialog] = useState(false)
     const [passwordConfirmationDialog, setPasswordConfirmationDialog] = useState(false)
@@ -560,6 +643,9 @@ const CRMPannel = () => {
     const [selectedEventForTemplate, setSelectedEventForTemplate] = useState<string>("")
     const [selectedCouponForTemplate, setSelectedCouponForTemplate] = useState<string>("")
     const [selectedOpinionPollForTemplate, setSelectedOpinionPollForTemplate] = useState<string>("")
+    const [selectedWebpushTemplate, setSelectedWebpushTemplate] = useState<TWebpushTemplate | null>(null)
+    const [selectedEventForWebpushTemplate, setSelectedEventForWebpushTemplate] = useState<string>("")
+    const [selectedCouponForWebpushTemplate, setSelectedCouponForWebpushTemplate] = useState<string>("")
     const [viewTagClientsDialog, setViewTagClientsDialog] = useState<{
         open: boolean
         tagId?: string
@@ -582,6 +668,7 @@ const CRMPannel = () => {
     })
     const [emailPreviewDialog, setEmailPreviewDialog] = useState(false)
     const [emailSuccessDialog, setEmailSuccessDialog] = useState(false)
+    const [webpushSuccessDialog, setWebpushSuccessDialog] = useState(false)
     const [reportsSheetOpen, setReportsSheetOpen] = useState(false)
 
     const tagLimit = 200
@@ -744,6 +831,15 @@ const CRMPannel = () => {
 
     const emailForm = useForm<TEmailSendForm>({
         resolver: zodResolver(EmailSendValidator),
+        defaultValues: {
+            templateId: "",
+            segments: [],
+            templateFields: {}
+        }
+    })
+
+    const webpushForm = useForm<TWebpushSendForm>({
+        resolver: zodResolver(WebpushSendValidator),
         defaultValues: {
             templateId: "",
             segments: [],
@@ -1057,6 +1153,49 @@ const CRMPannel = () => {
         }
     }
 
+    const handleSendWebpush = async (data: TWebpushSendForm) => {
+        try {
+            const tagIds = data.segments.includes("all") ? ["all"] : data.segments.filter(id => id !== "all")
+            const campaignData: any = {
+                templateId: data.templateId,
+                tagIds
+            }
+
+            if (selectedWebpushTemplate) {
+                if (selectedWebpushTemplate.code === "crm-template-oferta") {
+                    const couponId = selectedCouponForWebpushTemplate || data.templateFields?.cupom
+                    if (couponId) {
+                        campaignData.couponId = couponId
+                        const selectedCoupon = coupons.find((c: TCoupon) => c.id === couponId)
+                        if (selectedCoupon?.eventId) {
+                            campaignData.eventId = selectedCoupon.eventId
+                        }
+                    }
+                } else if (selectedEventForWebpushTemplate) {
+                    campaignData.eventId = selectedEventForWebpushTemplate
+                }
+            }
+
+            await createWebpushCampaign(campaignData)
+
+            setWebpushDialog({ open: false })
+            webpushForm.reset()
+            setSelectedWebpushTemplate(null)
+            setSelectedEventForWebpushTemplate("")
+            setSelectedCouponForWebpushTemplate("")
+
+            await refetchWebpushCampaigns()
+            await refetchWebpushQuota()
+
+            setWebpushSuccessDialog(true)
+            Toast.success("Campanha de webpush criada com sucesso!")
+        } catch (error: any) {
+            console.error("Erro ao criar campanha de webpush:", error)
+            const errorMessage = error?.response?.data?.message || error?.message || "Erro ao criar campanha de webpush"
+            Toast.error(errorMessage)
+        }
+    }
+
     const handleTemplateSelect = (templateId: string) => {
         const template = emailTemplates.find(t => t.id === templateId)
         if (template) {
@@ -1072,6 +1211,25 @@ const CRMPannel = () => {
                 fields[field] = ""
             })
             emailForm.setValue("templateFields", fields)
+        }
+    }
+
+    const handleWebpushTemplateSelect = (templateId: string) => {
+        const template = webpushTemplates.find(t => t.id === templateId)
+        if (template) {
+            if (template.isPremium && !isPro) {
+                setUpgradeDialog(true)
+                return
+            }
+            setSelectedWebpushTemplate(template)
+            webpushForm.setValue("templateId", template.id)
+            setSelectedEventForWebpushTemplate("")
+            setSelectedCouponForWebpushTemplate("")
+            const fields: Record<string, string> = {}
+            template.editableFields.forEach(field => {
+                fields[field] = ""
+            })
+            webpushForm.setValue("templateFields", fields)
         }
     }
 
@@ -1159,6 +1317,53 @@ const CRMPannel = () => {
         }
         
         return preview
+    }
+
+    const formatWebpushPreviewText = (text: string) => {
+        let preview = text
+        const selectedEvent = events.find(e => e.id === selectedEventForWebpushTemplate)
+        const selectedCoupon = coupons.find((c: TCoupon) => c.id === selectedCouponForWebpushTemplate)
+        const eventFromCoupon = selectedCoupon?.eventId ? events.find(e => e.id === selectedCoupon.eventId) : null
+        const eventForPreview = selectedEvent ?? eventFromCoupon ?? null
+
+        preview = preview.replace(/\{\{nome\}\}/g, "Cliente")
+
+        if (eventForPreview) {
+            preview = preview.replace(/\{\{evento\}\}/g, eventForPreview.name)
+            const firstDate = eventForPreview.EventDates?.[0]
+            const dateText = firstDate?.date
+                ? new Date(firstDate.date).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })
+                : "[Data do evento]"
+            preview = preview.replace(/\{\{data\}\}/g, dateText)
+            preview = preview.replace(/\{\{eventoTexto\}\}/g, `Confira o evento "${eventForPreview.name}" em ${dateText}.`)
+        } else {
+            preview = preview.replace(/\{\{evento\}\}/g, "[Selecione um evento]")
+            preview = preview.replace(/\{\{data\}\}/g, "[Data do evento]")
+            preview = preview.replace(/\{\{eventoTexto\}\}/g, "[Descrição do evento]")
+        }
+
+        if (selectedCoupon) {
+            const discountText = selectedCoupon.discountType === "PERCENTAGE"
+                ? `${selectedCoupon.discountValue}%`
+                : `${ValueUtils.centsToCurrency(selectedCoupon.discountValue)}`
+            preview = preview.replace(/\{\{cupomCodigo\}\}/g, selectedCoupon.code)
+            preview = preview.replace(/\{\{cupomDesconto\}\}/g, discountText)
+        } else {
+            preview = preview.replace(/\{\{cupomCodigo\}\}/g, "[Código do cupom]")
+            preview = preview.replace(/\{\{cupomDesconto\}\}/g, "[Desconto]")
+        }
+
+        return preview
+    }
+
+    const getWebpushPreviewTitle = () => {
+        if (!selectedWebpushTemplate) return ""
+        return formatWebpushPreviewText(selectedWebpushTemplate.title)
+    }
+
+    const getWebpushPreviewBody = () => {
+        if (!selectedWebpushTemplate) return ""
+        return formatWebpushPreviewText(selectedWebpushTemplate.body)
     }
 
     const formatDate = (dateString: string) => {
@@ -1517,6 +1722,8 @@ const CRMPannel = () => {
 
     const selectedCampaign = campaigns.find(c => c.id === emailHistoryDialog.emailId)
     const selectedCampaignTemplate = templates.find(t => t.id === selectedCampaign?.templateId)
+    const selectedWebpushCampaign = webpushCampaigns.find(c => c.id === webpushHistoryDialog.webpushId)
+    const selectedWebpushCampaignTemplate = webpushTemplatesRaw.find(t => t.id === selectedWebpushCampaign?.templateId)
 
     return (
         <Background variant="light">
@@ -1538,7 +1745,7 @@ const CRMPannel = () => {
                     )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     <Card>
                         <div className="p-6">
                             <p className="text-sm font-medium text-psi-dark/60 mb-2">Total de Clientes</p>
@@ -1557,6 +1764,22 @@ const CRMPannel = () => {
                                 <div 
                                     className="h-full bg-psi-primary rounded-full transition-all"
                                     style={{ width: `${(emailUsed / emailLimit) * 100}%` }}
+                                />
+                            </div>
+                        </div>
+                    </Card>
+                    <Card>
+                        <div className="p-6">
+                            <p className="text-sm font-medium text-psi-dark/60 mb-2">Webpush Enviados (últimos 30 dias)</p>
+                            <div className="flex items-baseline gap-2 mb-2">
+                                <div className="text-3xl font-bold text-psi-dark">{webpushUsed}</div>
+                                <div className="text-sm text-psi-dark/60">/ {webpushLimit}</div>
+                                <div className="text-xs text-psi-dark/50 mt-1">({webpushRemaining} restantes)</div>
+                            </div>
+                            <div className="h-2 bg-psi-primary/10 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-psi-primary rounded-full transition-all"
+                                    style={{ width: `${(webpushUsed / webpushLimit) * 100}%` }}
                                 />
                             </div>
                         </div>
@@ -1624,6 +1847,16 @@ const CRMPannel = () => {
                         </button>
                         <button
                             className={`px-4 py-2 font-medium transition-colors ${
+                                activeTab === "webpush"
+                                    ? "text-psi-dark border-b-2 border-psi-primary"
+                                    : "text-psi-dark/60 hover:text-psi-dark"
+                            }`}
+                            onClick={() => setActiveTab("webpush")}
+                        >
+                            Webpush
+                        </button>
+                        <button
+                            className={`px-4 py-2 font-medium transition-colors ${
                                 activeTab === "plan"
                                     ? "text-psi-dark border-b-2 border-psi-primary"
                                     : "text-psi-dark/60 hover:text-psi-dark"
@@ -1654,6 +1887,15 @@ const CRMPannel = () => {
                                         >
                                             <Send className="h-4 w-4" />
                                             Enviar E-mail
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setWebpushDialog({ open: true })}
+                                            className="gap-2"
+                                        >
+                                            <Bell className="h-4 w-4" />
+                                            Enviar Webpush
                                         </Button>
                                         <Button
                                             variant="outline"
@@ -1767,6 +2009,7 @@ const CRMPannel = () => {
                                                     <TableHead>E-mail</TableHead>
                                                     <TableHead>Celular</TableHead>
                                                     <TableHead>E-mail Marketing</TableHead>
+                                                    <TableHead>Webpush</TableHead>
                                                     <TableHead>Compras</TableHead>
                                                     <TableHead>Total Gasto</TableHead>
                                                     <TableHead>Última Compra</TableHead>
@@ -1816,6 +2059,21 @@ const CRMPannel = () => {
                                                                     )}
                                                                 </Badge>
                                                             </TableCell>
+                                                            <TableCell>
+                                                                <Badge variant={customer.isWebpushConsent ? "psi-secondary" : "outline"}>
+                                                                    {customer.isWebpushConsent ? (
+                                                                        <span className="flex items-center gap-1">
+                                                                            <Bell className="h-3 w-3" />
+                                                                            Ativo
+                                                                            </span>
+                                                                            ) : (
+                                                                            <span className="flex items-center gap-1">
+                                                                                <Bell className="h-3 w-3" />
+                                                                                Inativo
+                                                                            </span>
+                                                                            )}
+                                                                </Badge>
+                                                            </TableCell>
                                                             <TableCell>{customer.totalPurchases}</TableCell>
                                                             <TableCell>
                                                                 <span className="inline-block rounded-lg bg-psi-primary/10 text-psi-primary font-semibold px-2 py-0.5
@@ -1851,7 +2109,7 @@ const CRMPannel = () => {
                                                         </TableRow>
                                                         {openRows[customer.id] && (
                                                             <TableRow>
-                                                                <TableCell colSpan={9} className="bg-psi-primary/5">
+                                                                <TableCell colSpan={10} className="bg-psi-primary/5">
                                                                     <div className="p-4 space-y-4">
                                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                                             <div>
@@ -2236,6 +2494,103 @@ const CRMPannel = () => {
                     </div>
                     )}
 
+                    {activeTab === "webpush" && (
+                        <div className="space-y-4">
+                            <Card>
+                                <div className="p-6">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                                        <div>
+                                            <h2 className="text-xl font-semibold text-psi-dark">Histórico de Webpush</h2>
+                                            <p className="text-sm text-psi-dark/60 mt-1">
+                                                Visualize todos os webpush enviados para seus clientes
+                                            </p>
+                                        </div>
+                                        <Button
+                                            variant="primary"
+                                            onClick={() => setWebpushDialog({ open: true })}
+                                            className="gap-2"
+                                        >
+                                            <Bell className="h-4 w-4" />
+                                            Novo Webpush
+                                        </Button>
+                                    </div>
+                                    {webpushCampaignsLoading ? (
+                                        <div className="space-y-4">
+                                            {Array.from({ length: 5 }).map((_, i) => (
+                                                <Skeleton key={i} className="h-24 w-full" />
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {webpushCampaigns.length === 0 ? (
+                                                <div className="text-center py-8 text-psi-dark/60">
+                                                    Nenhuma campanha de webpush enviada ainda
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-4">
+                                                    {webpushCampaigns.map((campaign: TWebpushCampaign) => {
+                                                        const template = webpushTemplates.find(t => t.id === campaign.templateId)
+                                                        const templateName = template?.name || "Template não encontrado"
+
+                                                        return (
+                                                            <Card key={campaign.id}>
+                                                                <div className="p-4">
+                                                                    <div className="flex items-start justify-between">
+                                                                        <div className="flex-1">
+                                                                            <div className="flex items-center gap-2 mb-2">
+                                                                                <h4 className="font-semibold text-psi-dark">{templateName}</h4>
+                                                                                <Badge variant={
+                                                                                    campaign.status === "SENT"
+                                                                                        ? "psi-secondary"
+                                                                                        : "destructive"
+                                                                                }>
+                                                                                    {campaign.status === "SENT" ? "Enviado" : "Falhou"}
+                                                                                </Badge>
+                                                                            </div>
+                                                                            <div className="text-sm text-psi-dark/60 space-y-1">
+                                                                                <p>Template: {templateName}</p>
+                                                                                <p>Destinatários: {campaign.totalRecipients} ({campaign.sentCount} enviados)</p>
+                                                                                <p>Criado em: {formatDateTime(campaign.createdAt)}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={() => {
+                                                                                setWebpushHistoryDialog({ open: true, webpushId: campaign.id })
+                                                                                setSelectedWebpushCampaignId(campaign.id)
+                                                                            }}
+                                                                            className="gap-2"
+                                                                        >
+                                                                            <Eye className="h-4 w-4" />
+                                                                            Ver Detalhes
+                                                                        </Button>
+                                                                    </div>
+                                                                </div>
+                                                            </Card>
+                                                        )
+                                                    })}
+                                                </div>
+                                            )}
+                                            {webpushCampaignsData?.data && webpushCampaignsData.data.total > 50 && (
+                                                <div className="mt-4">
+                                                    <Pagination
+                                                        currentPage={webpushCampaignsPage}
+                                                        totalPages={Math.ceil(webpushCampaignsData.data.total / 50)}
+                                                        onPageChange={(page) => {
+                                                            setWebpushCampaignsPage(page)
+                                                            window.scrollTo({ top: 0, behavior: "smooth" })
+                                                        }}
+                                                    />
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            </Card>
+                        </div>
+                    )}
+
                     {activeTab === "plan" && (
                         <div className="space-y-4">
                             <Card>
@@ -2313,6 +2668,13 @@ const CRMPannel = () => {
                                                         <div className="flex items-start gap-3">
                                                             <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
                                                             <div>
+                                                                <p className="font-medium text-psi-dark">Até 5.000 webpush por mês</p>
+                                                                <p className="text-sm text-psi-dark/60">Notificações push no navegador e no celular. No plano Pro você pode enviar até 5.000 webpush por mês para engajar sua audiência em tempo real.</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start gap-3">
+                                                            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                                                            <div>
                                                                 <p className="font-medium text-psi-dark">Até 200 tags</p>
                                                                 <p className="text-sm text-psi-dark/60">Organize seus clientes com tags personalizadas</p>
                                                             </div>
@@ -2365,6 +2727,13 @@ const CRMPannel = () => {
                                                             <CheckCircle2 className="h-5 w-5 text-psi-dark/40 shrink-0 mt-0.5" />
                                                             <div>
                                                                 <p className="font-medium text-psi-dark">Até 100 e-mails por mês</p>
+                                                                <p className="text-sm text-psi-dark/60">Limite mensal de envios</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-start gap-3">
+                                                            <CheckCircle2 className="h-5 w-5 text-psi-dark/40 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <p className="font-medium text-psi-dark">Até 100 webpush por mês</p>
                                                                 <p className="text-sm text-psi-dark/60">Limite mensal de envios</p>
                                                             </div>
                                                         </div>
@@ -3249,6 +3618,252 @@ const CRMPannel = () => {
                 </SheetContent>
             </Sheet>
 
+            <Sheet open={webpushDialog.open} onOpenChange={(open) => {
+                setWebpushDialog({ open })
+                webpushForm.reset()
+                setSelectedWebpushTemplate(null)
+                setSelectedEventForWebpushTemplate("")
+                setSelectedCouponForWebpushTemplate("")
+            }}>
+                <SheetContent side="right" className="w-[90vw] sm:w-[90vw] lg:w-[1100px] 3xl:w-[1300px] overflow-y-auto">
+                    <SheetHeader>
+                        <SheetTitle className="text-2xl font-semibold text-psi-primary">Enviar Webpush</SheetTitle>
+                        <SheetDescription>
+                            Escolha um template e selecione os destinatários
+                        </SheetDescription>
+                    </SheetHeader>
+                    <form onSubmit={webpushForm.handleSubmit(handleSendWebpush)} className="space-y-6 mt-6 mx-4">
+                        <div>
+                            <label className="text-sm font-medium text-psi-dark mb-3 block">Selecione um Template</label>
+                            {webpushTemplatesLoading ? (
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {Array.from({ length: 6 }).map((_, i) => (
+                                        <Skeleton key={i} className="h-32 w-full" />
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {webpushTemplates.map((template: TWebpushTemplate) => (
+                                        <button
+                                            key={template.id}
+                                            type="button"
+                                            onClick={() => handleWebpushTemplateSelect(template.id)}
+                                            disabled={template.isPremium && !isPro}
+                                            className={`p-4 rounded-lg border-2 text-left transition-all relative ${
+                                                selectedWebpushTemplate?.id === template.id
+                                                    ? "border-psi-primary bg-psi-primary/5"
+                                                    : "border-psi-dark/10 hover:border-psi-primary/50"
+                                            } ${template.isPremium && !isPro ? "opacity-60 cursor-not-allowed" : ""}`}
+                                        >
+                                            {template.isPremium && (
+                                                <div className="absolute top-2 right-2">
+                                                    <Badge variant="psi-tertiary" className="text-xs gap-1">
+                                                        <Crown className="h-3 w-3" />
+                                                        Premium
+                                                    </Badge>
+                                                </div>
+                                            )}
+                                            <div className="mb-2 text-psi-primary">{template.icon}</div>
+                                            <h4 className="font-semibold text-psi-dark mb-1">{template.name}</h4>
+                                            <p className="text-xs text-psi-dark/60">{template.preview}</p>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                            {webpushForm.formState.errors.templateId && (
+                                <p className="text-sm text-destructive mt-2">{webpushForm.formState.errors.templateId.message}</p>
+                            )}
+                        </div>
+
+                        {selectedWebpushTemplate && (
+                            <>
+                                <Separator />
+                                <div>
+                                    <h4 className="font-semibold text-psi-dark mb-3">Preview do Webpush</h4>
+                                    <div className="bg-psi-primary/5 border border-psi-primary/20 rounded-lg p-4 space-y-3">
+                                        <div>
+                                            <p className="text-xs font-medium text-psi-dark/60 mb-1">Título:</p>
+                                            <p className="text-sm font-medium text-psi-dark">{getWebpushPreviewTitle()}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-medium text-psi-dark/60 mb-1">Mensagem:</p>
+                                            <p className="text-sm text-psi-dark/80 whitespace-pre-line">{getWebpushPreviewBody()}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {selectedWebpushTemplate.editableFields.length > 0 && (
+                                    <div>
+                                        <h4 className="font-semibold text-psi-dark mb-3">Informações do Template</h4>
+                                        <div className="space-y-3">
+                                            {selectedWebpushTemplate.editableFields.map(field => {
+                                                if (field === "evento") {
+                                                    return (
+                                                        <div key={field}>
+                                                            <label className="text-sm font-medium text-psi-dark mb-1 block">
+                                                                Evento
+                                                            </label>
+                                                            <Select
+                                                                value={selectedEventForWebpushTemplate}
+                                                                onValueChange={(value) => {
+                                                                    setSelectedEventForWebpushTemplate(value)
+                                                                    webpushForm.setValue("templateFields.evento", value)
+                                                                }}
+                                                            >
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="Selecione um evento" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {events.map(event => (
+                                                                        <SelectItem key={event.id} value={event.id}>
+                                                                            {event.name}
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+                                                    )
+                                                }
+                                                if (field === "cupom") {
+                                                    return (
+                                                        <div key={field}>
+                                                            <label className="text-sm font-medium text-psi-dark mb-1 block">
+                                                                Cupom de Desconto
+                                                            </label>
+                                                            <Select
+                                                                value={selectedCouponForWebpushTemplate}
+                                                                onValueChange={(value) => {
+                                                                    setSelectedCouponForWebpushTemplate(value)
+                                                                    webpushForm.setValue("templateFields.cupom", value)
+                                                                }}
+                                                            >
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="Selecione um cupom" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {coupons.length === 0 ? (
+                                                                        <SelectItem value="no-coupons" disabled>
+                                                                            Nenhum cupom disponível
+                                                                        </SelectItem>
+                                                                    ) : (
+                                                                        coupons.map((coupon: TCoupon) => {
+                                                                            const couponEvent = events.find(e => e.id === coupon.eventId)
+                                                                            const eventName = couponEvent?.name || "Evento não encontrado"
+                                                                            const discountText = coupon.discountType === "PERCENTAGE"
+                                                                                ? `${coupon.discountValue}%`
+                                                                                : ValueUtils.centsToCurrency(coupon.discountValue)
+                                                                            return (
+                                                                                <SelectItem key={coupon.id} value={coupon.id}>
+                                                                                    {coupon.code} - {discountText} ({eventName})
+                                                                                </SelectItem>
+                                                                            )
+                                                                        })
+                                                                    )}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+                                                    )
+                                                }
+                                                return null
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <Separator />
+                                <div>
+                                    <label className="text-sm font-medium text-psi-dark mb-3 block">Selecione os Destinatários</label>
+                                    <div className="space-y-3 max-h-64 overflow-y-auto pr-2">
+                                        {emailSegments.map(segment => (
+                                            <div key={segment.id} className="flex items-center justify-between p-3 border border-psi-dark/10 rounded-lg hover:bg-psi-primary/5 transition-colors">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <h5 className="font-medium text-psi-dark">{segment.name}</h5>
+                                                        <Badge variant="outline" className="text-xs">
+                                                            {segment.type === "tag" ? "Tag" : "Todos"}
+                                                        </Badge>
+                                                    </div>
+                                                    <p className="text-xs text-psi-dark/60">{segment.description}</p>
+                                                    <p className="text-xs text-psi-dark/50 mt-1">{segment.count} destinatários</p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    {segment.type === "tag" && segment.id !== "all" && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setViewTagClientsDialog({
+                                                                    open: true,
+                                                                    tagId: segment.id,
+                                                                    tagName: segment.name
+                                                                })
+                                                                setSelectedTagIdForClients(segment.id)
+                                                            }}
+                                                            className="h-7 w-7 p-0"
+                                                        >
+                                                            <Eye className="h-3 w-3" />
+                                                        </Button>
+                                                    )}
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={webpushForm.watch("segments")?.includes(segment.id) || false}
+                                                        onChange={(e) => {
+                                                            const current = webpushForm.watch("segments") || []
+                                                            if (e.target.checked) {
+                                                                webpushForm.setValue("segments", [...current, segment.id])
+                                                            } else {
+                                                                webpushForm.setValue("segments", current.filter(id => id !== segment.id))
+                                                            }
+                                                        }}
+                                                        className="ml-4"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {webpushForm.formState.errors.segments && (
+                                        <p className="text-sm text-destructive mt-2">{webpushForm.formState.errors.segments.message}</p>
+                                    )}
+                                </div>
+                            </>
+                        )}
+                        <div className="bg-psi-primary/5 border border-psi-primary/20 rounded-lg p-3">
+                            <p className="text-sm text-psi-dark/70">
+                                <strong>Webpush restantes este mês:</strong> {webpushRemaining} / {webpushLimit}
+                            </p>
+                        </div>
+                        <SheetFooter className="gap-2">
+                            <div className="flex items-end justify-end gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => {
+                                        setWebpushDialog({ open: false })
+                                        webpushForm.reset()
+                                        setSelectedWebpushTemplate(null)
+                                        setSelectedEventForWebpushTemplate("")
+                                        setSelectedCouponForWebpushTemplate("")
+                                    }}
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button type="submit" variant="primary" disabled={webpushRemaining <= 0 || isCreatingWebpushCampaign}>
+                                    {isCreatingWebpushCampaign ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                            Enviando...
+                                        </>
+                                    ) : (
+                                        "Enviar Webpush"
+                                    )}
+                                </Button>
+                            </div>
+                        </SheetFooter>
+                    </form>
+                </SheetContent>
+            </Sheet>
+
             <Dialog open={emailPreviewDialog} onOpenChange={setEmailPreviewDialog}>
                 <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
@@ -3382,6 +3997,33 @@ const CRMPannel = () => {
                         <Button
                             variant="primary"
                             onClick={() => setEmailSuccessDialog(false)}
+                        >
+                            Entendi
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={webpushSuccessDialog} onOpenChange={setWebpushSuccessDialog}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <CheckCircle2 className="h-5 w-5 text-green-500" />
+                            Campanha Criada com Sucesso!
+                        </DialogTitle>
+                        <DialogDescription>
+                            Sua campanha de webpush foi criada e as notificações estão sendo disparadas.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <p className="text-sm text-psi-dark/70">
+                            Os destinatários selecionados receberão o webpush em breve. Você pode acompanhar o progresso na aba "Webpush".
+                        </p>
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            variant="primary"
+                            onClick={() => setWebpushSuccessDialog(false)}
                         >
                             Entendi
                         </Button>
@@ -3552,6 +4194,110 @@ const CRMPannel = () => {
                                                                         <p className="mt-2 text-xs text-psi-dark/50">
                                                                             Clicado em: {formatDateTime(log.clickedAt)}
                                                                         </p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={webpushHistoryDialog.open} onOpenChange={(open) => {
+                setWebpushHistoryDialog({ open })
+                if (!open) {
+                    setSelectedWebpushCampaignId(undefined)
+                }
+            }}>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Detalhes da Campanha</DialogTitle>
+                        <DialogDescription>
+                            Visualize os detalhes e destinatários da campanha de webpush
+                        </DialogDescription>
+                    </DialogHeader>
+                    {selectedWebpushCampaign && (
+                        <div className="space-y-4">
+                            <div>
+                                <h4 className="font-semibold text-psi-dark mb-2">Template</h4>
+                                <p className="text-psi-dark/70">{selectedWebpushCampaignTemplate?.name || "Template não encontrado"}</p>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold text-psi-dark mb-2">Status</h4>
+                                <Badge variant={selectedWebpushCampaign.status === "SENT" ? "psi-secondary" : "destructive"}>
+                                    {selectedWebpushCampaign.status === "SENT" ? "Enviado" : "Falhou"}
+                                </Badge>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold text-psi-dark mb-2">Criado em</h4>
+                                <p className="text-psi-dark/70">{formatDateTime(selectedWebpushCampaign.createdAt)}</p>
+                            </div>
+                            <div>
+                                <h4 className="font-semibold text-psi-dark mb-2">
+                                    Destinatários ({selectedWebpushCampaign.totalRecipients} total, {selectedWebpushCampaign.sentCount} enviados)
+                                </h4>
+                                {webpushCampaignLogsLoading ? (
+                                    <div className="space-y-2">
+                                        {Array.from({ length: 5 }).map((_, i) => (
+                                            <Skeleton key={i} className="h-16 w-full" />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="h-60 border border-psi-dark/10 rounded-lg p-4 overflow-y-auto">
+                                        {webpushCampaignLogs.length === 0 ? (
+                                            <p className="text-sm text-psi-dark/60 text-center py-8">
+                                                Nenhum log encontrado para esta campanha
+                                            </p>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {webpushCampaignLogs.map((log: TWebpushCampaignLog) => {
+                                                    const statusConfig = log.status === "SENT"
+                                                        ? {
+                                                            icon: CheckCircle2,
+                                                            label: "Enviado",
+                                                            variant: "psi-secondary" as const,
+                                                            color: "text-green-600"
+                                                        }
+                                                        : {
+                                                            icon: AlertCircle,
+                                                            label: "Falhou",
+                                                            variant: "destructive" as const,
+                                                            color: "text-red-600"
+                                                        }
+                                                    const StatusIcon = statusConfig.icon
+                                                    const recipientName = log.user
+                                                        ? `${log.user.firstName} ${log.user.lastName}`.trim()
+                                                        : "Usuário não identificado"
+                                                    const recipientEmail = log.user?.email || "-"
+
+                                                    return (
+                                                        <div key={log.id} className="border border-psi-dark/10 rounded-lg p-3 hover:bg-psi-primary/5 transition-colors">
+                                                            <div className="flex items-start justify-between gap-3">
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-xs text-psi-dark/60 mb-1 truncate">
+                                                                        {recipientName} • {recipientEmail}
+                                                                    </p>
+                                                                    <div className="flex flex-wrap items-center gap-2">
+                                                                        <Badge variant={statusConfig.variant} className="gap-1 text-xs">
+                                                                            <StatusIcon className="h-3 w-3" />
+                                                                            {statusConfig.label}
+                                                                        </Badge>
+                                                                    </div>
+                                                                    {log.errorMessage && (
+                                                                        <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                                                                            <div className="flex items-start gap-1">
+                                                                                <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
+                                                                                <span className="font-medium">Motivo da falha:</span>
+                                                                            </div>
+                                                                            <p className="mt-1 ml-4">{log.errorMessage}</p>
+                                                                        </div>
                                                                     )}
                                                                 </div>
                                                             </div>
@@ -3766,6 +4512,17 @@ const CRMPannel = () => {
                                         <p className="font-medium text-psi-dark">Até 5.000 e-mails por mês</p>
                                         <p className="text-sm text-psi-dark/60">
                                             50x mais que o plano básico. Marketing agressivo para alcançar mais clientes e aumentar suas vendas.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <div className="h-6 w-6 rounded-full bg-psi-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                                        <Bell className="h-4 w-4 text-psi-primary" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-psi-dark">Até 5.000 webpush por mês</p>
+                                        <p className="text-sm text-psi-dark/60">
+                                            Notificações push no navegador e no celular. No plano Pro você pode enviar até 5.000 webpush por mês para engajar sua audiência em tempo real.
                                         </p>
                                     </div>
                                 </div>

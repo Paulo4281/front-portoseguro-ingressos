@@ -44,6 +44,7 @@ type TCustomer = {
     email: string
     phone: string
     isMarketingConsent: boolean
+    isWebpushConsent: boolean
     totalPurchases: number
     totalSpent: number
     lastPurchaseDate: string
