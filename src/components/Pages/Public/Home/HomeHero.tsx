@@ -587,7 +587,7 @@ const HomeHero = () => {
                                 <h1 className="text-4xl font-medium leading-tight text-psi-dark
                                 md:text-5xl
                                 lg:text-6xl">
-                                    A forma mais sofisticada de viver os eventos da capital do descobrimento.
+                                    A forma mais sofisticada de <span className="bg-linear-to-r from-psi-primary via-psi-secondary to-psi-tertiary bg-clip-text text-transparent font-extrabold">viver os eventos</span> da capital do descobrimento.
                                 </h1>
 
                                 <p className="text-lg text-psi-dark/75

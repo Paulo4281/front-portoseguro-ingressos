@@ -283,7 +283,7 @@ const CuponsPannel = () => {
     }
 
     return (
-        <Background variant="light" className="min-h-screen py-10 mt-[80px] container">
+        <Background variant="light" className="min-h-screen py-10 mt-[80px] pb-[300px]! container">
             <section className="space-y-10 px-4 sm:px-6 lg:px-8">
                 <div className="space-y-4">
                     <div className="space-y-3">
@@ -353,42 +353,43 @@ const CuponsPannel = () => {
                     />
                 </div>
 
-            <div className="rounded-3xl border border-[#E4E6F0] bg-white/90 p-8 space-y-8 shadow-lg shadow-black/5">
-                <div className="flex flex-col gap-2">
-                    <h2 className="text-xl font-medium text-psi-dark flex items-center gap-2">
-                        <Percent className="h-5 w-5 text-psi-primary" />
-                        Criar novo cupom
-                    </h2>
-                    <p className="text-sm text-psi-dark/60">
-                        Combine tipos de desconto, defina públicos e datas para potencializar suas vendas.
-                    </p>
+            <div className="rounded-2xl border border-psi-dark/5 bg-white p-6 sm:p-7 space-y-6 shadow-sm">
+                <div>
+                    <h2 className="text-lg font-semibold text-psi-dark">Criar novo cupom</h2>
+                    <p className="text-sm text-psi-dark/55 mt-0.5">Preencha os campos obrigatórios; regras e limites são opcionais.</p>
                 </div>
                 <form
                     className="space-y-6"
                     onSubmit={handleSubmit(onCreateCoupon)}
                 >
-                    <div className="grid gap-6
-                    md:grid-cols-2">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-psi-dark">Código do cupom</label>
-                            <Controller
-                                control={control}
-                                name="code"
-                                render={({ field }) => (
-                                    <Input
-                                        {...field}
-                                        required
-                                        placeholder="PORTO2025"
-                                        onChange={(event: ChangeEvent<HTMLInputElement>) => field.onChange(event.target.value.toUpperCase())}
-                                        maxLength={12}
-                                        
-                                    />
-                                )}
-                            />
-                            <p className="text-xs text-psi-dark/50">Máximo de 12 caracteres</p>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-psi-dark">Evento</label>
+                    <div className="rounded-xl border-2 border-psi-primary/20 bg-psi-primary/5 p-5 space-y-4">
+                        <label className="text-sm font-semibold text-psi-dark flex items-center gap-2">
+                            Código do cupom
+                            <span className="text-psi-primary">*</span>
+                        </label>
+                        <Controller
+                            control={control}
+                            name="code"
+                            render={({ field }) => (
+                                <Input
+                                    {...field}
+                                    required
+                                    placeholder="Ex: PORTO2025"
+                                    onChange={(event: ChangeEvent<HTMLInputElement>) => field.onChange(event.target.value.toUpperCase())}
+                                    maxLength={12}
+                                    className="h-11 text-base font-medium rounded-lg border-psi-primary/30 bg-white focus-visible:ring-2 focus-visible:ring-psi-primary"
+                                />
+                            )}
+                        />
+                        <p className="text-xs text-psi-dark/50">Máximo 12 caracteres. Será exibido em maiúsculas.</p>
+                    </div>
+
+                    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                        <div className="rounded-xl border border-psi-dark/10 bg-white p-4 space-y-2">
+                            <label className="text-sm font-semibold text-psi-dark flex items-center gap-1.5">
+                                Evento
+                                <span className="text-psi-primary">*</span>
+                            </label>
                             <Controller
                                 control={control}
                                 name="eventId"
@@ -398,8 +399,8 @@ const CuponsPannel = () => {
                                         onValueChange={field.onChange}
                                         disabled={isEventCacheLoading || availableEvents.length === 0}
                                     >
-                                        <SelectTrigger aria-label="Evento do cupom" >
-                                            <SelectValue placeholder={isEventCacheLoading ? "Carregando eventos..." : "Selecione um evento"} />
+                                        <SelectTrigger aria-label="Evento do cupom" className="h-10 rounded-lg border-psi-dark/10 bg-white">
+                                            <SelectValue placeholder={isEventCacheLoading ? "Carregando..." : "Selecione um evento"} />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {availableEvents.map((eventItem) => (
@@ -412,63 +413,61 @@ const CuponsPannel = () => {
                                 )}
                             />
                         </div>
-                    </div>
-
-                    <div className="border-t border-psi-dark/10 pt-6">
-                        <h3 className="text-sm font-medium text-psi-dark mb-4">Configuração de desconto</h3>
-                        <div className="grid gap-6
-                        md:grid-cols-2">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-psi-dark">Tipo de desconto</label>
-                                <Controller
-                                    control={control}
-                                    name="discountType"
-                                    render={({ field }) => (
-                                        <Select
-                                            value={field.value}
-                                            onValueChange={field.onChange}
-                                        >
-                                            <SelectTrigger aria-label="Tipo de desconto" >
-                                                <SelectValue placeholder="Selecione o tipo" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="PERCENTAGE">Percentual (%)</SelectItem>
-                                                <SelectItem value="FIXED">Valor fixo (R$)</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    )}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-psi-dark">
-                                    {newCouponDiscountType === "PERCENTAGE" ? "Percentual de desconto (em %)" : "Valor do desconto (em R$)"}
-                                </label>
-                                <Controller
-                                    control={control}
-                                    name="discountValue"
-                                    render={({ field }) => (
-                                        <Input
-                                            {...field}
-                                            required
-                                            type="number"
-                                            min="1"
-                                            max={newCouponDiscountType === "PERCENTAGE" ? "100" : undefined}
-                                            step={newCouponDiscountType === "PERCENTAGE" ? "1" : "0.01"}
-                                            placeholder={newCouponDiscountType === "PERCENTAGE" ? "10" : "50.00"}
-                                            
-                                        />
-                                    )}
-                                />
-                            </div>
+                        <div className="rounded-xl border border-psi-dark/10 bg-white p-4 space-y-2">
+                            <label className="text-sm font-semibold text-psi-dark flex items-center gap-1.5">
+                                Tipo de desconto
+                                <span className="text-psi-primary">*</span>
+                            </label>
+                            <Controller
+                                control={control}
+                                name="discountType"
+                                render={({ field }) => (
+                                    <Select value={field.value} onValueChange={field.onChange}>
+                                        <SelectTrigger aria-label="Tipo de desconto" className="h-10 rounded-lg border-psi-dark/10 bg-white">
+                                            <SelectValue placeholder="Selecione" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="PERCENTAGE">Percentual (%)</SelectItem>
+                                            <SelectItem value="FIXED">Valor fixo (R$)</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                        </div>
+                        <div className="rounded-xl border border-psi-dark/10 bg-white p-4 space-y-2">
+                            <label className="text-sm font-semibold text-psi-dark flex items-center gap-1.5">
+                                {newCouponDiscountType === "PERCENTAGE" ? "Percentual (%)" : "Valor (R$)"}
+                                <span className="text-psi-primary">*</span>
+                            </label>
+                            <Controller
+                                control={control}
+                                name="discountValue"
+                                render={({ field }) => (
+                                    <Input
+                                        {...field}
+                                        required
+                                        type="number"
+                                        min="1"
+                                        max={newCouponDiscountType === "PERCENTAGE" ? "100" : undefined}
+                                        step={newCouponDiscountType === "PERCENTAGE" ? "1" : "0.01"}
+                                        placeholder={newCouponDiscountType === "PERCENTAGE" ? "10" : "50,00"}
+                                        className="h-10 rounded-lg border-psi-dark/10 bg-white"
+                                    />
+                                )}
+                            />
                         </div>
                     </div>
 
-                    <div className="border-t border-psi-dark/10 pt-6">
-                        <h3 className="text-sm font-medium text-psi-dark mb-4">Regras e limites</h3>
-                        <div className="grid gap-6
-                        md:grid-cols-2">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-psi-dark">Data de expiração (opcional)</label>
+                    <div className="rounded-xl border border-psi-dark/5 bg-psi-dark/5 p-4 space-y-4">
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-medium text-psi-dark/70">Regras e limites</h3>
+                            <Badge variant="secondary" className="rounded-md bg-psi-dark/10 text-psi-dark/60 text-xs font-normal">
+                                Opcional
+                            </Badge>
+                        </div>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-psi-dark/60">Data de expiração</label>
                                 <Controller
                                     control={control}
                                     name="expirationDate"
@@ -482,8 +481,8 @@ const CuponsPannel = () => {
                                     )}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-psi-dark">Limite de uso (opcional)</label>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-psi-dark/60">Limite de uso</label>
                                 <Controller
                                     control={control}
                                     name="usageLimit"
@@ -492,19 +491,19 @@ const CuponsPannel = () => {
                                             {...field}
                                             type="number"
                                             min="1"
-                                            placeholder="Ex: 100"
+                                            placeholder="Ilimitado"
+                                            className="rounded-lg border-psi-dark/10 h-9"
                                         />
                                     )}
                                 />
-                                <p className="text-xs text-psi-dark/50">Deixe vazio para ilimitado</p>
+                                <p className="text-xs text-psi-dark/45">Vazio = ilimitado</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex justify-end pt-4 border-t border-psi-dark/10">
-                        <Button type="submit" variant="primary" disabled={isCreating} className="min-w-[160px]">
-                            {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
-                            Criar cupom
+                    <div className="flex justify-end pt-2">
+                        <Button type="submit" variant="primary" disabled={isCreating} className="">
+                            {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Criar cupom"}
                         </Button>
                     </div>
                 </form>
@@ -706,7 +705,8 @@ const CuponsPannel = () => {
                                                         </>
                                                     )}
                                                 </div>
-                                                <div className="flex items-center gap-3">
+                                                <hr />
+                                                <div className="flex items-center flex-wrap gap-3">
                                                     {isDirty && (
                                                         <Badge variant="secondary" className="bg-amber-100 text-amber-700">
                                                             Alterações pendentes
