@@ -60,7 +60,8 @@ import {
     MousePointer,
     DollarSign,
     Ticket,
-    ChartArea
+    ChartArea,
+    MousePointerClick
 } from "lucide-react"
 import { Background } from "@/components/Background/Background"
 import { Button } from "@/components/ui/button"
@@ -4115,10 +4116,30 @@ const CRMPannel = () => {
                                                                     color: "text-orange-600"
                                                                 }
                                                             case "PENDING":
+                                                                return {
+                                                                    icon: Clock,
+                                                                    label: "Pendente",
+                                                                    variant: "secondary" as const,
+                                                                    color: "text-yellow-600"
+                                                                }
+                                                            case "QUEUED":
+                                                                return {
+                                                                    icon: Clock,
+                                                                    label: "Na fila",
+                                                                    variant: "secondary" as const,
+                                                                    color: "text-amber-600"
+                                                                }
+                                                            case "PROCESSING":
+                                                                return {
+                                                                    icon: Clock,
+                                                                    label: "Processando",
+                                                                    variant: "secondary" as const,
+                                                                    color: "text-blue-600"
+                                                                }
                                                             case "ACCEPTED":
                                                                 return {
                                                                     icon: Clock,
-                                                                    label: log.status === "ACCEPTED" ? "Aceito" : "Pendente",
+                                                                    label: "Aceito",
                                                                     variant: "secondary" as const,
                                                                     color: "text-yellow-600"
                                                                 }
@@ -4131,7 +4152,7 @@ const CRMPannel = () => {
                                                                 }
                                                             case "CLICKED":
                                                                 return {
-                                                                    icon: MailCheck,
+                                                                    icon: MousePointerClick,
                                                                     label: "Clicado",
                                                                     variant: "psi-primary" as const,
                                                                     color: "text-green-600"
@@ -4231,8 +4252,22 @@ const CRMPannel = () => {
                             </div>
                             <div>
                                 <h4 className="font-semibold text-psi-dark mb-2">Status</h4>
-                                <Badge variant={selectedWebpushCampaign.status === "SENT" ? "psi-secondary" : "destructive"}>
-                                    {selectedWebpushCampaign.status === "SENT" ? "Enviado" : "Falhou"}
+                                <Badge
+                                    variant={
+                                        selectedWebpushCampaign.status === "SENT"
+                                            ? "psi-secondary"
+                                            : selectedWebpushCampaign.status === "QUEUED" || selectedWebpushCampaign.status === "PROCESSING"
+                                                ? "secondary"
+                                                : "destructive"
+                                    }
+                                >
+                                    {selectedWebpushCampaign.status === "SENT"
+                                        ? "Enviado"
+                                        : selectedWebpushCampaign.status === "QUEUED"
+                                            ? "Na fila"
+                                            : selectedWebpushCampaign.status === "PROCESSING"
+                                                ? "Processando"
+                                                : "Falhou"}
                                 </Badge>
                             </div>
                             <div>
@@ -4258,19 +4293,46 @@ const CRMPannel = () => {
                                         ) : (
                                             <div className="space-y-3">
                                                 {webpushCampaignLogs.map((log: TWebpushCampaignLog) => {
-                                                    const statusConfig = log.status === "SENT"
-                                                        ? {
-                                                            icon: CheckCircle2,
-                                                            label: "Enviado",
-                                                            variant: "psi-secondary" as const,
-                                                            color: "text-green-600"
+                                                    const getWebpushLogStatusConfig = () => {
+                                                        switch (log.status) {
+                                                            case "SENT":
+                                                                return {
+                                                                    icon: CheckCircle2,
+                                                                    label: "Enviado",
+                                                                    variant: "psi-secondary" as const,
+                                                                    color: "text-green-600"
+                                                                }
+                                                            case "QUEUED":
+                                                                return {
+                                                                    icon: Clock,
+                                                                    label: "Na fila",
+                                                                    variant: "secondary" as const,
+                                                                    color: "text-amber-600"
+                                                                }
+                                                            case "PROCESSING":
+                                                                return {
+                                                                    icon: Clock,
+                                                                    label: "Processando",
+                                                                    variant: "secondary" as const,
+                                                                    color: "text-blue-600"
+                                                                }
+                                                            case "FAILED":
+                                                                return {
+                                                                    icon: AlertCircle,
+                                                                    label: "Falhou",
+                                                                    variant: "destructive" as const,
+                                                                    color: "text-red-600"
+                                                                }
+                                                            default:
+                                                                return {
+                                                                    icon: Clock,
+                                                                    label: log.status || "Desconhecido",
+                                                                    variant: "secondary" as const,
+                                                                    color: "text-psi-dark/60"
+                                                                }
                                                         }
-                                                        : {
-                                                            icon: AlertCircle,
-                                                            label: "Falhou",
-                                                            variant: "destructive" as const,
-                                                            color: "text-red-600"
-                                                        }
+                                                    }
+                                                    const statusConfig = getWebpushLogStatusConfig()
                                                     const StatusIcon = statusConfig.icon
                                                     const recipientName = log.user
                                                         ? `${log.user.firstName} ${log.user.lastName}`.trim()

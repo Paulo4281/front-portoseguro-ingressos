@@ -1,12 +1,14 @@
-export type TCampaignLogStatus = 
-    | "PENDING" 
-    | "ACCEPTED" 
-    | "DELIVERED" 
-    | "OPENED" 
-    | "CLICKED" 
-    | "FAILED" 
-    | "BOUNCED" 
-    | "COMPLAINED" 
+export type TCampaignLogStatus =
+    | "PENDING"
+    | "QUEUED"
+    | "PROCESSING"
+    | "ACCEPTED"
+    | "DELIVERED"
+    | "OPENED"
+    | "CLICKED"
+    | "FAILED"
+    | "BOUNCED"
+    | "COMPLAINED"
     | "UNSUBSCRIBED"
 
 export type TCampaignLog = {
