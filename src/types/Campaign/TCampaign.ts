@@ -2,6 +2,7 @@ export type TCampaignStatus = "PENDING" | "SENDING" | "SENT" | "FAILED"
 
 export type TCampaign = {
     id: string
+    name: string | null
     templateId: string
     organizerId: string
     status: TCampaignStatus
@@ -13,6 +14,7 @@ export type TCampaign = {
 }
 
 export type TCampaignCreate = {
+    name?: string | null
     templateId: string
     tagIds: string[]
     eventId?: string | null

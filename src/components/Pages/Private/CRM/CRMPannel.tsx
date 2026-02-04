@@ -348,12 +348,14 @@ const ObservationValidator = z.object({
 })
 
 const EmailSendValidator = z.object({
+    name: z.string().max(255).optional(),
     templateId: z.string().min(1, { error: "Selecione um template" }),
     segments: z.array(z.string()).min(1, { error: "Selecione pelo menos um segmento" }),
     templateFields: z.record(z.string(), z.string()).optional()
 })
 
 const WebpushSendValidator = z.object({
+    name: z.string().max(255).optional(),
     templateId: z.string().min(1, { error: "Selecione um template" }),
     segments: z.array(z.string()).min(1, { error: "Selecione pelo menos um segmento" }),
     templateFields: z.record(z.string(), z.string()).optional()
@@ -833,6 +835,7 @@ const CRMPannel = () => {
     const emailForm = useForm<TEmailSendForm>({
         resolver: zodResolver(EmailSendValidator),
         defaultValues: {
+            name: "",
             templateId: "",
             segments: [],
             templateFields: {}
@@ -842,6 +845,7 @@ const CRMPannel = () => {
     const webpushForm = useForm<TWebpushSendForm>({
         resolver: zodResolver(WebpushSendValidator),
         defaultValues: {
+            name: "",
             templateId: "",
             segments: [],
             templateFields: {}
@@ -1107,6 +1111,9 @@ const CRMPannel = () => {
                 templateId: data.templateId,
                 tagIds
             }
+            if (data.name?.trim()) {
+                campaignData.name = data.name.trim()
+            }
 
             if (selectedTemplate) {
                 if (selectedTemplate.code === "crm-template-pesquisa" && selectedOpinionPollForTemplate) {
@@ -1160,6 +1167,9 @@ const CRMPannel = () => {
             const campaignData: any = {
                 templateId: data.templateId,
                 tagIds
+            }
+            if (data.name?.trim()) {
+                campaignData.name = data.name.trim()
             }
 
             if (selectedWebpushTemplate) {
@@ -2432,7 +2442,9 @@ const CRMPannel = () => {
                                                                 <div className="flex items-start justify-between">
                                                                     <div className="flex-1">
                                                                         <div className="flex items-center gap-2 mb-2">
-                                                                            <h4 className="font-semibold text-psi-dark">{templateName}</h4>
+                                                                            <h4 className="font-semibold text-psi-dark">
+                                                                                {(campaign as TCampaign).name?.trim() || templateName}
+                                                                            </h4>
                                                                             <Badge variant={
                                                                                 campaign.status === "SENT" 
                                                                                     ? "psi-secondary" 
@@ -2539,7 +2551,9 @@ const CRMPannel = () => {
                                                                     <div className="flex items-start justify-between">
                                                                         <div className="flex-1">
                                                                             <div className="flex items-center gap-2 mb-2">
-                                                                                <h4 className="font-semibold text-psi-dark">{templateName}</h4>
+                                                                                <h4 className="font-semibold text-psi-dark">
+                                                                                    {campaign.name?.trim() || templateName}
+                                                                                </h4>
                                                                                 <Badge variant={
                                                                                     campaign.status === "SENT"
                                                                                         ? "psi-secondary"
@@ -3249,6 +3263,18 @@ const CRMPannel = () => {
                     </SheetHeader>
                     <form onSubmit={emailForm.handleSubmit(handleSendEmail)} className="space-y-6 mt-6 mx-4">
                         <div>
+                            <label htmlFor="email-campaign-name" className="text-sm font-medium text-psi-dark mb-2 block">
+                                Nome da campanha <span className="text-psi-dark/50 font-normal">(opcional)</span>
+                            </label>
+                            <Input
+                                id="email-campaign-name"
+                                placeholder="Ex: Newsletter janeiro 2025"
+                                maxLength={255}
+                                className="max-w-md"
+                                {...emailForm.register("name")}
+                            />
+                        </div>
+                        <div>
                             <label className="text-sm font-medium text-psi-dark mb-3 block">Selecione um Template</label>
                             {templatesLoading ? (
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -3634,6 +3660,18 @@ const CRMPannel = () => {
                         </SheetDescription>
                     </SheetHeader>
                     <form onSubmit={webpushForm.handleSubmit(handleSendWebpush)} className="space-y-6 mt-6 mx-4">
+                        <div>
+                            <label htmlFor="webpush-campaign-name" className="text-sm font-medium text-psi-dark mb-2 block">
+                                Nome da campanha <span className="text-psi-dark/50 font-normal">(opcional)</span>
+                            </label>
+                            <Input
+                                id="webpush-campaign-name"
+                                placeholder="Ex: Oferta especial - Black Friday"
+                                maxLength={255}
+                                className="max-w-md"
+                                {...webpushForm.register("name")}
+                            />
+                        </div>
                         <div>
                             <label className="text-sm font-medium text-psi-dark mb-3 block">Selecione um Template</label>
                             {webpushTemplatesLoading ? (

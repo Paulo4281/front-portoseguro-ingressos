@@ -1,6 +1,7 @@
 import type { WebpushCampaignStatus } from "@/types/Webpush/TWebpushTypes"
 
 type TWebpushCampaignCreate = {
+    name?: string | null
     templateId: string
     tagIds: string[]
     eventId?: string | null
@@ -9,6 +10,7 @@ type TWebpushCampaignCreate = {
 
 type TWebpushCampaign = {
     id: string
+    name: string | null
     templateId: string
     userId: string
     status: WebpushCampaignStatus

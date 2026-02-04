@@ -92,6 +92,12 @@ const menuLinks: TMenuLink[] = [
         ]
     },
     {
+        label: "CRM Manager",
+        href: "/adm-crm",
+        icon: Target,
+        roles: ["ADMIN"]
+    },
+    {
         label: "CRM",
         href: "/crm",
         icon: Target,
