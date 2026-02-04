@@ -11,7 +11,7 @@ export const useBankFind = () => {
     } = useQueryHook<TApiResponse<TBank[]>>({
         queryKey: ["banks"],
         queryFn: () => OrganizerService.findBanks()
-    })
+    });
 
     return {
         data,
