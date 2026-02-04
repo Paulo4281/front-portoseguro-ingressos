@@ -535,11 +535,29 @@ const EventCard = ({
                                 Relatório de Vendas e Estatísticas
                             </DropdownMenuItem>
                             <DropdownMenuSeparator className="bg-[#E4E6F0]" />
-                            <DropdownMenuItem className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer" disabled={event.isCancelled}>
-                                <Share2 className="h-4 w-4 text-psi-primary" />
-                                Compartilhar evento
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator className="bg-[#E4E6F0]" />
+                            {!event.isFinished && (
+                                <DropdownMenuItem
+                                    className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer"
+                                    disabled={event.isCancelled}
+                                    onClick={() => {
+                                        const shareUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/ver-evento/${event.slug}`
+                                        if (navigator.share) {
+                                            navigator.share({
+                                                title: event.name,
+                                                text: `Confira este evento: ${event.name}`,
+                                                url: shareUrl
+                                            }).catch(() => {})
+                                        } else {
+                                            navigator.clipboard.writeText(shareUrl)
+                                            Toast.success("Link copiado para a área de transferência")
+                                        }
+                                    }}
+                                >
+                                    <Share2 className="h-4 w-4 text-psi-primary" />
+                                    Compartilhar evento
+                                </DropdownMenuItem>
+                            )}
+                            {!event.isFinished && <DropdownMenuSeparator className="bg-[#E4E6F0]" />}
                             {
                                 (event.isCancelled || totalSales === 0) && (
                                     <DropdownMenuItem 

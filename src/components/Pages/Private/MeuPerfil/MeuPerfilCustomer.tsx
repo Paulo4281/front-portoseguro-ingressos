@@ -654,10 +654,10 @@ const MeuPerfilCustomer = () => {
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <Mail className="h-5 w-5 text-psi-primary" />
-                                                <h3 className="font-medium text-psi-dark">E-mail Marketing</h3>
+                                                <h3 className="font-medium text-psi-dark">Comunicações</h3>
                                             </div>
                                             <p className="text-sm text-psi-dark/60">
-                                                Receber e-mails promocionais, ofertas especiais e novidades da plataforma e dos organizadores
+                                                Receber comunicações promocionais, ofertas especiais e novidades da plataforma ou dos organizadores, incluindo e-mail marketing e outros canais.
                                             </p>
                                         </div>
                                         <Switch

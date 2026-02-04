@@ -13,7 +13,7 @@ import { DatePicker } from "@/components/DatePicker/DatePicker"
 import type { TDashboardOverview, TDashboardPayouts } from "@/types/Dashboard/TDashboard"
 
 const DashboardPannel = () => {
-    const [period, setPeriod] = useState<"day" | "week" | "month" | "year" | "custom">("month")
+    const [period, setPeriod] = useState<"day" | "week" | "month" | "year" | "custom">("year")
     const [customDateStart, setCustomDateStart] = useState<string | null>(null)
     const [customDateEnd, setCustomDateEnd] = useState<string | null>(null)
 
@@ -67,6 +67,37 @@ const DashboardPannel = () => {
             return date.toLocaleDateString("pt-BR", { month: "short", year: "numeric" })
         }
     }
+
+    const formatDateAsWeekOfMonth = (dateString: string) => {
+        const date = new Date(dateString)
+        const dayStr = String(date.getDate()).padStart(2, "0")
+        const monthStr = String(date.getMonth() + 1).padStart(2, "0")
+        return `${dayStr}/${monthStr}`
+    }
+
+    const isSingleMonthData = (items: { date: string }[] | undefined) => {
+        if (period !== "year" || !items?.length) return false
+        const first = new Date(items[0].date)
+        const month = first.getMonth()
+        const year = first.getFullYear()
+        return items.every((d) => {
+            const dt = new Date(d.date)
+            return dt.getMonth() === month && dt.getFullYear() === year
+        })
+    }
+
+    const overview = data?.data as TDashboardOverview | undefined
+    const revenueIsSingleMonth = useMemo(
+        () => isSingleMonthData(overview?.revenueOverTime),
+        [period, overview?.revenueOverTime]
+    )
+    const ticketsIsSingleMonth = useMemo(
+        () => isSingleMonthData(overview?.ticketsOverTime),
+        [period, overview?.ticketsOverTime]
+    )
+
+    const formatChartXAxis = (dateString: string, useWeekOfMonth: boolean) =>
+        useWeekOfMonth ? formatDateAsWeekOfMonth(dateString) : formatDate(dateString)
 
     const periodLabels = {
         day: "Hoje",
@@ -434,7 +465,7 @@ const DashboardPannel = () => {
                                         <XAxis
                                             dataKey="date"
                                             tick={{ fontSize: 12 }}
-                                            tickFormatter={formatDate}
+                                            tickFormatter={(label) => formatChartXAxis(label, revenueIsSingleMonth)}
                                         />
                                         <YAxis
                                             tick={{ fontSize: 12 }}
@@ -445,7 +476,7 @@ const DashboardPannel = () => {
                                                 ValueUtils.centsToCurrency(value),
                                                 "Receita"
                                             ]}
-                                            labelFormatter={(label) => formatDate(label)}
+                                            labelFormatter={(label) => formatChartXAxis(label, revenueIsSingleMonth)}
                                             contentStyle={{
                                                 backgroundColor: "white",
                                                 border: "1px solid #E4E6F0",
@@ -472,7 +503,7 @@ const DashboardPannel = () => {
                                         <XAxis
                                             dataKey="date"
                                             tick={{ fontSize: 12 }}
-                                            tickFormatter={formatDate}
+                                            tickFormatter={(label) => formatChartXAxis(label, ticketsIsSingleMonth)}
                                         />
                                         <YAxis tick={{ fontSize: 12 }} />
                                         <Tooltip
@@ -480,7 +511,7 @@ const DashboardPannel = () => {
                                                 value.toLocaleString("pt-BR"),
                                                 "Ingressos"
                                             ]}
-                                            labelFormatter={(label) => formatDate(label)}
+                                            labelFormatter={(label) => formatChartXAxis(label, ticketsIsSingleMonth)}
                                             contentStyle={{
                                                 backgroundColor: "white",
                                                 border: "1px solid #E4E6F0",

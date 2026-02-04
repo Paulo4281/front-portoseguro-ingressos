@@ -767,435 +767,465 @@ const QrScannerPannel = () => {
                             )}
                         </div>
                     </div>
-                </div>
-                
-                <div>
-                    {
-                        events && events.length > 0 && (
-                            <>
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-10">
 
-                                <div className="lg:col-span-2 space-y-6">
-                                    <div className="grid lg:grid-cols-2 gap-6">
-                                        <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
-                                            <h2 className="text-lg font-medium text-psi-dark mb-4">Selecionar Evento</h2>
-                                            {isLoadingEvents ? (
-                                                <div className="space-y-2">
-                                                    <Skeleton className="h-10 w-full" />
-                                                </div>
-                                            ) : events.length === 0 ? (
-                                                <p className="text-sm text-psi-dark/60">Nenhum evento encontrado</p>
+                    {events && events.length > 0 && (
+                        <>
+                            {selectedEvent && (
+                                <div className="rounded-xl border border-psi-primary/20 bg-white p-6 mb-6">
+                                    <div className="rounded-xl overflow-hidden border border-psi-primary/20 bg-white">
+                                        <div className="relative h-90 w-full overflow-hidden bg-linear-to-br from-psi-primary/10 to-psi-secondary/10">
+                                            {selectedEvent.image ? (
+                                                <img
+                                                    src={ImageUtils.getEventImageUrl(selectedEvent.image)}
+                                                    alt={selectedEvent.name}
+                                                    className="w-full h-full object-cover"
+                                                />
                                             ) : (
-                                                <Select value={selectedEventId} onValueChange={setSelectedEventId}>
-                                                    <SelectTrigger className="w-full">
-                                                        <SelectValue placeholder="Selecione um evento" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {events.map((event) => (
-                                                            <SelectItem key={event.id} value={event.id}>
-                                                                {event.name}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-
-                                            {selectedEvent && (
-                                                <div className="mt-6 rounded-xl overflow-hidden border border-psi-primary/20 bg-white shadow-sm">
-                                                    <div className="relative h-48 w-full overflow-hidden bg-linear-to-br from-psi-primary/10 to-psi-secondary/10">
-                                                        {selectedEvent.image ? (
-                                                            <img
-                                                                src={ImageUtils.getEventImageUrl(selectedEvent.image)}
-                                                                alt={selectedEvent.name}
-                                                                className="w-full h-full object-cover"
-                                                            />
-                                                        ) : (
-                                                            <div className="w-full h-full flex items-center justify-center">
-                                                                <Ticket className="h-16 w-16 text-psi-primary/30" />
-                                                            </div>
-                                                        )}
-                                                        <div className="absolute inset-0 bg-linear-to-t from-psi-dark/60 via-psi-dark/20 to-transparent" />
-                                                        <div className="absolute bottom-0 left-0 right-0 p-4">
-                                                            <h3 className="text-lg font-semibold text-white mb-1 drop-shadow-lg">
-                                                                {selectedEvent.name}
-                                                            </h3>
-                                                            {selectedEvent.EventDates && selectedEvent.EventDates.length > 0 && (
-                                                                <div className="flex items-center gap-2 text-white/90 text-sm">
-                                                                    <Calendar className="h-4 w-4" />
-                                                                    <span className="drop-shadow">
-                                                                        {selectedEvent.EventDates.length} {selectedEvent.EventDates.length === 1 ? "data" : "datas"}
-                                                                    </span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
+                                                <div className="w-full h-full flex items-center justify-center">
+                                                    <Ticket className="h-16 w-16 text-psi-primary/30" />
                                                 </div>
                                             )}
-                                        </div>
-
-                                        {eventDates.length > 0 && (
-                                            <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
-                                                <h2 className="text-lg font-medium text-psi-dark mb-4">Filtrar por Data do Evento</h2>
-                                                <Select value={selectedEventDateId} onValueChange={setSelectedEventDateId}>
-                                                    <SelectTrigger className="w-full">
-                                                        <SelectValue placeholder="Selecione uma data" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="ALL">Todas as datas</SelectItem>
-                                                        {eventDates.map((eventDate) => (
-                                                            <SelectItem key={eventDate.id} value={eventDate.id}>
-                                                                {eventDate.date ? formatEventDate(eventDate.date, "DD/MM/YYYY") : "Sem data"}
-                                                                {eventDate.hourStart && ` - ${formatEventTime(eventDate.hourStart, eventDate.hourEnd)}`}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        )}
-
-                                        {selectedEventId && (
-                                            <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
-                                                {isTodayEventDate ? (
-                                                    <div className="mb-4 p-4 rounded-xl bg-linear-to-r from-green-50 to-emerald-50 border-2 border-green-400 shadow-sm">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="rounded-full bg-green-500 p-2">
-                                                                <CheckCircle2 className="h-5 w-5 text-white" />
-                                                            </div>
-                                                            <div>
-                                                                <p className="font-semibold text-green-900">Hoje é o dia do evento!</p>
-                                                                <p className="text-sm text-green-700">Você pode validar ingressos normalmente.</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ) : selectedEvent && eventDates.length > 0 ? (
-                                                    <div className="mb-4 p-4 rounded-xl bg-linear-to-r from-amber-50 to-orange-50 border-2 border-amber-400 shadow-sm">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="rounded-full bg-amber-500 p-2">
-                                                                <XCircle className="h-5 w-5 text-white" />
-                                                            </div>
-                                                            <div>
-                                                                <p className="font-semibold text-amber-900">Hoje não é o dia do evento</p>
-                                                                <p className="text-sm text-amber-700">Aguarde a data correta para validar ingressos.</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ) : null}
-                                                <div className="flex items-center gap-3 mb-5">
-                                                    <div className="rounded-lg bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-2">
-                                                        <Ticket className="h-5 w-5 text-psi-primary" />
-                                                    </div>
-                                                    <h2 className="text-lg font-semibold text-psi-dark">Estatísticas de Validação</h2>
-                                                </div>
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center justify-between p-4 rounded-xl bg-linear-to-br from-psi-primary/10 via-psi-primary/5 to-psi-primary/10 border border-psi-primary/20">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="rounded-lg bg-psi-primary/20 p-2">
-                                                                <Ticket className="h-5 w-5 text-psi-primary" />
-                                                            </div>
-                                                            <span className="text-sm font-medium text-psi-dark/80">Total de ingressos</span>
-                                                        </div>
-                                                        <span className="text-2xl font-bold text-psi-primary">{validationStats.total}</span>
-                                                    </div>
-                                                    <div className="flex items-center justify-between p-4 rounded-xl bg-linear-to-br from-green-50 via-green-50/50 to-green-50 border border-green-200/50">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="rounded-lg bg-green-100 p-2">
-                                                                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                                                            </div>
-                                                            <span className="text-sm font-medium text-psi-dark/80">Validados</span>
-                                                        </div>
-                                                        <span className="text-2xl font-bold text-green-600">{validationStats.validated}</span>
-                                                    </div>
-                                                    <div className="flex items-center justify-between p-4 rounded-xl bg-linear-to-br from-amber-50 via-amber-50/50 to-amber-50 border border-amber-200/50">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="rounded-lg bg-amber-100 p-2">
-                                                                <CircleMinus className="h-5 w-5 text-amber-600" />
-                                                            </div>
-                                                            <span className="text-sm font-medium text-psi-dark/80">Pendentes</span>
-                                                        </div>
-                                                        <span className="text-2xl font-bold text-amber-600">{validationStats.remaining}</span>
-                                                    </div>
-                                                    {validationStats.total > 0 && (
-                                                        <div className="mt-4 pt-4 border-t border-psi-primary/10">
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <span className="text-xs font-medium text-psi-dark/60">Progresso de validação</span>
-                                                                <span className="text-xs font-semibold text-psi-primary">
-                                                                    {Math.round((validationStats.validated / validationStats.total) * 100)}%
-                                                                </span>
-                                                            </div>
-                                                            <div className="w-full h-2 bg-psi-primary/10 rounded-full overflow-hidden">
-                                                                <div
-                                                                    className="h-full bg-linear-to-r from-green-500 to-green-600 rounded-full transition-all duration-500"
-                                                                    style={{ width: `${(validationStats.validated / validationStats.total) * 100}%` }}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {scanLinks.length > 0 && (
-                                            <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
-                                                <h2 className="text-lg font-medium text-psi-dark mb-4">Links de Escaneamento</h2>
-                                                <div className="space-y-3">
-                                                    {scanLinks.map((link) => {
-                                                        const eventName = events.find((event) => event.id === link.eventId)?.name || "Evento"
-                                                        const publicPath = `/qr-scanner-link?pubId=${link.code}`
-                                                        const currentUsers = (link.TicketScanSessions?.length || 0)
-
-                                                        return (
-                                                        <div key={link.id} className="flex items-center justify-between p-3 rounded-lg border border-psi-primary/10">
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className="text-xs font-medium text-psi-dark truncate">{eventName}</p>
-                                                                <button
-                                                                    type="button"
-                                                                    aria-label="Copiar link de escaneamento"
-                                                                    className="text-sm font-medium underline cursor-pointer text-psi-dark/70 truncate text-left outline-none focus-visible:ring-2 focus-visible:ring-psi-primary transition select-text hover:underline w-full"
-                                                                    style={{ background: "none", border: "none", padding: 0 }}
-                                                                    onClick={() => {
-                                                                        const url = `${process.env.NEXT_PUBLIC_FRONT_URL}${publicPath}`
-                                                                        navigator.clipboard.writeText(url)
-                                                                        Toast.success("Link de escaneamento copiado para a área de transferência")
-                                                                    }}
-                                                                >
-                                                                    {process.env.NEXT_PUBLIC_FRONT_URL}{publicPath}
-                                                                </button>
-                                                                <div className="flex items-center gap-4 mt-1">
-                                                                    <span className="text-xs text-psi-dark/60 flex items-center gap-1">
-                                                                        <Users className="h-3 w-3" />
-                                                                        {currentUsers}/{link.maxUsers}
-                                                                    </span>
-                                                                    <span className="text-xs text-psi-dark/60">
-                                                                        Expira em {DateUtils.formatDate(link.expiresAt, "DD/MM/YYYY HH:mm")}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex items-center gap-2">
-                                                                <DropdownMenu>
-                                                                    <DropdownMenuTrigger asChild>
-                                                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                                            <MoreVertical className="h-4 w-4" />
-                                                                        </Button>
-                                                                    </DropdownMenuTrigger>
-                                                                    <DropdownMenuContent align="end">
-                                                                        <DropdownMenuItem
-                                                                            onClick={() => handleOpenManageSessions(link.id)}
-                                                                            className="cursor-pointer"
-                                                                        >
-                                                                            <Users className="h-4 w-4" />
-                                                                            Ver conectados ({currentUsers})
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuItem
-                                                                            onClick={() => handleOpenUpdatePassword(link.id)}
-                                                                            className="cursor-pointer"
-                                                                        >
-                                                                            <QrCode className="h-4 w-4" />
-                                                                            Alterar senha
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuItem
-                                                                            onClick={() => handleOpenUpdateExpAt(link.id, link.expiresAt)}
-                                                                            className="cursor-pointer"
-                                                                        >
-                                                                            <Calendar className="h-4 w-4" />
-                                                                            Alterar expiração
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuItem
-                                                                            onClick={() => setDeleteLinkDialog({ open: true, linkId: link.id })}
-                                                                            className="cursor-pointer text-destructive"
-                                                                        >
-                                                                            <Trash2 className="h-4 w-4" />
-                                                                            Excluir link
-                                                                        </DropdownMenuItem>
-                                                                    </DropdownMenuContent>
-                                                                </DropdownMenu>
-                                                            </div>
-                                                        </div>
-                                                        )
-                                                    })}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="lg:col-span-2 space-y-6">
-                                    {isScanning && (
-                                        <div 
-                                            id="qr-scanner-container"
-                                            className="rounded-xl border border-psi-primary/20 bg-white p-4
-                                                sm:p-6">
-                                            <div className="mb-3
-                                                sm:mb-4">
-                                                <p className="text-sm font-medium text-psi-dark">Leitura do QR Code</p>
-                                                <p className="text-xs text-psi-dark/60">
-                                                    {scanFeedback || "Aponte a câmera para o QR Code. Chegue mais perto e mantenha o celular firme."}
-                                                </p>
-                                            </div>
-                                            <div
-                                                id={scannerId}
-                                                ref={scannerContainerRef}
-                                                className="w-full min-h-[400px]
-                                                    sm:min-h-[400px]"
-                                            />
-                                        </div>
-                                    )}
-
-                                    {selectedEventId && (
-                                        <>
-                                            <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
-                                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-                                                    <h2 className="text-lg font-medium text-psi-dark">Lista de Compradores</h2>
-                                                    <div className="relative w-full sm:w-64">
-                                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-psi-dark/40" />
-                                                        <Input
-                                                            placeholder="Buscar comprador..."
-                                                            value={searchQuery}
-                                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                                            className="pl-10"
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                {isLoadingBuyers ? (
-                                                    <div className="space-y-2">
-                                                        <Skeleton className="h-12 w-full" />
-                                                        <Skeleton className="h-12 w-full" />
-                                                        <Skeleton className="h-12 w-full" />
-                                                    </div>
-                                                ) : expandedBuyers.length === 0 ? (
-                                                    <p className="text-sm text-psi-dark/60 text-center py-8">Nenhum comprador encontrado</p>
-                                                ) : (
-                                                    <div className="overflow-x-auto">
-                                                        <Table>
-                                                            <TableHeader>
-                                                                <TableRow>
-                                                                    <TableHead>Status</TableHead>
-                                                                    <TableHead>Nome</TableHead>
-                                                                    <TableHead>Tipo de Ingresso</TableHead>
-                                                                    <TableHead>Data do Evento</TableHead>
-                                                                    <TableHead>Data do Pagamento</TableHead>
-                                                                    <TableHead>Respostas do Formulário</TableHead>
-                                                                    <TableHead className="text-right">Ações</TableHead>
-                                                                </TableRow>
-                                                            </TableHeader>
-                                                            <TableBody>
-                                                                {expandedBuyers.map((buyer: TExpandedBuyer, index: number) => {
-                                                                    const isValidated = validatedTickets.has(buyer.uniqueKey) || buyer.eventDateStatus === "USED" || !!buyer.eventDateUsedAt
-                                                                    const isCancelled = buyer.status === "CANCELLED" || buyer.eventDateStatus === "CANCELLED"
-                                                                    const validationInfo = buyer.eventDateValidationInfo
-                                                                    const validatedAt = buyer.eventDateUsedAt || validationInfo?.validatedAt
-                                                                    const validatedByOrganizer = validationInfo?.validatedByOrganizer
-                                                                    const validatedByText = validatedByOrganizer
-                                                                        ? "Organizador"
-                                                                        : validationInfo?.name
-                                                                            ? validationInfo.name
-                                                                            : "Equipe"
-                                                                    const validatedWhenText = validatedAt ? DateUtils.formatDate(validatedAt, "DD/MM/YYYY HH:mm") : ""
-                                                                    const validatedLocationText = validationInfo?.location ? ` • ${validationInfo.location}` : ""
-                                                                    
-                                                                    return (
-                                                                        <TableRow key={`${buyer.uniqueKey}-${index}`}>
-                                                                            <TableCell>
-                                                                                <div className="space-y-1">
-                                                                                    {isCancelled ? (
-                                                                                        <Badge variant="destructive">
-                                                                                            <XCircle className="h-3 w-3 mr-1" />
-                                                                                            Cancelado
-                                                                                        </Badge>
-                                                                                    ) : isValidated ? (
-                                                                                        <Badge variant="default" className="bg-green-600">
-                                                                                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                                                                                            Validado
-                                                                                        </Badge>
-                                                                                    ) : (
-                                                                                        <Badge variant="outline">
-                                                                                            <XCircle className="h-3 w-3 mr-1" />
-                                                                                            Pendente
-                                                                                        </Badge>
-                                                                                    )}
-
-                                                                                    {(validationInfo || buyer.eventDateUsedAt) && !isCancelled && (
-                                                                                        <p className="text-[11px] text-psi-dark/60">
-                                                                                            {validatedByText}
-                                                                                            {validatedLocationText}
-                                                                                            {validatedWhenText ? ` • ${validatedWhenText}` : ""}
-                                                                                        </p>
-                                                                                    )}
-                                                                                </div>
-                                                                            </TableCell>
-                                                                            <TableCell className="font-medium">{buyer.customerName}</TableCell>
-                                                                            <TableCell>{buyer.ticketTypeName || "-"}</TableCell>
-                                                                            <TableCell>
-                                                                                {buyer.eventDate ? DateUtils.formatDate(buyer.eventDate, "DD/MM/YYYY") : "-"}
-                                                                            </TableCell>
-                                                                            <TableCell>
-                                                                                {buyer.paymentDate 
-                                                                                    ? DateUtils.formatDate(
-                                                                                        typeof buyer.paymentDate === "string" 
-                                                                                            ? buyer.paymentDate 
-                                                                                            : buyer.paymentDate.toISOString(), 
-                                                                                        "DD/MM/YYYY HH:mm"
-                                                                                    )
-                                                                                    : "-"
-                                                                                }
-                                                                            </TableCell>
-                                                                            <TableCell className="max-w-xs">
-                                                                                <div className="text-xs text-psi-dark/70 wrap-break-word">
-                                                                                    {formatFormAnswers(buyer.formAnswers || {})}
-                                                                                </div>
-                                                                            </TableCell>
-                                                                            <TableCell className="text-right">
-                                                                                <DropdownMenu>
-                                                                                    <DropdownMenuTrigger asChild>
-                                                                                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                                                                            <MoreVertical className="h-4 w-4" />
-                                                                                        </Button>
-                                                                                    </DropdownMenuTrigger>
-                                                                                    <DropdownMenuContent align="end">
-                                                                                        {!isValidated && !isCancelled && (
-                                                                                            <DropdownMenuItem
-                                                                                                onClick={() => handleOpenConfirmValidate(buyer)}
-                                                                                                disabled={isValidatingTicketById}
-                                                                                                className="cursor-pointer"
-                                                                                            >
-                                                                                                <Check className="h-4 w-4" />
-                                                                                                {isValidatingTicketById ? "Validando..." : "Validar"}
-                                                                                            </DropdownMenuItem>
-                                                                                        )}
-                                                                                        <DropdownMenuItem
-                                                                                            onClick={() => handleViewMoreInfo(buyer)}
-                                                                                            className="cursor-pointer"
-                                                                                        >
-                                                                                            <Info className="h-4 w-4" />
-                                                                                            Conferir mais informações
-                                                                                        </DropdownMenuItem>
-                                                                                    </DropdownMenuContent>
-                                                                                </DropdownMenu>
-                                                                            </TableCell>
-                                                                        </TableRow>
-                                                                    )
-                                                                })}
-                                                            </TableBody>
-                                                        </Table>
+                                            <div className="absolute inset-0 bg-linear-to-t from-psi-dark/60 via-psi-dark/20 to-transparent" />
+                                            <div className="absolute bottom-0 left-0 right-0 p-4">
+                                                <h3 className="text-lg font-semibold text-white mb-1 drop-shadow-lg">
+                                                    {selectedEvent.name}
+                                                </h3>
+                                                {selectedEvent.EventDates && selectedEvent.EventDates.length > 0 && (
+                                                    <div className="flex items-center gap-2 text-white/90 text-sm">
+                                                        <Calendar className="h-4 w-4" />
+                                                        <span className="drop-shadow">
+                                                            {selectedEvent.EventDates.length} {selectedEvent.EventDates.length === 1 ? "data" : "datas"}
+                                                        </span>
                                                     </div>
                                                 )}
                                             </div>
-                                        </>
-                                    )}
-
-                                    {!selectedEventId && (
-                                        <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
-                                            <div className="text-center py-12">
-                                                <Ticket className="h-12 w-12 text-psi-primary/40 mx-auto mb-4" />
-                                                <p className="text-sm text-psi-dark/60">Selecione um evento para começar a validar ingressos</p>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="rounded-xl bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-2">
+                                                <QrCode className="h-5 w-5 text-psi-primary" />
                                             </div>
+                                            <h2 className="text-lg font-semibold text-psi-dark">Selecionar Evento</h2>
+                                        </div>
+                                        {isLoadingEvents ? (
+                                            <Skeleton className="h-10 w-full" />
+                                        ) : (
+                                            <Select value={selectedEventId} onValueChange={setSelectedEventId}>
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Selecione um evento" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {events.map((event) => (
+                                                        <SelectItem key={event.id} value={event.id}>
+                                                            {event.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {!selectedEventId && (
+                                <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="rounded-xl bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-2">
+                                            <QrCode className="h-5 w-5 text-psi-primary" />
+                                        </div>
+                                        <h2 className="text-lg font-semibold text-psi-dark">Selecionar Evento</h2>
+                                    </div>
+                                    {isLoadingEvents ? (
+                                        <Skeleton className="h-10 w-full" />
+                                    ) : (
+                                        <Select value={selectedEventId} onValueChange={setSelectedEventId}>
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Selecione um evento" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {events.map((event) => (
+                                                    <SelectItem key={event.id} value={event.id}>
+                                                        {event.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {selectedEventId && (
+                                    <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
+                                        {isTodayEventDate ? (
+                                            <div className="mb-4 p-4 rounded-xl bg-linear-to-r from-green-50 to-emerald-50 border-2 border-green-400 shadow-sm">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="rounded-full bg-green-500 p-2">
+                                                        <CheckCircle2 className="h-5 w-5 text-white" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-green-900">Hoje é o dia do evento!</p>
+                                                        <p className="text-sm text-green-700">Você pode validar ingressos normalmente.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : selectedEvent && eventDates.length > 0 ? (
+                                            <div className="mb-4 p-4 rounded-xl bg-linear-to-r from-amber-50 to-orange-50 border-2 border-amber-400 shadow-sm">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="rounded-full bg-amber-500 p-2">
+                                                        <XCircle className="h-5 w-5 text-white" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-amber-900">Hoje não é o dia do evento</p>
+                                                        <p className="text-sm text-amber-700">Aguarde a data correta para validar ingressos.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : null}
+                                        <div className="flex items-center gap-3 mb-5">
+                                            <div className="rounded-lg bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-2">
+                                                <Ticket className="h-5 w-5 text-psi-primary" />
+                                            </div>
+                                            <h2 className="text-lg font-semibold text-psi-dark">Estatísticas de Validação</h2>
+                                        </div>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between p-4 rounded-xl bg-linear-to-br from-psi-primary/10 via-psi-primary/5 to-psi-primary/10 border border-psi-primary/20">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="rounded-lg bg-psi-primary/20 p-2">
+                                                        <Ticket className="h-5 w-5 text-psi-primary" />
+                                                    </div>
+                                                    <span className="text-sm font-medium text-psi-dark/80">Total de ingressos</span>
+                                                </div>
+                                                <span className="text-2xl font-bold text-psi-primary">{validationStats.total}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between p-4 rounded-xl bg-linear-to-br from-green-50 via-green-50/50 to-green-50 border border-green-200/50">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="rounded-lg bg-green-100 p-2">
+                                                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                                    </div>
+                                                    <span className="text-sm font-medium text-psi-dark/80">Validados</span>
+                                                </div>
+                                                <span className="text-2xl font-bold text-green-600">{validationStats.validated}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between p-4 rounded-xl bg-linear-to-br from-amber-50 via-amber-50/50 to-amber-50 border border-amber-200/50">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="rounded-lg bg-amber-100 p-2">
+                                                        <CircleMinus className="h-5 w-5 text-amber-600" />
+                                                    </div>
+                                                    <span className="text-sm font-medium text-psi-dark/80">Pendentes</span>
+                                                </div>
+                                                <span className="text-2xl font-bold text-amber-600">{validationStats.remaining}</span>
+                                            </div>
+                                            {validationStats.total > 0 && (
+                                                <div className="mt-4 pt-4 border-t border-psi-primary/10">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="text-xs font-medium text-psi-dark/60">Progresso de validação</span>
+                                                        <span className="text-xs font-semibold text-psi-primary">
+                                                            {Math.round((validationStats.validated / validationStats.total) * 100)}%
+                                                        </span>
+                                                    </div>
+                                                    <div className="w-full h-2 bg-psi-primary/10 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-linear-to-r from-green-500 to-green-600 rounded-full transition-all duration-500"
+                                                            style={{ width: `${(validationStats.validated / validationStats.total) * 100}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {eventDates.length > 0 && (
+                                    <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="rounded-xl bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-2">
+                                                <Calendar className="h-5 w-5 text-psi-primary" />
+                                            </div>
+                                            <h2 className="text-lg font-semibold text-psi-dark">Filtrar por Data</h2>
+                                        </div>
+                                        <Select value={selectedEventDateId} onValueChange={setSelectedEventDateId}>
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Selecione uma data" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="ALL">Todas as datas</SelectItem>
+                                                {eventDates.map((eventDate) => (
+                                                    <SelectItem key={eventDate.id} value={eventDate.id}>
+                                                        {eventDate.date ? formatEventDate(eventDate.date, "DD/MM/YYYY") : "Sem data"}
+                                                        {eventDate.hourStart && ` - ${formatEventTime(eventDate.hourStart, eventDate.hourEnd)}`}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
+
+                                {isScanning && (
+                                    <div
+                                        id="qr-scanner-container"
+                                        className="lg:col-span-2 rounded-xl border border-psi-primary/20 bg-white p-6"
+                                    >
+                                        <div className="mb-4">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <div className="rounded-lg bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-2">
+                                                    <Scan className="h-5 w-5 text-psi-primary animate-pulse" />
+                                                </div>
+                                                <p className="text-base font-semibold text-psi-dark">Leitura do QR Code</p>
+                                            </div>
+                                            <p className="text-sm text-psi-dark/70 ml-11">
+                                                {scanFeedback || "Aponte a câmera para o QR Code. Chegue mais perto e mantenha o celular firme."}
+                                            </p>
+                                        </div>
+                                        <div
+                                            id={scannerId}
+                                            ref={scannerContainerRef}
+                                            className="w-full min-h-[400px] sm:min-h-[400px] rounded-xl overflow-hidden border border-psi-primary/10"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            {scanLinks.length > 0 && (
+                                <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="rounded-xl bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-2">
+                                            <Link2 className="h-5 w-5 text-psi-primary" />
+                                        </div>
+                                        <h2 className="text-lg font-semibold text-psi-dark">Links de Escaneamento</h2>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {scanLinks.map((link) => {
+                                            const eventName = events.find((event) => event.id === link.eventId)?.name || "Evento"
+                                            const publicPath = `/qr-scanner-link?pubId=${link.code}`
+                                            const currentUsers = (link.TicketScanSessions?.length || 0)
+
+                                            return (
+                                                <div key={link.id} className="flex items-center justify-between p-3 rounded-lg border border-psi-primary/10">
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-xs font-medium text-psi-dark truncate">{eventName}</p>
+                                                        <button
+                                                            type="button"
+                                                            aria-label="Copiar link de escaneamento"
+                                                            className="text-sm font-medium underline cursor-pointer text-psi-dark/70 truncate text-left outline-none focus-visible:ring-2 focus-visible:ring-psi-primary transition select-text hover:underline w-full"
+                                                            style={{ background: "none", border: "none", padding: 0 }}
+                                                            onClick={() => {
+                                                                const url = `${process.env.NEXT_PUBLIC_FRONT_URL}${publicPath}`
+                                                                navigator.clipboard.writeText(url)
+                                                                Toast.success("Link de escaneamento copiado para a área de transferência")
+                                                            }}
+                                                        >
+                                                            {process.env.NEXT_PUBLIC_FRONT_URL}{publicPath}
+                                                        </button>
+                                                        <div className="flex items-center gap-4 mt-1">
+                                                            <span className="text-xs text-psi-dark/60 flex items-center gap-1">
+                                                                <Users className="h-3 w-3" />
+                                                                {currentUsers}/{link.maxUsers}
+                                                            </span>
+                                                            <span className="text-xs text-psi-dark/60">
+                                                                Expira em {DateUtils.formatDate(link.expiresAt, "DD/MM/YYYY HH:mm")}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                                    <MoreVertical className="h-4 w-4" />
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuItem
+                                                                    onClick={() => handleOpenManageSessions(link.id)}
+                                                                    className="cursor-pointer"
+                                                                >
+                                                                    <Users className="h-4 w-4" />
+                                                                    Ver conectados ({currentUsers})
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    onClick={() => handleOpenUpdatePassword(link.id)}
+                                                                    className="cursor-pointer"
+                                                                >
+                                                                    <QrCode className="h-4 w-4" />
+                                                                    Alterar senha
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    onClick={() => handleOpenUpdateExpAt(link.id, link.expiresAt)}
+                                                                    className="cursor-pointer"
+                                                                >
+                                                                    <Calendar className="h-4 w-4" />
+                                                                    Alterar expiração
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    onClick={() => setDeleteLinkDialog({ open: true, linkId: link.id })}
+                                                                    className="cursor-pointer text-destructive"
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                    Excluir link
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {selectedEventId && (
+                                <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className="rounded-xl bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-2">
+                                                <Search className="h-5 w-5 text-psi-primary" />
+                                            </div>
+                                            <h2 className="text-lg font-semibold text-psi-dark">Lista de Compradores</h2>
+                                        </div>
+                                        <div className="relative w-full sm:w-64">
+                                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-psi-dark/40" />
+                                            <Input
+                                                placeholder="Buscar comprador..."
+                                                value={searchQuery}
+                                                onChange={(e) => setSearchQuery(e.target.value)}
+                                                className="pl-10 border-psi-primary/20 focus:border-psi-primary/50"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {isLoadingBuyers ? (
+                                        <div className="space-y-2">
+                                            <Skeleton className="h-12 w-full" />
+                                            <Skeleton className="h-12 w-full" />
+                                            <Skeleton className="h-12 w-full" />
+                                        </div>
+                                    ) : expandedBuyers.length === 0 ? (
+                                        <div className="text-center py-12">
+                                            <div className="inline-flex rounded-xl bg-psi-primary/10 p-4 mb-4">
+                                                <Search className="h-8 w-8 text-psi-primary/60" />
+                                            </div>
+                                            <p className="text-sm font-medium text-psi-dark/70">Nenhum comprador encontrado</p>
+                                        </div>
+                                    ) : (
+                                        <div className="overflow-x-auto rounded-xl border border-psi-primary/10">
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow className="bg-psi-primary/5">
+                                                        <TableHead className="font-semibold text-psi-dark">Status</TableHead>
+                                                        <TableHead className="font-semibold text-psi-dark">Nome</TableHead>
+                                                        <TableHead className="font-semibold text-psi-dark">Tipo de Ingresso</TableHead>
+                                                        <TableHead className="font-semibold text-psi-dark">Data do Evento</TableHead>
+                                                        <TableHead className="font-semibold text-psi-dark">Data do Pagamento</TableHead>
+                                                        <TableHead className="font-semibold text-psi-dark">Respostas do Formulário</TableHead>
+                                                        <TableHead className="text-right font-semibold text-psi-dark">Ações</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {expandedBuyers.map((buyer: TExpandedBuyer, index: number) => {
+                                                        const isValidated = validatedTickets.has(buyer.uniqueKey) || buyer.eventDateStatus === "USED" || !!buyer.eventDateUsedAt
+                                                        const isCancelled = buyer.status === "CANCELLED" || buyer.eventDateStatus === "CANCELLED"
+                                                        const validationInfo = buyer.eventDateValidationInfo
+                                                        const validatedAt = buyer.eventDateUsedAt || validationInfo?.validatedAt
+                                                        const validatedByOrganizer = validationInfo?.validatedByOrganizer
+                                                        const validatedByText = validatedByOrganizer
+                                                            ? "Organizador"
+                                                            : validationInfo?.name
+                                                                ? validationInfo.name
+                                                                : "Equipe"
+                                                        const validatedWhenText = validatedAt ? DateUtils.formatDate(validatedAt, "DD/MM/YYYY HH:mm") : ""
+                                                        const validatedLocationText = validationInfo?.location ? ` • ${validationInfo.location}` : ""
+
+                                                        return (
+                                                            <TableRow key={`${buyer.uniqueKey}-${index}`} className="hover:bg-psi-primary/5 transition-colors">
+                                                                <TableCell>
+                                                                    <div className="space-y-1.5">
+                                                                        {isCancelled ? (
+                                                                            <Badge variant="destructive" className="font-medium">
+                                                                                <XCircle className="h-3.5 w-3.5 mr-1.5" />
+                                                                                Cancelado
+                                                                            </Badge>
+                                                                        ) : isValidated ? (
+                                                                            <Badge variant="default" className="bg-linear-to-r from-green-600 to-green-500 text-white font-medium shadow-sm">
+                                                                                <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+                                                                                Validado
+                                                                            </Badge>
+                                                                        ) : (
+                                                                            <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50 font-medium">
+                                                                                <CircleMinus className="h-3.5 w-3.5 mr-1.5" />
+                                                                                Pendente
+                                                                            </Badge>
+                                                                        )}
+
+                                                                        {(validationInfo || buyer.eventDateUsedAt) && !isCancelled && (
+                                                                            <p className="text-[11px] text-psi-dark/60 leading-tight">
+                                                                                {validatedByText}
+                                                                                {validatedLocationText}
+                                                                                {validatedWhenText ? ` • ${validatedWhenText}` : ""}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell className="font-semibold text-psi-dark">{buyer.customerName}</TableCell>
+                                                                <TableCell className="text-psi-dark/80">{buyer.ticketTypeName || "-"}</TableCell>
+                                                                <TableCell className="text-psi-dark/80">
+                                                                    {buyer.eventDate ? DateUtils.formatDate(buyer.eventDate, "DD/MM/YYYY") : "-"}
+                                                                </TableCell>
+                                                                <TableCell className="text-psi-dark/80">
+                                                                    {buyer.paymentDate
+                                                                        ? DateUtils.formatDate(
+                                                                            typeof buyer.paymentDate === "string"
+                                                                                ? buyer.paymentDate
+                                                                                : buyer.paymentDate.toISOString(),
+                                                                            "DD/MM/YYYY HH:mm"
+                                                                        )
+                                                                        : "-"
+                                                                    }
+                                                                </TableCell>
+                                                                <TableCell className="max-w-xs">
+                                                                    <div className="text-xs text-psi-dark/70 wrap-break-word leading-relaxed">
+                                                                        {formatFormAnswers(buyer.formAnswers || {})}
+                                                                    </div>
+                                                                </TableCell>
+                                                                <TableCell className="text-right">
+                                                                    <DropdownMenu>
+                                                                        <DropdownMenuTrigger asChild>
+                                                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                                                                <MoreVertical className="h-4 w-4" />
+                                                                            </Button>
+                                                                        </DropdownMenuTrigger>
+                                                                        <DropdownMenuContent align="end">
+                                                                            {!isValidated && !isCancelled && (
+                                                                                <DropdownMenuItem
+                                                                                    onClick={() => handleOpenConfirmValidate(buyer)}
+                                                                                    disabled={isValidatingTicketById}
+                                                                                    className="cursor-pointer"
+                                                                                >
+                                                                                    <Check className="h-4 w-4" />
+                                                                                    {isValidatingTicketById ? "Validando..." : "Validar"}
+                                                                                </DropdownMenuItem>
+                                                                            )}
+                                                                            <DropdownMenuItem
+                                                                                onClick={() => handleViewMoreInfo(buyer)}
+                                                                                className="cursor-pointer"
+                                                                            >
+                                                                                <Info className="h-4 w-4" />
+                                                                                Conferir mais informações
+                                                                            </DropdownMenuItem>
+                                                                        </DropdownMenuContent>
+                                                                    </DropdownMenu>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        )
+                                                    })}
+                                                </TableBody>
+                                            </Table>
                                         </div>
                                     )}
                                 </div>
-                            </div>
-                            </>
-                        )
-                    }
+                            )}
+                        </>
+                    )}
 
                     <Dialog open={createLinkDialogOpen} onOpenChange={setCreateLinkDialogOpen}>
                         <DialogContent>

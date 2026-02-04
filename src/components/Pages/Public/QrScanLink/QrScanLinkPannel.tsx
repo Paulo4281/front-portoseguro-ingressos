@@ -326,6 +326,11 @@ const QrScanLinkPannel = () => {
         
         await new Promise(resolve => setTimeout(resolve, 100))
         
+        const scannerContainer = document.getElementById("qr-scanner-container")
+        if (scannerContainer) {
+            scannerContainer.scrollIntoView({ behavior: "smooth", block: "center" })
+        }
+        
         if (!scannerContainerRef.current) {
             setIsScanning(false)
             setScanFeedback("")
@@ -337,24 +342,56 @@ const QrScanLinkPannel = () => {
             const scanner = new Html5Qrcode(scannerId)
             scannerRef.current = scanner
 
-            await scanner.start(
-                { facingMode: "environment" },
-                {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 }
-                },
-                (decodedText) => {
-                    handleScanSuccess(decodedText)
-                },
-                (errorMessage) => {
-                    const now = Date.now()
-                    if (now - lastScanFeedbackAtRef.current < 900) {
-                        return
+            const config = {
+                fps: 10,
+                ...(typeof window !== "undefined" && window.innerWidth > 1024
+                    ? {
+                        qrbox: { width: 400, height: 400 },
+                        videoConstraints: {
+                            width: { ideal: 1920 },
+                            height: { ideal: 1080 }
+                        }
                     }
-                    lastScanFeedbackAtRef.current = now
-                    setScanFeedback(getScanFeedbackMessage(errorMessage))
+                    : {
+                        qrbox: { width: 240, height: 260 }
+                    }
+                ),
+            }
+
+            const onScanSuccess = (decodedText: string) => {
+                handleScanSuccess(decodedText)
+            }
+
+            const onScanFailure = (errorMessage: string) => {
+                const now = Date.now()
+                if (now - lastScanFeedbackAtRef.current < 900) {
+                    return
                 }
-            )
+                lastScanFeedbackAtRef.current = now
+                setScanFeedback(getScanFeedbackMessage(errorMessage))
+            }
+
+            const startWithCamera = async (cameraConfig: { deviceId?: { exact: string }; facingMode?: { exact?: string; ideal?: string } }) => {
+                await scanner.start(cameraConfig, config, onScanSuccess, onScanFailure)
+            }
+
+            const isMobileDevice = typeof window !== "undefined" && window.innerWidth <= 1024
+            const cameras = isMobileDevice ? await Html5Qrcode.getCameras() : []
+            const backCamera = cameras.find(camera => /back|rear|traseira|environment/i.test(camera.label))
+            const fallbackCamera = cameras.length > 0 ? cameras[cameras.length - 1] : null
+
+            try {
+                if (backCamera) {
+                    await startWithCamera({ deviceId: { exact: backCamera.id } })
+                } else if (fallbackCamera) {
+                    await startWithCamera({ deviceId: { exact: fallbackCamera.id } })
+                } else {
+                    await startWithCamera({ facingMode: { exact: "environment" } })
+                }
+            } catch (startError) {
+                await startWithCamera({ facingMode: { ideal: "environment" } })
+            }
+
             setScanFeedback("Procurando QR Code...")
         } catch (error) {
             console.error("Erro ao iniciar scanner:", error)
@@ -727,7 +764,7 @@ const QrScanLinkPannel = () => {
                     {eventCacheData?.data && (
                         <div className="rounded-xl border border-psi-primary/20 bg-white p-6 mb-6">
                             <div className="rounded-xl overflow-hidden border border-psi-primary/20 bg-white">
-                                <div className="relative h-48 w-full overflow-hidden bg-linear-to-br from-psi-primary/10 to-psi-secondary/10">
+                                <div className="relative h-90 w-full overflow-hidden bg-linear-to-br from-psi-primary/10 to-psi-secondary/10">
                                     {eventCacheData.data.image ? (
                                         <img
                                             src={ImageUtils.getEventImageUrl(eventCacheData.data.image)}
@@ -759,31 +796,6 @@ const QrScanLinkPannel = () => {
                     )}
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {eventDates.length > 0 && (
-                            <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="rounded-xl bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-2">
-                                        <Calendar className="h-5 w-5 text-psi-primary" />
-                                    </div>
-                                    <h2 className="text-lg font-semibold text-psi-dark">Filtrar por Data</h2>
-                                </div>
-                                <Select value={selectedEventDateId} onValueChange={setSelectedEventDateId}>
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Selecione uma data" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="ALL">Todas as datas</SelectItem>
-                                        {eventDates.map((eventDate) => (
-                                            <SelectItem key={eventDate.id} value={eventDate.id}>
-                                                {eventDate.date ? formatEventDate(eventDate.date, "DD/MM/YYYY") : "Sem data"}
-                                                {eventDate.hourStart && ` - ${formatEventTime(eventDate.hourStart, eventDate.hourEnd)}`}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        )}
-
                         <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
                             {isTodayEventDate ? (
                                 <div className="mb-4 p-4 rounded-xl bg-linear-to-r from-green-50 to-emerald-50 border-2 border-green-400 shadow-sm">
@@ -863,8 +875,36 @@ const QrScanLinkPannel = () => {
                             </div>
                         </div>
 
+                        {eventDates.length > 0 && (
+                            <div className="rounded-xl border border-psi-primary/20 bg-white p-6">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="rounded-xl bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-2">
+                                        <Calendar className="h-5 w-5 text-psi-primary" />
+                                    </div>
+                                    <h2 className="text-lg font-semibold text-psi-dark">Filtrar por Data</h2>
+                                </div>
+                                <Select value={selectedEventDateId} onValueChange={setSelectedEventDateId}>
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Selecione uma data" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="ALL">Todas as datas</SelectItem>
+                                        {eventDates.map((eventDate) => (
+                                            <SelectItem key={eventDate.id} value={eventDate.id}>
+                                                {eventDate.date ? formatEventDate(eventDate.date, "DD/MM/YYYY") : "Sem data"}
+                                                {eventDate.hourStart && ` - ${formatEventTime(eventDate.hourStart, eventDate.hourEnd)}`}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+
                         {isScanning && (
-                            <div className="lg:col-span-2 rounded-xl border border-psi-primary/20 bg-white p-6">
+                            <div
+                                id="qr-scanner-container"
+                                className="lg:col-span-2 rounded-xl border border-psi-primary/20 bg-white p-6"
+                            >
                                 <div className="mb-4">
                                     <div className="flex items-center gap-3 mb-2">
                                         <div className="rounded-lg bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-2">
@@ -879,7 +919,7 @@ const QrScanLinkPannel = () => {
                                 <div
                                     id={scannerId}
                                     ref={scannerContainerRef}
-                                    className="w-full rounded-xl overflow-hidden border border-psi-primary/10"
+                                    className="w-full min-h-[400px] sm:min-h-[400px] rounded-xl overflow-hidden border border-psi-primary/10"
                                 />
                             </div>
                         )}
