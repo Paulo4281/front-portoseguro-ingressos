@@ -10,7 +10,7 @@ export const useWebpushCampaignLogFindByCampaignId = (campaignId?: string) => {
         error,
         refetch
     } = useQueryHook<TApiResponse<TWebpushCampaignLogListResponse>>({
-        queryKey: ["webpush-campaign-log", "find", campaignId],
+        queryKey: ["webpush-campaign-log", "find", campaignId || ""],
         queryFn: () => WebpushCampaignLogService.findByCampaignId(campaignId || ""),
         enabled: !!campaignId
     })

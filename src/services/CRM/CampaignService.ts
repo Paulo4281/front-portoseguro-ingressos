@@ -1,15 +1,13 @@
 import { API } from "@/api/api"
 import type { TApiResponse } from "@/types/TApiResponse"
 import type { TCampaign, TCampaignCreate, TCampaignListResponse } from "@/types/Campaign/TCampaign"
-import type {
-    TCampaignAdminBulkUpdateStatusPayload,
-    TCampaignAdminBulkUpdateStatusResponse,
-    TCampaignAdminListResponse,
-    TCampaignAdminSendNowResponse,
-    TCampaignAdminSendSingleResponse,
-    TCampaignAdminUpdateStatusPayload,
-    TCampaignAdminUpdateStatusResponse
-} from "@/types/Campaign/TCampaignAdmin"
+import type { TCampaignAdminListResponse } from "@/types/Campaign/TCampaignAdmin"
+import type { TCampaignAdminSendNowResponse } from "@/types/Campaign/TCampaignAdmin"
+import type { TCampaignAdminSendSingleResponse } from "@/types/Campaign/TCampaignAdmin"
+import type { TCampaignAdminUpdateStatusPayload } from "@/types/Campaign/TCampaignAdmin"
+import type { TCampaignAdminUpdateStatusResponse } from "@/types/Campaign/TCampaignAdmin"
+import type { TCampaignAdminBulkUpdateStatusPayload } from "@/types/Campaign/TCampaignAdmin"
+import type { TCampaignAdminBulkUpdateStatusResponse } from "@/types/Campaign/TCampaignAdmin"
 
 class CampaignServiceClass {
     async create(data: TCampaignCreate): Promise<TApiResponse<TCampaign>> {
@@ -48,9 +46,9 @@ class CampaignServiceClass {
             url: "/campaign/list/admin",
             params: {
                 offset: params.offset || 0,
-                userId: params.userId || undefined,
-                startDate: params.startDate || undefined,
-                endDate: params.endDate || undefined
+                userId: params.userId || "",
+                startDate: params.startDate || "",
+                endDate: params.endDate || ""
             }
         }))?.data
 

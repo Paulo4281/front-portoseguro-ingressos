@@ -14,7 +14,7 @@ export const useWebpushCampaignFind = ({ offset = 0 }: TUseWebpushCampaignFindPa
         error,
         refetch
     } = useQueryHook<TApiResponse<TWebpushCampaignListResponse>>({
-        queryKey: ["webpush-campaign", "find", offset],
+        queryKey: ["webpush-campaign", "find", offset.toString()],
         queryFn: () => WebpushCampaignService.findAll(offset)
     })
 

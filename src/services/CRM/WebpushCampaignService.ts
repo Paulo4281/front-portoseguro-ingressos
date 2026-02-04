@@ -1,15 +1,13 @@
 import { API } from "@/api/api"
 import type { TApiResponse } from "@/types/TApiResponse"
 import type { TWebpushCampaign, TWebpushCampaignCreate, TWebpushCampaignListResponse } from "@/types/Webpush/TWebpushCampaign"
-import type {
-    TWebpushCampaignAdminBulkUpdateStatusPayload,
-    TWebpushCampaignAdminBulkUpdateStatusResponse,
-    TWebpushCampaignAdminListResponse,
-    TWebpushCampaignAdminSendNowResponse,
-    TWebpushCampaignAdminSendSingleResponse,
-    TWebpushCampaignAdminUpdateStatusPayload,
-    TWebpushCampaignAdminUpdateStatusResponse
-} from "@/types/Webpush/TWebpushCampaignAdmin"
+import type { TWebpushCampaignAdminListResponse } from "@/types/Webpush/TWebpushCampaignAdmin"
+import type { TWebpushCampaignAdminSendNowResponse } from "@/types/Webpush/TWebpushCampaignAdmin"
+import type { TWebpushCampaignAdminSendSingleResponse } from "@/types/Webpush/TWebpushCampaignAdmin"
+import type { TWebpushCampaignAdminUpdateStatusPayload } from "@/types/Webpush/TWebpushCampaignAdmin"
+import type { TWebpushCampaignAdminUpdateStatusResponse } from "@/types/Webpush/TWebpushCampaignAdmin"
+import type { TWebpushCampaignAdminBulkUpdateStatusPayload } from "@/types/Webpush/TWebpushCampaignAdmin"
+import type { TWebpushCampaignAdminBulkUpdateStatusResponse } from "@/types/Webpush/TWebpushCampaignAdmin"
 
 class WebpushCampaignServiceClass {
     async create(data: TWebpushCampaignCreate): Promise<TApiResponse<TWebpushCampaign>> {
@@ -48,9 +46,9 @@ class WebpushCampaignServiceClass {
             url: "/webpushcampaign/list/admin",
             params: {
                 offset: params.offset || 0,
-                userId: params.userId || undefined,
-                startDate: params.startDate || undefined,
-                endDate: params.endDate || undefined
+                userId: params.userId || "",
+                startDate: params.startDate || "",
+                endDate: params.endDate || ""
             }
         }))?.data
 

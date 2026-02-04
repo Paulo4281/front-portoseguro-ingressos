@@ -1,5 +1,5 @@
 module.exports = {
-    siteUrl: process.env.NEXT_PUBLIC_FRONT_URL || 'http://localhost:3000',
+    siteUrl: process.env.NEXT_PUBLIC_ENV === "dev" ? 'http://localhost:3000' : "https://www.portoseguroingressos.com.br",
     generateRobotsTxt: true,
     generateIndexSitemap: false,
     sitemapSize: 50000,
