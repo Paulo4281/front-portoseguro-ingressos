@@ -29,7 +29,8 @@ type Prefixes =
     "/crm" |
     "/opinionpoll" |
     "/opinionpoll-comment" |
-    "/subscription"
+    "/subscription" |
+    "/resale"
 
 type TAPIParams = {
     prefix: Prefixes
