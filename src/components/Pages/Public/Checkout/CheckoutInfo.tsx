@@ -1443,8 +1443,8 @@ const CheckoutInfo = () => {
 
     return (
         <Background variant="light" className="min-h-screen">
-            <div className="container py-8 mt-[100px]
-            sm:py-12">
+            <div className={`container py-8
+            sm:py-12 ${ user && user.role === "SELLER" ? "mt-0" : "mt-[100px]" }`}>
                 <div className="max-w-5xl mx-auto">
                     <div className="mb-8">
                         <h1 className="text-3xl font-semibold text-psi-primary mb-2
@@ -1525,7 +1525,7 @@ const CheckoutInfo = () => {
                                     {isSellerCheckout ? (
                                         <div className="space-y-5">
                                             <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-4">
-                                                <p className="text-sm font-medium text-psi-dark mb-1">Modo revendedor ativo</p>
+                                                <p className="text-sm font-medium text-psi-dark mb-1">Selecione o cliente</p>
                                                 <p className="text-xs text-psi-dark/70">
                                                     Selecione um cliente do organizador ou cadastre um novo cliente para seguir com a compra.
                                                 </p>
@@ -2100,9 +2100,22 @@ const CheckoutInfo = () => {
                                             <MailCheck className="size-5 text-psi-primary shrink-0 mt-0.5" />
                                             <div className="space-y-1">
                                                 <p className="font-medium text-psi-dark">Importante</p>
-                                                <p className="text-sm text-psi-dark/70">
-                                                    Os ingressos serão enviados para o seu e-mail juntamente com o comprovante de pagamento após a confirmação.
-                                                </p>
+                                                {
+                                                    isSellerCheckout ? (
+                                                        <>
+                                                        <p className="text-sm text-psi-dark/70">
+                                                            Os ingressos serão enviados para o cliente através do e-mail informado.
+                                                        </p>
+                                                        </>
+                                                    )
+                                                    : (
+                                                        <>
+                                                        <p className="text-sm text-psi-dark/70">
+                                                            Os ingressos serão enviados para o seu e-mail juntamente com o comprovante de pagamento após a confirmação.
+                                                        </p>
+                                                        </>
+                                                    )
+                                                }
                                             </div>
                                         </div>
                                     </div>

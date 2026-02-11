@@ -230,6 +230,46 @@ type TPaymentStatusResponse = {
     status: typeof PaymentGatewayBillingStatuses[number]
 }
 
+/** Item da lista "Minhas vendas" do revendedor (GET /payment/my-sales) */
+export type TPaymentMySalesItem = {
+    id: string
+    code: string
+    method: typeof PaymentMethods[number]
+    status: string
+    totalPaidByCustomer: number | null
+    sellerCommissionRate: number | null
+    sellerCommissionValue: number | null
+    paidAt: string | null
+    createdAt: string
+    customer: {
+        id: string
+        firstName: string
+        lastName: string
+        email: string
+    } | null
+    event: {
+        id: string
+        name: string
+        image: string
+    } | null
+    tickets: Array<{
+        id: string
+        code: string
+        price: number
+        status: string
+        ticketType: {
+            id: string
+            name: string
+        } | null
+        dates: Array<{
+            id: string
+            date: string | null
+            hourStart: string | null
+            hourEnd: string | null
+        }>
+    }>
+}
+
 export type {
     TPaymentGatewayGetPIXQrCodeResponse,
     TPaymentStatusResponse,
@@ -239,4 +279,5 @@ export type {
     TPaymentRefundParams,
     TPaymentReleaseBalanceParams,
     TPaymentReleaseBalanceResponse,
+    TPaymentMySalesItem,
 }

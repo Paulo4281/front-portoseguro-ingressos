@@ -1,7 +1,7 @@
 import { API } from "@/api/api"
 import { AxiosResponse } from "axios"
 import type { TApiResponse } from "@/types/TApiResponse"
-import type { TPaymentAdminListResponse, TPaymentRefundParams, TPaymentReleaseBalanceParams } from "@/types/Payment/TPayment"
+import type { TPaymentAdminListResponse, TPaymentRefundParams, TPaymentReleaseBalanceParams, TPaymentMySalesItem } from "@/types/Payment/TPayment"
 
 type TListPaymentsParams = {
     offset?: number
@@ -58,6 +58,14 @@ class PaymentServiceClass {
             prefix: "/payment",
             url: "/release-balance",
             data: params
+        }))?.data
+        return response
+    }
+
+    async mySales(): Promise<AxiosResponse["data"]> {
+        const response = (await API.GET({
+            prefix: "/payment",
+            url: "/my-sales"
         }))?.data
         return response
     }

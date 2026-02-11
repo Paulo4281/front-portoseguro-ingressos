@@ -14,11 +14,18 @@ import { useAuthLogout } from "@/hooks/Auth/useAuthLogout"
 import { useUserUpdate } from "@/hooks/User/useUserUpdate"
 import { useBankFind } from "@/hooks/Organizer/useBankFind"
 import { useEventCache } from "@/hooks/Event/useEventCache"
+import { useSellerBalanceCurrent } from "@/hooks/Resale/useSellerBalanceCurrent"
+import { usePayoutList } from "@/hooks/Payout/usePayoutList"
+import { usePayoutWithdrawSeller } from "@/hooks/Payout/usePayoutWithdrawSeller"
+import { usePaymentMySales } from "@/hooks/Payment/usePaymentMySales"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
+import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { DialogPasswordConfirmation } from "@/components/Dialog/DialogPasswordConfirmation/DialogPasswordConfirmation"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ShoppingBag, UserCog, LogOut, ArrowLeft, ExternalLink, Loader2, CalendarDays, MapPin, Wallet, CreditCard, ChevronUp, ChevronDown, FileText, Eye, EyeOff, Info } from "lucide-react"
+import { ShoppingBag, UserCog, LogOut, ArrowLeft, ExternalLink, Loader2, CalendarDays, MapPin, Wallet, CreditCard, ChevronUp, ChevronDown, FileText, Eye, EyeOff, Info, ArrowUp, ArrowDown, Receipt } from "lucide-react"
 import Logo from "@/components/Logo/Logo"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 
@@ -58,12 +65,18 @@ const DashRevendedorPannel = () => {
     const { mutateAsync: updateUser, isPending: isUpdatingProfile } = useUserUpdate()
     const { data: banksData, isLoading: isLoadingBanks } = useBankFind()
     const { data: eventCacheData, isLoading: isLoadingEventCache, isFetching: isFetchingEventCache } = useEventCache()
+    const { data: sellerBalanceData, isLoading: sellerBalanceLoading, refetch: refetchSellerBalance } = useSellerBalanceCurrent()
+    const { data: payoutListData, isLoading: payoutListLoading, refetch: refetchPayoutList } = usePayoutList()
+    const { mutateAsync: withdrawSeller, isPending: isWithdrawing } = usePayoutWithdrawSeller()
+    const { data: mySalesData, isLoading: mySalesLoading } = usePaymentMySales()
 
-    const [activeView, setActiveView] = useState<"home" | "profile" | "wallet">("home")
+    const [activeView, setActiveView] = useState<"home" | "profile" | "wallet" | "sales">("home")
     const [saleSheetOpen, setSaleSheetOpen] = useState(false)
     const [selectedEventSlug, setSelectedEventSlug] = useState("")
     const [openSections, setOpenSections] = useState({ bankAccount: false, pix: false })
     const [isBalanceVisible, setIsBalanceVisible] = useState(false)
+    const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false)
+    const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
 
     const sellerActive = user?.sellerActive ?? false
     const sellerCommissionRate = user?.sellerCommissionRate ?? 0
@@ -138,6 +151,21 @@ const DashRevendedorPannel = () => {
     const events = useMemo(() => eventCacheData?.data ?? [], [eventCacheData])
     const selectedEvent = useMemo(() => events.find((event) => event.slug === selectedEventSlug) || null, [events, selectedEventSlug])
     const eventUrl = selectedEvent ? `/ver-evento/${selectedEvent.slug}?seller=true` : ""
+
+    const sellerBalance = useMemo(() => sellerBalanceData?.data?.currentValue ?? 0, [sellerBalanceData])
+    const sellerBalanceList = useMemo(() => sellerBalanceData?.data?.list ?? [], [sellerBalanceData])
+    const payoutList = useMemo(() => payoutListData?.data ?? [], [payoutListData])
+    const mySales = useMemo(() => mySalesData?.data ?? [], [mySalesData])
+
+    const getAccountTypeLabel = (type: string | null) => {
+        if (type === "CONTA_CORRENTE") return "Conta Corrente"
+        if (type === "CONTA_POUPANCA") return "Conta Poupança"
+        return type || "—"
+    }
+    const getPixTypeLabel = (type: string | null) => {
+        const labels: Record<string, string> = { CPF: "CPF", CNPJ: "CNPJ", EMAIL: "E-mail", PHONE: "Telefone", EVP: "Chave Aleatória" }
+        return labels[type || ""] || type || "—"
+    }
 
     const handleProfileField = <K extends keyof TProfileForm>(field: K, value: TProfileForm[K]) => {
         setProfileForm((prev) => ({ ...prev, [field]: value }))
@@ -245,9 +273,25 @@ const DashRevendedorPannel = () => {
             <div className="container px-4 sm:px-6">
                 <div className="mb-[30px] flex items-center justify-center gap-2">
                     <Logo className="h-12 w-auto sm:h-14" variant="primary" />
-                    <span className="ms-2 text-[0.85rem] xs:text-[1.12rem] sm:text-2xl font-extrabold tracking-tight text-psi-primary">
-                        Porto Seguro Ingressos
-                    </span>
+                    <span className="
+                            ms-2 text-[0.85rem]
+                            xs:text-[1.12rem]
+                            sm:text-2xl
+                            font-extrabold
+                            tracking-tight
+                            text-psi-primary
+                            transition-colors duration-300
+                            group-hover:text-psi-dark">
+                            <span className="bg-linear-to-r from-psi-primary via-psi-secondary to-psi-tertiary bg-clip-text text-transparent">
+                                Porto
+                            </span>{" "}
+                            <span className="bg-linear-to-r from-psi-tertiary via-psi-secondary to-psi-primary bg-clip-text text-transparent">
+                                Seguro
+                            </span>{" "}
+                            <span className="inline-block font-semibold text-psi-dark">
+                                Ingressos
+                            </span>
+                        </span>
                 </div>
                 <hr />
 
@@ -290,14 +334,14 @@ const DashRevendedorPannel = () => {
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <button
                                     type="button"
-                                    onClick={() => setActiveView("profile")}
-                                    className="rounded-2xl border border-[#E4E6F0] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:shadow-md hover:border-psi-primary/30 hover:bg-psi-primary/5"
+                                    onClick={() => setActiveView("sales")}
+                                    className="rounded-2xl border border-[#E4E6F0] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:shadow-md hover:border-psi-primary/30 hover:bg-psi-primary/5 w-full"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-psi-primary/10 text-psi-primary"><UserCog className="h-5 w-5" /></div>
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-psi-primary/10 text-psi-primary"><Receipt className="h-5 w-5" /></div>
                                         <div>
-                                            <p className="font-medium text-psi-dark">Meu perfil</p>
-                                            <p className="text-xs text-psi-dark/60">Editar dados basicos</p>
+                                            <p className="font-medium text-psi-dark">Minhas vendas</p>
+                                            <p className="text-xs text-psi-dark/60">Vendas realizadas e comissoes</p>
                                         </div>
                                     </div>
                                 </button>
@@ -312,6 +356,20 @@ const DashRevendedorPannel = () => {
                                         <div>
                                             <p className="font-medium text-psi-dark">Carteira</p>
                                             <p className="text-xs text-psi-dark/60">Saldo e saques</p>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveView("profile")}
+                                    className="rounded-2xl border border-[#E4E6F0] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:shadow-md hover:border-psi-primary/30 hover:bg-psi-primary/5"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-psi-primary/10 text-psi-primary"><UserCog className="h-5 w-5" /></div>
+                                        <div>
+                                            <p className="font-medium text-psi-dark">Meu perfil</p>
+                                            <p className="text-xs text-psi-dark/60">Editar dados basicos</p>
                                         </div>
                                     </div>
                                 </button>
@@ -594,11 +652,11 @@ const DashRevendedorPannel = () => {
                             )}
                             <div className="text-end">
                                 <Button variant="primary" onClick={handleSaveProfile} disabled={isUpdatingProfile} className="w-full sm:w-auto">
-                                    {isUpdatingProfile ? "Salvando..." : "Salvar alteracoes"}
+                                    {isUpdatingProfile ? "Salvando..." : "Salvar alterações"}
                                 </Button>
                             </div>
                         </div>
-                    ) : (
+                    ) : activeView === "wallet" ? (
                         <div className="space-y-5">
                             <div className="flex items-start justify-between gap-2">
                                 <div className="space-y-2">
@@ -636,10 +694,14 @@ const DashRevendedorPannel = () => {
                                 <div className="text-start">
                                     <div className="text-xs text-psi-dark/60">Disponível</div>
                                     <div className="mt-1 text-4xl font-extrabold text-psi-primary">
-                                        {isBalanceVisible ? ValueUtils.centsToCurrency(0) : "••••••"}
+                                        {sellerBalanceLoading ? "—" : isBalanceVisible ? ValueUtils.centsToCurrency(sellerBalance) : "••••••"}
                                     </div>
                                     <hr className="my-4" />
-                                    <Button variant="primary" disabled>
+                                    <Button
+                                        variant="primary"
+                                        disabled={sellerBalanceLoading || sellerBalance <= 0 || !user?.sellerPayoutMethod}
+                                        onClick={() => setIsWithdrawDialogOpen(true)}
+                                    >
                                         Sacar
                                     </Button>
                                 </div>
@@ -650,64 +712,320 @@ const DashRevendedorPannel = () => {
                                     <h3 className="text-lg font-medium text-psi-dark">Histórico</h3>
                                     <p className="text-sm text-psi-dark/60">Últimas transações</p>
                                 </div>
-                                <p className="text-sm text-psi-dark/60">Nenhuma transação encontrada.</p>
+                                {payoutListLoading && sellerBalanceLoading ? (
+                                    <p className="text-sm text-psi-dark/60">Carregando histórico...</p>
+                                ) : payoutList.length === 0 && sellerBalanceList.length === 0 ? (
+                                    <p className="text-sm text-psi-dark/60">Nenhuma transação encontrada.</p>
+                                ) : (
+                                    <ul className="space-y-3">
+                                        {payoutList.map((item, idx) => {
+                                            const isPaid = item.status === "PAID"
+                                            const isFailed = item.status === "FAILED"
+                                            const isProcessing = item.status === "PROCESSING"
+                                            const colorClass = isFailed ? "text-red-600" : isPaid ? "text-red-600" : "text-amber-600"
+                                            const borderClass = isFailed ? "border-red-200 bg-red-50/50" : "border-[#F0F1F6] bg-white"
+                                            const formattedDate = DateUtils.formatDate(item.createdAt)
+                                            const formattedPaidDate = item.paidAt ? DateUtils.formatDate(item.paidAt) : null
+                                            return (
+                                                <li key={`p-${idx}`} className={`flex items-center justify-between p-3 rounded-lg border ${borderClass}`}>
+                                                    <div className="flex items-center gap-3 flex-1">
+                                                        <div className={`p-2 rounded-md ${isFailed ? "bg-red-100" : "bg-psi-primary/10"} ${colorClass}`}>
+                                                            <ArrowDown className="h-4 w-4" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="text-sm font-medium text-psi-dark">Saque</div>
+                                                                {isFailed && <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">Falhou</span>}
+                                                            </div>
+                                                            <div className="text-xs text-psi-dark/60">
+                                                                {formattedDate}
+                                                                {formattedPaidDate && ` • Pago em ${formattedPaidDate}`}
+                                                            </div>
+                                                            {isProcessing && <div className="text-xs text-amber-600 font-medium mt-1">Processando</div>}
+                                                            {isFailed && item.failReason && (
+                                                                <div className="mt-2 p-2 rounded-md bg-red-50 border border-red-100">
+                                                                    <p className="text-xs font-medium text-red-800 mb-1">Motivo da falha:</p>
+                                                                    <p className="text-xs text-red-700">{item.failReason}</p>
+                                                                </div>
+                                                            )}
+                                                            {item.transactionReceiptUrl && (
+                                                                <div className="mt-2">
+                                                                    <a href={item.transactionReceiptUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-psi-primary hover:text-psi-primary/80 font-medium">
+                                                                        Ver comprovante <ExternalLink className="h-3 w-3" />
+                                                                    </a>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className={`text-sm font-medium ${colorClass}`}>
+                                                            {isBalanceVisible ? `- ${ValueUtils.centsToCurrency(item.value)}` : "••••"}
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                            )
+                                        })}
+                                        {sellerBalanceList.map((item, idx) => (
+                                            <li key={`b-${idx}`} className="flex items-center justify-between p-3 rounded-lg border border-[#F0F1F6] bg-white">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 rounded-md bg-psi-primary/10 text-emerald-600"><ArrowUp className="h-4 w-4" /></div>
+                                                    <div>
+                                                        <div className="text-sm font-medium text-psi-dark">Liberado</div>
+                                                        <div className="text-xs text-psi-dark/60">{DateUtils.formatDate(item.createdAt)}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-sm font-medium text-emerald-600">{isBalanceVisible ? ValueUtils.centsToCurrency(item.value) : "••••"}</div>
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
                             </div>
                         </div>
-                    )}
+                    ) : activeView === "sales" ? (
+                        <div className="space-y-5 rounded-2xl border border-[#E4E6F0] bg-white p-5 shadow-sm sm:p-6">
+                            <div className="flex items-center justify-between gap-2">
+                                <div>
+                                    <h2 className="text-xl font-semibold text-psi-dark">Minhas vendas</h2>
+                                    <p className="text-sm text-psi-dark/60">Vendas realizadas e comissões</p>
+                                </div>
+                                <Button variant="outline" onClick={() => setActiveView("home")} size="sm"><ArrowLeft className="h-4 w-4" />Voltar</Button>
+                            </div>
+                            {mySalesLoading ? (
+                                <p className="text-sm text-psi-dark/60">Carregando vendas...</p>
+                            ) : mySales.length === 0 ? (
+                                <p className="text-sm text-psi-dark/60">Nenhuma venda encontrada.</p>
+                            ) : (
+                                <ul className="space-y-3">
+                                    {mySales.map((sale) => (
+                                        <li key={sale.id} className="rounded-xl border border-[#E4E6F0] bg-psi-dark/5 p-4">
+                                            <div className="flex flex-wrap items-start justify-between gap-2">
+                                                <div>
+                                                    <p className="font-medium text-psi-dark">{sale.event?.name ?? "Evento"}</p>
+                                                    <p className="text-xs text-psi-dark/60">Código: {sale.code}</p>
+                                                    {sale.customer && (
+                                                        <p className="text-xs text-psi-dark/60 mt-1">
+                                                            {sale.customer.firstName} {sale.customer.lastName} • {sale.customer.email}
+                                                        </p>
+                                                    )}
+                                                    <p className="text-xs text-psi-dark/60 mt-1">{DateUtils.formatDate(sale.createdAt)}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    {sale.totalPaidByCustomer != null && (
+                                                        <p className="text-sm text-psi-dark/70">Total: {ValueUtils.centsToCurrency(sale.totalPaidByCustomer)}</p>
+                                                    )}
+                                                    {sale.sellerCommissionValue != null && (
+                                                        <p className="text-sm font-medium text-emerald-600">Sua comissão: {ValueUtils.centsToCurrency(sale.sellerCommissionValue)}</p>
+                                                    )}
+                                                    {sale.sellerCommissionRate != null && (
+                                                        <p className="text-xs text-psi-dark/60">Taxa: {sale.sellerCommissionRate}%</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            {sale.tickets?.length > 0 && (
+                                                <div className="mt-3 pt-3 border-t border-psi-dark/10">
+                                                    <p className="text-xs font-medium text-psi-dark/70 mb-1">Ingressos</p>
+                                                    <ul className="space-y-1">
+                                                        {sale.tickets.map((t) => (
+                                                            <li key={t.id} className="text-xs text-psi-dark/60">
+                                                                {t.ticketType?.name ?? "Ingresso"} • {ValueUtils.centsToCurrency(t.price)} • {t.status}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    ) : null}
                 </div>
             </div>
 
-            <Sheet open={saleSheetOpen} onOpenChange={setSaleSheetOpen}>
-                <SheetContent side="right" className="w-[98vw] overflow-y-auto">
-                    <SheetHeader>
-                        <SheetTitle>Nova venda</SheetTitle>
-                        <SheetDescription>Selecione um evento do organizador para abrir o fluxo com `seller=true`.</SheetDescription>
-                    </SheetHeader>
+            <Dialog open={isWithdrawDialogOpen} onOpenChange={setIsWithdrawDialogOpen}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Solicitar Saque</DialogTitle>
+                        <DialogDescription>Confira as informações abaixo antes de confirmar o saque</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-6 mt-4">
+                        <div className="rounded-xl border border-[#E4E6F0] bg-[#F3F4FB] p-4">
+                            <div className="text-sm text-psi-dark/60 mb-1">Valor disponível para saque</div>
+                            <div className="text-3xl font-semibold text-psi-primary">{ValueUtils.centsToCurrency(sellerBalance)}</div>
+                        </div>
+                        {user?.sellerPayoutMethod === "BANK_ACCOUNT" && (
+                            <div className="space-y-4">
+                                <div className="rounded-xl border border-[#E4E6F0] bg-white p-4 space-y-3">
+                                    <h3 className="text-lg font-medium text-psi-dark">Conta Bancária</h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <div className="text-xs text-psi-dark/60 mb-1">Banco</div>
+                                            <div className="text-sm font-medium text-psi-dark">{banks.find((b) => b.id === user?.sellerBankId)?.name ?? "—"}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-psi-dark/60 mb-1">Tipo de Conta</div>
+                                            <div className="text-sm font-medium text-psi-dark">{getAccountTypeLabel(user?.sellerBankAccountType ?? null)}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-psi-dark/60 mb-1">Agência</div>
+                                            <div className="text-sm font-medium text-psi-dark">{user?.sellerBankAccountAgency ?? "—"}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-psi-dark/60 mb-1">Conta</div>
+                                            <div className="text-sm font-medium text-psi-dark">{user?.sellerBankAccountNumber ? `${user.sellerBankAccountNumber}-${user.sellerBankAccountDigit ?? ""}` : "—"}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-psi-dark/60 mb-1">Nome da Conta</div>
+                                            <div className="text-sm font-medium text-psi-dark">{user?.sellerBankAccountName ?? "—"}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-psi-dark/60 mb-1">Titular</div>
+                                            <div className="text-sm font-medium text-psi-dark">{user?.sellerBankAccountOwnerName ?? "—"}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                                    <div className="flex items-start gap-3">
+                                        <Info className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-medium text-amber-900 mb-1">Taxa e Prazo</p>
+                                            <p className="text-sm text-amber-700">A taxa para transferência bancária é de <strong>R$ 5,00</strong> e o valor leva até <strong>3 dias úteis</strong> para cair na conta.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {user?.sellerPayoutMethod === "PIX" && (
+                            <div className="space-y-4">
+                                <div className="rounded-xl border border-[#E4E6F0] bg-white p-4 space-y-3">
+                                    <h3 className="text-lg font-medium text-psi-dark">Chave PIX</h3>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <div className="text-xs text-psi-dark/60 mb-1">Tipo de Chave</div>
+                                            <div className="text-sm font-medium text-psi-dark">{getPixTypeLabel(user?.sellerPixAddressType ?? null)}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-psi-dark/60 mb-1">Chave PIX</div>
+                                            <div className="text-sm font-medium text-psi-dark break-all">{user?.sellerPixAddressKey ?? "—"}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                                    <div className="flex items-start gap-3">
+                                        <Info className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-medium text-emerald-900 mb-1">Taxa e Prazo</p>
+                                            <p className="text-sm text-emerald-700">A taxa para transferência via PIX é de <strong>R$ 2,00</strong> e o pagamento é <strong>instantâneo</strong>.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {!user?.sellerPayoutMethod && (
+                            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                                <div className="flex items-start gap-3">
+                                    <Info className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                                    <p className="text-sm text-amber-700">Configure uma conta bancária ou chave PIX em Meu perfil para realizar saques.</p>
+                                </div>
+                            </div>
+                        )}
+                        <div className="flex items-center justify-end gap-3 pt-4">
+                            <Button variant="ghost" onClick={() => setIsWithdrawDialogOpen(false)} disabled={isWithdrawing}>Cancelar</Button>
+                            <Button
+                                variant="primary"
+                                disabled={!user?.sellerPayoutMethod || sellerBalance <= 0 || isWithdrawing}
+                                onClick={() => { setIsWithdrawDialogOpen(false); setIsPasswordDialogOpen(true) }}
+                            >
+                                Confirmar Saque
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
-                    <div className="space-y-4 px-4 pb-4">
+            <DialogPasswordConfirmation
+                open={isPasswordDialogOpen}
+                onOpenChange={setIsPasswordDialogOpen}
+                onConfirm={async () => {
+                    try {
+                        await withdrawSeller()
+                        Toast.success("Saque solicitado com sucesso!")
+                        setIsPasswordDialogOpen(false)
+                        refetchSellerBalance()
+                        refetchPayoutList()
+                    } catch {
+                        Toast.error("Erro ao solicitar saque")
+                    }
+                }}
+                title="Confirmação de Segurança"
+                description="Por motivos de segurança, digite sua senha para confirmar o saque."
+            />
+
+            <Sheet open={saleSheetOpen} onOpenChange={setSaleSheetOpen}>
+                <SheetContent side="right" className="flex w-screen lg:max-w-[98vw] flex-col p-0">
+                    <div className="shrink-0 border-b border-[#E4E6F0] bg-white px-4 py-3">
+                        <div className="flex flex-col items-start gap-2">
+                            <div>
+                                <h2 className="text-lg font-semibold text-psi-dark">Nova venda</h2>
+                                <p className="text-xs text-psi-dark/60">Selecione um evento para iniciar a venda</p>
+                            </div>
+                            {selectedEvent && (
+                                <Button asChild variant="outline" size="sm">
+                                    <Link href={eventUrl} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" />Abrir em nova aba</Link>
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
                         {(isLoadingEventCache || isFetchingEventCache) ? (
-                            <div className="flex items-center gap-2 rounded-xl border border-[#E4E6F0] bg-white p-4 text-sm text-psi-dark/70">
+                            <div className="flex items-center gap-2 p-4 text-sm text-psi-dark/70">
                                 <Loader2 className="h-4 w-4 animate-spin" />Carregando eventos do organizador...
                             </div>
                         ) : events.length === 0 ? (
-                            <div className="rounded-xl border border-[#E4E6F0] bg-white p-4 text-sm text-psi-dark/70">Nenhum evento disponivel para revenda no momento.</div>
+                            <div className="p-4 text-sm text-psi-dark/70">Nenhum evento disponivel para revenda no momento.</div>
                         ) : (
                             <>
-                                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                                    {events.map((event) => (
-                                        <button
-                                            key={event.id}
-                                            type="button"
-                                            onClick={() => setSelectedEventSlug(event.slug)}
-                                            className={`rounded-2xl border p-3 text-left transition-all ${selectedEventSlug === event.slug
-                                                ? "border-psi-primary bg-psi-primary/5"
-                                                : "border-[#E4E6F0] bg-white hover:border-psi-primary/40"}`}
-                                        >
-                                            <div className="flex gap-3">
-                                                <div className="h-16 w-24 overflow-hidden rounded-lg bg-psi-dark/5">
-                                                    <img src={ImageUtils.getEventImageUrl(event.image)} alt={event.name} className="h-full w-full object-cover" />
+                                <div className="shrink-0 overflow-x-auto border-b border-[#E4E6F0] bg-psi-dark/5 px-3 py-2">
+                                    <div className="flex gap-2">
+                                        {events.map((event) => (
+                                            <button
+                                                key={event.id}
+                                                type="button"
+                                                onClick={() => setSelectedEventSlug(event.slug)}
+                                                className={`flex shrink-0 items-center gap-2 rounded-xl border p-2 text-left transition-all ${selectedEventSlug === event.slug
+                                                    ? "border-psi-primary bg-white shadow-sm ring-1 ring-psi-primary/30"
+                                                    : "border-transparent bg-white/80 hover:border-psi-primary/40 hover:bg-white"}`}
+                                                title={event.name}
+                                            >
+                                                <div className="h-10 w-14 overflow-hidden rounded-lg bg-psi-dark/10">
+                                                    <img src={ImageUtils.getEventImageUrl(event.image)} alt="" className="h-full w-full object-cover" />
                                                 </div>
-                                                <div className="min-w-0 flex-1 space-y-1">
-                                                    <p className="truncate text-sm font-medium text-psi-dark">{event.name}</p>
-                                                    {event.location && <p className="flex items-center gap-1 text-xs text-psi-dark/60"><MapPin className="h-3 w-3" /><span className="truncate">{event.location}</span></p>}
-                                                    {event.EventDates?.[0]?.date && <p className="flex items-center gap-1 text-xs text-psi-dark/60"><CalendarDays className="h-3 w-3" />{new Date(event.EventDates[0].date).toLocaleDateString("pt-BR")}</p>}
+                                                <div className="min-w-0 max-w-[120px]">
+                                                    <p className="truncate text-xs font-medium text-psi-dark">{event.name}</p>
+                                                    {event.EventDates?.[0]?.date && (
+                                                        <p className="text-[10px] text-psi-dark/60">{new Date(event.EventDates[0].date).toLocaleDateString("pt-BR")}</p>
+                                                    )}
                                                 </div>
-                                            </div>
-                                        </button>
-                                    ))}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
 
-                                {selectedEvent && (
-                                    <div className="space-y-3 rounded-2xl border border-[#E4E6F0] bg-white p-3">
-                                        <div className="flex flex-wrap items-center justify-between gap-2">
-                                            <p className="text-sm font-medium text-psi-dark">Visualizando: {selectedEvent.name}</p>
-                                            <Button asChild variant="outline" size="sm">
-                                                <Link href={eventUrl} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" />Abrir em nova aba</Link>
-                                            </Button>
-                                        </div>
-                                        <div className="overflow-hidden rounded-xl border border-[#E4E6F0]">
-                                            <iframe key={eventUrl} src={eventUrl} className="h-[70vh] w-full" title={`Venda revendedor - ${selectedEvent.name}`} />
-                                        </div>
+                                {selectedEvent ? (
+                                    <div className="min-h-0 flex-1 overflow-hidden bg-[#F0F1F6] p-2">
+                                        <iframe
+                                            key={eventUrl}
+                                            src={eventUrl}
+                                            className="h-full w-full rounded-xl border border-[#E4E6F0] bg-white"
+                                            title={`Venda revendedor - ${selectedEvent.name}`}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-1 items-center justify-center p-8 text-center">
+                                        <p className="text-sm text-psi-dark/60">Selecione um evento acima para abrir o fluxo de venda.</p>
                                     </div>
                                 )}
                             </>
