@@ -55,6 +55,13 @@ const menuLinks: TMenuLink[] = [
         href: "/",
         label: "Home",
         icon: Home,
+        roles: ["ADMIN", "CUSTOMER", "NOT_DEFINED", "ORGANIZER"]
+    },
+    {
+        href: "/dash-revendedor",
+        label: "Painel do Revendedor",
+        icon: HandCoins,
+        roles: ["SELLER"]
     },
     {
         href: "/confirmar-social",

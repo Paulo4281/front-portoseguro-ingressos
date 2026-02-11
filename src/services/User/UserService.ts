@@ -182,6 +182,29 @@ class UserServiceClass {
         }))?.data
         return response
     }
+
+    async updateSellerPayoutConfig(data: {
+        sellerBankId?: string | null
+        sellerBankAccountName?: string | null
+        sellerBankAccountOwnerName?: string | null
+        sellerBankAccountOwnerBirth?: string | null
+        sellerBankAccountOwnerDocumentType?: "CPF" | "CNPJ" | null
+        sellerBankAccountOwnerDocument?: string | null
+        sellerBankAccountAgency?: string | null
+        sellerBankAccountNumber?: string | null
+        sellerBankAccountDigit?: string | null
+        sellerBankAccountType?: "CONTA_CORRENTE" | "CONTA_POUPANCA" | null
+        sellerPixAddressKey?: string | null
+        sellerPixAddressType?: "CPF" | "CNPJ" | "EMAIL" | "PHONE" | "EVP" | null
+        sellerPayoutMethod?: "PIX" | "BANK_ACCOUNT" | null
+    }): Promise<AxiosResponse["data"]> {
+        const response = (await API.PUT({
+            prefix: "/user",
+            url: "/seller-payout-config",
+            data
+        }))?.data
+        return response
+    }
 }
 
 export const UserService = new UserServiceClass()

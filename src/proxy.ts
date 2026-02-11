@@ -77,7 +77,7 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
                 await jwtVerify(authToken, SECRET)
             }
 
-            const sellerAllowedPaths = path.startsWith("/dash-revendedor") || path.startsWith("/ver-evento") || path.startsWith("/checkout")
+            const sellerAllowedPaths = path.startsWith("/dash-revendedor") || path.startsWith("/ver-evento") || path.startsWith("/checkout") || path.startsWith("/carteira")
             if (role === "SELLER" && !sellerAllowedPaths) {
                 const redirectUrl = request.nextUrl.clone()
                 redirectUrl.pathname = "/dash-revendedor"

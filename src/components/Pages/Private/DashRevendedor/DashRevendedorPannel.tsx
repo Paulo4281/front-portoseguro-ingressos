@@ -12,9 +12,13 @@ import { Toast } from "@/components/Toast/Toast"
 import { useAuthStore } from "@/stores/Auth/AuthStore"
 import { useAuthLogout } from "@/hooks/Auth/useAuthLogout"
 import { useUserUpdate } from "@/hooks/User/useUserUpdate"
+import { useBankFind } from "@/hooks/Organizer/useBankFind"
 import { useEventCache } from "@/hooks/Event/useEventCache"
+import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { ShoppingBag, UserCog, LogOut, ArrowLeft, ExternalLink, Loader2, CalendarDays, MapPin } from "lucide-react"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ShoppingBag, UserCog, LogOut, ArrowLeft, ExternalLink, Loader2, CalendarDays, MapPin, Wallet, CreditCard, ChevronUp, ChevronDown, FileText, Eye, EyeOff, Info } from "lucide-react"
 import Logo from "@/components/Logo/Logo"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 
@@ -31,16 +35,35 @@ type TProfileForm = {
     zipCode: string
 }
 
+type TPayoutForm = {
+    bankId: string
+    bankAccountType: "CONTA_CORRENTE" | "CONTA_POUPANCA" | null
+    bankAccountAgency: string
+    bankAccountNumber: string
+    bankAccountDigit: string
+    bankAccountName: string
+    bankAccountOwnerName: string
+    bankAccountOwnerBirth: string
+    bankAccountOwnerDocumentType: "CPF" | "CNPJ" | null
+    bankAccountOwnerDocument: string
+    pixAddressType: "CPF" | "CNPJ" | "EMAIL" | "PHONE" | "EVP" | null
+    pixAddressKey: string
+    payoutMethod: "PIX" | "BANK_ACCOUNT" | null
+}
+
 const DashRevendedorPannel = () => {
     const routerService = useRouter()
     const { user, removeUser, setUser } = useAuthStore()
     const { mutateAsync: logoutUser, isPending: isLoggingOut } = useAuthLogout()
     const { mutateAsync: updateUser, isPending: isUpdatingProfile } = useUserUpdate()
+    const { data: banksData, isLoading: isLoadingBanks } = useBankFind()
     const { data: eventCacheData, isLoading: isLoadingEventCache, isFetching: isFetchingEventCache } = useEventCache()
 
-    const [activeView, setActiveView] = useState<"home" | "profile">("home")
+    const [activeView, setActiveView] = useState<"home" | "profile" | "wallet">("home")
     const [saleSheetOpen, setSaleSheetOpen] = useState(false)
     const [selectedEventSlug, setSelectedEventSlug] = useState("")
+    const [openSections, setOpenSections] = useState({ bankAccount: false, pix: false })
+    const [isBalanceVisible, setIsBalanceVisible] = useState(false)
 
     const sellerActive = user?.sellerActive ?? false
     const sellerCommissionRate = user?.sellerCommissionRate ?? 0
@@ -58,6 +81,29 @@ const DashRevendedorPannel = () => {
         zipCode: user?.Address?.zipCode || ""
     })
 
+    const defaultPayoutForm: TPayoutForm = {
+        bankId: user?.sellerBankId || "",
+        bankAccountType: user?.sellerBankAccountType ?? null,
+        bankAccountAgency: user?.sellerBankAccountAgency || "",
+        bankAccountNumber: user?.sellerBankAccountNumber || "",
+        bankAccountDigit: user?.sellerBankAccountDigit || "",
+        bankAccountName: user?.sellerBankAccountName || "",
+        bankAccountOwnerName: user?.sellerBankAccountOwnerName || "",
+        bankAccountOwnerBirth: user?.sellerBankAccountOwnerBirth || "",
+        bankAccountOwnerDocumentType: user?.sellerBankAccountOwnerDocumentType ?? null,
+        bankAccountOwnerDocument: user?.sellerBankAccountOwnerDocument || "",
+        pixAddressType: user?.sellerPixAddressType ?? null,
+        pixAddressKey: user?.sellerPixAddressKey || "",
+        payoutMethod: user?.sellerPayoutMethod ?? null
+    }
+
+    const [payoutForm, setPayoutForm] = useState<TPayoutForm>(defaultPayoutForm)
+
+    const banks = useMemo(() => {
+        if (banksData?.data && Array.isArray(banksData.data)) return banksData.data
+        return []
+    }, [banksData])
+
     useEffect(() => {
         if (!user) return
         setProfileForm({
@@ -72,6 +118,21 @@ const DashRevendedorPannel = () => {
             state: user.Address?.state || "",
             zipCode: user.Address?.zipCode || ""
         })
+        setPayoutForm({
+            bankId: user.sellerBankId || "",
+            bankAccountType: user.sellerBankAccountType ?? null,
+            bankAccountAgency: user.sellerBankAccountAgency || "",
+            bankAccountNumber: user.sellerBankAccountNumber || "",
+            bankAccountDigit: user.sellerBankAccountDigit || "",
+            bankAccountName: user.sellerBankAccountName || "",
+            bankAccountOwnerName: user.sellerBankAccountOwnerName || "",
+            bankAccountOwnerBirth: user.sellerBankAccountOwnerBirth || "",
+            bankAccountOwnerDocumentType: user.sellerBankAccountOwnerDocumentType ?? null,
+            bankAccountOwnerDocument: user.sellerBankAccountOwnerDocument || "",
+            pixAddressType: user.sellerPixAddressType ?? null,
+            pixAddressKey: user.sellerPixAddressKey || "",
+            payoutMethod: user.sellerPayoutMethod ?? null
+        })
     }, [user])
 
     const events = useMemo(() => eventCacheData?.data ?? [], [eventCacheData])
@@ -81,6 +142,22 @@ const DashRevendedorPannel = () => {
     const handleProfileField = <K extends keyof TProfileForm>(field: K, value: TProfileForm[K]) => {
         setProfileForm((prev) => ({ ...prev, [field]: value }))
     }
+
+    const handlePayoutField = <K extends keyof TPayoutForm>(field: K, value: TPayoutForm[K]) => {
+        setPayoutForm((prev) => ({ ...prev, [field]: value }))
+        if (field === "bankAccountOwnerDocumentType" && !value) {
+            setPayoutForm((prev) => ({ ...prev, bankAccountOwnerDocument: "" }))
+        }
+    }
+
+    const hasBankAccount = Boolean(
+        payoutForm.bankId && payoutForm.bankAccountType && payoutForm.bankAccountAgency?.trim() &&
+        payoutForm.bankAccountNumber?.trim() && payoutForm.bankAccountDigit?.trim() &&
+        payoutForm.bankAccountName?.trim() && payoutForm.bankAccountOwnerName?.trim() &&
+        payoutForm.bankAccountOwnerBirth?.trim() && payoutForm.bankAccountOwnerDocumentType &&
+        payoutForm.bankAccountOwnerDocument?.replace(/\D/g, "").length >= 11
+    )
+    const hasPix = Boolean(payoutForm.pixAddressType && payoutForm.pixAddressKey?.trim())
 
     const handleLogout = async () => {
         try {
@@ -101,6 +178,27 @@ const DashRevendedorPannel = () => {
             Toast.error("Nome e sobrenome sao obrigatorios")
             return
         }
+        const hasAnyPayout = hasBankAccount || hasPix
+        if (hasAnyPayout) {
+            if (hasBankAccount) {
+                if (!payoutForm.bankId || !payoutForm.bankAccountType || !payoutForm.bankAccountAgency?.trim() ||
+                    !payoutForm.bankAccountNumber?.trim() || !payoutForm.bankAccountDigit?.trim() ||
+                    !payoutForm.bankAccountName?.trim() || !payoutForm.bankAccountOwnerName?.trim() ||
+                    !payoutForm.bankAccountOwnerBirth?.trim() || !payoutForm.bankAccountOwnerDocumentType ||
+                    !payoutForm.bankAccountOwnerDocument?.replace(/\D/g, "").length) {
+                    Toast.error("Se preencheu conta bancária, todos os campos marcados com * são obrigatórios.")
+                    return
+                }
+            }
+            if (hasPix && (!payoutForm.pixAddressType || !payoutForm.pixAddressKey?.trim())) {
+                Toast.error("Se preencheu chave PIX, tipo e chave são obrigatórios.")
+                return
+            }
+            if (hasBankAccount && hasPix && !payoutForm.payoutMethod) {
+                Toast.error("Selecione o método de pagamento preferido (PIX ou Conta Bancária).")
+                return
+            }
+        }
 
         try {
             const response = await updateUser({
@@ -114,7 +212,20 @@ const DashRevendedorPannel = () => {
                     city: profileForm.city || null,
                     state: profileForm.state || null,
                     zipCode: profileForm.zipCode || null
-                }
+                },
+                sellerBankId: payoutForm.bankId || null,
+                sellerBankAccountType: payoutForm.bankAccountType,
+                sellerBankAccountAgency: payoutForm.bankAccountAgency?.trim() || null,
+                sellerBankAccountNumber: payoutForm.bankAccountNumber?.trim() || null,
+                sellerBankAccountDigit: payoutForm.bankAccountDigit?.trim() || null,
+                sellerBankAccountName: payoutForm.bankAccountName?.trim() || null,
+                sellerBankAccountOwnerName: payoutForm.bankAccountOwnerName?.trim() || null,
+                sellerBankAccountOwnerBirth: payoutForm.bankAccountOwnerBirth?.trim() || null,
+                sellerBankAccountOwnerDocumentType: payoutForm.bankAccountOwnerDocumentType,
+                sellerBankAccountOwnerDocument: payoutForm.bankAccountOwnerDocument?.replace(/\D/g, "") || null,
+                sellerPixAddressType: payoutForm.pixAddressType,
+                sellerPixAddressKey: payoutForm.pixAddressKey?.trim() || null,
+                sellerPayoutMethod: hasBankAccount && hasPix ? payoutForm.payoutMethod : null
             } as any)
 
             if (response?.success && response.data) {
@@ -193,6 +304,20 @@ const DashRevendedorPannel = () => {
 
                                 <button
                                     type="button"
+                                    onClick={() => setActiveView("wallet")}
+                                    className="rounded-2xl border border-[#E4E6F0] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:shadow-md hover:border-psi-primary/30 hover:bg-psi-primary/5 w-full"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600"><Wallet className="h-5 w-5" /></div>
+                                        <div>
+                                            <p className="font-medium text-psi-dark">Carteira</p>
+                                            <p className="text-xs text-psi-dark/60">Saldo e saques</p>
+                                        </div>
+                                    </div>
+                                </button>
+
+                                <button
+                                    type="button"
                                     onClick={handleLogout}
                                     disabled={isLoggingOut}
                                     className="rounded-2xl border border-[#E4E6F0] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:shadow-md hover:border-red-200 hover:bg-red-50 disabled:opacity-70"
@@ -207,7 +332,7 @@ const DashRevendedorPannel = () => {
                                 </button>
                             </div>
                         </>
-                    ) : (
+                    ) : activeView === "profile" ? (
                         <div className="space-y-5 rounded-2xl border border-[#E4E6F0] bg-white p-5 shadow-sm sm:p-6">
                             <div className="flex items-center justify-between gap-2">
                                 <div>
@@ -246,9 +371,287 @@ const DashRevendedorPannel = () => {
                                 <InputMask placeholder="00000-000" mask="00000-000" value={profileForm.zipCode} onAccept={(value) => handleProfileField("zipCode", String(value))} />
                             </div>
 
-                            <Button variant="primary" onClick={handleSaveProfile} disabled={isUpdatingProfile} className="w-full sm:w-auto">
-                                {isUpdatingProfile ? "Salvando..." : "Salvar alteracoes"}
-                            </Button>
+                            <Collapsible
+                                open={openSections.bankAccount}
+                                onOpenChange={(open) => setOpenSections((prev) => ({ ...prev, bankAccount: open }))}
+                            >
+                                <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6 sm:p-8 shadow-sm">
+                                    <CollapsibleTrigger className="w-full">
+                                        <div className="flex items-center justify-between pb-4 border-b border-psi-dark/10">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
+                                                    <CreditCard className="h-5 w-5 text-psi-primary" />
+                                                </div>
+                                                <div className="text-start">
+                                                    <h2 className="text-lg font-medium text-psi-dark">Conta Bancária</h2>
+                                                    <p className="text-sm text-psi-dark/60">Opcional - Se preencher, todos os campos marcados com * são obrigatórios</p>
+                                                    <p className="text-xs text-psi-dark/50 mt-1">Taxa de transferência: R$ 5,00</p>
+                                                </div>
+                                            </div>
+                                            {openSections.bankAccount ? <ChevronUp className="h-5 w-5 text-psi-dark/60" /> : <ChevronDown className="h-5 w-5 text-psi-dark/60" />}
+                                        </div>
+                                    </CollapsibleTrigger>
+                                    <CollapsibleContent className="space-y-6 pt-6">
+                                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                            <div>
+                                                <label className="block text-sm font-medium text-psi-dark mb-2">Banco *</label>
+                                                <Select
+                                                    value={payoutForm.bankId || undefined}
+                                                    onValueChange={(value) => handlePayoutField("bankId", value || "")}
+                                                    disabled={isLoadingBanks}
+                                                >
+                                                    <SelectTrigger><SelectValue placeholder="Selecione o banco" /></SelectTrigger>
+                                                    <SelectContent>
+                                                        {banks.map((bank) => (
+                                                            <SelectItem key={bank.id} value={bank.id}>{bank.name} ({bank.code})</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-psi-dark mb-2">Tipo de conta *</label>
+                                                <Select
+                                                    value={payoutForm.bankAccountType ?? undefined}
+                                                    onValueChange={(value) => handlePayoutField("bankAccountType", value === "CONTA_CORRENTE" || value === "CONTA_POUPANCA" ? value : null)}
+                                                >
+                                                    <SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="CONTA_CORRENTE">Conta Corrente</SelectItem>
+                                                        <SelectItem value="CONTA_POUPANCA">Conta Poupança</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-psi-dark mb-2">Agência *</label>
+                                                <Input
+                                                    value={payoutForm.bankAccountAgency}
+                                                    onChange={(e) => handlePayoutField("bankAccountAgency", e.target.value)}
+                                                    placeholder="Número da agência"
+                                                    inputMode="numeric"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                            <div>
+                                                <label className="block text-sm font-medium text-psi-dark mb-2">Número da conta *</label>
+                                                <Input
+                                                    value={payoutForm.bankAccountNumber}
+                                                    onChange={(e) => handlePayoutField("bankAccountNumber", e.target.value)}
+                                                    placeholder="Número da conta"
+                                                    inputMode="numeric"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-psi-dark mb-2">Dígito verificador *</label>
+                                                <Input
+                                                    value={payoutForm.bankAccountDigit}
+                                                    onChange={(e) => handlePayoutField("bankAccountDigit", e.target.value)}
+                                                    placeholder="Dígito"
+                                                    maxLength={2}
+                                                    inputMode="numeric"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-psi-dark mb-2">Nome da conta *</label>
+                                                <Input
+                                                    value={payoutForm.bankAccountName}
+                                                    onChange={(e) => handlePayoutField("bankAccountName", e.target.value)}
+                                                    placeholder="Nome da conta"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="grid gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <label className="block text-sm font-medium text-psi-dark mb-2">Nome do titular *</label>
+                                                <Input
+                                                    value={payoutForm.bankAccountOwnerName}
+                                                    onChange={(e) => handlePayoutField("bankAccountOwnerName", e.target.value)}
+                                                    placeholder="Nome completo do titular"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-psi-dark mb-2">Data de nascimento do titular *</label>
+                                                <InputMask
+                                                    value={payoutForm.bankAccountOwnerBirth}
+                                                    onAccept={(value) => handlePayoutField("bankAccountOwnerBirth", String(value))}
+                                                    mask="00/00/0000"
+                                                    placeholder="DD/MM/AAAA"
+                                                    icon={FileText}
+                                                    inputMode="numeric"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                            <div>
+                                                <label className="block text-sm font-medium text-psi-dark mb-2">Tipo de documento *</label>
+                                                <Select
+                                                    value={payoutForm.bankAccountOwnerDocumentType ?? undefined}
+                                                    onValueChange={(value) => handlePayoutField("bankAccountOwnerDocumentType", value === "CPF" || value === "CNPJ" ? value : null)}
+                                                >
+                                                    <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="CPF">CPF</SelectItem>
+                                                        <SelectItem value="CNPJ">CNPJ</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="lg:col-span-2">
+                                                <label className="block text-sm font-medium text-psi-dark mb-2">CPF/CNPJ do titular *</label>
+                                                <InputMask
+                                                    value={payoutForm.bankAccountOwnerDocument}
+                                                    onAccept={(value) => handlePayoutField("bankAccountOwnerDocument", String(value))}
+                                                    mask={payoutForm.bankAccountOwnerDocumentType === "CPF" ? "000.000.000-00" : "00.000.000/0000-00"}
+                                                    placeholder={payoutForm.bankAccountOwnerDocumentType === "CPF" ? "000.000.000-00" : "00.000.000/0000-00"}
+                                                    icon={FileText}
+                                                    disabled={!payoutForm.bankAccountOwnerDocumentType}
+                                                    inputMode="numeric"
+                                                />
+                                            </div>
+                                        </div>
+                                    </CollapsibleContent>
+                                </div>
+                            </Collapsible>
+
+                            <Collapsible
+                                open={openSections.pix}
+                                onOpenChange={(open) => setOpenSections((prev) => ({ ...prev, pix: open }))}
+                            >
+                                <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6 sm:p-8 shadow-sm">
+                                    <CollapsibleTrigger className="w-full">
+                                        <div className="flex items-center justify-between pb-4 border-b border-psi-dark/10">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
+                                                    <Wallet className="h-5 w-5 text-psi-primary" />
+                                                </div>
+                                                <div className="text-start">
+                                                    <h2 className="text-lg font-medium text-psi-dark">Chave PIX</h2>
+                                                    <p className="text-sm text-psi-dark/60">Opcional - Se preencher, todos os campos marcados com * são obrigatórios</p>
+                                                    <p className="text-xs text-psi-dark/50 mt-1">Taxa de transferência: R$ 2,00</p>
+                                                </div>
+                                            </div>
+                                            {openSections.pix ? <ChevronUp className="h-5 w-5 text-psi-dark/60" /> : <ChevronDown className="h-5 w-5 text-psi-dark/60" />}
+                                        </div>
+                                    </CollapsibleTrigger>
+                                    <CollapsibleContent className="space-y-6 pt-6">
+                                        <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4">
+                                            <p className="text-sm text-amber-900">
+                                                <strong>Importante:</strong> É necessário preencher pelo menos uma conta bancária ou chave PIX para receber os pagamentos.
+                                            </p>
+                                        </div>
+                                        <div className="grid gap-4 sm:grid-cols-2">
+                                            <div>
+                                                <label className="block text-sm font-medium text-psi-dark mb-2">Tipo de chave PIX *</label>
+                                                <Select
+                                                    value={payoutForm.pixAddressType ?? undefined}
+                                                    onValueChange={(value) => handlePayoutField("pixAddressType", value === "CPF" || value === "CNPJ" || value === "EMAIL" || value === "PHONE" || value === "EVP" ? value : null)}
+                                                >
+                                                    <SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="CPF">CPF</SelectItem>
+                                                        <SelectItem value="CNPJ">CNPJ</SelectItem>
+                                                        <SelectItem value="EMAIL">E-mail</SelectItem>
+                                                        <SelectItem value="PHONE">Telefone</SelectItem>
+                                                        <SelectItem value="EVP">Chave aleatória</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-psi-dark mb-2">Chave PIX *</label>
+                                                <Input
+                                                    value={payoutForm.pixAddressKey}
+                                                    onChange={(e) => handlePayoutField("pixAddressKey", e.target.value)}
+                                                    placeholder="Digite a chave PIX"
+                                                />
+                                            </div>
+                                        </div>
+                                    </CollapsibleContent>
+                                </div>
+                            </Collapsible>
+
+                            {hasBankAccount && hasPix && (
+                                <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6 sm:p-8 shadow-sm">
+                                    <div className="space-y-4">
+                                        <h2 className="text-lg font-medium text-psi-dark">Método de Pagamento Preferido</h2>
+                                        <p className="text-sm text-psi-dark/60">
+                                            Você configurou tanto a conta bancária quanto a chave PIX. Selecione qual método você prefere usar para receber os repasses.
+                                        </p>
+                                        <div>
+                                            <label className="block text-sm font-medium text-psi-dark mb-2">Método de pagamento preferido *</label>
+                                            <Select
+                                                value={payoutForm.payoutMethod ?? undefined}
+                                                onValueChange={(value) => handlePayoutField("payoutMethod", value === "PIX" || value === "BANK_ACCOUNT" ? value : null)}
+                                            >
+                                                <SelectTrigger><SelectValue placeholder="Selecione o método preferido" /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="PIX">PIX</SelectItem>
+                                                    <SelectItem value="BANK_ACCOUNT">Conta Bancária</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <p className="text-xs text-psi-dark/50 mt-1">Selecione como você prefere receber os pagamentos quando ambos os métodos estiverem configurados</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            <div className="text-end">
+                                <Button variant="primary" onClick={handleSaveProfile} disabled={isUpdatingProfile} className="w-full sm:w-auto">
+                                    {isUpdatingProfile ? "Salvando..." : "Salvar alteracoes"}
+                                </Button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-5">
+                            <div className="flex items-start justify-between gap-2">
+                                <div className="space-y-2">
+                                    <h2 className="text-xl font-semibold text-psi-dark sm:text-2xl">Carteira</h2>
+                                    <p className="text-sm text-psi-dark/60">Saldo disponível para saque e movimentações</p>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setIsBalanceVisible(!isBalanceVisible)}
+                                        aria-label={isBalanceVisible ? "Ocultar saldo" : "Mostrar saldo"}
+                                    >
+                                        {isBalanceVisible ? <EyeOff className="h-5 w-5 text-psi-dark/60" /> : <Eye className="h-5 w-5 text-psi-dark/60" />}
+                                    </Button>
+                                    <Button variant="outline" onClick={() => setActiveView("home")} size="sm"><ArrowLeft className="h-4 w-4" />Voltar</Button>
+                                </div>
+                            </div>
+
+                            {!user?.sellerPayoutMethod && (
+                                <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4">
+                                    <div className="flex items-start gap-3">
+                                        <Info className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-medium text-amber-900 mb-1">Método de recebimento não configurado</p>
+                                            <p className="text-sm text-amber-800">
+                                                Para receber seus repasses, configure uma conta bancária ou chave PIX em <button type="button" onClick={() => setActiveView("profile")} className="font-semibold underline hover:no-underline">Meu perfil</button>.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6 sm:p-8 shadow-sm">
+                                <div className="text-start">
+                                    <div className="text-xs text-psi-dark/60">Disponível</div>
+                                    <div className="mt-1 text-4xl font-extrabold text-psi-primary">
+                                        {isBalanceVisible ? ValueUtils.centsToCurrency(0) : "••••••"}
+                                    </div>
+                                    <hr className="my-4" />
+                                    <Button variant="primary" disabled>
+                                        Sacar
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6 sm:p-8 shadow-sm">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-lg font-medium text-psi-dark">Histórico</h3>
+                                    <p className="text-sm text-psi-dark/60">Últimas transações</p>
+                                </div>
+                                <p className="text-sm text-psi-dark/60">Nenhuma transação encontrada.</p>
+                            </div>
                         </div>
                     )}
                 </div>

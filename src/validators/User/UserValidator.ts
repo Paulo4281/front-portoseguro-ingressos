@@ -122,7 +122,21 @@ const UserUpdateValidator = z.object({
         state: z.string().nullable().optional(),
         country: z.string().nullable().optional(),
         zipCode: z.string().nullable().optional()
-    }).optional()
+    }).optional(),
+    // Campos opcionais para revendedor (dados de recebimento) – enviados na mesma requisição
+    sellerBankId: z.string().nullable().optional(),
+    sellerBankAccountName: z.string().nullable().optional(),
+    sellerBankAccountOwnerName: z.string().nullable().optional(),
+    sellerBankAccountOwnerBirth: z.string().nullable().optional(),
+    sellerBankAccountOwnerDocumentType: z.enum(["CPF", "CNPJ"]).nullable().optional(),
+    sellerBankAccountOwnerDocument: z.string().nullable().optional(),
+    sellerBankAccountAgency: z.string().nullable().optional(),
+    sellerBankAccountNumber: z.string().nullable().optional(),
+    sellerBankAccountDigit: z.string().nullable().optional(),
+    sellerBankAccountType: z.enum(["CONTA_CORRENTE", "CONTA_POUPANCA"]).nullable().optional(),
+    sellerPixAddressKey: z.string().nullable().optional(),
+    sellerPixAddressType: z.enum(["CPF", "CNPJ", "EMAIL", "PHONE", "EVP"]).nullable().optional(),
+    sellerPayoutMethod: z.enum(["PIX", "BANK_ACCOUNT"]).nullable().optional()
 })
 
 const UserConfirmSocialValidator = z.object({
