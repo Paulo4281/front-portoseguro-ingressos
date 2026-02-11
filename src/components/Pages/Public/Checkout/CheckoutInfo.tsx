@@ -76,9 +76,11 @@ import {
     QrCode,
     Copy,
     RefreshCw,
-    AlertCircle
+    AlertCircle,
+    Download,
+    Link2
 } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { CTAButton } from "@/components/CTAButton/CTAButton"
 import { Toast } from "@/components/Toast/Toast"
@@ -106,6 +108,7 @@ import { getStates, getCitiesByState } from "@/utils/Helpers/IBGECitiesAndStates
 import { getCountries, getCountriesSync } from "@/utils/Helpers/Countries/Countries"
 import { SelectInstallment, calculateTotalWithInstallmentFee } from "@/components/SelectInstallment/SelectInstallment"
 import { useTicketBuy } from "@/hooks/Ticket/useTicketBuy"
+import { useTicketBuySeller } from "@/hooks/Ticket/useTicketBuySeller"
 import { CheckoutTimer } from "@/components/CheckoutTimer/CheckoutTimer"
 import { useTicketHoldCreate } from "@/hooks/TicketHold/useTicketHoldCreate"
 import { useTicketHoldUpdateQuantity } from "@/hooks/TicketHold/useTicketHoldUpdateQuantity"
@@ -117,6 +120,7 @@ import { Globe, Building2, Hash } from "lucide-react"
 import { PaymentService } from "@/services/Payment/PaymentService"
 import { useCardFindByUserId } from "@/hooks/Card/useCardFindByUserId"
 import type { TCard } from "@/types/Card/TCard"
+import { useOrganizerFindClients } from "@/hooks/Client/useOrganizerFindClients"
 
 type TPaymentMethod = "pix" | "credit"
 
@@ -130,9 +134,11 @@ export type THandleUpdateQuantityParams = {
 const CheckoutInfo = () => {
     const { items, updateQuantity, updateTicketTypeQuantity, addItem, removeItem, getTotal, clearCart } = useCart()
     const { user, isAuthenticated, setUser } = useAuthStore()
+    const searchParams = useSearchParams()
     const router = useRouter()
     const [currentStep, setCurrentStep] = useState(1)
     const [paymentMethod, setPaymentMethod] = useState<TPaymentMethod>("pix")
+    const isSellerCheckout = searchParams.get("seller") === "true" && user?.role === "SELLER"
 
     const { mutateAsync: updateTicketHold, isPending: isUpdatingTicketHold } = useTicketHoldUpdateQuantity()
 
@@ -189,7 +195,22 @@ const CheckoutInfo = () => {
     const { mutateAsync: confirmByCode, isPending: isConfirmingByCode } = useUserConfirmationConfirmByCode()
     const { mutateAsync: resendConfirmation, isPending: isResendingConfirmation } = useUserConfirmationResendConfirmation()
     const { mutateAsync: buyTicket, isPending: isBuyingTicket } = useTicketBuy()
+    const { mutateAsync: buyTicketSeller, isPending: isBuyingTicketSeller } = useTicketBuySeller()
     const { mutateAsync: updateUser, isPending: isUpdatingUser } = useUserUpdate()
+
+    const [sellerClientSearch, setSellerClientSearch] = useState("")
+    const { data: organizerClientsData, isLoading: isLoadingOrganizerClients } = useOrganizerFindClients({
+        offset: 0,
+        search: sellerClientSearch
+    })
+    const organizerClients = organizerClientsData?.data?.data ?? []
+    const [selectedOrganizerClientId, setSelectedOrganizerClientId] = useState("")
+    const [isNewOrganizerClient, setIsNewOrganizerClient] = useState(false)
+    const [newOrganizerClientFirstName, setNewOrganizerClientFirstName] = useState("")
+    const [newOrganizerClientLastName, setNewOrganizerClientLastName] = useState("")
+    const [newOrganizerClientEmail, setNewOrganizerClientEmail] = useState("")
+    const [newOrganizerClientDocument, setNewOrganizerClientDocument] = useState("")
+    const [newOrganizerClientPhone, setNewOrganizerClientPhone] = useState("")
 
     const [buyTicketResponse, setBuyTicketResponse] = useState<TTicketBuyResponse | null>(null)
     const [showCreditCardErrorDialog, setShowCreditCardErrorDialog] = useState(false)
@@ -759,6 +780,30 @@ const CheckoutInfo = () => {
 
     const handleNext = () => {
         if (currentStep === 1) {
+            if (isSellerCheckout) {
+                if (!isAuthenticated || user?.role !== "SELLER") {
+                    Toast.info("Faça login com uma conta de revendedor para continuar.")
+                    return
+                }
+
+                if (!isNewOrganizerClient && !selectedOrganizerClientId) {
+                    Toast.info("Selecione um cliente do organizador ou cadastre um novo cliente.")
+                    return
+                }
+
+                if (isNewOrganizerClient) {
+                    if (
+                        !newOrganizerClientFirstName.trim() ||
+                        !newOrganizerClientLastName.trim() ||
+                        !newOrganizerClientEmail.trim() ||
+                        !newOrganizerClientDocument.trim()
+                    ) {
+                        Toast.info("Preencha nome, sobrenome, e-mail e CPF do novo cliente.")
+                        return
+                    }
+                }
+            }
+
             if (!isAuthenticated) {
                 Toast.info("Por favor, faça login ou cadastre-se para continuar.")
                 return
@@ -776,6 +821,13 @@ const CheckoutInfo = () => {
 
             if (user.role === "CUSTOMER" && !user.isCompleteInfo) {
                 Toast.info("Por favor, complete seus dados antes de continuar.")
+                return
+            }
+
+            if (isSellerCheckout) {
+                if (currentStep < maxStep) {
+                    setCurrentStep(currentStep + 1)
+                }
                 return
             }
         }
@@ -1067,8 +1119,26 @@ const CheckoutInfo = () => {
 
         data["removeTicketHoldIds"] = ticketHoldData?.map((th) => th.id) || null
         data["isInsured"] = isInsured
+        if (isSellerCheckout && user?.id) {
+            data["sellerUserId"] = user.id
+            if (isNewOrganizerClient) {
+                data["organizerClient"] = {
+                    firstName: newOrganizerClientFirstName.trim(),
+                    lastName: newOrganizerClientLastName.trim(),
+                    email: newOrganizerClientEmail.trim().toLowerCase(),
+                    phone: newOrganizerClientPhone.trim(),
+                    document: newOrganizerClientDocument.trim()
+                }
+                data["organizerClientId"] = null
+            } else {
+                data["organizerClientId"] = selectedOrganizerClientId
+                data["organizerClient"] = null
+            }
+        }
 
-        const response = await buyTicket(data)
+        const response = isSellerCheckout
+            ? await buyTicketSeller(data)
+            : await buyTicket(data)
 
         if (response?.success && response?.data?.isCreditCardError) {
             setShowCreditCardErrorDialog(true)
@@ -1236,6 +1306,15 @@ const CheckoutInfo = () => {
         }
     }
 
+    const handleDownloadQrCode = () => {
+        if (!buyTicketResponse?.pixData?.encodedImage) return
+        const link = document.createElement("a")
+        link.href = `data:image/png;base64,${buyTicketResponse.pixData.encodedImage}`
+        link.download = "qrcode-pagamento.png"
+        link.click()
+        Toast.success("QR Code baixado com sucesso!")
+    }
+
     const handleCheckPayment = async () => {
         if (!buyTicketResponse?.paymentId) {
             Toast.error("ID do pagamento não encontrado. Tente finalizar a compra novamente.")
@@ -1387,7 +1466,7 @@ const CheckoutInfo = () => {
                     <div className="mb-8">
                         <div className="flex items-center justify-between">
                             {[
-                                { number: 1, label: "Dados do Comprador", icon: User },
+                                { number: 1, label: isSellerCheckout ? "Cliente" : "Dados do Comprador", icon: User },
                                 { number: 2, label: "Resumo", icon: Receipt },
                                 ...(hasForms ? [{ number: 3, label: "Formulário", icon: ClipboardList }] : []),
                                 { number: hasForms ? 4 : 3, label: "Finalização", icon: CheckCircle2 }
@@ -1439,9 +1518,100 @@ const CheckoutInfo = () => {
                             {currentStep === 1 && (
                                 <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
                                 sm:p-8 shadow-sm">
-                                    <h2 className="text-xl font-medium text-psi-dark mb-6">Dados do Comprador</h2>
+                                    <h2 className="text-xl font-medium text-psi-dark mb-6">
+                                        {isSellerCheckout ? "Cliente do Organizador" : "Dados do Comprador"}
+                                    </h2>
 
-                                    {isAuthenticated ? (
+                                    {isSellerCheckout ? (
+                                        <div className="space-y-5">
+                                            <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-4">
+                                                <p className="text-sm font-medium text-psi-dark mb-1">Modo revendedor ativo</p>
+                                                <p className="text-xs text-psi-dark/70">
+                                                    Selecione um cliente do organizador ou cadastre um novo cliente para seguir com a compra.
+                                                </p>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-psi-dark">Buscar cliente</label>
+                                                <Input
+                                                    value={sellerClientSearch}
+                                                    onChange={(e) => setSellerClientSearch(e.target.value)}
+                                                    placeholder="Digite nome, e-mail ou CPF"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <label className="text-sm font-medium text-psi-dark">Cliente do organizador</label>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            setIsNewOrganizerClient((prev) => !prev)
+                                                            setSelectedOrganizerClientId("")
+                                                        }}
+                                                    >
+                                                        {isNewOrganizerClient ? "Usar cliente existente" : "Novo cliente"}
+                                                    </Button>
+                                                </div>
+
+                                                {!isNewOrganizerClient ? (
+                                                    <Select value={selectedOrganizerClientId} onValueChange={setSelectedOrganizerClientId}>
+                                                        <SelectTrigger className="w-full">
+                                                            <SelectValue placeholder={isLoadingOrganizerClients ? "Carregando clientes..." : "Selecione o cliente"} />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {organizerClients.map((client) => (
+                                                                <SelectItem key={client.id} value={client.id}>
+                                                                    {client.firstName} {client.lastName} • {client.email}
+                                                                </SelectItem>
+                                                            ))}
+                                                            {organizerClients.length === 0 && (
+                                                                <SelectItem value="__no-clients" disabled>
+                                                                    Nenhum cliente encontrado
+                                                                </SelectItem>
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
+                                                ) : (
+                                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                        <Input
+                                                            value={newOrganizerClientFirstName}
+                                                            onChange={(e) => setNewOrganizerClientFirstName(e.target.value)}
+                                                            placeholder="Nome"
+                                                        />
+                                                        <Input
+                                                            value={newOrganizerClientLastName}
+                                                            onChange={(e) => setNewOrganizerClientLastName(e.target.value)}
+                                                            placeholder="Sobrenome"
+                                                        />
+                                                        <Input
+                                                            className="sm:col-span-2"
+                                                            type="email"
+                                                            value={newOrganizerClientEmail}
+                                                            onChange={(e) => setNewOrganizerClientEmail(e.target.value)}
+                                                            placeholder="E-mail"
+                                                        />
+                                                        <InputMask
+                                                            mask="000.000.000-00"
+                                                            value={newOrganizerClientDocument}
+                                                            onAccept={(value) => setNewOrganizerClientDocument(String(value))}
+                                                            placeholder="CPF"
+                                                            inputMode="numeric"
+                                                        />
+                                                        <InputMask
+                                                            mask="(00) 00000-0000"
+                                                            value={newOrganizerClientPhone}
+                                                            onAccept={(value) => setNewOrganizerClientPhone(String(value))}
+                                                            placeholder="Telefone"
+                                                            inputMode="tel"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : isAuthenticated ? (
                                         <div className="space-y-6">
                                             {user?.role === "CUSTOMER" ? (
                                                 user.isCompleteInfo ? (
@@ -2171,6 +2341,22 @@ const CheckoutInfo = () => {
                                                                     </div>
                                                                 </div>
                                                             </button>
+
+                                                            {isSellerCheckout && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => Toast.info("Envio de link de pagamento em desenvolvimento.")}
+                                                                    className="w-full p-4 rounded-xl border-2 transition-all text-left border-psi-dark/10 hover:border-psi-primary/30"
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="size-4 rounded-full border-2 border-psi-dark/30" />
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Link2 className="h-5 w-5 text-psi-primary" />
+                                                                            <span className="font-medium text-psi-dark">Enviar link de pagamento</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </button>
+                                                            )}
                                                         </div>
 
                                                         {paymentMethod === "credit" && (
@@ -2395,6 +2581,17 @@ const CheckoutInfo = () => {
                                                                             "
                                                                             onClick={handleCopyPayload}
                                                                         />
+                                                                        {isSellerCheckout && (
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="outline"
+                                                                                onClick={handleDownloadQrCode}
+                                                                                className="shrink-0"
+                                                                            >
+                                                                                <Download className="h-4 w-4" />
+                                                                                Baixar QrCode
+                                                                            </Button>
+                                                                        )}
                                                                     </div>
                                                                 </div>
 
@@ -2566,9 +2763,9 @@ const CheckoutInfo = () => {
                                                         variant="primary"
                                                         size="lg"
                                                         className=""
-                                                        disabled={isBuyingTicket}
+                                                        disabled={isBuyingTicket || isBuyingTicketSeller}
                                                     >
-                                                        {isBuyingTicket ? (
+                                                        {(isBuyingTicket || isBuyingTicketSeller) ? (
                                                             <LoadingButton />
                                                         ) : (
                                                             <>

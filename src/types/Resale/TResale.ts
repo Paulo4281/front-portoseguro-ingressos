@@ -13,6 +13,29 @@ type TResale = {
     updatedAt?: string | null
 }
 
+type TSellerListItem = {
+    id: string
+    firstName?: string | null
+    lastName?: string | null
+    email: string
+    phone?: string | null
+    sellerActive: boolean
+    sellerCommissionRate: number
+    createdAt: string
+    totalSales?: number
+    totalRevenue?: number
+}
+
+type TSellerInvitation = {
+    id: string
+    email: string
+    code: string
+    isUsed: boolean
+    usedAt?: string | null
+    createdAt: string
+    updatedAt?: string | null
+}
+
 /** Vendas de um revendedor por evento (para gráfico de eficiência) */
 type TResaleSalesByEvent = {
     eventId: string
@@ -26,11 +49,9 @@ type TResaleSalesByEvent = {
 
 type TResaleCreatePayload = {
     email: string
-    commissionRate: number
 }
 
 type TResaleUpdatePayload = {
-    email: string
     commissionRate: number
 }
 
@@ -48,8 +69,10 @@ type TResaleTopSeller = {
 }
 
 type TResaleFindData = {
-    resellers?: TResale[]
-    items?: TResale[]
+    resellers?: TResale[] | TSellerListItem[]
+    items?: TResale[] | TSellerListItem[] | TSellerInvitation[]
+    invites?: TSellerInvitation[]
+    invitations?: TSellerInvitation[]
     stats?: Partial<TResaleStats>
     topSellers?: TResaleTopSeller[]
     ranking?: TResaleTopSeller[]
@@ -61,7 +84,6 @@ type TResaleInvite = {
     id: string
     email: string
     status: TResaleInviteStatus
-    commissionRate?: number
     siid: string
     createdAt: string
 }
@@ -73,8 +95,25 @@ type TOrganizerInfo = {
     image: string | null
 }
 
+type TVerifyInviteOrganizerInfo = {
+    companyName: string | null
+    companyDocument: string | null
+    companyAddress: string | null
+    logo: string | null
+    description: string | null
+    instagramUrl: string | null
+    facebookUrl: string | null
+}
+
+type TVerifyInviteResponse = {
+    email: string
+    organizer: TVerifyInviteOrganizerInfo | null
+}
+
 export type {
     TResale,
+    TSellerListItem,
+    TSellerInvitation,
     TResaleSalesByEvent,
     TResaleCreatePayload,
     TResaleUpdatePayload,
@@ -83,5 +122,7 @@ export type {
     TResaleFindData,
     TResaleInvite,
     TResaleInviteStatus,
-    TOrganizerInfo
+    TOrganizerInfo,
+    TVerifyInviteOrganizerInfo,
+    TVerifyInviteResponse
 }

@@ -132,7 +132,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         })
         
         if (typeof window !== "undefined" && window.location.pathname !== "/checkout") {
-            router.push("/checkout")
+            const isSellerFlow = new URLSearchParams(window.location.search).get("seller") === "true"
+            router.push(isSellerFlow ? "/checkout?seller=true" : "/checkout")
         }
     }, [router])
 

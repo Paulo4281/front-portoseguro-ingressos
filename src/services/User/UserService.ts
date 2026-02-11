@@ -1,5 +1,7 @@
 import { API } from "@/api/api"
 import type { TUserCreate, TUserResetPasswordByCode, TUserResetPassword, TUserUpdate, TUserConfirmSocial } from "@/types/User/TUser"
+import type { TApiResponse } from "@/types/TApiResponse"
+import type { TSellerListItem } from "@/types/Resale/TResale"
 import type { AxiosResponse } from "axios"
 
 class UserServiceClass {
@@ -125,6 +127,58 @@ class UserServiceClass {
         const response = (await API.GET({
             prefix: "/user",
             url: `/organizer/get-support-info/${organizerId}`
+        }))?.data
+        return response
+    }
+
+    async createSeller(data: {
+        firstName: string
+        lastName: string
+        email: string
+        phone: string
+        document: string
+        password: string
+        invitationCode: string
+    }): Promise<TApiResponse> {
+        const response = (await API.POST({
+            prefix: "/user",
+            url: "/create-seller",
+            data
+        }))?.data
+        return response
+    }
+
+    async listSellers(): Promise<TApiResponse<TSellerListItem[]>> {
+        const response = (await API.GET({
+            prefix: "/user",
+            url: "/list-sellers"
+        }))?.data
+        return response
+    }
+
+    async toggleSellerActive(data: { sellerId: string; sellerActive: boolean }): Promise<TApiResponse> {
+        const response = (await API.PATCH({
+            prefix: "/user",
+            url: "/toggle-seller-active",
+            data
+        }))?.data
+        return response
+    }
+
+    async updateSeller(data: { sellerId: string; sellerCommissionRate: number }): Promise<TApiResponse> {
+        const response = (await API.PUT({
+            prefix: "/user",
+            url: "/update-seller",
+            data
+        }))?.data
+        return response
+    }
+
+    async deleteSeller(data: { sellerId: string }): Promise<TApiResponse> {
+        const response = (await API.PATCH({
+            prefix: "/user",
+            url: "/delete-seller",
+            data
         }))?.data
         return response
     }

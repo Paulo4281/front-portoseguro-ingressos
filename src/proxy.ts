@@ -12,7 +12,7 @@ type TPublicRoutes = {
 
 type TJwtDecoded = {
     id: string
-    role: "CUSTOMER" | "ORGANIZER" | "ADMIN" | "NOT_DEFINED"
+    role: "CUSTOMER" | "ORGANIZER" | "ADMIN" | "SELLER" | "NOT_DEFINED"
     customerId?: string
     organizer?: string
 }
@@ -77,9 +77,16 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
                 await jwtVerify(authToken, SECRET)
             }
 
+            const sellerAllowedPaths = path.startsWith("/dash-revendedor") || path.startsWith("/ver-evento") || path.startsWith("/checkout")
+            if (role === "SELLER" && !sellerAllowedPaths) {
+                const redirectUrl = request.nextUrl.clone()
+                redirectUrl.pathname = "/dash-revendedor"
+                return NextResponse.redirect(redirectUrl)
+            }
+
             if (isPublicRoute?.whenAuthenticated === "redirect") {
                 const redirectUrl = request.nextUrl.clone()
-                redirectUrl.pathname = "/"
+                redirectUrl.pathname = role === "SELLER" ? "/dash-revendedor" : "/"
                 return NextResponse.redirect(redirectUrl)
             }
 

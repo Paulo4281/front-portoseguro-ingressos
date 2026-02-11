@@ -1,7 +1,7 @@
 import { useMutationHook } from "../useMutation"
 import { ResaleService } from "@/services/Resale/ResaleService"
 import type { TApiResponse } from "@/types/TApiResponse"
-import type { TResale, TResaleCreatePayload } from "@/types/Resale/TResale"
+import type { TResaleCreatePayload } from "@/types/Resale/TResale"
 import { useQueryClient } from "@tanstack/react-query"
 
 export const useResaleCreate = () => {
@@ -10,7 +10,7 @@ export const useResaleCreate = () => {
     const {
         mutateAsync,
         isPending
-    } = useMutationHook<TResaleCreatePayload, TApiResponse<TResale>>({
+    } = useMutationHook<TResaleCreatePayload, TApiResponse>({
         mutationFn: (data: TResaleCreatePayload) => ResaleService.create(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["resales"] })

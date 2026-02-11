@@ -46,7 +46,7 @@ type TMenuLink = {
     href?: string
     label: string
     icon: ComponentType<{ className?: string }>
-    roles?: ("CUSTOMER" | "ORGANIZER" | "ADMIN" | "NOT_DEFINED")[]
+    roles?: ("CUSTOMER" | "ORGANIZER" | "ADMIN" | "SELLER" | "NOT_DEFINED")[]
     sublinks?: TSubLink[]
 }
 
@@ -210,7 +210,8 @@ const Menu = () => {
         "/senha-redefinir-confirmar",
         "/redefinir-senha-log",
         "/confirmar-social",
-        "/revenda-convite"
+        "/revenda-convite",
+        "/dash-revendedor"
     ]
 
     const searchEventBlockedPages = [
@@ -222,6 +223,7 @@ const Menu = () => {
     if (blockedPages.includes(pathname)) return null
 
     const { user, isAuthenticated, removeUser } = useAuthStore()
+
     const { mutateAsync: logoutUser, isPending: isLoggingOut } = useAuthLogout()
     const routerService = useRouter()
 

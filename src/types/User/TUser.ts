@@ -7,6 +7,7 @@ const UserRoles = [
     "CUSTOMER",
     "ORGANIZER",
     "ADMIN",
+    "SELLER",
     "NOT_DEFINED"
 ] as const
 
@@ -38,6 +39,11 @@ type TUser = {
     Organizer?: TOrganizer | null
 
     Address: TUserAddress | null
+
+    /** Apenas para role SELLER: se false, o revendedor não pode realizar novas vendas */
+    sellerActive?: boolean
+    /** Apenas para role SELLER: taxa de comissão (0–100) */
+    sellerCommissionRate?: number
 }
 
 type TUserCreate = z.infer<typeof UserCreateValidator>

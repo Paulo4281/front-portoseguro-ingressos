@@ -1,16 +1,17 @@
 import { API } from "@/api/api"
 import type { TApiResponse } from "@/types/TApiResponse"
 import type {
-    TResale,
     TResaleCreatePayload,
+    TResaleFindData,
     TResaleUpdatePayload,
-    TResaleFindData
+    TSellerInvitation,
+    TVerifyInviteResponse
 } from "@/types/Resale/TResale"
 
 class ResaleServiceClass {
-    async find(): Promise<TApiResponse<TResale[] | TResaleFindData>> {
+    async find(): Promise<TApiResponse<TResaleFindData | TSellerInvitation[]>> {
         const response = (await API.GET({
-            prefix: "/resale",
+            prefix: "/resale/seller-invitation",
             url: ""
         }))?.data
 
@@ -21,23 +22,37 @@ class ResaleServiceClass {
         return response
     }
 
-    async create(data: TResaleCreatePayload): Promise<TApiResponse<TResale>> {
+    async create(data: TResaleCreatePayload): Promise<TApiResponse> {
         const response = (await API.POST({
-            prefix: "/resale",
-            url: "",
+            prefix: "/resale/seller-invitation",
+            url: "/send-invite",
             data
         }))?.data
 
         if (!response) {
-            throw new Error("Erro ao criar revendedor")
+            throw new Error("Erro ao enviar convite de revendedor")
         }
 
         return response
     }
 
-    async update(id: string, data: TResaleUpdatePayload): Promise<TApiResponse<TResale>> {
+    async sendInvite(data: TResaleCreatePayload): Promise<TApiResponse> {
+        const response = (await API.POST({
+            prefix: "/resale/seller-invitation",
+            url: "/send-invite",
+            data
+        }))?.data
+
+        if (!response) {
+            throw new Error("Erro ao enviar convite de revendedor")
+        }
+
+        return response
+    }
+
+    async update(id: string, data: TResaleUpdatePayload): Promise<TApiResponse> {
         const response = (await API.PUT({
-            prefix: "/resale",
+            prefix: "/resale/seller-invitation",
             url: `/${id}`,
             data
         }))?.data
@@ -51,12 +66,25 @@ class ResaleServiceClass {
 
     async deleteById(id: string): Promise<TApiResponse> {
         const response = (await API.DELETE({
-            prefix: "/resale",
+            prefix: "/resale/seller-invitation",
             url: `/${id}`
         }))?.data
 
         if (!response) {
             throw new Error("Erro ao excluir revendedor")
+        }
+
+        return response
+    }
+
+    async verifyInvite(code: string): Promise<TApiResponse<TVerifyInviteResponse>> {
+        const response = (await API.POST({
+            prefix: "/resale/seller-invitation",
+            url: `/verify-invite/${code}`
+        }))?.data
+
+        if (!response) {
+            throw new Error("Erro ao validar convite")
         }
 
         return response

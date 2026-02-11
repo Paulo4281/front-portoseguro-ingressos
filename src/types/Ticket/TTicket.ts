@@ -196,6 +196,18 @@ type TTicketBuy = {
     removeTicketHoldIds: string[] | null
     vfc: number | null
     isInsured?: boolean
+    /** Usado quando a compra é feita por revendedor */
+    sellerUserId?: string
+    /** Cliente selecionado do organizador (modo revendedor) */
+    organizerClientId?: string | null
+    /** Novo cliente informado pelo revendedor (modo revendedor) */
+    organizerClient?: {
+        firstName: string
+        lastName: string
+        email: string
+        phone: string
+        document: string
+    } | null
 }
 
 type TTicketToOrganizer = {
