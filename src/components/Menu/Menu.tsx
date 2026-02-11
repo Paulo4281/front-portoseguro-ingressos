@@ -218,7 +218,8 @@ const Menu = () => {
         "/redefinir-senha-log",
         "/confirmar-social",
         "/revenda-convite",
-        "/dash-revendedor"
+        "/dash-revendedor",
+        "/definir-senha"
     ]
 
     const searchEventBlockedPages = [

@@ -105,6 +105,27 @@ const UserResetPasswordValidator = z.object({
     }
 })
 
+const UserConfirmPasswordValidator = z.object({
+    password: z.string({ error: DefaultFormErrors.required }),
+    confirmPassword: z.string({ error: DefaultFormErrors.required })
+}).superRefine((data, ctx) => {
+    if (data.password.length < 8) {
+        ctx.addIssue({ code: "custom", path: ["password"], message: DefaultFormErrors.passwordMinLength })
+        return
+    }
+    if (!/[A-Z]/.test(data.password)) {
+        ctx.addIssue({ code: "custom", path: ["password"], message: DefaultFormErrors.passwordUppercase })
+        return
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(data.password)) {
+        ctx.addIssue({ code: "custom", path: ["password"], message: DefaultFormErrors.passwordSpecialChar })
+        return
+    }
+    if (data.password !== data.confirmPassword) {
+        ctx.addIssue({ code: "custom", path: ["confirmPassword"], message: "As senhas não coincidem" })
+    }
+})
+
 const UserUpdateValidator = z.object({
     firstName: z.string().min(1).optional(),
     lastName: z.string().min(1).optional(),
@@ -183,6 +204,7 @@ export {
     UserCreateValidator,
     UserResetPasswordByCodeValidator,
     UserResetPasswordValidator,
+    UserConfirmPasswordValidator,
     UserUpdateValidator,
     UserConfirmSocialValidator
 }

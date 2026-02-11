@@ -36,6 +36,9 @@ type TUser = {
     createdAt: string
     updatedAt: string | null
 
+    /** ID do usuário SELLER que criou este usuário (quando criado por revendedor) */
+    createdBySellerUserId?: string | null
+
     Organizer?: TOrganizer | null
 
     Address: TUserAddress | null

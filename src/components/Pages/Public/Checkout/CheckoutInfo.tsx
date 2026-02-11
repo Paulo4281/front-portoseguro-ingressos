@@ -115,6 +115,7 @@ import { useTicketHoldUpdateQuantity } from "@/hooks/TicketHold/useTicketHoldUpd
 import { TTicketHoldCreate, TTicketHoldCreateResponse } from "@/types/TicketHold/TTicketHold"
 import { Badge } from "@/components/ui/badge"
 import { useUserUpdate } from "@/hooks/User/useUserUpdate"
+import { useUserCreateCustomer } from "@/hooks/User/useUserCreateCustomer"
 import { UserProfileUpdateValidator, type TUserProfileUpdate } from "@/validators/User/UserProfileUpdateValidator"
 import { Globe, Building2, Hash } from "lucide-react"
 import { PaymentService } from "@/services/Payment/PaymentService"
@@ -197,6 +198,7 @@ const CheckoutInfo = () => {
     const { mutateAsync: buyTicket, isPending: isBuyingTicket } = useTicketBuy()
     const { mutateAsync: buyTicketSeller, isPending: isBuyingTicketSeller } = useTicketBuySeller()
     const { mutateAsync: updateUser, isPending: isUpdatingUser } = useUserUpdate()
+    const { mutateAsync: createCustomer, isPending: isCreatingCustomer } = useUserCreateCustomer()
 
     const [sellerClientSearch, setSellerClientSearch] = useState("")
     const { data: organizerClientsData, isLoading: isLoadingOrganizerClients } = useOrganizerFindClients({
@@ -211,6 +213,7 @@ const CheckoutInfo = () => {
     const [newOrganizerClientEmail, setNewOrganizerClientEmail] = useState("")
     const [newOrganizerClientDocument, setNewOrganizerClientDocument] = useState("")
     const [newOrganizerClientPhone, setNewOrganizerClientPhone] = useState("")
+    const [newCreatedCustomerUserId, setNewCreatedCustomerUserId] = useState("")
 
     const [buyTicketResponse, setBuyTicketResponse] = useState<TTicketBuyResponse | null>(null)
     const [showCreditCardErrorDialog, setShowCreditCardErrorDialog] = useState(false)
@@ -801,6 +804,10 @@ const CheckoutInfo = () => {
                         Toast.info("Preencha nome, sobrenome, e-mail e CPF do novo cliente.")
                         return
                     }
+                    if (!newCreatedCustomerUserId) {
+                        Toast.info("Clique em \"Salvar cliente\" para cadastrar o cliente antes de finalizar a compra.")
+                        return
+                    }
                 }
             }
 
@@ -1121,6 +1128,8 @@ const CheckoutInfo = () => {
         data["isInsured"] = isInsured
         if (isSellerCheckout && user?.id) {
             data["sellerUserId"] = user.id
+            const customerUserId = isNewOrganizerClient ? newCreatedCustomerUserId : selectedOrganizerClientId
+            data["customerUserId"] = customerUserId || undefined
             if (isNewOrganizerClient) {
                 data["organizerClient"] = {
                     firstName: newOrganizerClientFirstName.trim(),
@@ -1161,6 +1170,42 @@ const CheckoutInfo = () => {
                 clearCart()
                 router.push("/meus-ingressos")
             }, 1500)
+        }
+    }
+
+    const handleSaveNewOrganizerClient = async () => {
+        if (
+            !newOrganizerClientFirstName.trim() ||
+            !newOrganizerClientLastName.trim() ||
+            !newOrganizerClientEmail.trim() ||
+            !newOrganizerClientDocument.trim()
+        ) {
+            Toast.info("Preencha nome, sobrenome, e-mail e CPF do cliente.")
+            return
+        }
+        try {
+            const response = await createCustomer({
+                firstName: newOrganizerClientFirstName.trim(),
+                lastName: newOrganizerClientLastName.trim(),
+                email: newOrganizerClientEmail.trim().toLowerCase(),
+                phone: newOrganizerClientPhone.trim(),
+                document: newOrganizerClientDocument.replace(/\D/g, "")
+            })
+            if (response?.success) {
+                const data = response?.data as unknown
+                const createdId =
+                    data && typeof data === "object" && data !== null && "id" in data
+                        ? (data as { id: string }).id
+                        : data && typeof data === "object" && data !== null && "user" in data
+                            ? (data as { user: { id?: string } }).user?.id
+                            : undefined
+                if (createdId) setNewCreatedCustomerUserId(createdId)
+                Toast.success("Cliente cadastrado. Um e-mail foi enviado para ele definir a senha.")
+            } else {
+                Toast.error(response?.message ?? "Não foi possível cadastrar o cliente.")
+            }
+        } catch (error: any) {
+            Toast.error(error?.response?.data?.message ?? "Não foi possível cadastrar o cliente.")
         }
     }
 
@@ -1550,6 +1595,7 @@ const CheckoutInfo = () => {
                                                         onClick={() => {
                                                             setIsNewOrganizerClient((prev) => !prev)
                                                             setSelectedOrganizerClientId("")
+                                                            setNewCreatedCustomerUserId("")
                                                         }}
                                                     >
                                                         {isNewOrganizerClient ? "Usar cliente existente" : "Novo cliente"}
@@ -1607,6 +1653,23 @@ const CheckoutInfo = () => {
                                                             placeholder="Telefone"
                                                             inputMode="tel"
                                                         />
+                                                        <div className="sm:col-span-2">
+                                                            <Button
+                                                                type="button"
+                                                                variant="primary"
+                                                                disabled={isCreatingCustomer}
+                                                                onClick={handleSaveNewOrganizerClient}
+                                                                className="mb-2"
+                                                            >
+                                                                {isCreatingCustomer ? <LoadingButton /> : "Salvar cliente"}
+                                                            </Button>
+                                                            <hr />
+                                                            <p className="text-xs text-psi-dark/60 mt-1.5">
+                                                                O cliente receberá um e-mail para definir a senha. Depois de salvar, continue para a compra.
+                                                                <br />
+                                                                <span className="font-bold">Observação:</span> O cliente deverá acessar o e-mail e clicar no link para definir a senha para ter acesso aos ingressos.
+                                                            </p>
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>

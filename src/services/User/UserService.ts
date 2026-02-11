@@ -14,6 +14,32 @@ class UserServiceClass {
         return response
     }
 
+    /** Cria CUSTOMER por revendedor (Auth + Seller). Gera confirmPasswordCode e envia e-mail. */
+    async createCustomer(data: {
+        firstName: string
+        lastName: string
+        email: string
+        phone: string
+        document: string
+    }): Promise<AxiosResponse["data"]> {
+        const response = (await API.POST({
+            prefix: "/user",
+            url: "/create-customer",
+            data
+        }))?.data
+        return response
+    }
+
+    /** Define senha com código recebido por e-mail (rota pública). */
+    async confirmPassword(code: string, password: string): Promise<AxiosResponse["data"]> {
+        const response = (await API.PUT({
+            prefix: "/user",
+            url: `/confirm-password/${encodeURIComponent(code)}`,
+            data: { password }
+        }))?.data
+        return response
+    }
+
     async checkEmailExists(email: string): Promise<AxiosResponse["data"]> {
         const response = (await API.POST({
             prefix: "/user",

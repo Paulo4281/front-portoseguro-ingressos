@@ -198,6 +198,8 @@ type TTicketBuy = {
     isInsured?: boolean
     /** Usado quando a compra é feita por revendedor */
     sellerUserId?: string
+    /** ID do usuário CUSTOMER para quem é a compra (obrigatório em compras do revendedor) */
+    customerUserId?: string
     /** Cliente selecionado do organizador (modo revendedor) */
     organizerClientId?: string | null
     /** Novo cliente informado pelo revendedor (modo revendedor) */
