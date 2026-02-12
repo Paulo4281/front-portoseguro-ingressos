@@ -23,6 +23,24 @@ const TicketStatuses = [
     "FAILED"
 ] as const
 
+/** Retorna o label em português do status do ingresso */
+const TicketStatusLabels: Record<(typeof TicketStatuses)[number], string> = {
+    PENDING: "Pendente",
+    CONFIRMED: "Confirmado",
+    CANCELLED: "Cancelado",
+    REFUNDED: "Reembolsado",
+    REFUND_REQUESTED: "Reembolso solicitado",
+    OVERDUE: "Atrasado",
+    USED: "Utilizado",
+    PARTIALLY_USED: "Parcialmente utilizado",
+    EXPIRED: "Expirado",
+    FAILED: "Falhou"
+}
+
+function getTicketStatusLabel(status: (typeof TicketStatuses)[number] | string): string {
+    return TicketStatusLabels[status as (typeof TicketStatuses)[number]] ?? status
+}
+
 type TTicketForm = {
     text?: {
         label: string
@@ -303,5 +321,6 @@ export type {
 }
 
 export {
-    TicketCancelledBy
+    TicketCancelledBy,
+    getTicketStatusLabel
 }

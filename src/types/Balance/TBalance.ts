@@ -21,10 +21,14 @@ export type TSellerBalanceEntry = {
     paymentId: string
     withdrawalAuthorized: boolean
     createdAt: string
+    eventName: string | null
+    installmentDescription: string | null
+    /** Data prevista para liberação do valor (quando withdrawalAuthorized ainda é false) */
+    estimatedCreditDate: string | null
 }
 
 export type TSellerBalanceResponse = {
     currentValue: number
-    list: TSellerBalanceEntry[]
+    balances: TSellerBalanceEntry[]
 }
 

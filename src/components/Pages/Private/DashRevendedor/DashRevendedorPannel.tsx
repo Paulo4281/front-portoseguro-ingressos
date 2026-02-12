@@ -18,6 +18,8 @@ import { useSellerBalanceCurrent } from "@/hooks/Resale/useSellerBalanceCurrent"
 import { usePayoutList } from "@/hooks/Payout/usePayoutList"
 import { usePayoutWithdrawSeller } from "@/hooks/Payout/usePayoutWithdrawSeller"
 import { usePaymentMySales } from "@/hooks/Payment/usePaymentMySales"
+import { getTicketStatusLabel } from "@/types/Ticket/TTicket"
+import { getPaymentStatusLabel, isPaymentValidForReceipt } from "@/types/Payment/TPayment"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
@@ -77,6 +79,8 @@ const DashRevendedorPannel = () => {
     const [isBalanceVisible, setIsBalanceVisible] = useState(false)
     const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false)
     const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
+    const [balanceHistoryTab, setBalanceHistoryTab] = useState<"history" | "pending">("history")
+    const [salesFilter, setSalesFilter] = useState<"all" | "valid" | "history">("all")
 
     const sellerActive = user?.sellerActive ?? false
     const sellerCommissionRate = user?.sellerCommissionRate ?? 0
@@ -153,9 +157,35 @@ const DashRevendedorPannel = () => {
     const eventUrl = selectedEvent ? `/ver-evento/${selectedEvent.slug}?seller=true` : ""
 
     const sellerBalance = useMemo(() => sellerBalanceData?.data?.currentValue ?? 0, [sellerBalanceData])
-    const sellerBalanceList = useMemo(() => sellerBalanceData?.data?.list ?? [], [sellerBalanceData])
+    /** Histórico: apenas saldos já autorizados para saque (withdrawalAuthorized === true) */
+    const sellerBalanceList = useMemo(
+        () => (sellerBalanceData?.data?.balances ?? []).filter((b) => b.withdrawalAuthorized),
+        [sellerBalanceData]
+    )
+    /** A receber: saldos ainda não autorizados para saque (withdrawalAuthorized === false) */
+    const sellerBalancePendingList = useMemo(
+        () => (sellerBalanceData?.data?.balances ?? []).filter((b) => !b.withdrawalAuthorized),
+        [sellerBalanceData]
+    )
     const payoutList = useMemo(() => payoutListData?.data ?? [], [payoutListData])
     const mySales = useMemo(() => mySalesData?.data ?? [], [mySalesData])
+
+    const mySalesFiltered = useMemo(() => {
+        if (salesFilter === "all") return mySales
+        if (salesFilter === "valid") return mySales.filter((s) => isPaymentValidForReceipt(s.status))
+        return mySales.filter((s) => !isPaymentValidForReceipt(s.status))
+    }, [mySales, salesFilter])
+
+    const mySalesByDate = useMemo(() => {
+        const byDate: Record<string, typeof mySalesFiltered> = {}
+        for (const sale of mySalesFiltered) {
+            const dateKey = sale.createdAt?.slice(0, 10) ?? ""
+            if (!byDate[dateKey]) byDate[dateKey] = []
+            byDate[dateKey].push(sale)
+        }
+        const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a))
+        return dates.map((dateKey) => ({ dateKey, sales: byDate[dateKey] }))
+    }, [mySalesFiltered])
 
     const getAccountTypeLabel = (type: string | null) => {
         if (type === "CONTA_CORRENTE") return "Conta Corrente"
@@ -303,7 +333,6 @@ const DashRevendedorPannel = () => {
                                 <p className="text-sm text-psi-dark/60">Selecione um evento e realize vendas no fluxo normal da plataforma.</p>
                                 <div className="flex flex-wrap items-center gap-2">
                                     <Badge variant="secondary" className="bg-psi-dark/5 text-psi-dark/70">Revendedor</Badge>
-                                    <Badge variant="secondary" className="bg-psi-primary/10 text-psi-primary">Taxa de comissao: {sellerCommissionRate}%</Badge>
                                     {!sellerActive && <Badge variant="secondary" className="bg-amber-100 text-amber-800">Vendas desativadas</Badge>}
                                 </div>
                             </div>
@@ -392,10 +421,11 @@ const DashRevendedorPannel = () => {
                         </>
                     ) : activeView === "profile" ? (
                         <div className="space-y-5 rounded-2xl border border-[#E4E6F0] bg-white p-5 shadow-sm sm:p-6">
-                            <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
                                 <div>
                                     <h2 className="text-xl font-semibold text-psi-dark">Meu perfil</h2>
                                     <p className="text-sm text-psi-dark/60">Dados do revendedor</p>
+                                    <Badge variant="secondary" className="mt-2 bg-psi-primary/10 text-psi-primary">Taxa de comissão: {sellerCommissionRate}%</Badge>
                                 </div>
                                 <Button variant="outline" onClick={() => setActiveView("home")} size="sm"><ArrowLeft className="h-4 w-4" />Voltar</Button>
                             </div>
@@ -708,17 +738,35 @@ const DashRevendedorPannel = () => {
                             </div>
 
                             <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6 sm:p-8 shadow-sm">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-lg font-medium text-psi-dark">Histórico</h3>
-                                    <p className="text-sm text-psi-dark/60">Últimas transações</p>
+                                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                                    <div className="flex rounded-lg border border-[#E4E6F0] p-0.5 bg-psi-dark/5">
+                                        <button
+                                            type="button"
+                                            onClick={() => setBalanceHistoryTab("history")}
+                                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${balanceHistoryTab === "history" ? "bg-white text-psi-dark shadow-sm" : "text-psi-dark/70 hover:text-psi-dark"}`}
+                                        >
+                                            Histórico
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setBalanceHistoryTab("pending")}
+                                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${balanceHistoryTab === "pending" ? "bg-white text-psi-dark shadow-sm" : "text-psi-dark/70 hover:text-psi-dark"}`}
+                                        >
+                                            A receber
+                                        </button>
+                                    </div>
+                                    {balanceHistoryTab === "history" && <p className="text-sm text-psi-dark/60">Últimas transações</p>}
+                                    {balanceHistoryTab === "pending" && <p className="text-sm text-psi-dark/60">Valores com previsão de liberação</p>}
                                 </div>
-                                {payoutListLoading && sellerBalanceLoading ? (
-                                    <p className="text-sm text-psi-dark/60">Carregando histórico...</p>
-                                ) : payoutList.length === 0 && sellerBalanceList.length === 0 ? (
-                                    <p className="text-sm text-psi-dark/60">Nenhuma transação encontrada.</p>
-                                ) : (
-                                    <ul className="space-y-3">
-                                        {payoutList.map((item, idx) => {
+                                {balanceHistoryTab === "history" && (
+                                    <>
+                                        {payoutListLoading && sellerBalanceLoading ? (
+                                            <p className="text-sm text-psi-dark/60">Carregando histórico...</p>
+                                        ) : payoutList.length === 0 && sellerBalanceList.length === 0 ? (
+                                            <p className="text-sm text-psi-dark/60">Nenhuma transação encontrada.</p>
+                                        ) : (
+                                            <ul className="space-y-3">
+                                                {payoutList.map((item, idx) => {
                                             const isPaid = item.status === "PAID"
                                             const isFailed = item.status === "FAILED"
                                             const isProcessing = item.status === "PROCESSING"
@@ -771,6 +819,8 @@ const DashRevendedorPannel = () => {
                                                     <div className="p-2 rounded-md bg-psi-primary/10 text-emerald-600"><ArrowUp className="h-4 w-4" /></div>
                                                     <div>
                                                         <div className="text-sm font-medium text-psi-dark">Liberado</div>
+                                                        {item.eventName && <div className="text-xs text-psi-dark/80">{item.eventName}</div>}
+                                                        {item.installmentDescription && <div className="text-xs text-psi-dark/60">{item.installmentDescription}</div>}
                                                         <div className="text-xs text-psi-dark/60">{DateUtils.formatDate(item.createdAt)}</div>
                                                     </div>
                                                 </div>
@@ -779,65 +829,137 @@ const DashRevendedorPannel = () => {
                                                 </div>
                                             </li>
                                         ))}
-                                    </ul>
+                                            </ul>
+                                        )}
+                                    </>
+                                )}
+                                {balanceHistoryTab === "pending" && (
+                                    <>
+                                        {sellerBalanceLoading ? (
+                                            <p className="text-sm text-psi-dark/60">Carregando...</p>
+                                        ) : sellerBalancePendingList.length === 0 ? (
+                                            <p className="text-sm text-psi-dark/60">Nenhum valor a receber no momento.</p>
+                                        ) : (
+                                            <ul className="space-y-3">
+                                                {sellerBalancePendingList.map((item, idx) => (
+                                                    <li key={`pending-${idx}`} className="flex items-center justify-between p-3 rounded-lg border border-[#F0F1F6] bg-psi-dark/2">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="p-2 rounded-md bg-amber-100 text-amber-700"><ArrowUp className="h-4 w-4" /></div>
+                                                            <div>
+                                                                <div className="text-sm font-medium text-psi-dark">A receber</div>
+                                                                {item.eventName && <div className="text-xs text-psi-dark/80">{item.eventName}</div>}
+                                                                {item.installmentDescription && <div className="text-xs text-psi-dark/60">{item.installmentDescription}</div>}
+                                                                {item.estimatedCreditDate && (
+                                                                    <div className="text-xs text-amber-700 font-medium mt-0.5">
+                                                                        Previsão: {DateUtils.formatDate(item.estimatedCreditDate)}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="text-sm font-medium text-amber-700">{isBalanceVisible ? ValueUtils.centsToCurrency(item.value) : "••••"}</div>
+                                                        </div>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>
                     ) : activeView === "sales" ? (
                         <div className="space-y-5 rounded-2xl border border-[#E4E6F0] bg-white p-5 shadow-sm sm:p-6">
-                            <div className="flex items-center justify-between gap-2">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
                                 <div>
                                     <h2 className="text-xl font-semibold text-psi-dark">Minhas vendas</h2>
                                     <p className="text-sm text-psi-dark/60">Vendas realizadas e comissões</p>
                                 </div>
-                                <Button variant="outline" onClick={() => setActiveView("home")} size="sm"><ArrowLeft className="h-4 w-4" />Voltar</Button>
+                                <div className="flex items-center gap-2">
+                                    <Select value={salesFilter} onValueChange={(v) => setSalesFilter(v as "all" | "valid" | "history")}>
+                                        <SelectTrigger className="w-[180px]">
+                                            <SelectValue placeholder="Filtrar" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">Todas</SelectItem>
+                                            <SelectItem value="valid">Válidas para recebimento</SelectItem>
+                                            <SelectItem value="history">Histórico</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Button variant="outline" onClick={() => setActiveView("home")} size="sm"><ArrowLeft className="h-4 w-4" />Voltar</Button>
+                                </div>
                             </div>
                             {mySalesLoading ? (
                                 <p className="text-sm text-psi-dark/60">Carregando vendas...</p>
                             ) : mySales.length === 0 ? (
                                 <p className="text-sm text-psi-dark/60">Nenhuma venda encontrada.</p>
+                            ) : mySalesFiltered.length === 0 ? (
+                                <p className="text-sm text-psi-dark/60">Nenhuma venda encontrada com esse filtro.</p>
                             ) : (
-                                <ul className="space-y-3">
-                                    {mySales.map((sale) => (
-                                        <li key={sale.id} className="rounded-xl border border-[#E4E6F0] bg-psi-dark/5 p-4">
-                                            <div className="flex flex-wrap items-start justify-between gap-2">
-                                                <div>
-                                                    <p className="font-medium text-psi-dark">{sale.event?.name ?? "Evento"}</p>
-                                                    <p className="text-xs text-psi-dark/60">Código: {sale.code}</p>
-                                                    {sale.customer && (
-                                                        <p className="text-xs text-psi-dark/60 mt-1">
-                                                            {sale.customer.firstName} {sale.customer.lastName} • {sale.customer.email}
-                                                        </p>
-                                                    )}
-                                                    <p className="text-xs text-psi-dark/60 mt-1">{DateUtils.formatDate(sale.createdAt)}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    {sale.totalPaidByCustomer != null && (
-                                                        <p className="text-sm text-psi-dark/70">Total: {ValueUtils.centsToCurrency(sale.totalPaidByCustomer)}</p>
-                                                    )}
-                                                    {sale.sellerCommissionValue != null && (
-                                                        <p className="text-sm font-medium text-emerald-600">Sua comissão: {ValueUtils.centsToCurrency(sale.sellerCommissionValue)}</p>
-                                                    )}
-                                                    {sale.sellerCommissionRate != null && (
-                                                        <p className="text-xs text-psi-dark/60">Taxa: {sale.sellerCommissionRate}%</p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            {sale.tickets?.length > 0 && (
-                                                <div className="mt-3 pt-3 border-t border-psi-dark/10">
-                                                    <p className="text-xs font-medium text-psi-dark/70 mb-1">Ingressos</p>
-                                                    <ul className="space-y-1">
-                                                        {sale.tickets.map((t) => (
-                                                            <li key={t.id} className="text-xs text-psi-dark/60">
-                                                                {t.ticketType?.name ?? "Ingresso"} • {ValueUtils.centsToCurrency(t.price)} • {t.status}
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                </div>
-                                            )}
-                                        </li>
+                                <div className="space-y-6">
+                                    {mySalesByDate.map(({ dateKey, sales }) => (
+                                        <div key={dateKey}>
+                                            <h3 className="text-sm font-semibold text-psi-dark/80 mb-2 flex items-center gap-2">
+                                                <CalendarDays className="h-4 w-4" />
+                                                {DateUtils.formatDate(dateKey)}
+                                            </h3>
+                                            <ul className="space-y-3">
+                                                {sales.map((sale) => {
+                                                    const isValid = isPaymentValidForReceipt(sale.status)
+                                                    return (
+                                                        <li
+                                                            key={sale.id}
+                                                            className={`rounded-xl border p-4 ${isValid ? "border-emerald-200/60 bg-emerald-50/40" : "border-[#E4E6F0] bg-psi-dark/5"}`}
+                                                        >
+                                                            <div className="flex flex-wrap items-start justify-between gap-2">
+                                                                <div>
+                                                                    <div className="flex flex-wrap items-center gap-2">
+                                                                        <p className="font-medium text-psi-dark">{sale.event?.name ?? "Evento"}</p>
+                                                                        {isValid ? (
+                                                                            <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 text-xs">Válido para recebimento</Badge>
+                                                                        ) : (
+                                                                            <Badge variant="secondary" className="bg-psi-dark/10 text-psi-dark/70 text-xs">Histórico</Badge>
+                                                                        )}
+                                                                        <span className="text-xs text-psi-dark/60">{getPaymentStatusLabel(sale.status)}</span>
+                                                                    </div>
+                                                                    <p className="text-xs text-psi-dark/60">Código: {sale.code}</p>
+                                                                    {sale.customer && (
+                                                                        <p className="text-xs text-psi-dark/60 mt-1">
+                                                                            {sale.customer.firstName} {sale.customer.lastName} • {sale.customer.email}
+                                                                        </p>
+                                                                    )}
+                                                                    <p className="text-xs text-psi-dark/60 mt-1">{DateUtils.formatDate(sale.createdAt)}</p>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    {sale.totalPaidByCustomer != null && (
+                                                                        <p className="text-sm text-psi-dark/70">Total: {ValueUtils.centsToCurrency(sale.totalPaidByCustomer)}</p>
+                                                                    )}
+                                                                    {sale.sellerCommissionValue != null && (
+                                                                        <p className="text-sm font-medium text-emerald-600">Sua comissão: {ValueUtils.centsToCurrency(sale.sellerCommissionValue)}</p>
+                                                                    )}
+                                                                    {sale.sellerCommissionRate != null && (
+                                                                        <p className="text-xs text-psi-dark/60">Taxa: {sale.sellerCommissionRate}%</p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            {sale.tickets?.length > 0 && (
+                                                                <div className="mt-3 pt-3 border-t border-psi-dark/10">
+                                                                    <p className="text-xs font-medium text-psi-dark/70 mb-1">Ingressos</p>
+                                                                    <ul className="space-y-1">
+                                                                        {sale.tickets.map((t) => (
+                                                                            <li key={t.id} className="text-xs text-psi-dark/60">
+                                                                                {t.ticketType?.name ?? "Ingresso"} • {ValueUtils.centsToCurrency(t.price)} • {getTicketStatusLabel(t.status)}
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+                                                            )}
+                                                        </li>
+                                                    )
+                                                })}
+                                            </ul>
+                                        </div>
                                     ))}
-                                </ul>
+                                </div>
                             )}
                         </div>
                     ) : null}

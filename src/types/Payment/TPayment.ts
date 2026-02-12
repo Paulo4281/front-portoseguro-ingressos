@@ -82,6 +82,10 @@ type TPaymentAdminListResponse = {
     refundEndToEndIdentifier: string | null
     paidAt: string | null
     chargebackRequested: boolean
+    sellerUserId: string | null
+    sellerCommissionRate: number | null
+    sellerCommissionValue: number | null
+    sellerCreditCardUsedInfo: any | null
     userId: string
     cardId: string | null
     createdAt: string
@@ -94,6 +98,14 @@ type TPaymentAdminListResponse = {
         phone: string | null
         document: string | null
     }
+    Seller: {
+        id: string
+        firstName: string
+        lastName: string
+        email: string
+        phone: string | null
+        document: string | null
+    } | null
     Card: {
         id: string
         name: string
@@ -268,6 +280,33 @@ export type TPaymentMySalesItem = {
             hourEnd: string | null
         }>
     }>
+}
+
+/** Status de pagamento válidos para o revendedor receber a comissão (entram no saldo). Demais são apenas histórico. */
+export function isPaymentValidForReceipt(status: string): boolean {
+    return status === "CONFIRMED" || status === "RECEIVED"
+}
+
+const PaymentStatusLabels: Partial<Record<(typeof PaymentGatewayBillingStatuses)[number], string>> = {
+    PENDING: "Pendente",
+    RECEIVED: "Recebido",
+    CONFIRMED: "Confirmado",
+    OVERDUE: "Atrasado",
+    REFUNDED: "Reembolsado",
+    REFUND_REQUESTED: "Reembolso solicitado",
+    REFUND_IN_PROGRESS: "Reembolso em andamento",
+    RECEIVED_IN_CASH: "Recebido em dinheiro",
+    FAILED: "Falhou",
+    CHARGEBACK_REQUESTED: "Chargeback solicitado",
+    CHARGEBACK_DISPUTE: "Chargeback em disputa",
+    AWAITING_CHARGEBACK_REVERSAL: "Aguardando reversão",
+    DUNNING_REQUESTED: "Cobrança solicitada",
+    DUNNING_RECEIVED: "Cobrança recebida",
+    AWAITING_RISK_ANALYSIS: "Aguardando análise de risco"
+}
+
+export function getPaymentStatusLabel(status: string): string {
+    return (PaymentStatusLabels as Record<string, string>)[status] ?? status
 }
 
 export type {
