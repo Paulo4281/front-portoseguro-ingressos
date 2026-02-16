@@ -3,6 +3,7 @@
 import { ShoppingCart, Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useCart } from "@/contexts/CartContext"
+import { useAuthStore } from "@/stores/Auth/AuthStore"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { TicketFeeUtils } from "@/utils/Helpers/FeeUtils/TicketFeeUtils"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
@@ -16,9 +17,11 @@ import Link from "next/link"
 import Image from "next/image"
 
 const CartDropdown = () => {
+    const { user } = useAuthStore()
     const { items, removeItem, getTotal, getItemCount } = useCart()
     const itemCount = getItemCount()
     const total = getTotal()
+    const checkoutHref = user?.role === "SELLER" ? "/checkout?seller=true" : "/checkout"
 
     return (
         <DropdownMenu>
@@ -134,7 +137,7 @@ const CartDropdown = () => {
                                 className="w-full"
                                 size="lg"
                             >
-                                <Link href="/checkout" className="flex items-center justify-center gap-2">
+                                <Link href={checkoutHref} className="flex items-center justify-center gap-2">
                                     Finalizar Compra
                                     <ShoppingCart className="h-4 w-4" />
                                 </Link>

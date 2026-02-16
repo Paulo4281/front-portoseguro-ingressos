@@ -198,7 +198,7 @@ type TTicketBuy = {
             }[] | null
         }[]
     }[] | null
-    paymentMethod: "CREDIT_CARD" | "PIX"
+    paymentMethod: "CREDIT_CARD" | "PIX" | "LINK"
     ccInfo: {
         number: string
         holderName: string
@@ -250,6 +250,13 @@ type TTicketToOrganizer = {
         method: typeof PaymentMethods[number]
         status: typeof PaymentGatewayBillingStatuses[number]
         paidAt: string | null
+    } | null
+    /** Preenchido quando o ingresso foi vendido por um revendedor */
+    seller: {
+        firstName: string
+        lastName: string
+        email: string
+        commissionValue: number
     } | null
     status: typeof TicketStatuses[number]
     ticketType: {

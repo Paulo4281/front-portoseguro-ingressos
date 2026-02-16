@@ -42,6 +42,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { TicketFeeUtils } from "@/utils/Helpers/FeeUtils/TicketFeeUtils"
@@ -75,6 +77,7 @@ import {
     MailCheck,
     QrCode,
     Copy,
+    ChevronDown,
     RefreshCw,
     AlertCircle,
     Download,
@@ -123,7 +126,7 @@ import { useCardFindByUserId } from "@/hooks/Card/useCardFindByUserId"
 import type { TCard } from "@/types/Card/TCard"
 import { useOrganizerFindClients } from "@/hooks/Client/useOrganizerFindClients"
 
-type TPaymentMethod = "pix" | "credit"
+type TPaymentMethod = "pix" | "credit" | "link"
 
 export type THandleUpdateQuantityParams = {
     eventId: string
@@ -140,6 +143,7 @@ const CheckoutInfo = () => {
     const [currentStep, setCurrentStep] = useState(1)
     const [paymentMethod, setPaymentMethod] = useState<TPaymentMethod>("pix")
     const isSellerCheckout = searchParams.get("seller") === "true" && user?.role === "SELLER"
+    const [paymentLinkUrl, setPaymentLinkUrl] = useState("")
 
     const { mutateAsync: updateTicketHold, isPending: isUpdatingTicketHold } = useTicketHoldUpdateQuantity()
 
@@ -203,10 +207,12 @@ const CheckoutInfo = () => {
     const [sellerClientSearch, setSellerClientSearch] = useState("")
     const { data: organizerClientsData, isLoading: isLoadingOrganizerClients } = useOrganizerFindClients({
         offset: 0,
-        search: sellerClientSearch
+        search: sellerClientSearch,
+        isSeller: isSellerCheckout
     })
     const organizerClients = organizerClientsData?.data?.data ?? []
     const [selectedOrganizerClientId, setSelectedOrganizerClientId] = useState("")
+    const [clientSelectOpen, setClientSelectOpen] = useState(false)
     const [isNewOrganizerClient, setIsNewOrganizerClient] = useState(false)
     const [newOrganizerClientFirstName, setNewOrganizerClientFirstName] = useState("")
     const [newOrganizerClientLastName, setNewOrganizerClientLastName] = useState("")
@@ -924,7 +930,7 @@ const CheckoutInfo = () => {
             eventTicketTypesIds: null,
             eventTicketAmount: null,
             eventForms: null,
-            paymentMethod: paymentMethod === "pix" ? "PIX" : "CREDIT_CARD",
+            paymentMethod: paymentMethod === "pix" ? "PIX" : paymentMethod === "credit" ? "CREDIT_CARD" : "LINK",
             ccInfo: null,
             couponCodes: null,
             removeTicketHoldIds: null,
@@ -1151,6 +1157,31 @@ const CheckoutInfo = () => {
 
         if (response?.success && response?.data?.isCreditCardError) {
             setShowCreditCardErrorDialog(true)
+            return
+        }
+
+        if (paymentMethod === "link" && response?.success) {
+            const linkData = response?.data as unknown
+            const paymentCode =
+                linkData && typeof linkData === "object" && linkData !== null && "paymentCode" in linkData
+                    ? String((linkData as { paymentCode?: string }).paymentCode || "")
+                    : linkData && typeof linkData === "object" && linkData !== null && "code" in linkData
+                        ? String((linkData as { code?: string }).code || "")
+                        : ""
+
+            if (!paymentCode) {
+                Toast.error("Link gerado, mas não foi possível obter o código do pagamento.")
+                return
+            }
+
+            const url = `https://portoseguroingressos.com.br/pagamento-link?code=${encodeURIComponent(paymentCode)}`
+            setPaymentLinkUrl(url)
+            try {
+                await navigator.clipboard.writeText(url)
+                Toast.success("Link de pagamento gerado e copiado!")
+            } catch {
+                Toast.success("Link de pagamento gerado!")
+            }
             return
         }
 
@@ -1506,6 +1537,23 @@ const CheckoutInfo = () => {
                                 </div>
                             )
                         }
+                        {user?.role === "SELLER" && (
+                            <div className="mt-4">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        clearCart()
+                                        Toast.success("Carrinho resetado.")
+                                    }}
+                                    className="text-psi-dark/70 hover:text-destructive hover:border-destructive/50"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    Resetar carrinho
+                                </Button>
+                            </div>
+                        )}
                     </div>
 
                     <div className="mb-8">
@@ -1603,23 +1651,103 @@ const CheckoutInfo = () => {
                                                 </div>
 
                                                 {!isNewOrganizerClient ? (
-                                                    <Select value={selectedOrganizerClientId} onValueChange={setSelectedOrganizerClientId}>
-                                                        <SelectTrigger className="w-full">
-                                                            <SelectValue placeholder={isLoadingOrganizerClients ? "Carregando clientes..." : "Selecione o cliente"} />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {organizerClients.map((client) => (
-                                                                <SelectItem key={client.id} value={client.id}>
-                                                                    {client.firstName} {client.lastName} • {client.email}
-                                                                </SelectItem>
-                                                            ))}
-                                                            {organizerClients.length === 0 && (
-                                                                <SelectItem value="__no-clients" disabled>
-                                                                    Nenhum cliente encontrado
-                                                                </SelectItem>
-                                                            )}
-                                                        </SelectContent>
-                                                    </Select>
+                                                    <Popover open={clientSelectOpen} onOpenChange={setClientSelectOpen}>
+                                                        <PopoverTrigger asChild>
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                className="w-full justify-start gap-3 h-auto min-h-10 py-2 px-3 font-normal"
+                                                            >
+                                                                {(() => {
+                                                                    const selected = organizerClients.find((c) => c.id === selectedOrganizerClientId)
+                                                                    if (isLoadingOrganizerClients) {
+                                                                        return (
+                                                                            <span className="flex items-center gap-2 text-psi-dark/60">
+                                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                                                Carregando clientes...
+                                                                            </span>
+                                                                        )
+                                                                    }
+                                                                    if (selected) {
+                                                                        const phoneFormatted = selected.phone
+                                                                            ? selected.phone.replace(/\D/g, '').length === 11
+                                                                                ? selected.phone.replace(/\D/g, '').replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3')
+                                                                                : selected.phone.replace(/\D/g, '').length === 10
+                                                                                    ? selected.phone.replace(/\D/g, '').replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3')
+                                                                                    : selected.phone
+                                                                            : null
+                                                                        return (
+                                                                            <span className="flex items-center gap-3 text-left">
+                                                                                <Avatar className="h-8 w-8 shrink-0">
+                                                                                    <AvatarImage src={selected.image ? ImageUtils.getUserImageUrl(selected.image) : undefined} alt="" />
+                                                                                    <AvatarFallback className="bg-psi-primary/10 text-psi-primary text-xs">
+                                                                                        <User className="h-4 w-4" />
+                                                                                    </AvatarFallback>
+                                                                                </Avatar>
+                                                                                <span className="flex flex-col items-start truncate min-w-0">
+                                                                                    <span className="font-medium text-psi-dark truncate w-full">{selected.firstName} {selected.lastName}</span>
+                                                                                    <span className="text-xs text-psi-dark/60 truncate w-full">{selected.email}{phoneFormatted ? ` • ${phoneFormatted}` : ""}</span>
+                                                                                </span>
+                                                                            </span>
+                                                                        )
+                                                                    }
+                                                                    return (
+                                                                        <span className="text-psi-dark/60">Selecione o cliente</span>
+                                                                    )
+                                                                })()}
+                                                                <ChevronDown className="h-4 w-4 shrink-0 ml-auto opacity-50" />
+                                                            </Button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                                                            <div className="max-h-[280px] overflow-y-auto">
+                                                                {organizerClients.length === 0 ? (
+                                                                    <div className="py-6 text-center text-sm text-psi-dark/60">
+                                                                        Nenhum cliente encontrado
+                                                                    </div>
+                                                                ) : (
+                                                                    organizerClients.map((client) => {
+                                                                        const phoneFormatted = client.phone
+                                                                            ? client.phone.replace(/\D/g, '').length === 11
+                                                                                ? client.phone.replace(/\D/g, '').replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3')
+                                                                                : client.phone.replace(/\D/g, '').length === 10
+                                                                                    ? client.phone.replace(/\D/g, '').replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3')
+                                                                                    : client.phone
+                                                                            : null
+                                                                        const isSelected = selectedOrganizerClientId === client.id
+                                                                        return (
+                                                                            <button
+                                                                                key={client.id}
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    setSelectedOrganizerClientId(client.id)
+                                                                                    setClientSelectOpen(false)
+                                                                                }}
+                                                                                className={`w-full flex items-center gap-3 p-3 text-left transition-colors border-b border-[#E4E6F0] last:border-b-0 hover:bg-psi-primary/5 ${isSelected ? "bg-psi-primary/10" : ""}`}
+                                                                            >
+                                                                                <Avatar className="h-10 w-10 shrink-0">
+                                                                                    <AvatarImage src={client.image ? ImageUtils.getUserImageUrl(client.image) : undefined} alt="" />
+                                                                                    <AvatarFallback className="bg-psi-primary/10 text-psi-primary">
+                                                                                        <User className="h-5 w-5" />
+                                                                                    </AvatarFallback>
+                                                                                </Avatar>
+                                                                                <div className="flex flex-col min-w-0 flex-1">
+                                                                                    <span className="font-medium text-psi-dark truncate">{client.firstName} {client.lastName}</span>
+                                                                                    <span className="text-xs text-psi-dark/70 truncate">{client.email}</span>
+                                                                                    {phoneFormatted && (
+                                                                                        <span className="text-xs text-psi-dark/60 flex items-center gap-1 mt-0.5">
+                                                                                            <Phone className="h-3 w-3 shrink-0" />
+                                                                                            {phoneFormatted}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                                {isSelected && <Check className="h-5 w-5 text-psi-primary shrink-0" />}
+                                                                            </button>
+                                                                        )
+                                                                    })
+                                                                )}
+                                                            </div>
+                                                        </PopoverContent>
+                                                    </Popover>
                                                 ) : (
                                                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                                         <Input
@@ -2366,7 +2494,10 @@ const CheckoutInfo = () => {
                                                         <div className="space-y-4 mb-6">
                                                             <button
                                                                 type="button"
-                                                                onClick={() => setPaymentMethod("pix")}
+                                                                onClick={() => {
+                                                                    setPaymentMethod("pix")
+                                                                    setPaymentLinkUrl("")
+                                                                }}
                                                                 className={`w-full p-4 rounded-xl border-2 transition-all text-left ${paymentMethod === "pix"
                                                                         ? "border-psi-primary bg-psi-primary/5"
                                                                         : "border-psi-dark/10 hover:border-psi-primary/30"
@@ -2393,7 +2524,10 @@ const CheckoutInfo = () => {
 
                                                             <button
                                                                 type="button"
-                                                                onClick={() => setPaymentMethod("credit")}
+                                                                onClick={() => {
+                                                                    setPaymentMethod("credit")
+                                                                    setPaymentLinkUrl("")
+                                                                }}
                                                                 className={`w-full p-4 rounded-xl border-2 transition-all text-left ${paymentMethod === "credit"
                                                                         ? "border-psi-primary bg-psi-primary/5"
                                                                         : "border-psi-dark/10 hover:border-psi-primary/30"
@@ -2421,19 +2555,67 @@ const CheckoutInfo = () => {
                                                             {isSellerCheckout && (
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => Toast.info("Envio de link de pagamento em desenvolvimento.")}
-                                                                    className="w-full p-4 rounded-xl border-2 transition-all text-left border-psi-dark/10 hover:border-psi-primary/30"
+                                                                    onClick={() => setPaymentMethod("link")}
+                                                                    className={`w-full p-4 rounded-xl border-2 transition-all text-left ${paymentMethod === "link"
+                                                                            ? "border-psi-primary bg-psi-primary/5"
+                                                                            : "border-psi-dark/10 hover:border-psi-primary/30"
+                                                                        }`}
                                                                 >
                                                                     <div className="flex items-center gap-3">
-                                                                        <div className="size-4 rounded-full border-2 border-psi-dark/30" />
+                                                                        <div className={`size-4 rounded-full border-2 ${paymentMethod === "link"
+                                                                                ? "border-psi-primary bg-psi-primary"
+                                                                                : "border-psi-dark/30"
+                                                                            }`}>
+                                                                            {paymentMethod === "link" && (
+                                                                                <div className="size-full rounded-full bg-white scale-50" />
+                                                                            )}
+                                                                        </div>
                                                                         <div className="flex items-center gap-2">
                                                                             <Link2 className="h-5 w-5 text-psi-primary" />
-                                                                            <span className="font-medium text-psi-dark">Enviar link de pagamento</span>
+                                                                            <span className="font-medium text-psi-dark">Link de pagamento</span>
                                                                         </div>
                                                                     </div>
                                                                 </button>
                                                             )}
                                                         </div>
+
+                                                        {isSellerCheckout && paymentMethod === "link" && (
+                                                            <div className="pt-6 border-t border-psi-dark/10 space-y-3">
+                                                                <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-4">
+                                                                    <p className="text-sm font-medium text-psi-dark mb-1">Link de pagamento</p>
+                                                                    <p className="text-xs text-psi-dark/70">
+                                                                        Ao gerar, você poderá copiar o link e enviar ao cliente. O pagamento poderá ser feito por PIX (pré-gerado) ou cartão.
+                                                                    </p>
+                                                                </div>
+
+                                                                {paymentLinkUrl ? (
+                                                                    <div className="space-y-2">
+                                                                        <label className="text-sm font-medium text-psi-dark">Link gerado</label>
+                                                                        <div className="flex gap-2">
+                                                                            <Input value={paymentLinkUrl} readOnly />
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="outline"
+                                                                                onClick={async () => {
+                                                                                    try {
+                                                                                        await navigator.clipboard.writeText(paymentLinkUrl)
+                                                                                        Toast.success("Link copiado!")
+                                                                                    } catch {
+                                                                                        Toast.error("Não foi possível copiar o link.")
+                                                                                    }
+                                                                                }}
+                                                                            >
+                                                                                Copiar
+                                                                            </Button>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <p className="text-xs text-psi-dark/60">
+                                                                        Clique em <span className="font-medium">Gerar link de pagamento</span> na finalização para criar o link.
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        )}
 
                                                         {paymentMethod === "credit" && (
                                                             <div className="space-y-4 pt-6 border-t border-psi-dark/10">
@@ -2814,7 +2996,14 @@ const CheckoutInfo = () => {
                                                         )
                                                         :
                                                         (
-                                                            <p className="text-psi-dark/70"><strong>Pagamento:</strong> {paymentMethod === "pix" ? "PIX" : "Cartão de Crédito"}</p>
+                                                            <p className="text-psi-dark/70">
+                                                                <strong>Pagamento:</strong>{" "}
+                                                                {paymentMethod === "pix"
+                                                                    ? "PIX"
+                                                                    : paymentMethod === "credit"
+                                                                        ? "Cartão de Crédito"
+                                                                        : "Link de pagamento"}
+                                                            </p>
                                                         )
                                                 }
                                             </div>
@@ -2846,7 +3035,7 @@ const CheckoutInfo = () => {
                                                         ) : (
                                                             <>
                                                             <Check className="size-4" />
-                                                            Finalizar Compra
+                                                            {isSellerCheckout && paymentMethod === "link" ? "Gerar link de pagamento" : "Finalizar Compra"}
                                                             </>
                                                         )}
                                                     </Button>

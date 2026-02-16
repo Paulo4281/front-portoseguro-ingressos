@@ -524,6 +524,12 @@ const AdmPagamentosPannel = () => {
                                                                         alt="PIX"
                                                                         className="h-6 w-6"
                                                                     />
+                                                                ) : payment.method === "LINK" ? (
+                                                                    <img
+                                                                        src="/icons/payment/link.png"
+                                                                        alt="LINK"
+                                                                        className="h-6 w-6"
+                                                                    />
                                                                 ) : (
                                                                     <img
                                                                         src="/icons/payment/credit-card.png"
@@ -533,7 +539,7 @@ const AdmPagamentosPannel = () => {
                                                                 )}
                                                                 <div>
                                                                     <p className="font-medium text-psi-dark text-sm">
-                                                                        {payment.method === "PIX" ? "PIX" : "Cartão de Crédito"}
+                                                                        {payment.method === "PIX" ? "PIX" : payment.method === "LINK" ? "Pagamento por Link" : "Cartão de Crédito"}
                                                                     </p>
                                                                     <p className="text-sm text-psi-dark/80">
                                                                         {DateUtils.formatDate(payment.createdAt, "DD/MM/YYYY HH:mm")}

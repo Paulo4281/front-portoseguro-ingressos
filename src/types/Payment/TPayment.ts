@@ -2,7 +2,8 @@ import { TicketCancelledBy } from "../Ticket/TTicket"
 
 export const PaymentMethods = [
     "PIX",
-    "CREDIT_CARD"
+    "CREDIT_CARD",
+    "LINK"
 ] as const
 
 export const PaymentGatewayBillingStatuses = [
@@ -29,6 +30,73 @@ export const PaymentRefundStatuses = [
     "AWAITING_CRITICAL_ACTION_AUTHORIZATION",
     "AWAITING_CUSTOMER_EXTERNAL_AUTHORIZATION"
 ] as const
+
+/** Resposta do pagamento via link (GET /payment/link/verify?code=...) */
+export type TPaymentLinkVerifyResponse = {
+    payment: {
+        id: string
+        code: string
+        status: typeof PaymentGatewayBillingStatuses[number]
+        method: typeof PaymentMethods[number]
+        externalPaymentId: string | null
+        totalPaidByCustomer: number | null
+        qrcodeData: {
+            encodedImage: string
+            payload: string
+            expirationDate: string
+            description?: string
+            success?: boolean
+        } | null
+        customer: {
+            id: string
+            firstName: string
+            lastName: string
+            email: string
+        } | null
+        event: {
+            id: string
+            name: string
+            image: string
+            maxInstallments: number
+        } | null
+    }
+    tickets: Array<{
+        id: string
+        code: string
+        price: number
+        status: string
+        isInsured: boolean
+        ticketType: {
+            id: string
+            name: string
+        } | null
+        dates: Array<{
+            id: string
+            date: string | null
+            hourStart: string | null
+            hourEnd: string | null
+        }>
+    }>
+}
+
+export type TPaymentLinkPayParams = {
+    paymentId: string
+    paymentMethod: "CREDIT_CARD"
+    ccInfo?: {
+        number?: string
+        holderName?: string
+        exp?: string
+        cvv?: string
+        installments?: number
+    } | null
+}
+
+export type TPaymentLinkPayResponse = {
+    paymentId: string
+    status: typeof PaymentGatewayBillingStatuses[number]
+    confirmedByCreditCard?: boolean
+    isCreditCardError?: boolean
+}
 
 type TPaymentInstallment = {
     id: string
@@ -287,7 +355,8 @@ export function isPaymentValidForReceipt(status: string): boolean {
     return status === "CONFIRMED" || status === "RECEIVED"
 }
 
-const PaymentStatusLabels: Partial<Record<(typeof PaymentGatewayBillingStatuses)[number], string>> = {
+/** Labels em português para status de pagamento (inclui status usados pela API que podem não estar em PaymentGatewayBillingStatuses) */
+const PaymentStatusLabels: Record<string, string> = {
     PENDING: "Pendente",
     RECEIVED: "Recebido",
     CONFIRMED: "Confirmado",
@@ -306,7 +375,7 @@ const PaymentStatusLabels: Partial<Record<(typeof PaymentGatewayBillingStatuses)
 }
 
 export function getPaymentStatusLabel(status: string): string {
-    return (PaymentStatusLabels as Record<string, string>)[status] ?? status
+    return PaymentStatusLabels[status] ?? status
 }
 
 export type {
@@ -318,5 +387,4 @@ export type {
     TPaymentRefundParams,
     TPaymentReleaseBalanceParams,
     TPaymentReleaseBalanceResponse,
-    TPaymentMySalesItem,
 }

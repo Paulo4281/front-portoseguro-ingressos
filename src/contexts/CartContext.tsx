@@ -54,6 +54,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     const cachedItems = loadCartItemsFromCache()
     const [items, setItems] = useState<TCartItem[]>(cachedItems || [])
     const router = useRouter()
+    const { user } = useAuthStore()
 
     const { mutateAsync: deleteTicketHoldByUserId } = useTicketHoldDeleteByUserId()
 
@@ -132,10 +133,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         })
         
         if (typeof window !== "undefined" && window.location.pathname !== "/checkout") {
-            const isSellerFlow = new URLSearchParams(window.location.search).get("seller") === "true"
+            const hasSellerParam = new URLSearchParams(window.location.search).get("seller") === "true"
+            const isSellerFlow = user?.role === "SELLER" || hasSellerParam
             router.push(isSellerFlow ? "/checkout?seller=true" : "/checkout")
         }
-    }, [router])
+    }, [router, user?.role])
 
     const removeItem = useCallback((eventId: string, batchId?: string) => {
         setItems((prev) =>
@@ -282,6 +284,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             StoreManager.remove(CART_STORE_KEY)
         }
     }, [items])
+
+    useEffect(() => {
+        const handler = (event: MessageEvent) => {
+            if (event.origin !== window.location.origin) return
+            if (event.data?.type === "PSI_CLEAR_CART") {
+                setItems([])
+            }
+        }
+        window.addEventListener("message", handler)
+        return () => window.removeEventListener("message", handler)
+    }, [])
 
     return (
         <CartContext.Provider

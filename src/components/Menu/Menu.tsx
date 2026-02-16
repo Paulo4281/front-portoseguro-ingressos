@@ -227,8 +227,20 @@ const Menu = () => {
     ]
 
     const pathname = usePathname()
+    const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null
+    const queryParams: Record<string, string> = {};
+    if (searchParams) {
+        for (const [key, value] of searchParams.entries()) {
+            queryParams[key] = value;
+        }
+    }
 
-    if (blockedPages.includes(pathname)) return null
+    if (queryParams?.seller === "true") {
+        blockedPages.push("/ver-evento")
+        blockedPages.push("/checkout")
+    }
+
+    if (blockedPages.some(page => pathname.startsWith(page))) return null
 
     const { user, isAuthenticated, removeUser } = useAuthStore()
 

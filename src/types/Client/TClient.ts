@@ -16,6 +16,7 @@ type TClient = {
     email: string
     phone: string | null
     birth: string | null
+    image: string | null
     address: {
         street: string | null
         number: string | null
@@ -26,8 +27,8 @@ type TClient = {
         country: string | null
         zipCode: string | null
     } | null
-    totalPayments: number
-    events: TClientEvent[]
+    totalPayments: number | null
+    events: TClientEvent[] | null
     createdAt: string
 }
 
