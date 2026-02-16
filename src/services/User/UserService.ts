@@ -1,7 +1,7 @@
 import { API } from "@/api/api"
 import type { TUserCreate, TUserResetPasswordByCode, TUserResetPassword, TUserUpdate, TUserConfirmSocial } from "@/types/User/TUser"
 import type { TApiResponse } from "@/types/TApiResponse"
-import type { TSellerListItem } from "@/types/Resale/TResale"
+import type { TResaleSalesByEvent, TRevendaChartSalesBySeller, TSellerListItem } from "@/types/Resale/TResale"
 import type { AxiosResponse } from "axios"
 
 class UserServiceClass {
@@ -205,6 +205,24 @@ class UserServiceClass {
             prefix: "/user",
             url: "/delete-seller",
             data
+        }))?.data
+        return response
+    }
+
+    /** Métricas: vendas (ingressos + receita) por revendedor. GET /user/organizer/resale/chart-sales-by-seller */
+    async getOrganizerResaleChartSalesBySeller(): Promise<TApiResponse<TRevendaChartSalesBySeller[]>> {
+        const response = (await API.GET({
+            prefix: "/user",
+            url: "/organizer/resale/chart-sales-by-seller"
+        }))?.data
+        return response
+    }
+
+    /** Métricas: vendas por evento por revendedor (eficiência). GET /user/organizer/resale/sales-by-event */
+    async getOrganizerResaleSalesByEvent(): Promise<TApiResponse<TResaleSalesByEvent[]>> {
+        const response = (await API.GET({
+            prefix: "/user",
+            url: "/organizer/resale/sales-by-event"
         }))?.data
         return response
     }

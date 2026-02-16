@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Background } from "@/components/Background/Background"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,6 +18,7 @@ import { Toast } from "@/components/Toast/Toast"
 import { PaymentService } from "@/services/Payment/PaymentService"
 import type { TPaymentLinkVerifyResponse } from "@/types/Payment/TPayment"
 import { getPaymentStatusLabel, isPaymentValidForReceipt } from "@/types/Payment/TPayment"
+import { calculateTotalWithInstallmentFee } from "@/components/SelectInstallment/SelectInstallment"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
@@ -33,12 +34,14 @@ type TCardForm = {
 }
 
 const PagamentoLinkInfo = () => {
+    const router = useRouter()
     const searchParams = useSearchParams()
     const code = (searchParams.get("code") || "").trim()
 
     const [isLoading, setIsLoading] = useState(false)
     const [isPaying, setIsPaying] = useState(false)
     const [isVerifyingPayment, setIsVerifyingPayment] = useState(false)
+    const [isCreditCardPaymentSuccessful, setIsCreditCardPaymentSuccessful] = useState(false)
     const [data, setData] = useState<TPaymentLinkVerifyResponse | null>(null)
     const [activeTab, setActiveTab] = useState<"PIX" | "CREDIT_CARD">("PIX")
 
@@ -52,7 +55,55 @@ const PagamentoLinkInfo = () => {
 
     const payment = data?.payment
     const tickets = useMemo(() => data?.tickets ?? [], [data])
-    const maxInstallments = payment?.event?.maxInstallments ?? 12
+
+    const subtotalFromTickets = useMemo(() => {
+        return tickets.reduce((sum, t) => sum + (t?.price ?? 0), 0)
+    }, [tickets])
+
+    /**
+     * Base (sem taxa de parcelamento). Para link de pagamento, o backend pode ou não
+     * preencher `totalPaidByCustomer` antes do pagamento; então usamos fallback no subtotal.
+     */
+    const baseTotal = useMemo(() => {
+        return payment?.totalPaidByCustomer ?? subtotalFromTickets
+    }, [payment?.totalPaidByCustomer, subtotalFromTickets])
+
+    const maxInstallmentsAllowed = useMemo(() => {
+        const computedMax = baseTotal < 1000 ? 1 : 12
+        const eventMax = payment?.event?.maxInstallments
+        if (typeof eventMax === "number" && eventMax > 0) {
+            return Math.min(computedMax, eventMax)
+        }
+        return computedMax
+    }, [baseTotal, payment?.event?.maxInstallments])
+
+    const selectedInstallments = useMemo(() => {
+        return Math.min(card.installments, maxInstallmentsAllowed)
+    }, [card.installments, maxInstallmentsAllowed])
+
+    useEffect(() => {
+        if (card.installments !== selectedInstallments) {
+            setCard((p) => ({ ...p, installments: selectedInstallments }))
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedInstallments])
+
+    const installmentFeeCents = useMemo(() => {
+        if (activeTab !== "CREDIT_CARD") return 0
+        return calculateTotalWithInstallmentFee(baseTotal, selectedInstallments) - baseTotal
+    }, [activeTab, baseTotal, selectedInstallments])
+
+    const totalToDisplay = useMemo(() => {
+        if (!payment) return 0
+        // Se já estiver pago/confirmado, exibimos o total real do pagamento.
+        if (isPaymentValidForReceipt(payment.status)) {
+            return payment.totalPaidByCustomer ?? baseTotal
+        }
+        if (activeTab === "CREDIT_CARD") {
+            return calculateTotalWithInstallmentFee(baseTotal, selectedInstallments)
+        }
+        return baseTotal
+    }, [payment, activeTab, baseTotal, selectedInstallments])
 
     const cardBrand = useMemo(() => getCardBrand(card.number), [card.number])
 
@@ -74,6 +125,32 @@ const PagamentoLinkInfo = () => {
     }
 
     const canPayByCreditCard = Boolean(payment && (payment.status === "PENDING" || payment.status === "OVERDUE"))
+    const shouldDisableCreditCardPayButton = Boolean(
+        !canPayByCreditCard || isPaying || isCreditCardPaymentSuccessful || (payment != null && isPaymentValidForReceipt(payment.status))
+    )
+    const isPixPaymentSuccessful = Boolean(
+        payment && isPaymentValidForReceipt(payment.status) && payment.method === "PIX"
+    )
+    const shouldDisablePixTab = Boolean(isCreditCardPaymentSuccessful)
+    const shouldDisableCartaoTab = Boolean(isPixPaymentSuccessful)
+
+    useEffect(() => {
+        if (payment && isPaymentValidForReceipt(payment.status) && payment.method === "CREDIT_CARD") {
+            setIsCreditCardPaymentSuccessful(true)
+        }
+    }, [payment?.status, payment?.method])
+
+    useEffect(() => {
+        if (isCreditCardPaymentSuccessful) {
+            setActiveTab("CREDIT_CARD")
+        }
+    }, [isCreditCardPaymentSuccessful])
+
+    useEffect(() => {
+        if (isPixPaymentSuccessful) {
+            setActiveTab("PIX")
+        }
+    }, [isPixPaymentSuccessful])
 
     const handleCopyLink = async () => {
         if (!code) return
@@ -175,7 +252,7 @@ const PagamentoLinkInfo = () => {
                     holderName: card.holderName,
                     exp: card.exp,
                     cvv: card.cvv,
-                    installments: Math.min(card.installments, maxInstallments)
+                    installments: selectedInstallments
                 }
             })
             if (response?.success && response?.data?.isCreditCardError) {
@@ -183,7 +260,8 @@ const PagamentoLinkInfo = () => {
                 return
             }
             if (response?.success) {
-                Toast.success("Pagamento processado. Atualizando status...")
+                setIsCreditCardPaymentSuccessful(true)
+                Toast.success("Pagamento processado! Faça login para acessar todos os seus ingressos.")
                 await fetchVerify()
             } else {
                 Toast.error(response?.message ?? "Não foi possível realizar o pagamento.")
@@ -252,7 +330,7 @@ const PagamentoLinkInfo = () => {
                                         <div className="text-right">
                                             <p className="text-xs text-psi-dark/60">Total</p>
                                             <p className="text-2xl font-semibold text-psi-primary">
-                                                {ValueUtils.centsToCurrency(payment.totalPaidByCustomer ?? 0)}
+                                                {ValueUtils.centsToCurrency(totalToDisplay)}
                                             </p>
                                         </div>
                                     </div>
@@ -330,7 +408,7 @@ const PagamentoLinkInfo = () => {
                                             type="button"
                                             onClick={() => setActiveTab("PIX")}
                                             className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex-1 ${activeTab === "PIX" ? "bg-white text-psi-dark shadow-sm" : "text-psi-dark/70 hover:text-psi-dark"}`}
-                                            disabled={!payment.qrcodeData}
+                                            disabled={!payment.qrcodeData || shouldDisablePixTab}
                                         >
                                             PIX
                                         </button>
@@ -338,6 +416,7 @@ const PagamentoLinkInfo = () => {
                                             type="button"
                                             onClick={() => setActiveTab("CREDIT_CARD")}
                                             className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex-1 ${activeTab === "CREDIT_CARD" ? "bg-white text-psi-dark shadow-sm" : "text-psi-dark/70 hover:text-psi-dark"}`}
+                                            disabled={shouldDisableCartaoTab}
                                         >
                                             Cartão
                                         </button>
@@ -395,6 +474,24 @@ const PagamentoLinkInfo = () => {
                                                         )}
                                                         Verificar Pagamento
                                                     </Button>
+                                                    {isPixPaymentSuccessful && (
+                                                        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 space-y-2">
+                                                            <p className="font-medium">
+                                                                Pagamento realizado com sucesso.
+                                                            </p>
+                                                            <p className="text-emerald-900/80 text-xs">
+                                                                Para acessar todos os seus ingressos, faça login na sua conta.
+                                                            </p>
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                className="w-full border-emerald-300 text-emerald-900 hover:bg-emerald-100"
+                                                                onClick={() => router.push("/login")}
+                                                            >
+                                                                Fazer login
+                                                            </Button>
+                                                        </div>
+                                                    )}
                                                 </>
                                             )}
                                         </div>
@@ -453,34 +550,76 @@ const PagamentoLinkInfo = () => {
                                                         disabled={!canPayByCreditCard || isPaying}
                                                     />
                                                 </div>
-                                                <div className="grid grid-cols-2 gap-3 items-center">
+                                                <div className="grid grid-cols-3 gap-3 items-center">
                                                     <label className="text-sm text-psi-dark/70">Parcelas</label>
                                                     <Select
-                                                        value={String(Math.min(card.installments, maxInstallments))}
+                                                        value={String(selectedInstallments)}
                                                         onValueChange={(v) => setCard((p) => ({ ...p, installments: Number(v) }))}
                                                         disabled={!canPayByCreditCard || isPaying}
                                                     >
-                                                        <SelectTrigger className="h-10 w-full">
+                                                        <SelectTrigger className="h-10 w-full col-span-2">
                                                             <SelectValue placeholder="Parcelas" />
                                                         </SelectTrigger>
-                                                        <SelectContent>
-                                                            {Array.from({ length: maxInstallments }).map((_, i) => (
-                                                                <SelectItem key={i + 1} value={String(i + 1)}>
-                                                                    {i + 1}x
-                                                                </SelectItem>
-                                                            ))}
+                                                        <SelectContent className="w-full">
+                                                            {Array.from({ length: maxInstallmentsAllowed }).map((_, i) => {
+                                                                const installment = i + 1
+                                                                const totalWithFee = calculateTotalWithInstallmentFee(baseTotal, installment)
+                                                                const installmentValue = Math.round(totalWithFee / installment)
+                                                                return (
+                                                                    <SelectItem key={installment} value={String(installment)}>
+                                                                        {installment}x de {ValueUtils.centsToCurrency(installmentValue)}
+                                                                        {installment === 1 ? " (à vista)" : ""}
+                                                                    </SelectItem>
+                                                                )
+                                                            })}
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
+
+                                                {canPayByCreditCard && (
+                                                    <div className="rounded-xl border border-psi-dark/10 bg-psi-dark/2 p-3 text-xs text-psi-dark/70 space-y-1">
+                                                        <div className="flex items-center justify-between">
+                                                            <span>Taxa de parcelamento ({selectedInstallments}x):</span>
+                                                            <span className="font-medium text-psi-dark">
+                                                                {ValueUtils.centsToCurrency(installmentFeeCents)}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center justify-between">
+                                                            <span>Total no cartão:</span>
+                                                            <span className="font-semibold text-psi-primary">
+                                                                {ValueUtils.centsToCurrency(calculateTotalWithInstallmentFee(baseTotal, selectedInstallments))}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                )}
                                                 <Button
                                                     type="button"
                                                     variant="primary"
                                                     onClick={handlePayCreditCard}
-                                                    disabled={!canPayByCreditCard || isPaying}
+                                                    disabled={shouldDisableCreditCardPayButton}
                                                 >
                                                     {isPaying ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
                                                     Pagar com cartão
                                                 </Button>
+
+                                                {isCreditCardPaymentSuccessful && (
+                                                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 space-y-2">
+                                                        <p className="font-medium">
+                                                            Pagamento realizado com sucesso.
+                                                        </p>
+                                                        <p className="text-emerald-900/80 text-xs">
+                                                            Para acessar todos os seus ingressos, faça login na sua conta.
+                                                        </p>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            className="w-full border-emerald-300 text-emerald-900 hover:bg-emerald-100"
+                                                            onClick={() => router.push("/login")}
+                                                        >
+                                                            Fazer login
+                                                        </Button>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     )}

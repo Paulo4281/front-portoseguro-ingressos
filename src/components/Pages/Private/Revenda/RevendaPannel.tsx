@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { Background } from "@/components/Background/Background"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,10 +10,13 @@ import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DialogConfirm } from "@/components/Dialog/DialogConfirm/DialogConfirm"
 import { Toast } from "@/components/Toast/Toast"
+import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { Loader2, Mail, Pencil, PlusCircle, Trash2 } from "lucide-react"
 import { useResaleSendInvite } from "@/hooks/Resale/useResaleSendInvite"
 import { useResaleFind } from "@/hooks/Resale/useResaleFind"
 import { useResaleDelete } from "@/hooks/Resale/useResaleDelete"
+import { useResaleChartSalesBySeller } from "@/hooks/Resale/useResaleChartSalesBySeller"
+import { useResaleSalesByEvent } from "@/hooks/Resale/useResaleSalesByEvent"
 import { useSellerList } from "@/hooks/User/useSellerList"
 import { useSellerUpdateCommission } from "@/hooks/User/useSellerUpdateCommission"
 import { useSellerToggleActive } from "@/hooks/User/useSellerToggleActive"
@@ -39,8 +43,26 @@ const RevendaPannel = () => {
 
     const { data: sellersRes, isLoading: sellersLoading, refetch: refetchSellers } = useSellerList()
     const { data: invitesRes, isLoading: invitesLoading } = useResaleFind()
+    const { data: chartSalesRes, isLoading: chartSalesLoading } = useResaleChartSalesBySeller()
+    const { data: salesByEventRes, isLoading: salesByEventLoading } = useResaleSalesByEvent()
     const sellers = sellersRes?.data ?? []
     const invites = useMemo(() => parseInvites(invitesRes?.data as TResaleFindData | TSellerInvitation[]), [invitesRes])
+    const salesBySeller = chartSalesRes?.data ?? []
+    const efficiencyByEvent = salesByEventRes?.data ?? []
+
+    const chart1Data = useMemo(
+        () => salesBySeller.map((s) => ({ ...s, name: s.sellerName })),
+        [salesBySeller]
+    )
+    const chart2Data = useMemo(
+        () =>
+            efficiencyByEvent.map((e) => ({
+                name: `${e.eventName} — ${e.resellerEmail}`,
+                ticketsSold: e.ticketsSold,
+                efficiencyPercent: e.efficiencyPercent ?? null
+            })),
+        [efficiencyByEvent]
+    )
 
     const { mutateAsync: sendInvite, isPending: sendingInvite } = useResaleSendInvite()
     const { mutateAsync: updateCommission, isPending: updatingCommission } = useSellerUpdateCommission()
@@ -82,6 +104,101 @@ const RevendaPannel = () => {
                     <Button type="button" variant="primary" onClick={() => setCreateOpen(true)} disabled={loadingMutation}>
                         <PlusCircle className="h-4 w-4" />Novo revendedor
                     </Button>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6 shadow-sm">
+                        <h2 className="text-lg font-medium text-psi-dark mb-4">Vendas por revendedor</h2>
+                        <p className="text-sm text-psi-dark/60 mb-3">Ingressos vendidos e receita obtida por cada revendedor.</p>
+                        {chartSalesLoading ? (
+                            <div className="flex items-center justify-center gap-2 py-8 text-psi-dark/60">
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                                <span className="text-sm">Carregando...</span>
+                            </div>
+                        ) : (
+                            <>
+                                <ResponsiveContainer width="100%" height={400}>
+                                    <BarChart
+                                        data={chart1Data}
+                                        margin={{ top: 10, right: 30, left: 10, bottom: 60 }}
+                                    >
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#E4E6F0" />
+                                        <XAxis
+                                            dataKey="name"
+                                            tick={{ fontSize: 11 }}
+                                            angle={0}
+                                            textAnchor="middle"
+                                            height={70}
+                                        />
+                                        <YAxis yAxisId="tickets" tick={{ fontSize: 12 }} label={{ value: "Ingressos", angle: -90, position: "insideLeft" }} />
+                                        <YAxis
+                                            yAxisId="revenue"
+                                            orientation="right"
+                                            tick={{ fontSize: 11 }}
+                                            tickFormatter={(v) => (v >= 100000 ? `R$ ${(v / 10000).toFixed(0)}K` : `R$ ${(v / 100).toFixed(0)}`)}
+                                            label={{ value: "Receita", angle: 90, position: "insideRight" }}
+                                        />
+                                        <Tooltip
+                                            formatter={(value: number, name: string) => {
+                                                if (name === "Ingressos") return [value.toLocaleString("pt-BR"), "Ingressos"]
+                                                return [ValueUtils.centsToCurrency(value), "Receita"]
+                                            }}
+                                            labelFormatter={(label) => String(label)}
+                                            contentStyle={{ backgroundColor: "white", border: "1px solid #E4E6F0", borderRadius: "8px" }}
+                                        />
+                                        <Legend />
+                                        <Bar yAxisId="tickets" dataKey="ticketsCount" name="Ingressos" fill="#6C4BFF" radius={[4, 4, 0, 0]} />
+                                        <Bar yAxisId="revenue" dataKey="revenueCents" name="Receita" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                                {chart1Data.length === 0 && (
+                                    <p className="text-sm text-psi-dark/50 text-center py-4">Nenhuma venda por revendedor no período.</p>
+                                )}
+                            </>
+                        )}
+                    </div>
+
+                    <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6 shadow-sm">
+                        <h2 className="text-lg font-medium text-psi-dark mb-4">Eficiência por evento</h2>
+                        <p className="text-sm text-psi-dark/60 mb-3">Ingressos vendidos por revendedor em cada evento do organizador.</p>
+                        {salesByEventLoading ? (
+                            <div className="flex items-center justify-center gap-2 py-8 text-psi-dark/60">
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                                <span className="text-sm">Carregando...</span>
+                            </div>
+                        ) : (
+                            <>
+                                <ResponsiveContainer width="100%" height={400}>
+                                    <BarChart
+                                        data={chart2Data}
+                                        margin={{ top: 10, right: 20, left: 10, bottom: 80 }}
+                                    >
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#E4E6F0" />
+                                        <XAxis
+                                            dataKey="name"
+                                            tick={{ fontSize: 10 }}
+                                            angle={0}
+                                            textAnchor="middle"
+                                            height={80}
+                                        />
+                                        <YAxis tick={{ fontSize: 12 }} label={{ value: "Ingressos", angle: -90, position: "insideLeft" }} />
+                                        <Tooltip
+                                            formatter={(value: number, _name: string, props: { payload?: { efficiencyPercent?: number | null } }) => {
+                                                const pct = props?.payload?.efficiencyPercent
+                                                const suffix = pct != null ? ` (${pct.toFixed(1)}%)` : ""
+                                                return [`${value.toLocaleString("pt-BR")} ingressos${suffix}`, "Vendidos"]
+                                            }}
+                                            contentStyle={{ backgroundColor: "white", border: "1px solid #E4E6F0", borderRadius: "8px" }}
+                                        />
+                                        <Bar dataKey="ticketsSold" name="Ingressos vendidos" fill="#FF6F91" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                                {chart2Data.length === 0 && (
+                                    <p className="text-sm text-psi-dark/50 text-center py-4">Nenhuma venda por evento no período.</p>
+                                )}
+                            </>
+                        )}
+                    </div>
                 </div>
 
                 <div className="space-y-3 rounded-2xl border p-4 bg-white">

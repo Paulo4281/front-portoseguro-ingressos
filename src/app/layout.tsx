@@ -5,7 +5,7 @@ import { Poppins } from "next/font/google"
 import { ToastContainer } from "react-toastify"
 import { Suspense } from "react"
 import { Providers } from "@/providers"
-import { Menu } from "@/components/Menu/Menu"
+import { ConditionalMenu } from "@/components/Menu/ConditionalMenu"
 import { Footer } from "@/components/Footer/Footer"
 import { LoadingScreen } from "@/components/LoadingScreen/LoadingScreen"
 import { Metadata, Viewport } from "next"
@@ -123,7 +123,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             theme="light"
             className="custom-toast-container"
           />
-            <Menu />
+          <Suspense fallback={null}>
+            <ConditionalMenu />
+          </Suspense>
             <main className="w-full min-h-screen">
               {children}
             </main>

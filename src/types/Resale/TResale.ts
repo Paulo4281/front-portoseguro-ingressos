@@ -36,6 +36,17 @@ type TSellerInvitation = {
     updatedAt?: string | null
 }
 
+/** Item para gráfico: vendas (ingressos + receita) por revendedor */
+export type TRevendaChartSalesBySeller = {
+    sellerId: string
+    /** Nome ou e-mail do revendedor para exibição */
+    sellerName: string
+    /** Quantidade de ingressos vendidos */
+    ticketsCount: number
+    /** Receita total em centavos (R$) */
+    revenueCents: number
+}
+
 /** Vendas de um revendedor por evento (para gráfico de eficiência) */
 type TResaleSalesByEvent = {
     eventId: string
@@ -45,6 +56,8 @@ type TResaleSalesByEvent = {
     ticketsSold: number
     /** Receita em centavos */
     revenue: number
+    /** Opcional: % das vendas do evento atribuídas a este revendedor (0–100) */
+    efficiencyPercent?: number
 }
 
 type TResaleCreatePayload = {
@@ -112,9 +125,9 @@ type TVerifyInviteResponse = {
 
 export type {
     TResale,
+    TResaleSalesByEvent,
     TSellerListItem,
     TSellerInvitation,
-    TResaleSalesByEvent,
     TResaleCreatePayload,
     TResaleUpdatePayload,
     TResaleStats,

@@ -353,7 +353,7 @@ const DashRevendedorPannel = () => {
                                         <p className="text-xl font-semibold sm:text-2xl">Nova venda</p>
                                         <p className="text-sm sm:text-base opacity-90">
                                             {sellerActive
-                                                ? "Abra o painel, selecione um evento e continue a venda no modo revendedor."
+                                                ? "Abra o painel, selecione um evento e continue a venda."
                                                 : "Voce esta impedido de revender no momento. Entre em contato com o organizador."}
                                         </p>
                                     </div>
