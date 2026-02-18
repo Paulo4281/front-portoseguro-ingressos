@@ -38,7 +38,8 @@ import {
     EyeOff,
     AlertTriangle,
     Crown,
-    Shield
+    Shield,
+    Store
 } from "lucide-react"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import { usePaymentRefund } from "@/hooks/Payment/usePaymentRefund"
@@ -523,6 +524,12 @@ const AdmPagamentosPannel = () => {
                                                                         alt="PIX"
                                                                         className="h-6 w-6"
                                                                     />
+                                                                ) : payment.method === "LINK" ? (
+                                                                    <img
+                                                                        src="/icons/payment/link.png"
+                                                                        alt="LINK"
+                                                                        className="h-6 w-6"
+                                                                    />
                                                                 ) : (
                                                                     <img
                                                                         src="/icons/payment/credit-card.png"
@@ -532,7 +539,7 @@ const AdmPagamentosPannel = () => {
                                                                 )}
                                                                 <div>
                                                                     <p className="font-medium text-psi-dark text-sm">
-                                                                        {payment.method === "PIX" ? "PIX" : "Cartão de Crédito"}
+                                                                        {payment.method === "PIX" ? "PIX" : payment.method === "LINK" ? "Pagamento por Link" : "Cartão de Crédito"}
                                                                     </p>
                                                                     <p className="text-sm text-psi-dark/80">
                                                                         {DateUtils.formatDate(payment.createdAt, "DD/MM/YYYY HH:mm")}
@@ -638,6 +645,45 @@ const AdmPagamentosPannel = () => {
                                                                             )}
                                                                         </div>
                                                                     </div>
+
+                                                                    {payment.Seller && (
+                                                                        <div className="rounded-2xl border border-psi-dark/10 bg-white/80 p-4 space-y-2 shadow-sm">
+                                                                            <div className="flex items-center gap-2 text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
+                                                                                <Store className="h-4 w-4 text-psi-primary" />
+                                                                                Revendedor
+                                                                            </div>
+                                                                            <div className="space-y-1">
+                                                                                <p className="text-base font-medium text-psi-dark">
+                                                                                    {payment.Seller.firstName} {payment.Seller.lastName}
+                                                                                </p>
+                                                                                <p className="text-sm text-psi-dark/70">
+                                                                                    {payment.Seller.email}
+                                                                                </p>
+                                                                                {payment.Seller.phone && (
+                                                                                    <p className="text-sm text-psi-dark/70">
+                                                                                        {DocumentUtils.formatPhone(payment.Seller.phone)}
+                                                                                    </p>
+                                                                                )}
+                                                                                {payment.Seller.document && (
+                                                                                    <p className="text-sm text-psi-dark/70">
+                                                                                        {DocumentUtils.formatCpf(payment.Seller.document)}
+                                                                                    </p>
+                                                                                )}
+                                                                                {(payment.sellerCommissionRate != null || payment.sellerCommissionValue != null) && (
+                                                                                    <div className="pt-2 mt-2 border-t border-psi-dark/10 flex flex-wrap gap-2">
+                                                                                        {payment.sellerCommissionRate != null && (
+                                                                                            <span className="text-xs text-psi-dark/60">Taxa: {payment.sellerCommissionRate}%</span>
+                                                                                        )}
+                                                                                        {payment.sellerCommissionValue != null && (
+                                                                                            <span className="text-xs font-medium text-emerald-600">
+                                                                                                Comissão: {ValueUtils.centsToCurrency(payment.sellerCommissionValue)}
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
 
                                                                     {payment.type === "TICKET" && payment.Event && (
                                                                         <>

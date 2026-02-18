@@ -743,7 +743,7 @@ const MeusIngressosPannel = () => {
                                             (ticket.form.multiSelect && ticket.form.multiSelect.length > 0)
                                         )
                                     })
-                                const hasPixQrCode = group.payment?.method === "PIX" && 
+                                const hasPixQrCode = (group.payment?.method === "PIX" || group.payment?.method === "LINK") && 
                                                     group.payment?.status === "PENDING" && 
                                                     group.payment?.qrcodeData
                                 const hasPartialRefund = group.tickets.some(t => 

@@ -1,5 +1,6 @@
 import { CheckoutInfo } from "@/components/Pages/Public/Checkout/CheckoutInfo"
 import { Metadata } from "next"
+import { Suspense } from "react"
 
 export const metadata: Metadata = {
     title: "Checkout | Porto Seguro Ingressos",
@@ -8,9 +9,9 @@ export const metadata: Metadata = {
 
 const CheckoutPage = () => {
     return (
-        <>
-        <CheckoutInfo />
-        </>
+        <Suspense fallback={null}>
+            <CheckoutInfo />
+        </Suspense>
     )
 }
 

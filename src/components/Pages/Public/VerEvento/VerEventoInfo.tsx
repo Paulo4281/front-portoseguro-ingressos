@@ -923,11 +923,11 @@ const VerEventoInfo = (
                 }
             `}} />
             <Background variant="light" className="min-h-screen">
-            <div className="max-w-[95vw] mx-auto py-8 mt-[80px]
+            <div className={`max-w-[95vw] mx-auto py-8 ${ user && user.role === "SELLER" ? "mt-0" : "mt-[80px]" }
             xss:max-w-[88vw]
             sm:py-12
             lg:max-w-[80vw] lg:container
-            ">
+            `}>
                 <div className="grid gap-8
                 lg:grid-cols-[1fr_400px]
                 lg:gap-12">

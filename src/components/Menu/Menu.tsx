@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent, Wallet, QrCode, HeartPlus, Info, HouseHeart, CreditCard, Book, Download, SquareArrowRight, Target, SearchCheck, CalendarCheck } from "lucide-react"
+import { usePathname, useSearchParams } from "next/navigation"
+import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent, Wallet, QrCode, HeartPlus, Info, HouseHeart, CreditCard, Book, Download, SquareArrowRight, Target, SearchCheck, CalendarCheck, HandCoins, Repeat2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Logo from "@/components/Logo/Logo"
 import { Avatar } from "@/components/Avatar/Avatar"
@@ -46,7 +46,7 @@ type TMenuLink = {
     href?: string
     label: string
     icon: ComponentType<{ className?: string }>
-    roles?: ("CUSTOMER" | "ORGANIZER" | "ADMIN" | "NOT_DEFINED")[]
+    roles?: ("CUSTOMER" | "ORGANIZER" | "ADMIN" | "SELLER" | "NOT_DEFINED")[]
     sublinks?: TSubLink[]
 }
 
@@ -55,6 +55,13 @@ const menuLinks: TMenuLink[] = [
         href: "/",
         label: "Home",
         icon: Home,
+        roles: ["ADMIN", "CUSTOMER", "NOT_DEFINED", "ORGANIZER"]
+    },
+    {
+        href: "/dash-revendedor",
+        label: "Painel do Revendedor",
+        icon: HandCoins,
+        roles: ["SELLER"]
     },
     {
         href: "/confirmar-social",
@@ -110,6 +117,12 @@ const menuLinks: TMenuLink[] = [
         roles: ["ORGANIZER"]
     },
     {
+        label: "Revenda",
+        href: "/revenda",
+        icon: HandCoins,
+        roles: ["ORGANIZER"]
+    },
+    {
         label: "Carteira",
         href: "/carteira",
         icon: Wallet,
@@ -153,7 +166,7 @@ const menuLinks: TMenuLink[] = [
     },
     {
         href: "/adm-organizadores",
-        label: "Organizadores",
+        label: "Usuários",
         icon: Users,
         roles: ["ADMIN"]
     },
@@ -182,6 +195,12 @@ const menuLinks: TMenuLink[] = [
         roles: ["ADMIN"]
     },
     {
+        href: "/adm-crons-log",
+        label: "Crons Log",
+        icon: Repeat2,
+        roles: ["ADMIN"]
+    },
+    {
         href: "/configuracoes",
         label: "Configurações",
         icon: Settings,
@@ -203,18 +222,22 @@ const Menu = () => {
         "/senha-redefinir",
         "/senha-redefinir-confirmar",
         "/redefinir-senha-log",
-        "/confirmar-social"
+        "/confirmar-social",
+        "/revenda-convite",
+        "/dash-revendedor",
+        "/definir-senha"
     ]
 
     const searchEventBlockedPages = [
         "/"
     ]
-    
+
     const pathname = usePathname()
 
     if (blockedPages.includes(pathname)) return null
 
     const { user, isAuthenticated, removeUser } = useAuthStore()
+
     const { mutateAsync: logoutUser, isPending: isLoggingOut } = useAuthLogout()
     const routerService = useRouter()
 

@@ -37,7 +37,7 @@ import type { TTicketToOrganizer } from "@/types/Ticket/TTicket"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import { ticketCancelledByConfig, refundStatusConfig } from "@/components/Pages/Private/AdmPagamentos/AdmPagamentosPannel"
 import { Badge } from "@/components/ui/badge"
-import { AlertTriangle, ExternalLink, Calendar, Clock } from "lucide-react"
+import { AlertTriangle, ExternalLink, Calendar, Clock, Store } from "lucide-react"
 import { useEventFindByIdUser } from "@/hooks/Event/useEventFindByIdUser"
 
 type TSheetTicketsToOrganizerProps = {
@@ -315,6 +315,7 @@ const SheetTicketsToOrganizer = ({
                                     {groupedTickets.map((group) => {
                                         const isMultipleTickets = group.tickets.length > 1
                                         const totalValue = group.tickets.reduce((sum, t) => sum + (t.price || 0), 0)
+                                        const seller = group.tickets.find((t) => t.seller)?.seller ?? null
                                         
                                         return (
                                             <div
@@ -347,10 +348,26 @@ const SheetTicketsToOrganizer = ({
                                                                     <p className="text-xs text-psi-dark/50 mt-1">
                                                                         Comprado em {DateUtils.formatDate(group.purchaseDate, "DD/MM/YYYY [às] HH:mm")}
                                                                     </p>
+                                                                    {seller && (
+                                                                        <div className="flex flex-wrap items-center gap-1.5 mt-2 text-xs text-psi-dark/60">
+                                                                            <Store className="h-3.5 w-3.5 shrink-0 text-psi-primary" />
+                                                                            <span>
+                                                                                Vendido por: <span className="font-medium text-psi-dark/80">{seller.firstName} {seller.lastName}</span>
+                                                                                {seller.email && ` (${seller.email})`}
+                                                                                {seller.commissionValue != null && (
+                                                                                    <> • Comissão: {ValueUtils.centsToCurrency(seller.commissionValue)}</>
+                                                                                )}
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
                                                                     {group.payment && (
                                                                         <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
                                                                             <Badge variant="outline" className="text-psi-dark/70 border-psi-dark/20">
-                                                                                {group.payment.method === "PIX" ? "PIX" : "Cartão de Crédito"}
+                                                                                {group.payment.method === "PIX"
+                                                                                    ? "PIX"
+                                                                                    : group.payment.method === "CREDIT_CARD"
+                                                                                        ? "Cartão de Crédito"
+                                                                                        : "Link"}
                                                                             </Badge>
                                                                             <span className="text-psi-dark/60">
                                                                                 Código: <span className="font-mono font-medium">{group.payment.code}</span>

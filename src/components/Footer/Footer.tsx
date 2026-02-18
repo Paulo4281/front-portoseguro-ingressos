@@ -3,6 +3,7 @@
 import Link from "next/link"
 import Logo from "@/components/Logo/Logo"
 import { Download, Shield, HeadphonesIcon, CreditCard } from "lucide-react"
+import { usePathname } from "next/navigation"
 import { Button } from "../ui/button"
 
 const navigation = [
@@ -42,6 +43,14 @@ const cardBrands = [
 
 const Footer = () => {
     const currentYear = new Date().getFullYear()
+
+    const pathname = usePathname()
+
+    const blockedRoutes = [
+        "/dash-revendedor"
+    ]
+
+    if (blockedRoutes.includes(pathname)) return null
 
     return (
         <footer className="w-full border-t border-[#E4E6F0] bg-white/95 text-psi-dark mt-auto" style={{ zIndex: 0! }}>

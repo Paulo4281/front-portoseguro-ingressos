@@ -12,7 +12,7 @@ type TPublicRoutes = {
 
 type TJwtDecoded = {
     id: string
-    role: "CUSTOMER" | "ORGANIZER" | "ADMIN" | "NOT_DEFINED"
+    role: "CUSTOMER" | "ORGANIZER" | "ADMIN" | "SELLER" | "NOT_DEFINED"
     customerId?: string
     organizer?: string
 }
@@ -35,7 +35,10 @@ const publicRoutes: TPublicRoutes[] = [
     { path: "/termos-e-condicoes", whenAuthenticated: "next" },
     { path: "/ajuda", whenAuthenticated: "next" },
     { path: "/pesquisa", whenAuthenticated: "next" },
-    { path: "/email-consent", whenAuthenticated: "next" }
+    { path: "/email-consent", whenAuthenticated: "next" },
+    { path: "/revenda-convite", whenAuthenticated: "redirect" },
+    { path: "/definir-senha", whenAuthenticated: "redirect" },
+    { path: "/pagamento-link", whenAuthenticated: "next" }
 ]
 
 export default async function proxy(request: NextRequest): Promise<NextResponse> {
@@ -76,9 +79,16 @@ export default async function proxy(request: NextRequest): Promise<NextResponse>
                 await jwtVerify(authToken, SECRET)
             }
 
+            const sellerAllowedPaths = path.startsWith("/dash-revendedor") || path.startsWith("/ver-evento") || path.startsWith("/checkout") || path.startsWith("/carteira")
+            if (role === "SELLER" && !sellerAllowedPaths) {
+                const redirectUrl = request.nextUrl.clone()
+                redirectUrl.pathname = "/dash-revendedor"
+                return NextResponse.redirect(redirectUrl)
+            }
+
             if (isPublicRoute?.whenAuthenticated === "redirect") {
                 const redirectUrl = request.nextUrl.clone()
-                redirectUrl.pathname = "/"
+                redirectUrl.pathname = role === "SELLER" ? "/dash-revendedor" : "/"
                 return NextResponse.redirect(redirectUrl)
             }
 

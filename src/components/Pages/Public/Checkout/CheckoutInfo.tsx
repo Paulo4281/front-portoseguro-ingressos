@@ -42,6 +42,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { TicketFeeUtils } from "@/utils/Helpers/FeeUtils/TicketFeeUtils"
@@ -75,10 +77,14 @@ import {
     MailCheck,
     QrCode,
     Copy,
+    ChevronDown,
     RefreshCw,
-    AlertCircle
+    AlertCircle,
+    Download,
+    Link2,
+    ArrowLeft
 } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { CTAButton } from "@/components/CTAButton/CTAButton"
 import { Toast } from "@/components/Toast/Toast"
@@ -106,19 +112,22 @@ import { getStates, getCitiesByState } from "@/utils/Helpers/IBGECitiesAndStates
 import { getCountries, getCountriesSync } from "@/utils/Helpers/Countries/Countries"
 import { SelectInstallment, calculateTotalWithInstallmentFee } from "@/components/SelectInstallment/SelectInstallment"
 import { useTicketBuy } from "@/hooks/Ticket/useTicketBuy"
+import { useTicketBuySeller } from "@/hooks/Ticket/useTicketBuySeller"
 import { CheckoutTimer } from "@/components/CheckoutTimer/CheckoutTimer"
 import { useTicketHoldCreate } from "@/hooks/TicketHold/useTicketHoldCreate"
 import { useTicketHoldUpdateQuantity } from "@/hooks/TicketHold/useTicketHoldUpdateQuantity"
 import { TTicketHoldCreate, TTicketHoldCreateResponse } from "@/types/TicketHold/TTicketHold"
 import { Badge } from "@/components/ui/badge"
 import { useUserUpdate } from "@/hooks/User/useUserUpdate"
+import { useUserCreateCustomer } from "@/hooks/User/useUserCreateCustomer"
 import { UserProfileUpdateValidator, type TUserProfileUpdate } from "@/validators/User/UserProfileUpdateValidator"
 import { Globe, Building2, Hash } from "lucide-react"
 import { PaymentService } from "@/services/Payment/PaymentService"
 import { useCardFindByUserId } from "@/hooks/Card/useCardFindByUserId"
 import type { TCard } from "@/types/Card/TCard"
+import { useOrganizerFindClients } from "@/hooks/Client/useOrganizerFindClients"
 
-type TPaymentMethod = "pix" | "credit"
+type TPaymentMethod = "pix" | "credit" | "link"
 
 export type THandleUpdateQuantityParams = {
     eventId: string
@@ -130,9 +139,12 @@ export type THandleUpdateQuantityParams = {
 const CheckoutInfo = () => {
     const { items, updateQuantity, updateTicketTypeQuantity, addItem, removeItem, getTotal, clearCart } = useCart()
     const { user, isAuthenticated, setUser } = useAuthStore()
+    const searchParams = useSearchParams()
     const router = useRouter()
     const [currentStep, setCurrentStep] = useState(1)
     const [paymentMethod, setPaymentMethod] = useState<TPaymentMethod>("pix")
+    const isSellerCheckout = searchParams.get("seller") === "true" && user?.role === "SELLER"
+    const [paymentLinkUrl, setPaymentLinkUrl] = useState("")
 
     const { mutateAsync: updateTicketHold, isPending: isUpdatingTicketHold } = useTicketHoldUpdateQuantity()
 
@@ -189,7 +201,29 @@ const CheckoutInfo = () => {
     const { mutateAsync: confirmByCode, isPending: isConfirmingByCode } = useUserConfirmationConfirmByCode()
     const { mutateAsync: resendConfirmation, isPending: isResendingConfirmation } = useUserConfirmationResendConfirmation()
     const { mutateAsync: buyTicket, isPending: isBuyingTicket } = useTicketBuy()
+    const { mutateAsync: buyTicketSeller, isPending: isBuyingTicketSeller } = useTicketBuySeller()
     const { mutateAsync: updateUser, isPending: isUpdatingUser } = useUserUpdate()
+    const { mutateAsync: createCustomer, isPending: isCreatingCustomer } = useUserCreateCustomer()
+
+    const [sellerClientSearch, setSellerClientSearch] = useState("")
+    const { data: organizerClientsData, isLoading: isLoadingOrganizerClients } = useOrganizerFindClients({
+        offset: 0,
+        search: sellerClientSearch,
+        isSeller: isSellerCheckout
+    })
+    const organizerClients = organizerClientsData?.data?.data ?? []
+    const [selectedOrganizerClientId, setSelectedOrganizerClientId] = useState("")
+    const [clientSelectOpen, setClientSelectOpen] = useState(false)
+    const [isNewOrganizerClient, setIsNewOrganizerClient] = useState(false)
+    const [newOrganizerClientFirstName, setNewOrganizerClientFirstName] = useState("")
+    const [newOrganizerClientLastName, setNewOrganizerClientLastName] = useState("")
+    const [newOrganizerClientEmail, setNewOrganizerClientEmail] = useState("")
+    const [newOrganizerClientDocument, setNewOrganizerClientDocument] = useState("")
+    const [newOrganizerClientPhone, setNewOrganizerClientPhone] = useState("")
+    const [newOrganizerClientZipCode, setNewOrganizerClientZipCode] = useState("")
+    const [newOrganizerClientAddressNumber, setNewOrganizerClientAddressNumber] = useState("")
+    const [newCreatedCustomerUserId, setNewCreatedCustomerUserId] = useState("")
+    const [newOrganizerClientDialogOpen, setNewOrganizerClientDialogOpen] = useState(false)
 
     const [buyTicketResponse, setBuyTicketResponse] = useState<TTicketBuyResponse | null>(null)
     const [showCreditCardErrorDialog, setShowCreditCardErrorDialog] = useState(false)
@@ -759,6 +793,36 @@ const CheckoutInfo = () => {
 
     const handleNext = () => {
         if (currentStep === 1) {
+            if (isSellerCheckout) {
+                if (!isAuthenticated || user?.role !== "SELLER") {
+                    Toast.info("Faça login com uma conta de revendedor para continuar.")
+                    return
+                }
+
+                if (!isNewOrganizerClient && !selectedOrganizerClientId) {
+                    Toast.info("Selecione um cliente do organizador ou cadastre um novo cliente.")
+                    return
+                }
+
+                if (isNewOrganizerClient) {
+                    if (
+                        !newOrganizerClientFirstName.trim() ||
+                        !newOrganizerClientLastName.trim() ||
+                        !newOrganizerClientEmail.trim() ||
+                        !newOrganizerClientDocument.trim() ||
+                        !newOrganizerClientZipCode.trim() ||
+                        !newOrganizerClientAddressNumber.trim()
+                    ) {
+                        Toast.info("Preencha nome, sobrenome, e-mail, CPF, CEP e número do novo cliente.")
+                        return
+                    }
+                    if (!newCreatedCustomerUserId) {
+                        Toast.info("Clique em \"Salvar cliente\" para cadastrar o cliente antes de finalizar a compra.")
+                        return
+                    }
+                }
+            }
+
             if (!isAuthenticated) {
                 Toast.info("Por favor, faça login ou cadastre-se para continuar.")
                 return
@@ -776,6 +840,13 @@ const CheckoutInfo = () => {
 
             if (user.role === "CUSTOMER" && !user.isCompleteInfo) {
                 Toast.info("Por favor, complete seus dados antes de continuar.")
+                return
+            }
+
+            if (isSellerCheckout) {
+                if (currentStep < maxStep) {
+                    setCurrentStep(currentStep + 1)
+                }
                 return
             }
         }
@@ -865,7 +936,7 @@ const CheckoutInfo = () => {
             eventTicketTypesIds: null,
             eventTicketAmount: null,
             eventForms: null,
-            paymentMethod: paymentMethod === "pix" ? "PIX" : "CREDIT_CARD",
+            paymentMethod: paymentMethod === "pix" ? "PIX" : paymentMethod === "credit" ? "CREDIT_CARD" : "LINK",
             ccInfo: null,
             couponCodes: null,
             removeTicketHoldIds: null,
@@ -1067,11 +1138,56 @@ const CheckoutInfo = () => {
 
         data["removeTicketHoldIds"] = ticketHoldData?.map((th) => th.id) || null
         data["isInsured"] = isInsured
+        if (isSellerCheckout && user?.id) {
+            data["sellerUserId"] = user.id
+            const customerUserId = isNewOrganizerClient ? newCreatedCustomerUserId : selectedOrganizerClientId
+            data["customerUserId"] = customerUserId || undefined
+            if (isNewOrganizerClient) {
+                data["organizerClient"] = {
+                    firstName: newOrganizerClientFirstName.trim(),
+                    lastName: newOrganizerClientLastName.trim(),
+                    email: newOrganizerClientEmail.trim().toLowerCase(),
+                    phone: newOrganizerClientPhone.trim(),
+                    document: newOrganizerClientDocument.trim()
+                }
+                data["organizerClientId"] = null
+            } else {
+                data["organizerClientId"] = selectedOrganizerClientId
+                data["organizerClient"] = null
+            }
+        }
 
-        const response = await buyTicket(data)
+        const response = isSellerCheckout
+            ? await buyTicketSeller(data)
+            : await buyTicket(data)
 
         if (response?.success && response?.data?.isCreditCardError) {
             setShowCreditCardErrorDialog(true)
+            return
+        }
+
+        if (paymentMethod === "link" && response?.success) {
+            const linkData = response?.data as unknown
+            const paymentCode =
+                linkData && typeof linkData === "object" && linkData !== null && "paymentCode" in linkData
+                    ? String((linkData as { paymentCode?: string }).paymentCode || "")
+                    : linkData && typeof linkData === "object" && linkData !== null && "code" in linkData
+                        ? String((linkData as { code?: string }).code || "")
+                        : ""
+
+            if (!paymentCode) {
+                Toast.error("Link gerado, mas não foi possível obter o código do pagamento.")
+                return
+            }
+
+            const url = `https://portoseguroingressos.com.br/pagamento-link?code=${encodeURIComponent(paymentCode)}`
+            setPaymentLinkUrl(url)
+            try {
+                await navigator.clipboard.writeText(url)
+                Toast.success("Link de pagamento gerado e copiado!")
+            } catch {
+                Toast.success("Link de pagamento gerado!")
+            }
             return
         }
 
@@ -1091,6 +1207,49 @@ const CheckoutInfo = () => {
                 clearCart()
                 router.push("/meus-ingressos")
             }, 1500)
+        }
+    }
+
+    const handleSaveNewOrganizerClient = async () => {
+        if (
+            !newOrganizerClientFirstName.trim() ||
+            !newOrganizerClientLastName.trim() ||
+            !newOrganizerClientEmail.trim() ||
+            !newOrganizerClientDocument.trim() ||
+            !newOrganizerClientZipCode.trim() ||
+            !newOrganizerClientAddressNumber.trim()
+        ) {
+            Toast.info("Preencha nome, sobrenome, e-mail, CPF, CEP e número do endereço do cliente.")
+            return
+        }
+        try {
+            const response = await createCustomer({
+                firstName: newOrganizerClientFirstName.trim(),
+                lastName: newOrganizerClientLastName.trim(),
+                email: newOrganizerClientEmail.trim().toLowerCase(),
+                phone: newOrganizerClientPhone.trim(),
+                document: newOrganizerClientDocument.replace(/\D/g, ""),
+                address: {
+                    zipCode: newOrganizerClientZipCode.replace(/\D/g, ""),
+                    number: newOrganizerClientAddressNumber.trim()
+                }
+            })
+            if (response?.success) {
+                const data = response?.data as unknown
+                const createdId =
+                    data && typeof data === "object" && data !== null && "id" in data
+                        ? (data as { id: string }).id
+                        : data && typeof data === "object" && data !== null && "user" in data
+                            ? (data as { user: { id?: string } }).user?.id
+                            : undefined
+                if (createdId) setNewCreatedCustomerUserId(createdId)
+                Toast.success("Cliente cadastrado. Um e-mail foi enviado para ele definir a senha.")
+                setNewOrganizerClientDialogOpen(false)
+            } else {
+                Toast.error(response?.message ?? "Não foi possível cadastrar o cliente.")
+            }
+        } catch (error: any) {
+            Toast.error(error?.response?.data?.message ?? "Não foi possível cadastrar o cliente.")
         }
     }
 
@@ -1236,6 +1395,15 @@ const CheckoutInfo = () => {
         }
     }
 
+    const handleDownloadQrCode = () => {
+        if (!buyTicketResponse?.pixData?.encodedImage) return
+        const link = document.createElement("a")
+        link.href = `data:image/png;base64,${buyTicketResponse.pixData.encodedImage}`
+        link.download = "qrcode-pagamento.png"
+        link.click()
+        Toast.success("QR Code baixado com sucesso!")
+    }
+
     const handleCheckPayment = async () => {
         if (!buyTicketResponse?.paymentId) {
             Toast.error("ID do pagamento não encontrado. Tente finalizar a compra novamente.")
@@ -1354,7 +1522,9 @@ const CheckoutInfo = () => {
                         <h1 className="text-2xl font-medium text-psi-dark">Carrinho vazio</h1>
                         <p className="text-psi-dark/60">Adicione ingressos ao carrinho antes de finalizar a compra.</p>
                         <Button onClick={() => router.push("/")} variant="primary">
-                            Voltar para eventos
+                            {
+                                isSellerCheckout ? "Voltar ao painel" : "Voltar para eventos"
+                            }
                         </Button>
                     </div>
                 </div>
@@ -1364,8 +1534,8 @@ const CheckoutInfo = () => {
 
     return (
         <Background variant="light" className="min-h-screen">
-            <div className="container py-8 mt-[100px]
-            sm:py-12">
+            <div className={`container py-8
+            sm:py-12 ${ user && user.role === "SELLER" ? "mt-0" : "mt-[100px]" }`}>
                 <div className="max-w-5xl mx-auto">
                     <div className="mb-8">
                         <h1 className="text-3xl font-semibold text-psi-primary mb-2
@@ -1382,12 +1552,38 @@ const CheckoutInfo = () => {
                                 </div>
                             )
                         }
+                        {user?.role === "SELLER" && (
+                            <div className="mt-4 flex gap-2">
+                                <Button
+                                    type="button"
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={() => router.push("/dash-revendedor")}
+                                >
+                                    <ArrowLeft className="h-4 w-4" />
+                                    Retornar ao painel
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        clearCart()
+                                        Toast.success("Carrinho resetado.")
+                                    }}
+                                    className="text-psi-dark/70 hover:text-destructive hover:border-destructive/50"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    Resetar carrinho
+                                </Button>
+                            </div>
+                        )}
                     </div>
 
                     <div className="mb-8">
                         <div className="flex items-center justify-between">
                             {[
-                                { number: 1, label: "Dados do Comprador", icon: User },
+                                { number: 1, label: isSellerCheckout ? "Cliente" : "Dados do Comprador", icon: User },
                                 { number: 2, label: "Resumo", icon: Receipt },
                                 ...(hasForms ? [{ number: 3, label: "Formulário", icon: ClipboardList }] : []),
                                 { number: hasForms ? 4 : 3, label: "Finalização", icon: CheckCircle2 }
@@ -1439,9 +1635,290 @@ const CheckoutInfo = () => {
                             {currentStep === 1 && (
                                 <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
                                 sm:p-8 shadow-sm">
-                                    <h2 className="text-xl font-medium text-psi-dark mb-6">Dados do Comprador</h2>
+                                    <h2 className="text-xl font-medium text-psi-dark mb-6">
+                                        {isSellerCheckout ? "Cliente do Organizador" : "Dados do Comprador"}
+                                    </h2>
 
-                                    {isAuthenticated ? (
+                                    {isSellerCheckout ? (
+                                        <div className="space-y-5">
+                                            <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-4">
+                                                <p className="text-sm font-medium text-psi-dark mb-1">Selecione o cliente</p>
+                                                <p className="text-xs text-psi-dark/70">
+                                                    Selecione um cliente do organizador ou cadastre um novo cliente para seguir com a compra.
+                                                </p>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <label className="text-sm font-medium text-psi-dark">Buscar cliente</label>
+                                                <Input
+                                                    value={sellerClientSearch}
+                                                    onChange={(e) => setSellerClientSearch(e.target.value)}
+                                                    placeholder="Digite nome, e-mail ou CPF"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <label className="text-sm font-medium text-psi-dark">Cliente do organizador</label>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            if (isNewOrganizerClient) {
+                                                                setIsNewOrganizerClient(false)
+                                                                setNewOrganizerClientDialogOpen(false)
+                                                                setSelectedOrganizerClientId("")
+                                                                setNewCreatedCustomerUserId("")
+                                                            } else {
+                                                                setIsNewOrganizerClient(true)
+                                                                setSelectedOrganizerClientId("")
+                                                                setNewCreatedCustomerUserId("")
+                                                                setNewOrganizerClientDialogOpen(true)
+                                                            }
+                                                        }}
+                                                    >
+                                                        {isNewOrganizerClient ? "Usar cliente existente" : "Novo cliente"}
+                                                    </Button>
+                                                </div>
+
+                                                {!isNewOrganizerClient ? (
+                                                    <Popover open={clientSelectOpen} onOpenChange={setClientSelectOpen}>
+                                                        <PopoverTrigger asChild>
+                                                            <Button
+                                                                type="button"
+                                                                variant="outline"
+                                                                className="w-full justify-start gap-3 h-auto min-h-10 py-2 px-3 font-normal"
+                                                            >
+                                                                {(() => {
+                                                                    const selected = organizerClients.find((c) => c.id === selectedOrganizerClientId)
+                                                                    if (isLoadingOrganizerClients) {
+                                                                        return (
+                                                                            <span className="flex items-center gap-2 text-psi-dark/60">
+                                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                                                Carregando clientes...
+                                                                            </span>
+                                                                        )
+                                                                    }
+                                                                    if (selected) {
+                                                                        const phoneFormatted = selected.phone
+                                                                            ? selected.phone.replace(/\D/g, '').length === 11
+                                                                                ? selected.phone.replace(/\D/g, '').replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3')
+                                                                                : selected.phone.replace(/\D/g, '').length === 10
+                                                                                    ? selected.phone.replace(/\D/g, '').replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3')
+                                                                                    : selected.phone
+                                                                            : null
+                                                                        return (
+                                                                            <span className="flex items-center gap-3 text-left">
+                                                                                <Avatar className="h-8 w-8 shrink-0">
+                                                                                    <AvatarImage src={selected.image ? ImageUtils.getUserImageUrl(selected.image) : undefined} alt="" />
+                                                                                    <AvatarFallback className="bg-psi-primary/10 text-psi-primary text-xs">
+                                                                                        <User className="h-4 w-4" />
+                                                                                    </AvatarFallback>
+                                                                                </Avatar>
+                                                                                <span className="flex flex-col items-start truncate min-w-0">
+                                                                                    <span className="font-medium text-psi-dark truncate w-full">{selected.firstName} {selected.lastName}</span>
+                                                                                    <span className="text-xs text-psi-dark/60 truncate w-full">{selected.email}{phoneFormatted ? ` • ${phoneFormatted}` : ""}</span>
+                                                                                </span>
+                                                                            </span>
+                                                                        )
+                                                                    }
+                                                                    return (
+                                                                        <span className="text-psi-dark/60">Selecione o cliente</span>
+                                                                    )
+                                                                })()}
+                                                                <ChevronDown className="h-4 w-4 shrink-0 ml-auto opacity-50" />
+                                                            </Button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                                                            <div className="max-h-[280px] overflow-y-auto">
+                                                                {organizerClients.length === 0 ? (
+                                                                    <div className="py-6 text-center text-sm text-psi-dark/60">
+                                                                        Nenhum cliente encontrado
+                                                                    </div>
+                                                                ) : (
+                                                                    organizerClients.map((client) => {
+                                                                        const phoneFormatted = client.phone
+                                                                            ? client.phone.replace(/\D/g, '').length === 11
+                                                                                ? client.phone.replace(/\D/g, '').replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3')
+                                                                                : client.phone.replace(/\D/g, '').length === 10
+                                                                                    ? client.phone.replace(/\D/g, '').replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3')
+                                                                                    : client.phone
+                                                                            : null
+                                                                        const isSelected = selectedOrganizerClientId === client.id
+                                                                        return (
+                                                                            <button
+                                                                                key={client.id}
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    setSelectedOrganizerClientId(client.id)
+                                                                                    setClientSelectOpen(false)
+                                                                                }}
+                                                                                className={`w-full flex items-center gap-3 p-3 text-left transition-colors border-b border-[#E4E6F0] last:border-b-0 hover:bg-psi-primary/5 ${isSelected ? "bg-psi-primary/10" : ""}`}
+                                                                            >
+                                                                                <Avatar className="h-10 w-10 shrink-0">
+                                                                                    <AvatarImage src={client.image ? ImageUtils.getUserImageUrl(client.image) : undefined} alt="" />
+                                                                                    <AvatarFallback className="bg-psi-primary/10 text-psi-primary">
+                                                                                        <User className="h-5 w-5" />
+                                                                                    </AvatarFallback>
+                                                                                </Avatar>
+                                                                                <div className="flex flex-col min-w-0 flex-1">
+                                                                                    <span className="font-medium text-psi-dark truncate">{client.firstName} {client.lastName}</span>
+                                                                                    <span className="text-xs text-psi-dark/70 truncate">{client.email}</span>
+                                                                                    {phoneFormatted && (
+                                                                                        <span className="text-xs text-psi-dark/60 flex items-center gap-1 mt-0.5">
+                                                                                            <Phone className="h-3 w-3 shrink-0" />
+                                                                                            {phoneFormatted}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                                {isSelected && <Check className="h-5 w-5 text-psi-primary shrink-0" />}
+                                                                            </button>
+                                                                        )
+                                                                    })
+                                                                )}
+                                                            </div>
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                ) : (
+                                                    <div className="space-y-3">
+                                                        <div className="rounded-xl border border-psi-dark/10 bg-psi-dark/2 p-4 space-y-3">
+                                                            <div className="flex items-start justify-between gap-3">
+                                                                <div className="space-y-1">
+                                                                    <p className="text-sm font-medium text-psi-dark">Novo cliente</p>
+                                                                    <p className="text-xs text-psi-dark/60">
+                                                                        CEP e número são essenciais para aprovação no cartão e para evitar rejeição no anti-fraude.
+                                                                    </p>
+                                                                </div>
+                                                                <Button
+                                                                    type="button"
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    onClick={() => setNewOrganizerClientDialogOpen(true)}
+                                                                >
+                                                                    {newCreatedCustomerUserId ? "Editar" : "Preencher"}
+                                                                </Button>
+                                                            </div>
+
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-psi-dark/70">
+                                                                <div><span className="text-psi-dark/50">Nome:</span> {newOrganizerClientFirstName || "-"}</div>
+                                                                <div><span className="text-psi-dark/50">Sobrenome:</span> {newOrganizerClientLastName || "-"}</div>
+                                                                <div className="sm:col-span-2"><span className="text-psi-dark/50">E-mail:</span> {newOrganizerClientEmail || "-"}</div>
+                                                                <div><span className="text-psi-dark/50">CPF:</span> {newOrganizerClientDocument || "-"}</div>
+                                                                <div><span className="text-psi-dark/50">Telefone:</span> {newOrganizerClientPhone || "-"}</div>
+                                                                <div><span className="text-psi-dark/50">CEP:</span> {newOrganizerClientZipCode || "-"}</div>
+                                                                <div><span className="text-psi-dark/50">Número:</span> {newOrganizerClientAddressNumber || "-"}</div>
+                                                            </div>
+
+                                                            {!newCreatedCustomerUserId && (
+                                                                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">
+                                                                    Para continuar, preencha e salve o cliente.
+                                                                </p>
+                                                            )}
+                                                            {newCreatedCustomerUserId && (
+                                                                <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-2">
+                                                                    Cliente cadastrado. Depois, clique em “Continuar” para seguir com a compra.
+                                                                </p>
+                                                            )}
+                                                        </div>
+
+                                                        <Dialog open={newOrganizerClientDialogOpen} onOpenChange={setNewOrganizerClientDialogOpen}>
+                                                            <DialogContent className="max-w-lg">
+                                                                <div className="space-y-4">
+                                                                    <div className="space-y-1">
+                                                                        <h3 className="text-lg font-medium text-psi-dark">Novo cliente</h3>
+                                                                        <p className="text-xs text-psi-dark/60">
+                                                                            CEP e número são essenciais para aprovação no cartão e para evitar rejeição no anti-fraude.
+                                                                        </p>
+                                                                    </div>
+
+                                                                    <div className="space-y-4">
+                                                                        <div className="rounded-xl border border-psi-dark/10 bg-white p-4 space-y-3">
+                                                                            <p className="text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
+                                                                                Informações pessoais
+                                                                            </p>
+                                                                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                                                <Input
+                                                                                    value={newOrganizerClientFirstName}
+                                                                                    onChange={(e) => setNewOrganizerClientFirstName(e.target.value)}
+                                                                                    placeholder="Nome"
+                                                                                />
+                                                                                <Input
+                                                                                    value={newOrganizerClientLastName}
+                                                                                    onChange={(e) => setNewOrganizerClientLastName(e.target.value)}
+                                                                                    placeholder="Sobrenome"
+                                                                                />
+                                                                                <Input
+                                                                                    className="sm:col-span-2"
+                                                                                    type="email"
+                                                                                    value={newOrganizerClientEmail}
+                                                                                    onChange={(e) => setNewOrganizerClientEmail(e.target.value)}
+                                                                                    placeholder="E-mail"
+                                                                                />
+                                                                                <InputMask
+                                                                                    mask="000.000.000-00"
+                                                                                    value={newOrganizerClientDocument}
+                                                                                    onAccept={(value) => setNewOrganizerClientDocument(String(value))}
+                                                                                    placeholder="CPF"
+                                                                                    inputMode="numeric"
+                                                                                />
+                                                                                <InputMask
+                                                                                    mask="(00) 00000-0000"
+                                                                                    value={newOrganizerClientPhone}
+                                                                                    onAccept={(value) => setNewOrganizerClientPhone(String(value))}
+                                                                                    placeholder="Telefone"
+                                                                                    inputMode="tel"
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="rounded-xl border border-psi-dark/10 bg-white p-4 space-y-3">
+                                                                            <p className="text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
+                                                                                Endereço
+                                                                            </p>
+                                                                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                                                <InputMask
+                                                                                    mask="00000-000"
+                                                                                    value={newOrganizerClientZipCode}
+                                                                                    onAccept={(value) => setNewOrganizerClientZipCode(String(value))}
+                                                                                    placeholder="CEP"
+                                                                                    inputMode="numeric"
+                                                                                />
+                                                                                <Input
+                                                                                    value={newOrganizerClientAddressNumber}
+                                                                                    onChange={(e) => setNewOrganizerClientAddressNumber(e.target.value)}
+                                                                                    placeholder="Número"
+                                                                                    inputMode="numeric"
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="flex items-center justify-end gap-2 pt-2">
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="outline"
+                                                                            onClick={() => setNewOrganizerClientDialogOpen(false)}
+                                                                        >
+                                                                            Cancelar
+                                                                        </Button>
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="primary"
+                                                                            disabled={isCreatingCustomer}
+                                                                            onClick={handleSaveNewOrganizerClient}
+                                                                        >
+                                                                            {isCreatingCustomer ? <LoadingButton /> : "Salvar cliente"}
+                                                                        </Button>
+                                                                    </div>
+                                                                </div>
+                                                            </DialogContent>
+                                                        </Dialog>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : isAuthenticated ? (
                                         <div className="space-y-6">
                                             {user?.role === "CUSTOMER" ? (
                                                 user.isCompleteInfo ? (
@@ -1930,9 +2407,22 @@ const CheckoutInfo = () => {
                                             <MailCheck className="size-5 text-psi-primary shrink-0 mt-0.5" />
                                             <div className="space-y-1">
                                                 <p className="font-medium text-psi-dark">Importante</p>
-                                                <p className="text-sm text-psi-dark/70">
-                                                    Os ingressos serão enviados para o seu e-mail juntamente com o comprovante de pagamento após a confirmação.
-                                                </p>
+                                                {
+                                                    isSellerCheckout ? (
+                                                        <>
+                                                        <p className="text-sm text-psi-dark/70">
+                                                            Os ingressos serão enviados para o cliente através do e-mail informado.
+                                                        </p>
+                                                        </>
+                                                    )
+                                                    : (
+                                                        <>
+                                                        <p className="text-sm text-psi-dark/70">
+                                                            Os ingressos serão enviados para o seu e-mail juntamente com o comprovante de pagamento após a confirmação.
+                                                        </p>
+                                                        </>
+                                                    )
+                                                }
                                             </div>
                                         </div>
                                     </div>
@@ -2120,7 +2610,10 @@ const CheckoutInfo = () => {
                                                         <div className="space-y-4 mb-6">
                                                             <button
                                                                 type="button"
-                                                                onClick={() => setPaymentMethod("pix")}
+                                                                onClick={() => {
+                                                                    setPaymentMethod("pix")
+                                                                    setPaymentLinkUrl("")
+                                                                }}
                                                                 className={`w-full p-4 rounded-xl border-2 transition-all text-left ${paymentMethod === "pix"
                                                                         ? "border-psi-primary bg-psi-primary/5"
                                                                         : "border-psi-dark/10 hover:border-psi-primary/30"
@@ -2147,7 +2640,10 @@ const CheckoutInfo = () => {
 
                                                             <button
                                                                 type="button"
-                                                                onClick={() => setPaymentMethod("credit")}
+                                                                onClick={() => {
+                                                                    setPaymentMethod("credit")
+                                                                    setPaymentLinkUrl("")
+                                                                }}
                                                                 className={`w-full p-4 rounded-xl border-2 transition-all text-left ${paymentMethod === "credit"
                                                                         ? "border-psi-primary bg-psi-primary/5"
                                                                         : "border-psi-dark/10 hover:border-psi-primary/30"
@@ -2171,7 +2667,71 @@ const CheckoutInfo = () => {
                                                                     </div>
                                                                 </div>
                                                             </button>
+
+                                                            {isSellerCheckout && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setPaymentMethod("link")}
+                                                                    className={`w-full p-4 rounded-xl border-2 transition-all text-left ${paymentMethod === "link"
+                                                                            ? "border-psi-primary bg-psi-primary/5"
+                                                                            : "border-psi-dark/10 hover:border-psi-primary/30"
+                                                                        }`}
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className={`size-4 rounded-full border-2 ${paymentMethod === "link"
+                                                                                ? "border-psi-primary bg-psi-primary"
+                                                                                : "border-psi-dark/30"
+                                                                            }`}>
+                                                                            {paymentMethod === "link" && (
+                                                                                <div className="size-full rounded-full bg-white scale-50" />
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Link2 className="h-5 w-5 text-psi-primary" />
+                                                                            <span className="font-medium text-psi-dark">Link de pagamento</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </button>
+                                                            )}
                                                         </div>
+
+                                                        {isSellerCheckout && paymentMethod === "link" && (
+                                                            <div className="pt-6 border-t border-psi-dark/10 space-y-3">
+                                                                <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-4">
+                                                                    <p className="text-sm font-medium text-psi-dark mb-1">Link de pagamento</p>
+                                                                    <p className="text-xs text-psi-dark/70">
+                                                                        Ao gerar, você poderá copiar o link e enviar ao cliente. O pagamento poderá ser feito por PIX (pré-gerado) ou cartão.
+                                                                    </p>
+                                                                </div>
+
+                                                                {paymentLinkUrl ? (
+                                                                    <div className="space-y-2 w-full">
+                                                                        <label className="text-sm font-medium text-psi-dark">Link gerado</label>
+                                                                        <div className="flex w-full gap-2">
+                                                                            <Input value={paymentLinkUrl} className="w-full!" readOnly />
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="outline"
+                                                                                onClick={async () => {
+                                                                                    try {
+                                                                                        await navigator.clipboard.writeText(paymentLinkUrl)
+                                                                                        Toast.success("Link copiado!")
+                                                                                    } catch {
+                                                                                        Toast.error("Não foi possível copiar o link.")
+                                                                                    }
+                                                                                }}
+                                                                            >
+                                                                                Copiar
+                                                                            </Button>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <p className="text-xs text-psi-dark/60">
+                                                                        Clique em <span className="font-medium">Gerar link de pagamento</span> na finalização para criar o link.
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        )}
 
                                                         {paymentMethod === "credit" && (
                                                             <div className="space-y-4 pt-6 border-t border-psi-dark/10">
@@ -2395,6 +2955,17 @@ const CheckoutInfo = () => {
                                                                             "
                                                                             onClick={handleCopyPayload}
                                                                         />
+                                                                        {isSellerCheckout && (
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="outline"
+                                                                                onClick={handleDownloadQrCode}
+                                                                                className="shrink-0"
+                                                                            >
+                                                                                <Download className="h-4 w-4" />
+                                                                                Baixar QrCode
+                                                                            </Button>
+                                                                        )}
                                                                     </div>
                                                                 </div>
 
@@ -2541,7 +3112,14 @@ const CheckoutInfo = () => {
                                                         )
                                                         :
                                                         (
-                                                            <p className="text-psi-dark/70"><strong>Pagamento:</strong> {paymentMethod === "pix" ? "PIX" : "Cartão de Crédito"}</p>
+                                                            <p className="text-psi-dark/70">
+                                                                <strong>Pagamento:</strong>{" "}
+                                                                {paymentMethod === "pix"
+                                                                    ? "PIX"
+                                                                    : paymentMethod === "credit"
+                                                                        ? "Cartão de Crédito"
+                                                                        : "Link de pagamento"}
+                                                            </p>
                                                         )
                                                 }
                                             </div>
@@ -2566,14 +3144,18 @@ const CheckoutInfo = () => {
                                                         variant="primary"
                                                         size="lg"
                                                         className=""
-                                                        disabled={isBuyingTicket}
+                                                        disabled={
+                                                            isBuyingTicket ||
+                                                            isBuyingTicketSeller ||
+                                                            (isSellerCheckout && paymentMethod === "link" && Boolean(paymentLinkUrl))
+                                                        }
                                                     >
-                                                        {isBuyingTicket ? (
+                                                        {(isBuyingTicket || isBuyingTicketSeller) ? (
                                                             <LoadingButton />
                                                         ) : (
                                                             <>
                                                             <Check className="size-4" />
-                                                            Finalizar Compra
+                                                            {isSellerCheckout && paymentMethod === "link" ? "Gerar link de pagamento" : "Finalizar Compra"}
                                                             </>
                                                         )}
                                                     </Button>

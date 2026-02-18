@@ -29,7 +29,10 @@ type Prefixes =
     "/crm" |
     "/opinionpoll" |
     "/opinionpoll-comment" |
-    "/subscription"
+    "/subscription" |
+    "/resale/seller-invitation" |
+    "/resale/seller-balance" |
+    "/cron-log"
 
 type TAPIParams = {
     prefix: Prefixes

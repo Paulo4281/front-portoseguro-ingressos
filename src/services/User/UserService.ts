@@ -1,5 +1,7 @@
 import { API } from "@/api/api"
 import type { TUserCreate, TUserResetPasswordByCode, TUserResetPassword, TUserUpdate, TUserConfirmSocial } from "@/types/User/TUser"
+import type { TApiResponse } from "@/types/TApiResponse"
+import type { TResaleSalesByEvent, TRevendaChartSalesBySeller, TSellerListItem } from "@/types/Resale/TResale"
 import type { AxiosResponse } from "axios"
 
 class UserServiceClass {
@@ -8,6 +10,36 @@ class UserServiceClass {
             prefix: "/user",
             url: "/",
             data: data
+        }))?.data
+        return response
+    }
+
+    /** Cria CUSTOMER por revendedor (Auth + Seller). Gera confirmPasswordCode e envia e-mail. */
+    async createCustomer(data: {
+        firstName: string
+        lastName: string
+        email: string
+        phone: string
+        document: string
+        address: {
+            zipCode: string
+            number: string
+        }
+    }): Promise<AxiosResponse["data"]> {
+        const response = (await API.POST({
+            prefix: "/user",
+            url: "/create-customer",
+            data
+        }))?.data
+        return response
+    }
+
+    /** Define senha com código recebido por e-mail (rota pública). */
+    async confirmPassword(code: string, password: string): Promise<AxiosResponse["data"]> {
+        const response = (await API.PUT({
+            prefix: "/user",
+            url: `/confirm-password/${encodeURIComponent(code)}`,
+            data: { password }
         }))?.data
         return response
     }
@@ -125,6 +157,99 @@ class UserServiceClass {
         const response = (await API.GET({
             prefix: "/user",
             url: `/organizer/get-support-info/${organizerId}`
+        }))?.data
+        return response
+    }
+
+    async createSeller(data: {
+        firstName: string
+        lastName: string
+        email: string
+        phone: string
+        document: string
+        password: string
+        invitationCode: string
+    }): Promise<TApiResponse> {
+        const response = (await API.POST({
+            prefix: "/user",
+            url: "/create-seller",
+            data
+        }))?.data
+        return response
+    }
+
+    async listSellers(): Promise<TApiResponse<TSellerListItem[]>> {
+        const response = (await API.GET({
+            prefix: "/user",
+            url: "/list-sellers"
+        }))?.data
+        return response
+    }
+
+    async toggleSellerActive(data: { sellerId: string; sellerActive: boolean }): Promise<TApiResponse> {
+        const response = (await API.PATCH({
+            prefix: "/user",
+            url: "/toggle-seller-active",
+            data
+        }))?.data
+        return response
+    }
+
+    async updateSeller(data: { sellerId: string; sellerCommissionRate: number }): Promise<TApiResponse> {
+        const response = (await API.PUT({
+            prefix: "/user",
+            url: "/update-seller",
+            data
+        }))?.data
+        return response
+    }
+
+    async deleteSeller(data: { sellerId: string }): Promise<TApiResponse> {
+        const response = (await API.PATCH({
+            prefix: "/user",
+            url: "/delete-seller",
+            data
+        }))?.data
+        return response
+    }
+
+    /** Métricas: vendas (ingressos + receita) por revendedor. GET /user/organizer/resale/chart-sales-by-seller */
+    async getOrganizerResaleChartSalesBySeller(): Promise<TApiResponse<TRevendaChartSalesBySeller[]>> {
+        const response = (await API.GET({
+            prefix: "/user",
+            url: "/organizer/resale/chart-sales-by-seller"
+        }))?.data
+        return response
+    }
+
+    /** Métricas: vendas por evento por revendedor (eficiência). GET /user/organizer/resale/sales-by-event */
+    async getOrganizerResaleSalesByEvent(): Promise<TApiResponse<TResaleSalesByEvent[]>> {
+        const response = (await API.GET({
+            prefix: "/user",
+            url: "/organizer/resale/sales-by-event"
+        }))?.data
+        return response
+    }
+
+    async updateSellerPayoutConfig(data: {
+        sellerBankId?: string | null
+        sellerBankAccountName?: string | null
+        sellerBankAccountOwnerName?: string | null
+        sellerBankAccountOwnerBirth?: string | null
+        sellerBankAccountOwnerDocumentType?: "CPF" | "CNPJ" | null
+        sellerBankAccountOwnerDocument?: string | null
+        sellerBankAccountAgency?: string | null
+        sellerBankAccountNumber?: string | null
+        sellerBankAccountDigit?: string | null
+        sellerBankAccountType?: "CONTA_CORRENTE" | "CONTA_POUPANCA" | null
+        sellerPixAddressKey?: string | null
+        sellerPixAddressType?: "CPF" | "CNPJ" | "EMAIL" | "PHONE" | "EVP" | null
+        sellerPayoutMethod?: "PIX" | "BANK_ACCOUNT" | null
+    }): Promise<AxiosResponse["data"]> {
+        const response = (await API.PUT({
+            prefix: "/user",
+            url: "/seller-payout-config",
+            data
         }))?.data
         return response
     }

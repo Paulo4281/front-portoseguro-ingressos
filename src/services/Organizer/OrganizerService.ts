@@ -22,7 +22,7 @@ class OrganizerServiceClass {
 
         const response = (await API.GET({
             prefix: "/user",
-            url: "/organizers",
+            url: "/all-users",
             params: queryParams
         }))?.data
 

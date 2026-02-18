@@ -13,6 +13,15 @@ class TicketServiceClass {
         return response
     }
 
+    async buySeller(data: TTicketBuy): Promise<AxiosResponse["data"]> {
+        const response = (await API.POST({
+            prefix: "/ticket",
+            url: "/buy/seller",
+            data: data
+        }))?.data
+        return response
+    }
+
     async findByEventIdToOrganizer(eventId: string, offset: number = 0, limit: number = 30, search?: string, status?: string, eventDateId?: string): Promise<AxiosResponse["data"]> {
         const params: Record<string, string> = {
             offset: offset.toString(),

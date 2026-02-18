@@ -10,6 +10,14 @@ class PayoutServiceClass {
         return response
     }
 
+    async withdrawSeller(): Promise<AxiosResponse["data"]> {
+        const response = (await API.POST({
+            prefix: "/payout",
+            url: "/withdraw/seller"
+        }))?.data
+        return response
+    }
+
     async list(): Promise<AxiosResponse["data"]> {
         const response = (await API.GET({
             prefix: "/payout",

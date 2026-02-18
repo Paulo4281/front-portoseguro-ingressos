@@ -23,6 +23,24 @@ const TicketStatuses = [
     "FAILED"
 ] as const
 
+/** Retorna o label em português do status do ingresso */
+const TicketStatusLabels: Record<(typeof TicketStatuses)[number], string> = {
+    PENDING: "Pendente",
+    CONFIRMED: "Confirmado",
+    CANCELLED: "Cancelado",
+    REFUNDED: "Reembolsado",
+    REFUND_REQUESTED: "Reembolso solicitado",
+    OVERDUE: "Atrasado",
+    USED: "Utilizado",
+    PARTIALLY_USED: "Parcialmente utilizado",
+    EXPIRED: "Expirado",
+    FAILED: "Falhou"
+}
+
+function getTicketStatusLabel(status: (typeof TicketStatuses)[number] | string): string {
+    return TicketStatusLabels[status as (typeof TicketStatuses)[number]] ?? status
+}
+
 type TTicketForm = {
     text?: {
         label: string
@@ -180,7 +198,7 @@ type TTicketBuy = {
             }[] | null
         }[]
     }[] | null
-    paymentMethod: "CREDIT_CARD" | "PIX"
+    paymentMethod: "CREDIT_CARD" | "PIX" | "LINK"
     ccInfo: {
         number: string
         holderName: string
@@ -196,6 +214,20 @@ type TTicketBuy = {
     removeTicketHoldIds: string[] | null
     vfc: number | null
     isInsured?: boolean
+    /** Usado quando a compra é feita por revendedor */
+    sellerUserId?: string
+    /** ID do usuário CUSTOMER para quem é a compra (obrigatório em compras do revendedor) */
+    customerUserId?: string
+    /** Cliente selecionado do organizador (modo revendedor) */
+    organizerClientId?: string | null
+    /** Novo cliente informado pelo revendedor (modo revendedor) */
+    organizerClient?: {
+        firstName: string
+        lastName: string
+        email: string
+        phone: string
+        document: string
+    } | null
 }
 
 type TTicketToOrganizer = {
@@ -218,6 +250,13 @@ type TTicketToOrganizer = {
         method: typeof PaymentMethods[number]
         status: typeof PaymentGatewayBillingStatuses[number]
         paidAt: string | null
+    } | null
+    /** Preenchido quando o ingresso foi vendido por um revendedor */
+    seller: {
+        firstName: string
+        lastName: string
+        email: string
+        commissionValue: number
     } | null
     status: typeof TicketStatuses[number]
     ticketType: {
@@ -289,5 +328,6 @@ export type {
 }
 
 export {
-    TicketCancelledBy
+    TicketCancelledBy,
+    getTicketStatusLabel
 }

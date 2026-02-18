@@ -7,6 +7,7 @@ const UserRoles = [
     "CUSTOMER",
     "ORGANIZER",
     "ADMIN",
+    "SELLER",
     "NOT_DEFINED"
 ] as const
 
@@ -35,9 +36,32 @@ type TUser = {
     createdAt: string
     updatedAt: string | null
 
+    /** ID do usuário SELLER que criou este usuário (quando criado por revendedor) */
+    createdBySellerUserId?: string | null
+
     Organizer?: TOrganizer | null
 
     Address: TUserAddress | null
+
+    /** Apenas para role SELLER: se false, o revendedor não pode realizar novas vendas */
+    sellerActive?: boolean
+    /** Apenas para role SELLER: taxa de comissão (0–100) */
+    sellerCommissionRate?: number
+
+    /** Apenas para role SELLER: dados para recebimento (conta bancária / PIX) */
+    sellerBankId?: string | null
+    sellerBankAccountName?: string | null
+    sellerBankAccountOwnerName?: string | null
+    sellerBankAccountOwnerBirth?: string | null
+    sellerBankAccountOwnerDocument?: string | null
+    sellerBankAccountOwnerDocumentType?: "CPF" | "CNPJ" | null
+    sellerBankAccountAgency?: string | null
+    sellerBankAccountNumber?: string | null
+    sellerBankAccountDigit?: string | null
+    sellerBankAccountType?: "CONTA_CORRENTE" | "CONTA_POUPANCA" | null
+    sellerPixAddressKey?: string | null
+    sellerPixAddressType?: "CPF" | "CNPJ" | "EMAIL" | "PHONE" | "EVP" | null
+    sellerPayoutMethod?: "PIX" | "BANK_ACCOUNT" | null
 }
 
 type TUserCreate = z.infer<typeof UserCreateValidator>

@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CTAButton } from "@/components/CTAButton/CTAButton"
-import { ArrowUpRight, Lock, ShieldCheck, Ticket, Music2, SunMedium, Waves, PartyPopper, TrendingDown, Users, CreditCard, TrendingUp, Megaphone, Tag, Fingerprint, Cpu, Sparkles, Globe2, CheckCircle2, HeartHandshake, DollarSign, Star, BookOpen, ArrowRight, DollarSignIcon, Book, Car, Building2, Trophy, UtensilsCrossed, Heart, Music, Church, Mail, UserPlus, Zap } from "lucide-react"
+import { ArrowUpRight, Lock, ShieldCheck, Ticket, Music2, SunMedium, Waves, PartyPopper, TrendingDown, Users, CreditCard, TrendingUp, Megaphone, Tag, Fingerprint, Cpu, Sparkles, Globe2, CheckCircle2, HeartHandshake, DollarSign, Star, BookOpen, ArrowRight, DollarSignIcon, Book, Car, Building2, Trophy, UtensilsCrossed, Heart, Music, Church, Mail, UserPlus, Zap, FileText, QrCode, Shield, Headphones, HandCoins } from "lucide-react"
 import { useEventFindFeatured } from "@/hooks/Event/useEventFindFeatured"
 import { CardEvent } from "@/components/Card/CardEvent/CardEvent"
 import { Carousel } from "@/components/Carousel/Carousel"
@@ -327,6 +327,51 @@ const HomeHero = () => {
             title: "Equipe próxima",
             description: "Acompanhamos o evento do planejamento ao pós-venda com suporte dedicado e consultoria estratégica.",
             icon: HeartHandshake
+        }
+    ]
+
+    const platformFeatures = [
+        {
+            icon: HandCoins,
+            title: "Revendas",
+            description: "Monte sua própria equipe de revendedores e administre tudo diretamente na plataforma: vendas, relatórios por revendedor, comissões personalizadas, ativação e desativação de revendedores. Tudo integrado, sem sair do sistema.",
+            highlight: true
+        },
+        {
+            icon: TrendingDown,
+            title: "Taxas Reduzidas",
+            description: "As menores taxas do mercado, permitindo que você maximize seus lucros",
+            highlight: false
+        },
+        {
+            icon: Users,
+            title: "CRM e Relacionamento",
+            description: "Tenha controle total sobre seus clientes, histórico de interações, vendas, preferências e comunicações, gerenciando o relacionamento para fidelizar e impulsionar novas vendas",
+            highlight: false
+        },
+        {
+            icon: FileText,
+            title: "Formulários Personalizados",
+            description: "Colete informações específicas dos participantes de forma organizada",
+            highlight: false
+        },
+        {
+            icon: QrCode,
+            title: "Validação Rápida",
+            description: "Sistema de QR Code para validação instantânea na entrada dos eventos",
+            highlight: false
+        },
+        {
+            icon: Shield,
+            title: "Transparência Total",
+            description: "Relatórios detalhados e transparência em todas as transações",
+            highlight: false
+        },
+        {
+            icon: Headphones,
+            title: "Suporte Humanizado",
+            description: "Atendimento dedicado para organizadores e compradores",
+            highlight: false
         }
     ]
 
@@ -813,6 +858,68 @@ const HomeHero = () => {
                                 <ArrowRight className="h-4 w-4 transition-transform" />
                             </Link>
                         </Button>
+                    </div>
+                </div>
+            </section>
+
+            <section className="relative w-full bg-white py-12 lg:py-16">
+                <div className="absolute inset-0 bg-linear-to-br from-psi-primary/5 via-psi-secondary/5 to-psi-primary/5 rounded-3xl pointer-events-none" aria-hidden="true" />
+                <div className="relative container px-4 sm:px-6 lg:px-8">
+                    <div className="space-y-10 sm:space-y-12 lg:space-y-14">
+                        <div className="text-center space-y-4">
+                            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-psi-dark">
+                                Funcionalidades que <span className="text-psi-primary">Impulsionam</span> seus Eventos
+                            </h2>
+                            <p className="text-lg text-psi-dark/70 max-w-2xl mx-auto">
+                                Tecnologia, transparência total e suporte dedicado para transformar seus eventos em sucessos!
+                            </p>
+                        </div>
+
+                        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                            {platformFeatures.map((feature, index) => {
+                                const IconComponent = feature.icon
+                                if (feature.highlight) {
+                                    return (
+                                        <div
+                                            key={index}
+                                            className="sm:col-span-2 lg:col-span-3 rounded-2xl border-2 border-psi-primary/30 bg-linear-to-br from-psi-primary/10 via-white to-psi-secondary/10 p-6 sm:p-8 shadow-lg shadow-psi-primary/10 hover:shadow-xl hover:shadow-psi-primary/15 transition-all"
+                                        >
+                                            <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                                                <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-psi-primary to-psi-primary/80 flex items-center justify-center text-white shadow-lg shadow-psi-primary/25 shrink-0">
+                                                    <IconComponent className="h-7 w-7" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <h3 className="text-xl sm:text-2xl font-semibold text-psi-dark">
+                                                            {feature.title}
+                                                        </h3>
+                                                    </div>
+                                                    <p className="text-sm sm:text-base text-psi-dark/75 leading-relaxed">
+                                                        {feature.description}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )
+                                }
+                                return (
+                                    <div
+                                        key={index}
+                                        className="rounded-xl border border-psi-primary/20 bg-white/90 p-6 space-y-3 hover:shadow-lg hover:border-psi-primary/30 transition-all"
+                                    >
+                                        <div className="w-12 h-12 rounded-xl bg-linear-to-br from-psi-primary to-psi-primary/80 flex items-center justify-center text-white shadow-lg shadow-psi-primary/20">
+                                            <IconComponent className="h-6 w-6" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-psi-dark">
+                                            {feature.title}
+                                        </h3>
+                                        <p className="text-sm text-psi-dark/70 leading-relaxed">
+                                            {feature.description}
+                                        </p>
+                                    </div>
+                                )
+                            })}
+                        </div>
                     </div>
                 </div>
             </section>

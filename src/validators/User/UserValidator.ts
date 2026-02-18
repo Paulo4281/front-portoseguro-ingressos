@@ -105,6 +105,27 @@ const UserResetPasswordValidator = z.object({
     }
 })
 
+const UserConfirmPasswordValidator = z.object({
+    password: z.string({ error: DefaultFormErrors.required }),
+    confirmPassword: z.string({ error: DefaultFormErrors.required })
+}).superRefine((data, ctx) => {
+    if (data.password.length < 8) {
+        ctx.addIssue({ code: "custom", path: ["password"], message: DefaultFormErrors.passwordMinLength })
+        return
+    }
+    if (!/[A-Z]/.test(data.password)) {
+        ctx.addIssue({ code: "custom", path: ["password"], message: DefaultFormErrors.passwordUppercase })
+        return
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(data.password)) {
+        ctx.addIssue({ code: "custom", path: ["password"], message: DefaultFormErrors.passwordSpecialChar })
+        return
+    }
+    if (data.password !== data.confirmPassword) {
+        ctx.addIssue({ code: "custom", path: ["confirmPassword"], message: "As senhas não coincidem" })
+    }
+})
+
 const UserUpdateValidator = z.object({
     firstName: z.string().min(1).optional(),
     lastName: z.string().min(1).optional(),
@@ -122,7 +143,21 @@ const UserUpdateValidator = z.object({
         state: z.string().nullable().optional(),
         country: z.string().nullable().optional(),
         zipCode: z.string().nullable().optional()
-    }).optional()
+    }).optional(),
+    // Campos opcionais para revendedor (dados de recebimento) – enviados na mesma requisição
+    sellerBankId: z.string().nullable().optional(),
+    sellerBankAccountName: z.string().nullable().optional(),
+    sellerBankAccountOwnerName: z.string().nullable().optional(),
+    sellerBankAccountOwnerBirth: z.string().nullable().optional(),
+    sellerBankAccountOwnerDocumentType: z.enum(["CPF", "CNPJ"]).nullable().optional(),
+    sellerBankAccountOwnerDocument: z.string().nullable().optional(),
+    sellerBankAccountAgency: z.string().nullable().optional(),
+    sellerBankAccountNumber: z.string().nullable().optional(),
+    sellerBankAccountDigit: z.string().nullable().optional(),
+    sellerBankAccountType: z.enum(["CONTA_CORRENTE", "CONTA_POUPANCA"]).nullable().optional(),
+    sellerPixAddressKey: z.string().nullable().optional(),
+    sellerPixAddressType: z.enum(["CPF", "CNPJ", "EMAIL", "PHONE", "EVP"]).nullable().optional(),
+    sellerPayoutMethod: z.enum(["PIX", "BANK_ACCOUNT"]).nullable().optional()
 })
 
 const UserConfirmSocialValidator = z.object({
@@ -169,6 +204,7 @@ export {
     UserCreateValidator,
     UserResetPasswordByCodeValidator,
     UserResetPasswordValidator,
+    UserConfirmPasswordValidator,
     UserUpdateValidator,
     UserConfirmSocialValidator
 }

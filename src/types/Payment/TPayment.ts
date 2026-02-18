@@ -2,7 +2,8 @@ import { TicketCancelledBy } from "../Ticket/TTicket"
 
 export const PaymentMethods = [
     "PIX",
-    "CREDIT_CARD"
+    "CREDIT_CARD",
+    "LINK"
 ] as const
 
 export const PaymentGatewayBillingStatuses = [
@@ -29,6 +30,73 @@ export const PaymentRefundStatuses = [
     "AWAITING_CRITICAL_ACTION_AUTHORIZATION",
     "AWAITING_CUSTOMER_EXTERNAL_AUTHORIZATION"
 ] as const
+
+/** Resposta do pagamento via link (GET /payment/link/verify?code=...) */
+export type TPaymentLinkVerifyResponse = {
+    payment: {
+        id: string
+        code: string
+        status: typeof PaymentGatewayBillingStatuses[number]
+        method: typeof PaymentMethods[number]
+        externalPaymentId: string | null
+        totalPaidByCustomer: number | null
+        qrcodeData: {
+            encodedImage: string
+            payload: string
+            expirationDate: string
+            description?: string
+            success?: boolean
+        } | null
+        customer: {
+            id: string
+            firstName: string
+            lastName: string
+            email: string
+        } | null
+        event: {
+            id: string
+            name: string
+            image: string
+            maxInstallments: number
+        } | null
+    }
+    tickets: Array<{
+        id: string
+        code: string
+        price: number
+        status: string
+        isInsured: boolean
+        ticketType: {
+            id: string
+            name: string
+        } | null
+        dates: Array<{
+            id: string
+            date: string | null
+            hourStart: string | null
+            hourEnd: string | null
+        }>
+    }>
+}
+
+export type TPaymentLinkPayParams = {
+    paymentId: string
+    paymentMethod: "CREDIT_CARD"
+    ccInfo?: {
+        number?: string
+        holderName?: string
+        exp?: string
+        cvv?: string
+        installments?: number
+    } | null
+}
+
+export type TPaymentLinkPayResponse = {
+    paymentId: string
+    status: typeof PaymentGatewayBillingStatuses[number]
+    confirmedByCreditCard?: boolean
+    isCreditCardError?: boolean
+}
 
 type TPaymentInstallment = {
     id: string
@@ -82,6 +150,10 @@ type TPaymentAdminListResponse = {
     refundEndToEndIdentifier: string | null
     paidAt: string | null
     chargebackRequested: boolean
+    sellerUserId: string | null
+    sellerCommissionRate: number | null
+    sellerCommissionValue: number | null
+    sellerCreditCardUsedInfo: any | null
     userId: string
     cardId: string | null
     createdAt: string
@@ -94,6 +166,14 @@ type TPaymentAdminListResponse = {
         phone: string | null
         document: string | null
     }
+    Seller: {
+        id: string
+        firstName: string
+        lastName: string
+        email: string
+        phone: string | null
+        document: string | null
+    } | null
     Card: {
         id: string
         name: string
@@ -228,6 +308,74 @@ type TPaymentGatewayGetPIXQrCodeResponse = {
 
 type TPaymentStatusResponse = {
     status: typeof PaymentGatewayBillingStatuses[number]
+}
+
+/** Item da lista "Minhas vendas" do revendedor (GET /payment/my-sales) */
+export type TPaymentMySalesItem = {
+    id: string
+    code: string
+    method: typeof PaymentMethods[number]
+    status: string
+    totalPaidByCustomer: number | null
+    sellerCommissionRate: number | null
+    sellerCommissionValue: number | null
+    paidAt: string | null
+    createdAt: string
+    customer: {
+        id: string
+        firstName: string
+        lastName: string
+        email: string
+    } | null
+    event: {
+        id: string
+        name: string
+        image: string
+    } | null
+    tickets: Array<{
+        id: string
+        code: string
+        price: number
+        status: string
+        ticketType: {
+            id: string
+            name: string
+        } | null
+        dates: Array<{
+            id: string
+            date: string | null
+            hourStart: string | null
+            hourEnd: string | null
+        }>
+    }>
+}
+
+/** Status de pagamento válidos para o revendedor receber a comissão (entram no saldo). Demais são apenas histórico. */
+export function isPaymentValidForReceipt(status: string): boolean {
+    return status === "CONFIRMED" || status === "RECEIVED"
+}
+
+/** Labels em português para status de pagamento (inclui status usados pela API que podem não estar em PaymentGatewayBillingStatuses) */
+const PaymentStatusLabels: Record<string, string> = {
+    PENDING: "Pendente",
+    RECEIVED: "Recebido",
+    CONFIRMED: "Confirmado",
+    OVERDUE: "Atrasado",
+    REFUNDED: "Reembolsado",
+    REFUND_REQUESTED: "Reembolso solicitado",
+    REFUND_IN_PROGRESS: "Reembolso em andamento",
+    RECEIVED_IN_CASH: "Recebido em dinheiro",
+    FAILED: "Falhou",
+    CHARGEBACK_REQUESTED: "Chargeback solicitado",
+    CHARGEBACK_DISPUTE: "Chargeback em disputa",
+    AWAITING_CHARGEBACK_REVERSAL: "Aguardando reversão",
+    DUNNING_REQUESTED: "Cobrança solicitada",
+    DUNNING_RECEIVED: "Cobrança recebida",
+    AWAITING_RISK_ANALYSIS: "Aguardando análise de risco"
+}
+
+export function getPaymentStatusLabel(status: string): string {
+    return PaymentStatusLabels[status] ?? status
 }
 
 export type {

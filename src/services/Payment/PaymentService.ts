@@ -1,7 +1,15 @@
 import { API } from "@/api/api"
 import { AxiosResponse } from "axios"
 import type { TApiResponse } from "@/types/TApiResponse"
-import type { TPaymentAdminListResponse, TPaymentRefundParams, TPaymentReleaseBalanceParams } from "@/types/Payment/TPayment"
+import type {
+    TPaymentAdminListResponse,
+    TPaymentRefundParams,
+    TPaymentReleaseBalanceParams,
+    TPaymentMySalesItem,
+    TPaymentLinkVerifyResponse,
+    TPaymentLinkPayParams,
+    TPaymentLinkPayResponse
+} from "@/types/Payment/TPayment"
 
 type TListPaymentsParams = {
     offset?: number
@@ -57,6 +65,33 @@ class PaymentServiceClass {
         const response = (await API.POST({
             prefix: "/payment",
             url: "/release-balance",
+            data: params
+        }))?.data
+        return response
+    }
+
+    async mySales(): Promise<AxiosResponse["data"]> {
+        const response = (await API.GET({
+            prefix: "/payment",
+            url: "/my-sales"
+        }))?.data
+        return response
+    }
+
+    // PAYMENT LINK
+    async verifyLink(code: string): Promise<AxiosResponse["data"]> {
+        const response = (await API.GET({
+            prefix: "/payment",
+            url: "/link/verify",
+            params: { code }
+        }))?.data
+        return response
+    }
+
+    async payLink(params: TPaymentLinkPayParams): Promise<AxiosResponse["data"]> {
+        const response = (await API.POST({
+            prefix: "/payment",
+            url: "/link/pay",
             data: params
         }))?.data
         return response

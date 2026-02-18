@@ -25,7 +25,8 @@ import {
     Shield,
     Headphones,
     ArrowRight,
-    CheckCircle2
+    CheckCircle2,
+    HandCoins
 } from "lucide-react"
 
 const useCases = [
@@ -140,6 +141,12 @@ const useCases = [
 ]
 
 const platformFeatures = [
+    {
+        icon: HandCoins,
+        title: "Revendas",
+        description: "Monte sua própria equipe de revendedores e administre tudo diretamente na plataforma: vendas, relatórios por revendedor, comissões personalizadas, ativação e desativação de revendedores. Tudo integrado, sem sair do sistema.",
+        highlight: true
+    },
     {
         icon: TrendingDown,
         title: "Taxas Reduzidas",
@@ -278,6 +285,31 @@ const CasosDeUsoInfo = () => {
                             lg:grid-cols-3">
                                 {platformFeatures.map((feature, index) => {
                                     const IconComponent = feature.icon
+                                    const isHighlight = "highlight" in feature && (feature as { highlight?: boolean }).highlight
+                                    if (isHighlight) {
+                                        return (
+                                            <div
+                                                key={index}
+                                                className="sm:col-span-2 lg:col-span-3 rounded-2xl border-2 border-psi-primary/30 bg-linear-to-br from-psi-primary/10 via-white to-psi-secondary/10 p-6 sm:p-8 shadow-lg shadow-psi-primary/10 hover:shadow-xl hover:shadow-psi-primary/15 transition-all"
+                                            >
+                                                <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                                                    <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-psi-primary to-psi-primary/80 flex items-center justify-center text-white shadow-lg shadow-psi-primary/25 shrink-0">
+                                                        <IconComponent className="h-7 w-7" />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <h3 className="text-xl sm:text-2xl font-semibold text-psi-dark">
+                                                                {feature.title}
+                                                            </h3>
+                                                        </div>
+                                                        <p className="text-sm sm:text-base text-psi-dark/75 leading-relaxed">
+                                                            {feature.description}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    }
                                     return (
                                         <div
                                             key={index}
