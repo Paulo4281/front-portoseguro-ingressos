@@ -1,4 +1,5 @@
 import { Metadata } from "next"
+import { Suspense } from "react"
 
 export const metadata: Metadata = {
     title: "Convite de Revendedor | Porto Seguro Ingressos",
@@ -7,7 +8,11 @@ export const metadata: Metadata = {
 import { RevendaConviteInfo } from "@/components/Pages/Public/Revenda/RevendaConviteInfo"
 
 const RevendaConvitePage = () => {
-    return <RevendaConviteInfo />
+    return (
+        <Suspense fallback={null}>
+            <RevendaConviteInfo />
+        </Suspense>
+    )
 }
 
 export default RevendaConvitePage

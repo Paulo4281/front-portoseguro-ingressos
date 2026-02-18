@@ -16,6 +16,7 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 const ogImageUrl = `${appUrl}/images/porto-seguro-ingressos-cover-image-logo.jpg`
 
 export const metadata: Metadata = {
+  metadataBase: new URL(appUrl),
   title: "Porto Seguro Ingressos",
   description: "A forma mais sofisticada de viver os eventos da capital do descobrimento. Conectamos organizadores locais e apaixonados pela cena cultural com uma experiência de compra inteligente, transparente e com taxas justas.",
   icons: {

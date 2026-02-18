@@ -285,7 +285,7 @@ const ClientsPannel = () => {
                                                                     )}
                                                                 </div>
 
-                                                                {client.events.length > 0 && (
+                                                                {client.events && client.events.length > 0 && (
                                                                     <div className="space-y-4 pt-6 border-t border-psi-dark/10">
                                                                         <div className="flex items-center gap-3">
                                                                             <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">

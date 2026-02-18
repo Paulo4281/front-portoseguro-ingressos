@@ -28,7 +28,7 @@ Disallow: /senha-redefinir
 Disallow: /senha-redefinir-confirmar
 
 # Host
-Host: http://localhost:3000
+Host: https://www.portoseguroingressos.com.br
 
 # Sitemaps
-Sitemap: http://localhost:3000/sitemap.xml
+Sitemap: https://www.portoseguroingressos.com.br/sitemap.xml
