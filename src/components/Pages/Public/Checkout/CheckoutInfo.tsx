@@ -219,7 +219,10 @@ const CheckoutInfo = () => {
     const [newOrganizerClientEmail, setNewOrganizerClientEmail] = useState("")
     const [newOrganizerClientDocument, setNewOrganizerClientDocument] = useState("")
     const [newOrganizerClientPhone, setNewOrganizerClientPhone] = useState("")
+    const [newOrganizerClientZipCode, setNewOrganizerClientZipCode] = useState("")
+    const [newOrganizerClientAddressNumber, setNewOrganizerClientAddressNumber] = useState("")
     const [newCreatedCustomerUserId, setNewCreatedCustomerUserId] = useState("")
+    const [newOrganizerClientDialogOpen, setNewOrganizerClientDialogOpen] = useState(false)
 
     const [buyTicketResponse, setBuyTicketResponse] = useState<TTicketBuyResponse | null>(null)
     const [showCreditCardErrorDialog, setShowCreditCardErrorDialog] = useState(false)
@@ -805,9 +808,11 @@ const CheckoutInfo = () => {
                         !newOrganizerClientFirstName.trim() ||
                         !newOrganizerClientLastName.trim() ||
                         !newOrganizerClientEmail.trim() ||
-                        !newOrganizerClientDocument.trim()
+                        !newOrganizerClientDocument.trim() ||
+                        !newOrganizerClientZipCode.trim() ||
+                        !newOrganizerClientAddressNumber.trim()
                     ) {
-                        Toast.info("Preencha nome, sobrenome, e-mail e CPF do novo cliente.")
+                        Toast.info("Preencha nome, sobrenome, e-mail, CPF, CEP e número do novo cliente.")
                         return
                     }
                     if (!newCreatedCustomerUserId) {
@@ -1209,9 +1214,11 @@ const CheckoutInfo = () => {
             !newOrganizerClientFirstName.trim() ||
             !newOrganizerClientLastName.trim() ||
             !newOrganizerClientEmail.trim() ||
-            !newOrganizerClientDocument.trim()
+            !newOrganizerClientDocument.trim() ||
+            !newOrganizerClientZipCode.trim() ||
+            !newOrganizerClientAddressNumber.trim()
         ) {
-            Toast.info("Preencha nome, sobrenome, e-mail e CPF do cliente.")
+            Toast.info("Preencha nome, sobrenome, e-mail, CPF, CEP e número do endereço do cliente.")
             return
         }
         try {
@@ -1220,7 +1227,11 @@ const CheckoutInfo = () => {
                 lastName: newOrganizerClientLastName.trim(),
                 email: newOrganizerClientEmail.trim().toLowerCase(),
                 phone: newOrganizerClientPhone.trim(),
-                document: newOrganizerClientDocument.replace(/\D/g, "")
+                document: newOrganizerClientDocument.replace(/\D/g, ""),
+                address: {
+                    zipCode: newOrganizerClientZipCode.replace(/\D/g, ""),
+                    number: newOrganizerClientAddressNumber.trim()
+                }
             })
             if (response?.success) {
                 const data = response?.data as unknown
@@ -1232,6 +1243,7 @@ const CheckoutInfo = () => {
                             : undefined
                 if (createdId) setNewCreatedCustomerUserId(createdId)
                 Toast.success("Cliente cadastrado. Um e-mail foi enviado para ele definir a senha.")
+                setNewOrganizerClientDialogOpen(false)
             } else {
                 Toast.error(response?.message ?? "Não foi possível cadastrar o cliente.")
             }
@@ -1509,7 +1521,9 @@ const CheckoutInfo = () => {
                         <h1 className="text-2xl font-medium text-psi-dark">Carrinho vazio</h1>
                         <p className="text-psi-dark/60">Adicione ingressos ao carrinho antes de finalizar a compra.</p>
                         <Button onClick={() => router.push("/")} variant="primary">
-                            Voltar para eventos
+                            {
+                                isSellerCheckout ? "Voltar ao painel" : "Voltar para eventos"
+                            }
                         </Button>
                     </div>
                 </div>
@@ -1641,9 +1655,17 @@ const CheckoutInfo = () => {
                                                         variant="outline"
                                                         size="sm"
                                                         onClick={() => {
-                                                            setIsNewOrganizerClient((prev) => !prev)
-                                                            setSelectedOrganizerClientId("")
-                                                            setNewCreatedCustomerUserId("")
+                                                            if (isNewOrganizerClient) {
+                                                                setIsNewOrganizerClient(false)
+                                                                setNewOrganizerClientDialogOpen(false)
+                                                                setSelectedOrganizerClientId("")
+                                                                setNewCreatedCustomerUserId("")
+                                                            } else {
+                                                                setIsNewOrganizerClient(true)
+                                                                setSelectedOrganizerClientId("")
+                                                                setNewCreatedCustomerUserId("")
+                                                                setNewOrganizerClientDialogOpen(true)
+                                                            }
                                                         }}
                                                     >
                                                         {isNewOrganizerClient ? "Usar cliente existente" : "Novo cliente"}
@@ -1749,55 +1771,139 @@ const CheckoutInfo = () => {
                                                         </PopoverContent>
                                                     </Popover>
                                                 ) : (
-                                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                                        <Input
-                                                            value={newOrganizerClientFirstName}
-                                                            onChange={(e) => setNewOrganizerClientFirstName(e.target.value)}
-                                                            placeholder="Nome"
-                                                        />
-                                                        <Input
-                                                            value={newOrganizerClientLastName}
-                                                            onChange={(e) => setNewOrganizerClientLastName(e.target.value)}
-                                                            placeholder="Sobrenome"
-                                                        />
-                                                        <Input
-                                                            className="sm:col-span-2"
-                                                            type="email"
-                                                            value={newOrganizerClientEmail}
-                                                            onChange={(e) => setNewOrganizerClientEmail(e.target.value)}
-                                                            placeholder="E-mail"
-                                                        />
-                                                        <InputMask
-                                                            mask="000.000.000-00"
-                                                            value={newOrganizerClientDocument}
-                                                            onAccept={(value) => setNewOrganizerClientDocument(String(value))}
-                                                            placeholder="CPF"
-                                                            inputMode="numeric"
-                                                        />
-                                                        <InputMask
-                                                            mask="(00) 00000-0000"
-                                                            value={newOrganizerClientPhone}
-                                                            onAccept={(value) => setNewOrganizerClientPhone(String(value))}
-                                                            placeholder="Telefone"
-                                                            inputMode="tel"
-                                                        />
-                                                        <div className="sm:col-span-2">
-                                                            <Button
-                                                                type="button"
-                                                                variant="primary"
-                                                                disabled={isCreatingCustomer}
-                                                                onClick={handleSaveNewOrganizerClient}
-                                                                className="mb-2"
-                                                            >
-                                                                {isCreatingCustomer ? <LoadingButton /> : "Salvar cliente"}
-                                                            </Button>
-                                                            <hr />
-                                                            <p className="text-xs text-psi-dark/60 mt-1.5">
-                                                                O cliente receberá um e-mail para definir a senha. Depois de salvar, continue para a compra.
-                                                                <br />
-                                                                <span className="font-bold">Observação:</span> O cliente deverá acessar o e-mail e clicar no link para definir a senha para ter acesso aos ingressos.
-                                                            </p>
+                                                    <div className="space-y-3">
+                                                        <div className="rounded-xl border border-psi-dark/10 bg-psi-dark/2 p-4 space-y-3">
+                                                            <div className="flex items-start justify-between gap-3">
+                                                                <div className="space-y-1">
+                                                                    <p className="text-sm font-medium text-psi-dark">Novo cliente</p>
+                                                                    <p className="text-xs text-psi-dark/60">
+                                                                        CEP e número são essenciais para aprovação no cartão e para evitar rejeição no anti-fraude.
+                                                                    </p>
+                                                                </div>
+                                                                <Button
+                                                                    type="button"
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    onClick={() => setNewOrganizerClientDialogOpen(true)}
+                                                                >
+                                                                    {newCreatedCustomerUserId ? "Editar" : "Preencher"}
+                                                                </Button>
+                                                            </div>
+
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-psi-dark/70">
+                                                                <div><span className="text-psi-dark/50">Nome:</span> {newOrganizerClientFirstName || "-"}</div>
+                                                                <div><span className="text-psi-dark/50">Sobrenome:</span> {newOrganizerClientLastName || "-"}</div>
+                                                                <div className="sm:col-span-2"><span className="text-psi-dark/50">E-mail:</span> {newOrganizerClientEmail || "-"}</div>
+                                                                <div><span className="text-psi-dark/50">CPF:</span> {newOrganizerClientDocument || "-"}</div>
+                                                                <div><span className="text-psi-dark/50">Telefone:</span> {newOrganizerClientPhone || "-"}</div>
+                                                                <div><span className="text-psi-dark/50">CEP:</span> {newOrganizerClientZipCode || "-"}</div>
+                                                                <div><span className="text-psi-dark/50">Número:</span> {newOrganizerClientAddressNumber || "-"}</div>
+                                                            </div>
+
+                                                            {!newCreatedCustomerUserId && (
+                                                                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">
+                                                                    Para continuar, preencha e salve o cliente.
+                                                                </p>
+                                                            )}
+                                                            {newCreatedCustomerUserId && (
+                                                                <p className="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-2">
+                                                                    Cliente cadastrado. Depois, clique em “Continuar” para seguir com a compra.
+                                                                </p>
+                                                            )}
                                                         </div>
+
+                                                        <Dialog open={newOrganizerClientDialogOpen} onOpenChange={setNewOrganizerClientDialogOpen}>
+                                                            <DialogContent className="max-w-lg">
+                                                                <div className="space-y-4">
+                                                                    <div className="space-y-1">
+                                                                        <h3 className="text-lg font-medium text-psi-dark">Novo cliente</h3>
+                                                                        <p className="text-xs text-psi-dark/60">
+                                                                            CEP e número são essenciais para aprovação no cartão e para evitar rejeição no anti-fraude.
+                                                                        </p>
+                                                                    </div>
+
+                                                                    <div className="space-y-4">
+                                                                        <div className="rounded-xl border border-psi-dark/10 bg-white p-4 space-y-3">
+                                                                            <p className="text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
+                                                                                Informações pessoais
+                                                                            </p>
+                                                                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                                                <Input
+                                                                                    value={newOrganizerClientFirstName}
+                                                                                    onChange={(e) => setNewOrganizerClientFirstName(e.target.value)}
+                                                                                    placeholder="Nome"
+                                                                                />
+                                                                                <Input
+                                                                                    value={newOrganizerClientLastName}
+                                                                                    onChange={(e) => setNewOrganizerClientLastName(e.target.value)}
+                                                                                    placeholder="Sobrenome"
+                                                                                />
+                                                                                <Input
+                                                                                    className="sm:col-span-2"
+                                                                                    type="email"
+                                                                                    value={newOrganizerClientEmail}
+                                                                                    onChange={(e) => setNewOrganizerClientEmail(e.target.value)}
+                                                                                    placeholder="E-mail"
+                                                                                />
+                                                                                <InputMask
+                                                                                    mask="000.000.000-00"
+                                                                                    value={newOrganizerClientDocument}
+                                                                                    onAccept={(value) => setNewOrganizerClientDocument(String(value))}
+                                                                                    placeholder="CPF"
+                                                                                    inputMode="numeric"
+                                                                                />
+                                                                                <InputMask
+                                                                                    mask="(00) 00000-0000"
+                                                                                    value={newOrganizerClientPhone}
+                                                                                    onAccept={(value) => setNewOrganizerClientPhone(String(value))}
+                                                                                    placeholder="Telefone"
+                                                                                    inputMode="tel"
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div className="rounded-xl border border-psi-dark/10 bg-white p-4 space-y-3">
+                                                                            <p className="text-xs font-medium text-psi-dark/60 uppercase tracking-wide">
+                                                                                Endereço
+                                                                            </p>
+                                                                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                                                                <InputMask
+                                                                                    mask="00000-000"
+                                                                                    value={newOrganizerClientZipCode}
+                                                                                    onAccept={(value) => setNewOrganizerClientZipCode(String(value))}
+                                                                                    placeholder="CEP"
+                                                                                    inputMode="numeric"
+                                                                                />
+                                                                                <Input
+                                                                                    value={newOrganizerClientAddressNumber}
+                                                                                    onChange={(e) => setNewOrganizerClientAddressNumber(e.target.value)}
+                                                                                    placeholder="Número"
+                                                                                    inputMode="numeric"
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div className="flex items-center justify-end gap-2 pt-2">
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="outline"
+                                                                            onClick={() => setNewOrganizerClientDialogOpen(false)}
+                                                                        >
+                                                                            Cancelar
+                                                                        </Button>
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="primary"
+                                                                            disabled={isCreatingCustomer}
+                                                                            onClick={handleSaveNewOrganizerClient}
+                                                                        >
+                                                                            {isCreatingCustomer ? <LoadingButton /> : "Salvar cliente"}
+                                                                        </Button>
+                                                                    </div>
+                                                                </div>
+                                                            </DialogContent>
+                                                        </Dialog>
                                                     </div>
                                                 )}
                                             </div>

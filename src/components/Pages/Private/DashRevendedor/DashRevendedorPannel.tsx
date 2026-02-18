@@ -30,6 +30,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ShoppingBag, UserCog, LogOut, ArrowLeft, ExternalLink, Loader2, CalendarDays, MapPin, Wallet, CreditCard, ChevronUp, ChevronDown, FileText, Eye, EyeOff, Info, ArrowUp, ArrowDown, Receipt } from "lucide-react"
 import Logo from "@/components/Logo/Logo"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
+import { CartDropdown } from "@/components/Cart/CartDropdown"
+import { useCart } from "@/contexts/CartContext"
 
 type TProfileForm = {
     firstName: string
@@ -63,6 +65,7 @@ type TPayoutForm = {
 const DashRevendedorPannel = () => {
     const routerService = useRouter()
     const { user, removeUser, setUser } = useAuthStore()
+    const { getItemCount, getTotal, clearCart } = useCart()
     const { mutateAsync: logoutUser, isPending: isLoggingOut } = useAuthLogout()
     const { mutateAsync: updateUser, isPending: isUpdatingProfile } = useUserUpdate()
     const { data: banksData, isLoading: isLoadingBanks } = useBankFind()
@@ -361,6 +364,41 @@ const DashRevendedorPannel = () => {
                             </button>
 
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                <div className="rounded-2xl border border-[#E4E6F0] bg-white p-4 text-left shadow-sm transition-all duration-200 hover:shadow-md hover:border-psi-primary/30 hover:bg-psi-primary/5 w-full">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-psi-primary/10 text-psi-primary">
+                                                <ShoppingBag className="h-5 w-5" />
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-psi-dark">Carrinho</p>
+                                                <p className="text-xs text-psi-dark/60">
+                                                    Itens: {getItemCount()} • Total: {ValueUtils.centsToCurrency(getTotal())}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <CartDropdown />
+                                    </div>
+
+                                    <div className="flex flex-wrap items-center gap-2 mt-3">
+                                        <Button asChild size="sm" variant="outline">
+                                            <Link href="/checkout?seller=true">Abrir checkout</Link>
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            variant="destructive"
+                                            disabled={getItemCount() === 0}
+                                            onClick={() => {
+                                                clearCart()
+                                                Toast.success("Carrinho resetado.")
+                                            }}
+                                        >
+                                            Resetar carrinho
+                                        </Button>
+                                    </div>
+                                </div>
+
                                 <button
                                     type="button"
                                     onClick={() => setActiveView("sales")}

@@ -63,6 +63,7 @@ const AdmOrganizadoresPannel = () => {
         createdAt?: string
     }>({})
     const [offset, setOffset] = useState(0)
+    const [roleFilter, setRoleFilter] = useState<"ALL" | TUser["role"]>("ALL")
     const [openRows, setOpenRows] = useState<Record<string, boolean>>({})
     const [confirmDialog, setConfirmDialog] = useState<{
         open: boolean
@@ -101,11 +102,16 @@ const AdmOrganizadoresPannel = () => {
         return []
     }, [data])
 
+    const filteredUsers = useMemo(() => {
+        if (roleFilter === "ALL") return organizers
+        return organizers.filter((u) => u.role === roleFilter)
+    }, [organizers, roleFilter])
+
     const total = useMemo(() => {
         return data?.data?.total || 0
     }, [data])
 
-    const limit = 30
+    const limit = data?.data?.limit || 30
     const totalPages = Math.ceil(total / limit)
     const currentPage = Math.floor(offset / limit) + 1
 
@@ -179,6 +185,10 @@ const AdmOrganizadoresPannel = () => {
     }
 
     const handleApprove = (organizer: TUser) => {
+        if (organizer.role !== "ORGANIZER" || !organizer.Organizer?.id) {
+            Toast.info("Apenas organizadores podem ser aprovados/rejeitados.")
+            return
+        }
         setConfirmDialog({
             open: true,
             organizerId: organizer.Organizer?.id || "",
@@ -188,6 +198,10 @@ const AdmOrganizadoresPannel = () => {
     }
 
     const handleReject = (organizer: TUser) => {
+        if (organizer.role !== "ORGANIZER" || !organizer.Organizer?.id) {
+            Toast.info("Apenas organizadores podem ser aprovados/rejeitados.")
+            return
+        }
         setConfirmDialog({
             open: true,
             organizerId: organizer.Organizer?.id || "",
@@ -224,10 +238,10 @@ const AdmOrganizadoresPannel = () => {
                     <div className="space-y-3">
                         <h1 className="text-3xl font-medium text-psi-primary
                         sm:text-4xl">
-                            Gerenciar Organizadores
+                            Gerenciar Usuários
                         </h1>
                         <p className="text-psi-dark/70 max-w-3xl">
-                            Visualize e gerencie todos os organizadores da plataforma. Aprove ou rejeite solicitações de verificação.
+                            Visualize e gerencie todos os usuários da plataforma. Aprove ou rejeite solicitações de verificação de organizadores.
                         </p>
                     </div>
                 </div>
@@ -268,6 +282,39 @@ const AdmOrganizadoresPannel = () => {
                             </div>
                         </div>
                     </div>
+
+                    <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-psi-dark/10">
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant={roleFilter === "ALL" ? "primary" : "outline"}
+                            onClick={() => setRoleFilter("ALL")}
+                        >
+                            Todos
+                        </Button>
+                        {(["ORGANIZER", "SELLER", "CUSTOMER", "ADMIN", "NOT_DEFINED"] as const).map((role) => (
+                            <Button
+                                key={role}
+                                type="button"
+                                size="sm"
+                                variant={roleFilter === role ? "primary" : "outline"}
+                                onClick={() => setRoleFilter(role)}
+                            >
+                                {role === "ORGANIZER"
+                                    ? "Organizadores"
+                                    : role === "SELLER"
+                                        ? "Revendedores"
+                                        : role === "CUSTOMER"
+                                            ? "Clientes"
+                                            : role === "ADMIN"
+                                                ? "Admins"
+                                                : "Não definido"}
+                            </Button>
+                        ))}
+                        <p className="text-xs text-psi-dark/50 ml-auto">
+                            Filtro por tipo é local (não afeta a busca na API).
+                        </p>
+                    </div>
                 </div>
 
                 {isLoading ? (
@@ -282,29 +329,30 @@ const AdmOrganizadoresPannel = () => {
                             <Table className="w-full table-fixed">
                             <TableHeader>
                                 <TableRow className="border-b border-psi-dark/10 hover:bg-transparent bg-psi-dark/2">
-                                    <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider">Organizador</TableHead>
+                                    <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider">Usuário</TableHead>
                                     <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider">Contato</TableHead>
+                                    <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider">Tipo</TableHead>
                                     <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider">Status</TableHead>
                                     <TableHead className="h-16 px-6 text-psi-dark font-medium text-sm uppercase tracking-wider text-right">Ações</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {organizers.length === 0 ? (
+                                {filteredUsers.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={4} className="h-40 text-center">
+                                        <TableCell colSpan={5} className="h-40 text-center">
                                             <div className="flex flex-col items-center justify-center gap-4 py-8">
                                                 <div className="h-16 w-16 rounded-full bg-psi-primary/10 flex items-center justify-center">
                                                     <Building2 className="h-8 w-8 text-psi-primary/60" />
                                                 </div>
                                                 <div className="space-y-1">
-                                                    <p className="text-base font-medium text-psi-dark">Nenhum organizador encontrado</p>
+                                                    <p className="text-base font-medium text-psi-dark">Nenhum usuário encontrado</p>
                                                     <p className="text-sm text-psi-dark/50">Tente ajustar os filtros de busca.</p>
                                                 </div>
                                             </div>
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    organizers.map((organizer) => {
+                                    filteredUsers.map((organizer) => {
                                         const initials = `${organizer.firstName.charAt(0)}${organizer.lastName.charAt(0)}`.toUpperCase()
                                         const org = organizer.Organizer
                                         
@@ -320,7 +368,7 @@ const AdmOrganizadoresPannel = () => {
                                                                     className="h-12 w-12 rounded-full object-cover shrink-0"
                                                                 />
                                                             ) : (
-                                                                <div className="h-12 w-12 rounded-full bg-gradient-to-br from-psi-primary/20 to-psi-primary/10 flex items-center justify-center shrink-0">
+                                                                <div className="h-12 w-12 rounded-full bg-linear-to-br from-psi-primary/20 to-psi-primary/10 flex items-center justify-center shrink-0">
                                                                     <span className="text-sm font-medium text-psi-primary">
                                                                         {initials}
                                                                     </span>
@@ -362,7 +410,23 @@ const AdmOrganizadoresPannel = () => {
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="py-5 px-6">
-                                                        {getStatusBadge(org?.verificationStatus as "PENDING" | "APPROVED" | "REJECTED" | null | undefined)}
+                                                        <Badge variant="secondary" className="bg-psi-dark/5 text-psi-dark/70 border border-psi-dark/10">
+                                                            {organizer.role === "ORGANIZER"
+                                                                ? "Organizador"
+                                                                : organizer.role === "SELLER"
+                                                                    ? "Revendedor"
+                                                                    : organizer.role === "CUSTOMER"
+                                                                        ? "Cliente"
+                                                                        : organizer.role === "ADMIN"
+                                                                            ? "Admin"
+                                                                            : "Não definido"}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="py-5 px-6">
+                                                        {organizer.role === "ORGANIZER"
+                                                            ? getStatusBadge(org?.verificationStatus as "PENDING" | "APPROVED" | "REJECTED" | null | undefined)
+                                                            : <span className="text-sm text-psi-dark/40">—</span>
+                                                        }
                                                     </TableCell>
                                                     <TableCell className="py-5 px-6 text-right">
                                                         <button
@@ -377,8 +441,8 @@ const AdmOrganizadoresPannel = () => {
                                                 </TableRow>
                                                 {openRows[organizer.id] && (
                                                     <TableRow key={`${organizer.id}-details`} className="border-0">
-                                                        <TableCell colSpan={4} className="p-0 w-full">
-                                                            <div className="bg-gradient-to-br from-psi-dark/2 to-psi-dark/5 px-4 py-6 space-y-6 border-t border-psi-dark/10 overflow-x-hidden w-full
+                                                        <TableCell colSpan={5} className="p-0 w-full">
+                                                            <div className="bg-linear-to-br from-psi-dark/2 to-psi-dark/5 px-4 py-6 space-y-6 border-t border-psi-dark/10 overflow-x-hidden w-full
                                                             sm:px-6
                                                             md:px-8
                                                             md:py-8
@@ -391,7 +455,7 @@ const AdmOrganizadoresPannel = () => {
                                                                             <User className="h-4 w-4 text-psi-primary shrink-0" />
                                                                             Nome completo
                                                                         </div>
-                                                                        <p className="text-base font-medium text-psi-dark break-words">
+                                                                        <p className="text-base font-medium text-psi-dark wrap-break-word">
                                                                             {organizer.firstName} {organizer.lastName}
                                                                         </p>
                                                                     </div>
@@ -401,7 +465,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                 <FileText className="h-4 w-4 text-psi-primary shrink-0" />
                                                                                 CPF
                                                                             </div>
-                                                                            <p className="text-base font-medium text-psi-dark break-words overflow-wrap-anywhere">
+                                                                            <p className="text-base font-medium text-psi-dark wrap-break-word overflow-wrap-anywhere">
                                                                                 {DocumentUtils.formatCpf(organizer.document || "")}
                                                                             </p>
                                                                         </div>
@@ -412,7 +476,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                 <Calendar className="h-4 w-4 text-psi-primary shrink-0" />
                                                                                 Data de nascimento
                                                                             </div>
-                                                                            <p className="text-base font-medium text-psi-dark break-words overflow-wrap-anywhere">
+                                                                            <p className="text-base font-medium text-psi-dark wrap-break-word overflow-wrap-anywhere">
                                                                                 {formatDate(organizer.birth)}
                                                                             </p>
                                                                         </div>
@@ -423,7 +487,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                 <Building2 className="h-4 w-4 text-psi-primary shrink-0" />
                                                                                 Nome da empresa
                                                                             </div>
-                                                                            <p className="text-base font-medium text-psi-dark break-words overflow-wrap-anywhere">
+                                                                            <p className="text-base font-medium text-psi-dark wrap-break-word overflow-wrap-anywhere">
                                                                                 {org.companyName}
                                                                             </p>
                                                                         </div>
@@ -434,7 +498,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                 <FileText className="h-4 w-4 text-psi-primary shrink-0" />
                                                                                 CNPJ
                                                                             </div>
-                                                                            <p className="text-base font-medium text-psi-dark break-words overflow-wrap-anywhere">
+                                                                            <p className="text-base font-medium text-psi-dark wrap-break-word overflow-wrap-anywhere">
                                                                                 {DocumentUtils.formatCnpj(org.companyDocument || "")}
                                                                             </p>
                                                                         </div>
@@ -456,7 +520,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                 <Phone className="h-4 w-4 text-psi-primary shrink-0" />
                                                                                 Telefone de suporte
                                                                             </div>
-                                                                            <p className="text-base font-medium text-psi-dark break-words overflow-wrap-anywhere">
+                                                                            <p className="text-base font-medium text-psi-dark wrap-break-word overflow-wrap-anywhere">
                                                                                 {DocumentUtils.formatPhone(org.supportPhone || "")}
                                                                             </p>
                                                                         </div>
@@ -496,7 +560,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                         {org.Bank && (
                                                                                             <div>
                                                                                                 <p className="text-xs text-psi-dark/50 uppercase tracking-wide mb-1">Banco</p>
-                                                                                                <p className="text-sm text-psi-dark/70 break-words overflow-wrap-anywhere">
+                                                                                                <p className="text-sm text-psi-dark/70 wrap-break-word overflow-wrap-anywhere">
                                                                                                     {org.Bank.name} ({org.Bank.code})
                                                                                                 </p>
                                                                                             </div>
@@ -504,7 +568,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                         {org.bankAccountName && (
                                                                                             <div>
                                                                                                 <p className="text-xs text-psi-dark/50 uppercase tracking-wide mb-1">Nome da conta</p>
-                                                                                                <p className="text-sm font-medium text-psi-dark break-words overflow-wrap-anywhere">
+                                                                                                <p className="text-sm font-medium text-psi-dark wrap-break-word overflow-wrap-anywhere">
                                                                                                     {org.bankAccountName}
                                                                                                 </p>
                                                                                             </div>
@@ -512,7 +576,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                         {org.bankAccountOwnerName && (
                                                                                             <div>
                                                                                                 <p className="text-xs text-psi-dark/50 uppercase tracking-wide mb-1">Titular</p>
-                                                                                                <p className="text-sm font-medium text-psi-dark break-words overflow-wrap-anywhere">
+                                                                                                <p className="text-sm font-medium text-psi-dark wrap-break-word overflow-wrap-anywhere">
                                                                                                     {org.bankAccountOwnerName}
                                                                                                 </p>
                                                                                             </div>
@@ -520,7 +584,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                         {org.bankAccountOwnerDocument && (
                                                                                             <div>
                                                                                                 <p className="text-xs text-psi-dark/50 uppercase tracking-wide mb-1">CPF/CNPJ do titular</p>
-                                                                                                <p className="text-sm text-psi-dark/70 break-words overflow-wrap-anywhere">
+                                                                                                <p className="text-sm text-psi-dark/70 wrap-break-word overflow-wrap-anywhere">
                                                                                                     {DocumentUtils.formatCpf(org.bankAccountOwnerDocument || "")}
                                                                                                 </p>
                                                                                             </div>
@@ -528,20 +592,20 @@ const AdmOrganizadoresPannel = () => {
                                                                                         {org.bankAccountOwnerBirth && (
                                                                                             <div>
                                                                                                 <p className="text-xs text-psi-dark/50 uppercase tracking-wide mb-1">Data de nascimento do titular</p>
-                                                                                                <p className="text-sm text-psi-dark/70 break-words overflow-wrap-anywhere">
+                                                                                                <p className="text-sm text-psi-dark/70 wrap-break-word overflow-wrap-anywhere">
                                                                                                     {formatDate(org.bankAccountOwnerBirth)}
                                                                                                 </p>
                                                                                             </div>
                                                                                         )}
                                                                                         <div>
                                                                                             <p className="text-xs text-psi-dark/50 uppercase tracking-wide mb-1">Dados da conta</p>
-                                                                                            <p className="text-base font-medium text-psi-dark break-words overflow-wrap-anywhere">
+                                                                                            <p className="text-base font-medium text-psi-dark wrap-break-word overflow-wrap-anywhere">
                                                                                                 Ag: {org.bankAccountAgency} - Conta: {org.bankAccountNumber}-{org.bankAccountDigit}
                                                                                             </p>
                                                                                         </div>
                                                                                         <div>
                                                                                             <p className="text-xs text-psi-dark/50 uppercase tracking-wide mb-1">Tipo de conta</p>
-                                                                                            <p className="text-sm text-psi-dark/70 break-words overflow-wrap-anywhere">
+                                                                                            <p className="text-sm text-psi-dark/70 wrap-break-word overflow-wrap-anywhere">
                                                                                                 {org.bankAccountType === "CONTA_CORRENTE" ? "Conta Corrente" : "Conta Poupança"}
                                                                                             </p>
                                                                                         </div>
@@ -563,7 +627,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                         </div>
                                                                                         <div>
                                                                                             <p className="text-xs text-psi-dark/50 uppercase tracking-wide mb-1">Tipo</p>
-                                                                                            <p className="text-sm text-psi-dark/70 break-words overflow-wrap-anywhere">
+                                                                                            <p className="text-sm text-psi-dark/70 wrap-break-word overflow-wrap-anywhere">
                                                                                                 {org.pixAddressType}
                                                                                             </p>
                                                                                         </div>
@@ -577,7 +641,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                     <CreditCard className="h-4 w-4 text-psi-primary shrink-0" />
                                                                                     Método de repasse preferido
                                                                                 </div>
-                                                                                <p className="text-base font-medium text-psi-dark break-words overflow-wrap-anywhere">
+                                                                                <p className="text-base font-medium text-psi-dark wrap-break-word overflow-wrap-anywhere">
                                                                                     {org.payoutMethod === "PIX" ? "PIX" : "Conta Bancária"}
                                                                                 </p>
                                                                             </div>
@@ -677,7 +741,7 @@ const AdmOrganizadoresPannel = () => {
                                                                                     href={org.instagramUrl}
                                                                                     target="_blank"
                                                                                     rel="noopener noreferrer"
-                                                                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-opacity"
+                                                                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-linear-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 transition-opacity"
                                                                                 >
                                                                                     <Instagram className="h-4 w-4" />
                                                                                     Instagram
@@ -698,7 +762,7 @@ const AdmOrganizadoresPannel = () => {
                                                                     </div>
                                                                 )}
 
-                                                                {org?.verificationStatus === "PENDING" && (
+                                                                {organizer.role === "ORGANIZER" && org?.verificationStatus === "PENDING" && (
                                                                     <div className="flex flex-col gap-3 pt-6 border-t border-psi-dark/10
                                                                     sm:flex-row
                                                                     sm:gap-4

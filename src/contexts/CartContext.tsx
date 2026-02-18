@@ -45,9 +45,24 @@ type TCartContextType = {
 const CartContext = createContext<TCartContextType | undefined>(undefined)
 
 const CART_STORE_KEY = "cart-items"
+const PERSIST_KEY = process.env.NEXT_PUBLIC_CACHE_KEY || "persist:psi"
 
 const loadCartItemsFromCache = (): TCartItem[] | null => {
     return StoreManager.get<TCartItem[]>(CART_STORE_KEY) ?? null
+}
+
+const readCartItemsFromPersistStorage = (): TCartItem[] | null => {
+    if (typeof window === "undefined") return null
+    try {
+        const raw = window.localStorage.getItem(PERSIST_KEY)
+        if (!raw) return null
+        const parsed = JSON.parse(raw) as { state?: { cache?: Record<string, unknown> } }
+        const cache = parsed?.state?.cache
+        const items = cache ? (cache[CART_STORE_KEY] as unknown) : null
+        return Array.isArray(items) ? (items as TCartItem[]) : null
+    } catch {
+        return null
+    }
 }
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
@@ -284,6 +299,32 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             StoreManager.remove(CART_STORE_KEY)
         }
     }, [items])
+
+    // Sincroniza carrinho entre páginas/iframes (mesma origem) via storage do persist
+    useEffect(() => {
+        const sync = () => {
+            const persistedItems = readCartItemsFromPersistStorage()
+            setItems(persistedItems || [])
+        }
+
+        const onStorage = (event: StorageEvent) => {
+            if (event.key !== PERSIST_KEY) return
+            sync()
+        }
+
+        window.addEventListener("storage", onStorage)
+        window.addEventListener("focus", sync)
+        document.addEventListener("visibilitychange", sync)
+
+        // sync inicial (caso o storage tenha sido atualizado fora deste contexto)
+        sync()
+
+        return () => {
+            window.removeEventListener("storage", onStorage)
+            window.removeEventListener("focus", sync)
+            document.removeEventListener("visibilitychange", sync)
+        }
+    }, [])
 
     useEffect(() => {
         const handler = (event: MessageEvent) => {

@@ -8,6 +8,10 @@ type TCreateCustomerPayload = {
     email: string
     phone: string
     document: string
+    address: {
+        zipCode: string
+        number: string
+    }
 }
 
 export const useUserCreateCustomer = () => {

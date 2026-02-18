@@ -2,7 +2,7 @@ import { Metadata } from "next"
 import { Suspense } from "react"
 
 export const metadata: Metadata = {
-    title: "Gerenciar Organizadores | Porto Seguro Ingressos",
+    title: "Gerenciar Usuários | Porto Seguro Ingressos",
     description: "",
 }
 

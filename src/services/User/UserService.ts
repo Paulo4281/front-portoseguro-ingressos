@@ -21,6 +21,10 @@ class UserServiceClass {
         email: string
         phone: string
         document: string
+        address: {
+            zipCode: string
+            number: string
+        }
     }): Promise<AxiosResponse["data"]> {
         const response = (await API.POST({
             prefix: "/user",

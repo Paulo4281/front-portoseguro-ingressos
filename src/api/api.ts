@@ -31,7 +31,8 @@ type Prefixes =
     "/opinionpoll-comment" |
     "/subscription" |
     "/resale/seller-invitation" |
-    "/resale/seller-balance"
+    "/resale/seller-balance" |
+    "/cron-log"
 
 type TAPIParams = {
     prefix: Prefixes
