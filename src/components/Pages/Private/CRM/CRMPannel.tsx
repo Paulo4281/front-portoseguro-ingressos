@@ -2094,7 +2094,7 @@ const CRMPannel = () => {
                                                                     {ValueUtils.centsToCurrency(customer.totalSpent)}
                                                                 </span>
                                                             </TableCell>
-                                                            <TableCell>{formatDate(customer.lastPurchaseDate)}</TableCell>
+                                                            <TableCell>{ customer.lastPurchaseDate ? formatDate(customer.lastPurchaseDate) : "-" }</TableCell>
                                                             <TableCell>
                                                                 <DropdownMenu>
                                                                     <DropdownMenuTrigger asChild>
@@ -2151,7 +2151,7 @@ const CRMPannel = () => {
                                                                                 </div>
                                                                                 <div className="mt-3 p-3 bg-psi-primary/5 rounded-lg border border-psi-primary/20">
                                                                                     <div className="text-xs text-psi-dark/60">
-                                                                                        Última compra: {formatDate(customer.lastPurchaseDate)} às {customer.lastPurchaseTime}
+                                                                                        Última compra: {customer.lastPurchaseDate ? formatDate(customer.lastPurchaseDate) : "-"} às {customer.lastPurchaseTime}
                                                                                     </div>
                                                                                 </div>
                                                                             </div>

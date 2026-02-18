@@ -81,7 +81,8 @@ import {
     RefreshCw,
     AlertCircle,
     Download,
-    Link2
+    Link2,
+    ArrowLeft
 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
@@ -1552,7 +1553,16 @@ const CheckoutInfo = () => {
                             )
                         }
                         {user?.role === "SELLER" && (
-                            <div className="mt-4">
+                            <div className="mt-4 flex gap-2">
+                                <Button
+                                    type="button"
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={() => router.push("/dash-revendedor")}
+                                >
+                                    <ArrowLeft className="h-4 w-4" />
+                                    Retornar ao painel
+                                </Button>
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -2695,10 +2705,10 @@ const CheckoutInfo = () => {
                                                                 </div>
 
                                                                 {paymentLinkUrl ? (
-                                                                    <div className="space-y-2">
+                                                                    <div className="space-y-2 w-full">
                                                                         <label className="text-sm font-medium text-psi-dark">Link gerado</label>
-                                                                        <div className="flex gap-2">
-                                                                            <Input value={paymentLinkUrl} readOnly />
+                                                                        <div className="flex w-full gap-2">
+                                                                            <Input value={paymentLinkUrl} className="w-full!" readOnly />
                                                                             <Button
                                                                                 type="button"
                                                                                 variant="outline"
@@ -3134,7 +3144,11 @@ const CheckoutInfo = () => {
                                                         variant="primary"
                                                         size="lg"
                                                         className=""
-                                                        disabled={isBuyingTicket || isBuyingTicketSeller}
+                                                        disabled={
+                                                            isBuyingTicket ||
+                                                            isBuyingTicketSeller ||
+                                                            (isSellerCheckout && paymentMethod === "link" && Boolean(paymentLinkUrl))
+                                                        }
                                                     >
                                                         {(isBuyingTicket || isBuyingTicketSeller) ? (
                                                             <LoadingButton />
