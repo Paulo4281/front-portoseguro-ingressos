@@ -1391,7 +1391,7 @@ const VerEventoInfo = (
                                 </div>
                             </div>
                         )}
-                        {event.maxInstallments && event.maxInstallments > 0 && (
+                        {(event.maxInstallments && event.maxInstallments > 0) && event.acceptsCreditCardPayment && (
                             <div className="flex items-center gap-3 rounded-xl bg-psi-primary/10 p-4 mt-2">
                                 <CreditCard className="h-5 w-5 text-psi-primary" aria-label="Cartão de crédito" />
                                 <span className="text-base font-medium text-psi-dark">

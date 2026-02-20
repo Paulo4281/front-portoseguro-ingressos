@@ -10,6 +10,7 @@ import { Footer } from "@/components/Footer/Footer"
 import { LoadingScreen } from "@/components/LoadingScreen/LoadingScreen"
 import { Metadata, Viewport } from "next"
 import { WebPushPrompt } from "@/components/WebPush/WebPushPrompt"
+import { ChatBot } from "@/components/ChatBot/ChatBot"
 import Script from "next/script"
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
@@ -132,6 +133,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             </main>
             <Footer />
             <WebPushPrompt />
+            <ChatBot />
         </Providers>
       </body>
     </html>

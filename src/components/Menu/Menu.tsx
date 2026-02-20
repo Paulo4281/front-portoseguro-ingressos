@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
-import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent, Wallet, QrCode, HeartPlus, Info, HouseHeart, CreditCard, Book, Download, SquareArrowRight, Target, SearchCheck, CalendarCheck, HandCoins, Repeat2 } from "lucide-react"
+import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent, Wallet, QrCode, HeartPlus, Info, HouseHeart, CreditCard, Book, Download, SquareArrowRight, Target, SearchCheck, CalendarCheck, HandCoins, Repeat2, BotMessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Logo from "@/components/Logo/Logo"
 import { Avatar } from "@/components/Avatar/Avatar"
@@ -168,6 +168,12 @@ const menuLinks: TMenuLink[] = [
         href: "/adm-organizadores",
         label: "Usuários",
         icon: Users,
+        roles: ["ADMIN"]
+    },
+    {
+        href: "/adm-leads",
+        label: "Leads",
+        icon: BotMessageSquare,
         roles: ["ADMIN"]
     },
     {

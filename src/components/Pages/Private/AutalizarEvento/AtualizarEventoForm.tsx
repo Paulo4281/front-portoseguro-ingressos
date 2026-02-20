@@ -256,6 +256,8 @@ const AtualizarEventoForm = () => {
             ],
             recurrence: null,
             isClientTaxed: false,
+            acceptsPixPayment: true,
+            acceptsCreditCardPayment: true,
             isFree: false,
             buyTicketsLimit: 10,
             maxInstallments: 1
@@ -347,6 +349,8 @@ const AtualizarEventoForm = () => {
         compareArrays(currentFormData.categories, originalData.categories, "Categorias", "medium", 5)
         compareValues(currentFormData.location, originalData.location, "Localização", "high", 15)
         compareValues(currentFormData.isClientTaxed, originalData.isClientTaxed, "Repassar taxas ao cliente", "high", 15)
+        compareValues(currentFormData.acceptsPixPayment, originalData.acceptsPixPayment, "Aceitar pagamento por PIX", "high", 12)
+        compareValues(currentFormData.acceptsCreditCardPayment, originalData.acceptsCreditCardPayment, "Aceitar pagamento por Cartão", "high", 12)
 
         if (currentFormData.image && currentFormData.image !== originalData.image) {
             changes.push({ field: "Imagem do Evento", severity: "low" })
@@ -647,6 +651,8 @@ const AtualizarEventoForm = () => {
                 dates: datesData,
                 recurrence: recurrenceData,
                 isClientTaxed: !!event.isClientTaxed,
+                acceptsPixPayment: (event as any).acceptsPixPayment !== false,
+                acceptsCreditCardPayment: (event as any).acceptsCreditCardPayment !== false,
                 isFree: !!event.isFree,
                 isOnline: !!event.isOnline,
                 buyTicketsLimit: event.buyTicketsLimit ?? null,
@@ -727,6 +733,8 @@ const AtualizarEventoForm = () => {
                 })) : undefined),
                 recurrence: data.recurrence || null,
                 isClientTaxed: data.isClientTaxed || false,
+                acceptsPixPayment: data.acceptsPixPayment !== false,
+                acceptsCreditCardPayment: data.acceptsCreditCardPayment !== false,
                 form: transformFormFieldsToJSON(formFields),
                 isFormForEachTicket: isFormForEachTicket || false
                 ,
@@ -1326,6 +1334,84 @@ const AtualizarEventoForm = () => {
                                     )}
                                 />
                                 <FieldError message={form.formState.errors.isFree?.message || ""} />
+
+                                <div className="rounded-2xl border border-psi-primary/20 bg-linear-to-br from-psi-primary/5 via-white to-psi-primary/5 p-6 space-y-4">
+                                    <div className="flex items-start gap-4">
+                                        <div className="rounded-xl bg-linear-to-br from-psi-primary/20 to-psi-secondary/20 p-3 shrink-0">
+                                            <CreditCard className="h-6 w-6 text-psi-primary" />
+                                        </div>
+                                        <div className="flex-1 space-y-1">
+                                            <label className="block text-base font-semibold text-psi-dark">
+                                                Métodos de pagamento aceitos
+                                            </label>
+                                            <p className="text-sm text-psi-dark/60">
+                                                Selecione pelo menos 1 método (PIX ou Cartão).
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <Controller
+                                            name="acceptsPixPayment"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <div className="flex items-center gap-3 rounded-xl border border-[#E4E6F0] bg-white p-4">
+                                                    <Checkbox
+                                                        id="accepts-pix-payment"
+                                                        checked={field.value !== false}
+                                                        onCheckedChange={(checked) => {
+                                                            const next = checked === true
+                                                            if (!next) {
+                                                                const other = form.getValues("acceptsCreditCardPayment") !== false
+                                                                if (!other) {
+                                                                    Toast.info("Selecione ao menos um método de pagamento (PIX ou Cartão).")
+                                                                    return
+                                                                }
+                                                            }
+                                                            field.onChange(next)
+                                                        }}
+                                                    />
+                                                    <label htmlFor="accepts-pix-payment" className="text-sm font-medium text-psi-dark cursor-pointer">
+                                                        PIX
+                                                    </label>
+                                                </div>
+                                            )}
+                                        />
+
+                                        <Controller
+                                            name="acceptsCreditCardPayment"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <div className="flex items-center gap-3 rounded-xl border border-[#E4E6F0] bg-white p-4">
+                                                    <Checkbox
+                                                        id="accepts-credit-card-payment"
+                                                        checked={field.value !== false}
+                                                        onCheckedChange={(checked) => {
+                                                            const next = checked === true
+                                                            if (!next) {
+                                                                const other = form.getValues("acceptsPixPayment") !== false
+                                                                if (!other) {
+                                                                    Toast.info("Selecione ao menos um método de pagamento (PIX ou Cartão).")
+                                                                    return
+                                                                }
+                                                            }
+                                                            field.onChange(next)
+                                                        }}
+                                                    />
+                                                    <label htmlFor="accepts-credit-card-payment" className="text-sm font-medium text-psi-dark cursor-pointer">
+                                                        Cartão de crédito
+                                                    </label>
+                                                </div>
+                                            )}
+                                        />
+                                    </div>
+
+                                    <FieldError message={
+                                        form.formState.errors.acceptsPixPayment?.message
+                                        || form.formState.errors.acceptsCreditCardPayment?.message
+                                        || ""
+                                    } />
+                                </div>
 
                                 <div className="space-y-6">
                                     <div className="rounded-2xl border border-psi-primary/20 bg-linear-to-br from-psi-primary/5 via-white to-psi-primary/5 p-6 space-y-5">
