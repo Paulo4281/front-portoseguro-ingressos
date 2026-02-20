@@ -448,6 +448,28 @@ const CheckoutInfo = () => {
         return eventsData[0]
     }, [eventsData])
 
+    const acceptsPixPayment = useMemo(() => {
+        return (currentEvent as any)?.acceptsPixPayment !== false
+    }, [currentEvent])
+
+    const acceptsCreditCardPayment = useMemo(() => {
+        return (currentEvent as any)?.acceptsCreditCardPayment !== false
+    }, [currentEvent])
+
+    useEffect(() => {
+        if (!currentEvent) return
+        if (items?.[0]?.isFree) return
+
+        if (paymentMethod === "pix" && !acceptsPixPayment) {
+            setPaymentMethod(acceptsCreditCardPayment ? "credit" : isSellerCheckout ? "link" : "credit")
+            return
+        }
+
+        if (paymentMethod === "credit" && !acceptsCreditCardPayment) {
+            setPaymentMethod(acceptsPixPayment ? "pix" : isSellerCheckout ? "link" : "pix")
+        }
+    }, [currentEvent, items, paymentMethod, acceptsPixPayment, acceptsCreditCardPayment, isSellerCheckout])
+
     const getActiveEventDateId = useCallback((event: typeof currentEvent, eventDateId: string | null | undefined): string | null => {
         if (event?.Recurrence?.id) {
             return event.EventDates?.find((ed) => ed.isActive === true)?.id || null
@@ -1730,7 +1752,7 @@ const CheckoutInfo = () => {
                                                                 <ChevronDown className="h-4 w-4 shrink-0 ml-auto opacity-50" />
                                                             </Button>
                                                         </PopoverTrigger>
-                                                        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                                                        <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
                                                             <div className="max-h-[280px] overflow-y-auto">
                                                                 {organizerClients.length === 0 ? (
                                                                     <div className="py-6 text-center text-sm text-psi-dark/60">
@@ -2608,65 +2630,69 @@ const CheckoutInfo = () => {
                                                         <h3 className="text-lg font-medium text-psi-dark mb-4">Forma de Pagamento</h3>
 
                                                         <div className="space-y-4 mb-6">
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setPaymentMethod("pix")
-                                                                    setPaymentLinkUrl("")
-                                                                }}
-                                                                className={`w-full p-4 rounded-xl border-2 transition-all text-left ${paymentMethod === "pix"
-                                                                        ? "border-psi-primary bg-psi-primary/5"
-                                                                        : "border-psi-dark/10 hover:border-psi-primary/30"
-                                                                    }`}
-                                                            >
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className={`size-4 rounded-full border-2 ${paymentMethod === "pix"
-                                                                            ? "border-psi-primary bg-psi-primary"
-                                                                            : "border-psi-dark/30"
-                                                                        }`}>
-                                                                        {paymentMethod === "pix" && (
-                                                                            <div className="size-full rounded-full bg-white scale-50" />
-                                                                        )}
+                                                            {acceptsPixPayment && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setPaymentMethod("pix")
+                                                                        setPaymentLinkUrl("")
+                                                                    }}
+                                                                    className={`w-full p-4 rounded-xl border-2 transition-all text-left ${paymentMethod === "pix"
+                                                                            ? "border-psi-primary bg-psi-primary/5"
+                                                                            : "border-psi-dark/10 hover:border-psi-primary/30"
+                                                                        }`}
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className={`size-4 rounded-full border-2 ${paymentMethod === "pix"
+                                                                                ? "border-psi-primary bg-psi-primary"
+                                                                                : "border-psi-dark/30"
+                                                                            }`}>
+                                                                            {paymentMethod === "pix" && (
+                                                                                <div className="size-full rounded-full bg-white scale-50" />
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <img
+                                                                                src="/icons/payment/pix.png"
+                                                                                width={25}
+                                                                            />
+                                                                            <span className="font-medium text-psi-dark">PIX</span>
+                                                                        </div>
                                                                     </div>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <img
-                                                                            src="/icons/payment/pix.png"
-                                                                            width={25}
-                                                                        />
-                                                                        <span className="font-medium text-psi-dark">PIX</span>
-                                                                    </div>
-                                                                </div>
-                                                            </button>
+                                                                </button>
+                                                            )}
 
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    setPaymentMethod("credit")
-                                                                    setPaymentLinkUrl("")
-                                                                }}
-                                                                className={`w-full p-4 rounded-xl border-2 transition-all text-left ${paymentMethod === "credit"
-                                                                        ? "border-psi-primary bg-psi-primary/5"
-                                                                        : "border-psi-dark/10 hover:border-psi-primary/30"
-                                                                    }`}
-                                                            >
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className={`size-4 rounded-full border-2 ${paymentMethod === "credit"
-                                                                            ? "border-psi-primary bg-psi-primary"
-                                                                            : "border-psi-dark/30"
-                                                                        }`}>
-                                                                        {paymentMethod === "credit" && (
-                                                                            <div className="size-full rounded-full bg-white scale-50" />
-                                                                        )}
+                                                            {acceptsCreditCardPayment && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setPaymentMethod("credit")
+                                                                        setPaymentLinkUrl("")
+                                                                    }}
+                                                                    className={`w-full p-4 rounded-xl border-2 transition-all text-left ${paymentMethod === "credit"
+                                                                            ? "border-psi-primary bg-psi-primary/5"
+                                                                            : "border-psi-dark/10 hover:border-psi-primary/30"
+                                                                        }`}
+                                                                >
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className={`size-4 rounded-full border-2 ${paymentMethod === "credit"
+                                                                                ? "border-psi-primary bg-psi-primary"
+                                                                                : "border-psi-dark/30"
+                                                                            }`}>
+                                                                            {paymentMethod === "credit" && (
+                                                                                <div className="size-full rounded-full bg-white scale-50" />
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <img
+                                                                                src="/icons/payment/credit-card.png"
+                                                                                width={25}
+                                                                            />
+                                                                            <span className="font-medium text-psi-dark">Cartão de Crédito</span>
+                                                                        </div>
                                                                     </div>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <img
-                                                                            src="/icons/payment/credit-card.png"
-                                                                            width={25}
-                                                                        />
-                                                                        <span className="font-medium text-psi-dark">Cartão de Crédito</span>
-                                                                    </div>
-                                                                </div>
-                                                            </button>
+                                                                </button>
+                                                            )}
 
                                                             {isSellerCheckout && (
                                                                 <button
@@ -2700,7 +2726,11 @@ const CheckoutInfo = () => {
                                                                 <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 p-4">
                                                                     <p className="text-sm font-medium text-psi-dark mb-1">Link de pagamento</p>
                                                                     <p className="text-xs text-psi-dark/70">
-                                                                        Ao gerar, você poderá copiar o link e enviar ao cliente. O pagamento poderá ser feito por PIX (pré-gerado) ou cartão.
+                                                                        Ao gerar, você poderá copiar o link e enviar ao cliente. O pagamento poderá ser feito por {acceptsPixPayment && acceptsCreditCardPayment
+                                                                            ? "PIX (pré-gerado) ou cartão"
+                                                                            : acceptsPixPayment
+                                                                                ? "PIX (pré-gerado)"
+                                                                                : "cartão"}.
                                                                     </p>
                                                                 </div>
 

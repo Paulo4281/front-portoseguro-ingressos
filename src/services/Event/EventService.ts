@@ -90,6 +90,8 @@ class EventServiceClass {
         }
 
         formData.append("isClientTaxed", String(data.isClientTaxed || false))
+        formData.append("acceptsPixPayment", String(data.acceptsPixPayment !== false))
+        formData.append("acceptsCreditCardPayment", String(data.acceptsCreditCardPayment !== false))
 
         if (data.buyTicketsLimit !== undefined && data.buyTicketsLimit !== null) {
             formData.append("buyTicketsLimit", String(data.buyTicketsLimit))

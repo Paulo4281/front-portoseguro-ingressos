@@ -58,6 +58,8 @@ export type TPaymentLinkVerifyResponse = {
             name: string
             image: string
             maxInstallments: number
+            acceptsPixPayment: boolean
+            acceptsCreditCardPayment: boolean
         } | null
     }
     tickets: Array<{

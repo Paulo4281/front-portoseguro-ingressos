@@ -55,6 +55,11 @@ const PagamentoLinkInfo = () => {
 
     const payment = data?.payment
     const tickets = useMemo(() => data?.tickets ?? [], [data])
+    const qrcodeData = payment?.qrcodeData ?? null
+    const acceptsPixPayment = useMemo(() => payment?.event?.acceptsPixPayment !== false, [payment?.event?.acceptsPixPayment])
+    const acceptsCreditCardPayment = useMemo(() => payment?.event?.acceptsCreditCardPayment !== false, [payment?.event?.acceptsCreditCardPayment])
+    const isPixAvailable = acceptsPixPayment && Boolean(qrcodeData)
+    const isCreditCardAvailable = acceptsCreditCardPayment
 
     const subtotalFromTickets = useMemo(() => {
         return tickets.reduce((sum, t) => sum + (t?.price ?? 0), 0)
@@ -124,7 +129,9 @@ const PagamentoLinkInfo = () => {
         return `/icons/payment/card-brand/${brandMap[brandLower] || "card-unknown.png"}`
     }
 
-    const canPayByCreditCard = Boolean(payment && (payment.status === "PENDING" || payment.status === "OVERDUE"))
+    const canPayByCreditCard = Boolean(
+        acceptsCreditCardPayment && payment && (payment.status === "PENDING" || payment.status === "OVERDUE")
+    )
     const shouldDisableCreditCardPayButton = Boolean(
         !canPayByCreditCard || isPaying || isCreditCardPaymentSuccessful || (payment != null && isPaymentValidForReceipt(payment.status))
     )
@@ -151,6 +158,19 @@ const PagamentoLinkInfo = () => {
             setActiveTab("PIX")
         }
     }, [isPixPaymentSuccessful])
+
+    useEffect(() => {
+        if (!payment) return
+        if (isCreditCardPaymentSuccessful || isPixPaymentSuccessful) return
+
+        if (activeTab === "PIX" && !isPixAvailable && isCreditCardAvailable) {
+            setActiveTab("CREDIT_CARD")
+            return
+        }
+        if (activeTab === "CREDIT_CARD" && !isCreditCardAvailable && isPixAvailable) {
+            setActiveTab("PIX")
+        }
+    }, [payment, activeTab, isPixAvailable, isCreditCardAvailable, isCreditCardPaymentSuccessful, isPixPaymentSuccessful])
 
     const handleCopyLink = async () => {
         if (!code) return
@@ -191,7 +211,15 @@ const PagamentoLinkInfo = () => {
             const response = await PaymentService.verifyLink(code)
             if (response?.success) {
                 setData(response.data)
-                if (response.data.payment?.qrcodeData) setActiveTab("PIX")
+                const event = response.data.payment?.event
+                const acceptsPix = event?.acceptsPixPayment !== false
+                const acceptsCredit = event?.acceptsCreditCardPayment !== false
+                const pixAvailable = acceptsPix && Boolean(response.data.payment?.qrcodeData)
+                if (pixAvailable) {
+                    setActiveTab("PIX")
+                } else if (acceptsCredit) {
+                    setActiveTab("CREDIT_CARD")
+                }
             } else {
                 Toast.error(response?.message ?? "Não foi possível carregar o pagamento.")
                 setData(null)
@@ -404,28 +432,38 @@ const PagamentoLinkInfo = () => {
                             <div className="space-y-4">
                                 <div className="rounded-2xl border border-[#E4E6F0] bg-white p-5">
                                     <div className="flex rounded-lg border border-[#E4E6F0] p-0.5 bg-psi-dark/5">
-                                        <button
-                                            type="button"
-                                            onClick={() => setActiveTab("PIX")}
-                                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex-1 ${activeTab === "PIX" ? "bg-white text-psi-dark shadow-sm" : "text-psi-dark/70 hover:text-psi-dark"}`}
-                                            disabled={!payment.qrcodeData || shouldDisablePixTab}
-                                        >
-                                            PIX
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setActiveTab("CREDIT_CARD")}
-                                            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex-1 ${activeTab === "CREDIT_CARD" ? "bg-white text-psi-dark shadow-sm" : "text-psi-dark/70 hover:text-psi-dark"}`}
-                                            disabled={shouldDisableCartaoTab}
-                                        >
-                                            Cartão
-                                        </button>
+                                        {acceptsPixPayment && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setActiveTab("PIX")}
+                                                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex-1 ${activeTab === "PIX" ? "bg-white text-psi-dark shadow-sm" : "text-psi-dark/70 hover:text-psi-dark"}`}
+                                                disabled={shouldDisablePixTab}
+                                            >
+                                                PIX
+                                            </button>
+                                        )}
+                                        {acceptsCreditCardPayment && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setActiveTab("CREDIT_CARD")}
+                                                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors flex-1 ${activeTab === "CREDIT_CARD" ? "bg-white text-psi-dark shadow-sm" : "text-psi-dark/70 hover:text-psi-dark"}`}
+                                                disabled={shouldDisableCartaoTab}
+                                            >
+                                                Cartão
+                                            </button>
+                                        )}
                                     </div>
 
                                     {activeTab === "PIX" && (
                                         <div className="mt-4 space-y-4">
-                                            {!payment.qrcodeData ? (
-                                                <p className="text-sm text-psi-dark/60">PIX não disponível para este pagamento.</p>
+                                            {!acceptsPixPayment ? (
+                                                <p className="text-sm text-psi-dark/60">
+                                                    PIX desabilitado pelo organizador para este evento.
+                                                </p>
+                                            ) : !qrcodeData ? (
+                                                <p className="text-sm text-psi-dark/60">
+                                                    PIX não disponível para este pagamento.
+                                                </p>
                                             ) : (
                                                 <>
                                                     <div className="flex items-center justify-between">
@@ -446,19 +484,19 @@ const PagamentoLinkInfo = () => {
                                                     </div>
                                                     <div className="p-4 bg-white rounded-xl border border-psi-dark/10 flex items-center justify-center">
                                                         <img
-                                                            src={`data:image/png;base64,${payment.qrcodeData.encodedImage}`}
+                                                            src={`data:image/png;base64,${qrcodeData.encodedImage}`}
                                                             alt="QR Code PIX"
                                                             className="w-56 h-56 object-contain"
                                                         />
                                                     </div>
-                                                    <Input value={payment.qrcodeData.payload} readOnly />
-                                                    {payment.qrcodeData.expirationDate && (
+                                                    <Input value={qrcodeData.payload} readOnly />
+                                                    {qrcodeData.expirationDate && (
                                                         <p className="text-xs text-psi-dark/60">
-                                                            Expira em {new Date(payment.qrcodeData.expirationDate).toLocaleString("pt-BR")}
+                                                            Expira em {new Date(qrcodeData.expirationDate).toLocaleString("pt-BR")}
                                                         </p>
                                                     )}
-                                                    {payment.qrcodeData.description && (
-                                                        <p className="text-xs text-psi-dark/70">{payment.qrcodeData.description}</p>
+                                                    {qrcodeData.description && (
+                                                        <p className="text-xs text-psi-dark/70">{qrcodeData.description}</p>
                                                     )}
                                                     <Button
                                                         type="button"
@@ -499,11 +537,15 @@ const PagamentoLinkInfo = () => {
 
                                     {activeTab === "CREDIT_CARD" && (
                                         <div className="mt-4 space-y-3">
-                                            {!canPayByCreditCard && (
+                                            {!acceptsCreditCardPayment ? (
+                                                <p className="text-sm text-psi-dark/60">
+                                                    Cartão de crédito desabilitado pelo organizador para este evento.
+                                                </p>
+                                            ) : !canPayByCreditCard ? (
                                                 <p className="text-sm text-psi-dark/60">
                                                     Pagamento não disponível no cartão para o status atual ({getPaymentStatusLabel(payment.status)}).
                                                 </p>
-                                            )}
+                                            ) : null}
                                             <div className="grid grid-cols-1 gap-3">
                                                 <div className="relative flex items-center">
                                                     <InputMask
