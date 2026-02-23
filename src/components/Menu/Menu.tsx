@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
-import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent, Wallet, QrCode, HeartPlus, Info, HouseHeart, CreditCard, Book, Download, SquareArrowRight, Target, SearchCheck, CalendarCheck, HandCoins, Repeat2, BotMessageSquare } from "lucide-react"
+import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent, Wallet, QrCode, HeartPlus, Info, HouseHeart, CreditCard, Book, Download, SquareArrowRight, Target, SearchCheck, CalendarCheck, HandCoins, Repeat2, BotMessageSquare, Handshake } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Logo from "@/components/Logo/Logo"
 import { Avatar } from "@/components/Avatar/Avatar"
@@ -487,6 +487,17 @@ const Menu = () => {
                                     size="sm"
                                     className="text-psi-dark/70 hover:text-psi-dark"
                                 >
+                                    <Link href="/parceiros">
+                                        <Handshake className="h-4 w-4" />
+                                        Parceiros
+                                    </Link>
+                                </Button>
+                                <Button
+                                    asChild
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-psi-dark/70 hover:text-psi-dark"
+                                >
                                     <Link href="/ver-eventos">
                                         <Calendar className="h-4 w-4" />
                                         Eventos
@@ -785,6 +796,17 @@ const Menu = () => {
                                 <Link href="/casos-de-uso" onClick={closeMenu}>
                                     <Book className="h-4 w-4" />
                                     Casos de Uso
+                                </Link>
+                            </Button>
+                            <Button
+                                asChild
+                                variant="ghost"
+                                size="sm"
+                                className="w-full justify-start text-psi-dark/70 hover:text-psi-dark hover:bg-[#F3F4FB] rounded-xl"
+                            >
+                                <Link href="/parceiros" onClick={closeMenu}>
+                                    <Handshake className="h-4 w-4" />
+                                    Parceiros
                                 </Link>
                             </Button>
                             <Button
