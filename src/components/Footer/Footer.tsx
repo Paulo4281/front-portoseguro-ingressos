@@ -165,9 +165,24 @@ const Footer = () => {
                             <Download className="size-8 text-psi-primary" />
                             Baixe o App
                         </div>
-                        <p className="text-xs text-psi-dark/60 leading-relaxed">
-                            Tecnologia PWA. Baixe direto do navegador.
-                        </p>
+                        <div className="flex items-center gap-2">
+                            <a
+                                href="https://play.google.com/store/apps"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 opacity-90 hover:opacity-100 transition-opacity"
+                                aria-label="Baixar na Google Play Store"
+                            >
+                                <img
+                                    src="/icons/social/google-play.png"
+                                    alt="Google Play"
+                                    className="h-10 w-auto"
+                                />
+                            </a>
+                            <p className="text-xs text-psi-dark/60 leading-relaxed">
+                                Pelo navegador (PWA) ou direto na Google Play Store.
+                            </p>
+                        </div>
                     </div>
 
                 </div>

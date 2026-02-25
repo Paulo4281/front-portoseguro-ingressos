@@ -38,7 +38,8 @@ const publicRoutes: TPublicRoutes[] = [
     { path: "/email-consent", whenAuthenticated: "next" },
     { path: "/revenda-convite", whenAuthenticated: "redirect" },
     { path: "/definir-senha", whenAuthenticated: "redirect" },
-    { path: "/pagamento-link", whenAuthenticated: "next" }
+    { path: "/pagamento-link", whenAuthenticated: "next" },
+    { path: "/parceiros", whenAuthenticated: "next" }
 ]
 
 export default async function proxy(request: NextRequest): Promise<NextResponse> {
