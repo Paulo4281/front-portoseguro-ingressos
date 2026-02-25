@@ -33,7 +33,8 @@ type Prefixes =
     "/resale/seller-invitation" |
     "/resale/seller-balance" |
     "/cron-log" |
-    "/lead"
+    "/lead" |
+    "/partner"
 
 type TAPIParams = {
     prefix: Prefixes

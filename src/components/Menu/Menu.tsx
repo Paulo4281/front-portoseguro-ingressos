@@ -195,6 +195,12 @@ const menuLinks: TMenuLink[] = [
         roles: ["ADMIN"]
     },
     {
+        href: "/adm-parceiros",
+        label: "Parceiros",
+        icon: Handshake,
+        roles: ["ADMIN"]
+    },
+    {
         href: "/adm-suporte",
         label: "Suporte",
         icon: HeartPlus,
