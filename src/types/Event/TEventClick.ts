@@ -1,6 +1,7 @@
 type TEventClickCreate = {
     eventId: string
     userId?: string
+    internalCampaignId?: string
     utmId?: string
     utmSource?: string
     utmMedium?: string
