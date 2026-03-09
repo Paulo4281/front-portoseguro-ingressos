@@ -43,6 +43,7 @@ import { useEventFindByIdUser } from "@/hooks/Event/useEventFindByIdUser"
 import { useNotaFiscalOrganizerByPayments } from "@/hooks/NotaFiscal/useNotaFiscalOrganizerByPayments"
 import { NotaFiscalService } from "@/services/NotaFiscal/NotaFiscalService"
 import type { TNotaFiscal } from "@/types/NotaFiscal/TNotaFiscal"
+import { DocumentUtils } from "@/utils/Helpers/DocumentUtils/DocumentUtils"
 
 type TSheetTicketsToOrganizerProps = {
     open: boolean
@@ -398,7 +399,7 @@ const SheetTicketsToOrganizer = ({
                                                                     </p>
                                                                     {group.customer.phone && (
                                                                         <p className="text-xs text-psi-dark/50">
-                                                                            {group.customer.phone}
+                                                                            {DocumentUtils.formatPhone(group.customer.phone || "")}
                                                                         </p>
                                                                     )}
                                                                     <p className="text-xs text-psi-dark/50 mt-1">

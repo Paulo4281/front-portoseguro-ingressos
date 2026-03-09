@@ -67,7 +67,7 @@ const DialogNotaFiscalOrganizer = ({
                         )}
                     </div>
 
-                    {hasNotaFiscal ? (
+                    {hasNotaFiscal && (
                         <div className="flex flex-wrap items-center gap-2">
                             {hasPdf && (
                                 <a
@@ -94,66 +94,78 @@ const DialogNotaFiscalOrganizer = ({
                                 </a>
                             )}
                         </div>
-                    ) : paymentId ? (
+                    )}
+
+                    {paymentId && (!hasPdf || !hasXml) ? (
                         <div className="space-y-3">
                             <p className="text-sm text-psi-dark/70">
-                                A nota fiscal desta compra ainda não foi enviada. Envie o PDF e/ou o XML para disponibilizar ao cliente.
+                                {hasNotaFiscal
+                                    ? "Você também pode enviar o outro formato (PDF ou XML) para disponibilizar ao cliente."
+                                    : "A nota fiscal desta compra ainda não foi enviada. Envie o PDF e/ou o XML para disponibilizar ao cliente."}
                             </p>
                             <div className="flex flex-wrap items-center gap-2">
-                                <input
-                                    id="dialog-nf-upload-pdf"
-                                    type="file"
-                                    accept="application/pdf,.pdf"
-                                    className="hidden"
-                                    onChange={(e) => onUploadPdf(paymentId, e)}
-                                />
-                                <Button
-                                    variant="tertiary"
-                                    size="sm"
-                                    onClick={() => document.getElementById("dialog-nf-upload-pdf")?.click()}
-                                    disabled={uploadingPdf}
-                                >
-                                    {uploadingPdf ? (
-                                        <>
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                            Enviando PDF...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Upload className="h-4 w-4" />
-                                            Subir PDF
-                                        </>
-                                    )}
-                                </Button>
+                                {!hasPdf && (
+                                    <>
+                                        <input
+                                            id="dialog-nf-upload-pdf"
+                                            type="file"
+                                            accept="application/pdf,.pdf"
+                                            className="hidden"
+                                            onChange={(e) => onUploadPdf(paymentId, e)}
+                                        />
+                                        <Button
+                                            variant="tertiary"
+                                            size="sm"
+                                            onClick={() => document.getElementById("dialog-nf-upload-pdf")?.click()}
+                                            disabled={uploadingPdf}
+                                        >
+                                            {uploadingPdf ? (
+                                                <>
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                    Enviando PDF...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Upload className="h-4 w-4" />
+                                                    Subir PDF
+                                                </>
+                                            )}
+                                        </Button>
+                                    </>
+                                )}
 
-                                <input
-                                    id="dialog-nf-upload-xml"
-                                    type="file"
-                                    accept=".xml,text/xml,application/xml"
-                                    className="hidden"
-                                    onChange={(e) => onUploadXml(paymentId, e)}
-                                />
-                                <Button
-                                    variant="tertiary"
-                                    size="sm"
-                                    onClick={() => document.getElementById("dialog-nf-upload-xml")?.click()}
-                                    disabled={uploadingXml}
-                                >
-                                    {uploadingXml ? (
-                                        <>
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                            Enviando XML...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Upload className="h-4 w-4" />
-                                            Subir XML
-                                        </>
-                                    )}
-                                </Button>
+                                {!hasXml && (
+                                    <>
+                                        <input
+                                            id="dialog-nf-upload-xml"
+                                            type="file"
+                                            accept=".xml,text/xml,application/xml"
+                                            className="hidden"
+                                            onChange={(e) => onUploadXml(paymentId, e)}
+                                        />
+                                        <Button
+                                            variant="tertiary"
+                                            size="sm"
+                                            onClick={() => document.getElementById("dialog-nf-upload-xml")?.click()}
+                                            disabled={uploadingXml}
+                                        >
+                                            {uploadingXml ? (
+                                                <>
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                    Enviando XML...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Upload className="h-4 w-4" />
+                                                    Subir XML
+                                                </>
+                                            )}
+                                        </Button>
+                                    </>
+                                )}
                             </div>
                         </div>
-                    ) : (
+                    ) : paymentId ? null : (
                         <p className="text-sm text-psi-dark/60">Nenhum pagamento associado a esta compra.</p>
                     )}
                 </div>

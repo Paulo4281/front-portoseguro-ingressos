@@ -12,6 +12,7 @@ import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { formatEventDate } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
 import type { TTicketToOrganizer } from "@/types/Ticket/TTicket"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
+import { DocumentUtils } from "@/utils/Helpers/DocumentUtils/DocumentUtils"
 
 type TDialogViewCustomerProps = {
     open: boolean
@@ -78,13 +79,7 @@ const DialogViewCustomer = ({
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs text-psi-dark/60 mb-1">Telefone</p>
                                         <p className="text-sm font-medium text-psi-dark">
-                                            {customer.phone
-                                                .replace(/\D/g, "")
-                                                .replace(
-                                                    /^(\d{2})(\d{4,5})(\d{4})$/,
-                                                    "($1) $2-$3"
-                                                )
-                                            }
+                                            { DocumentUtils.formatPhone(customer.phone || "") }
                                         </p>
                                     </div>
                                 </div>

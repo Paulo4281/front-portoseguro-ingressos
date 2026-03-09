@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Share2, Download, Ban, Search, Copy, TicketIcon, Sparkle, AlertCircle, XCircle, CheckCircle2, FileText, ExternalLink } from "lucide-react"
+import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Share2, Download, Ban, Search, Copy, TicketIcon, Sparkle, AlertCircle, XCircle, CheckCircle2, FileText, ExternalLink, Loader2, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/Input/Input"
 import {
@@ -33,6 +33,7 @@ import { useEventClickCount } from "@/hooks/EventClick/useEventClickCount"
 import { SheetTicketsToOrganizer } from "@/components/Sheet/SheetTicketsToOrganizer/SheetTicketsToOrganizer"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 import { useNotaFiscalListOrganizer } from "@/hooks/NotaFiscal/useNotaFiscalListOrganizer"
+import { NotaFiscalService } from "@/services/NotaFiscal/NotaFiscalService"
 import type { TNotaFiscal } from "@/types/NotaFiscal/TNotaFiscal"
 import { useEventVerifySold } from "@/hooks/Event/useEventVerifySold"
 import { useEventSoldInValue } from "@/hooks/Event/useEventSoldInValue"
@@ -134,6 +135,7 @@ const MeusEventosPannel = () => {
     const [selectedEventData, setSelectedEventData] = useState<TEvent | null>(null)
     const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
     const [notasFiscaisSheetOpen, setNotasFiscaisSheetOpen] = useState(false)
+    const [requestingNotaId, setRequestingNotaId] = useState<string | null>(null)
 
     const router = useRouter()
     const queryClient = useQueryClient()
@@ -168,7 +170,7 @@ const MeusEventosPannel = () => {
     const limit = responseData.limit || 10
     const totalPages = totalItems > 0 ? Math.ceil(totalItems / limit) : 0
 
-    const { data: notasFiscaisData, isLoading: isLoadingNotasFiscais } = useNotaFiscalListOrganizer({
+    const { data: notasFiscaisData, isLoading: isLoadingNotasFiscais, refetch: refetchNotasFiscais } = useNotaFiscalListOrganizer({
         enabled: notasFiscaisSheetOpen
     })
 
@@ -191,6 +193,19 @@ const MeusEventosPannel = () => {
     }, [notasFiscaisData])
 
     const monthNames = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
+
+    const handleRequestNotaFiscal = async (notaId: string) => {
+        try {
+            setRequestingNotaId(notaId)
+            await NotaFiscalService.requestOrganizerNotaFiscal(notaId)
+            Toast.success("Solicitação de emissão enviada ao administrador.")
+            await refetchNotasFiscais()
+        } catch {
+            // erro tratado na camada da API
+        } finally {
+            setRequestingNotaId(null)
+        }
+    }
 
     const handleOpenUpdateDialog = (eventId: string) => {
         setSelectedEventId(eventId)
@@ -512,7 +527,33 @@ const MeusEventosPannel = () => {
                                                 <span className="text-psi-dark/70 truncate">
                                                     Nota fiscal (organizador)
                                                 </span>
-                                                <div className="flex gap-2 shrink-0">
+                                                <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+                                                    {!nota.pdfLink && !nota.xmlLink && (
+                                                        nota.requested ? (
+                                                            <Button variant="outline" size="sm" disabled className="cursor-default">
+                                                                Solicitado
+                                                            </Button>
+                                                        ) : (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => handleRequestNotaFiscal(nota.id)}
+                                                                disabled={requestingNotaId === nota.id}
+                                                            >
+                                                                {requestingNotaId === nota.id ? (
+                                                                    <>
+                                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                                        Enviando...
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Send className="h-4 w-4" />
+                                                                        Solicitar emissão
+                                                                    </>
+                                                                )}
+                                                            </Button>
+                                                        )
+                                                    )}
                                                     {nota.pdfLink ? (
                                                         <a
                                                             href={ImageUtils.getNotaFiscalFileUrl(nota.pdfLink)}
@@ -534,9 +575,6 @@ const MeusEventosPannel = () => {
                                                             <ExternalLink className="h-4 w-4" />
                                                             XML
                                                         </a>
-                                                    ) : null}
-                                                    {!nota.pdfLink && !nota.xmlLink ? (
-                                                        <span className="text-psi-dark/50">Pendente</span>
                                                     ) : null}
                                                 </div>
                                             </div>

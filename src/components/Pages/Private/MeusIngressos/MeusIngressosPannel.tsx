@@ -263,8 +263,8 @@ const NotaFiscalPurchaseActions = ({ paymentId }: TNotaFiscalPurchaseActionsProp
         return null
     }
 
-    const pdfLink = data?.data?.pdfLink ? `${process.env.NEXT_PUBLIC_BUCKET_URL}/notafiscal/${data?.data?.pdfLink}.pdf` : null
-    const xmlLink = data?.data?.xmlLink ? `${process.env.NEXT_PUBLIC_BUCKET_URL}/notafiscal/${data?.data?.xmlLink}.xml` : null
+    const pdfLink = data?.data?.pdfLink ? `${process.env.NEXT_PUBLIC_BUCKET_URL}/notafiscais/${data?.data?.pdfLink}` : null
+    const xmlLink = data?.data?.xmlLink ? `${process.env.NEXT_PUBLIC_BUCKET_URL}/notafiscais/${data?.data?.xmlLink}` : null
 
     if (!pdfLink && !xmlLink) {
         return null

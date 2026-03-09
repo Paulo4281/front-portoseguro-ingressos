@@ -274,7 +274,7 @@ const AdmNotasFiscaisPannel = () => {
                                                             Dados fiscais
                                                         </Button>
                                                     )}
-                                                    {status === "PENDING" && (
+                                                    {nota.type !== "CLIENT" && !hasPdf && (
                                                         <>
                                                             <input
                                                                 id={`upload-pdf-${nota.id}`}
@@ -304,7 +304,10 @@ const AdmNotasFiscaisPannel = () => {
                                                                     </>
                                                                 )}
                                                             </Button>
-
+                                                        </>
+                                                    )}
+                                                    {nota.type !== "CLIENT" && !hasXml && (
+                                                        <>
                                                             <input
                                                                 id={`upload-xml-${nota.id}`}
                                                                 type="file"
