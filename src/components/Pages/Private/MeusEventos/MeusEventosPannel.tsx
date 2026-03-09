@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Share2, Download, Ban, Search, Copy, TicketIcon, Sparkle, AlertCircle, XCircle, CheckCircle2 } from "lucide-react"
+import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Share2, Download, Ban, Search, Copy, TicketIcon, Sparkle, AlertCircle, XCircle, CheckCircle2, FileText, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/Input/Input"
 import {
@@ -31,6 +31,9 @@ import { Pagination } from "@/components/Pagination/Pagination"
 import { EventSalesReport } from "@/components/Report/EventSalesReport"
 import { useEventClickCount } from "@/hooks/EventClick/useEventClickCount"
 import { SheetTicketsToOrganizer } from "@/components/Sheet/SheetTicketsToOrganizer/SheetTicketsToOrganizer"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
+import { useNotaFiscalListOrganizer } from "@/hooks/NotaFiscal/useNotaFiscalListOrganizer"
+import type { TNotaFiscal } from "@/types/NotaFiscal/TNotaFiscal"
 import { useEventVerifySold } from "@/hooks/Event/useEventVerifySold"
 import { useEventSoldInValue } from "@/hooks/Event/useEventSoldInValue"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
@@ -130,6 +133,7 @@ const MeusEventosPannel = () => {
     const [selectedEventName, setSelectedEventName] = useState<string | null>(null)
     const [selectedEventData, setSelectedEventData] = useState<TEvent | null>(null)
     const [pendingAction, setPendingAction] = useState<(() => void) | null>(null)
+    const [notasFiscaisSheetOpen, setNotasFiscaisSheetOpen] = useState(false)
 
     const router = useRouter()
     const queryClient = useQueryClient()
@@ -163,6 +167,30 @@ const MeusEventosPannel = () => {
     const totalItems = responseData.total || 0
     const limit = responseData.limit || 10
     const totalPages = totalItems > 0 ? Math.ceil(totalItems / limit) : 0
+
+    const { data: notasFiscaisData, isLoading: isLoadingNotasFiscais } = useNotaFiscalListOrganizer({
+        enabled: notasFiscaisSheetOpen
+    })
+
+    const notasFiscaisGroupedByYearMonth = useMemo(() => {
+        const list = (notasFiscaisData?.data as TNotaFiscal[] | undefined) || []
+        const groups: { year: number; month: number; items: TNotaFiscal[] }[] = []
+        const keyToIndex = new Map<string, number>()
+        list.forEach((nota) => {
+            const key = `${nota.yearReference}-${nota.monthReference}`
+            let idx = keyToIndex.get(key)
+            if (idx === undefined) {
+                idx = groups.length
+                keyToIndex.set(key, idx)
+                groups.push({ year: nota.yearReference, month: nota.monthReference, items: [] })
+            }
+            groups[idx].items.push(nota)
+        })
+        groups.sort((a, b) => b.year - a.year || b.month - a.month)
+        return groups
+    }, [notasFiscaisData])
+
+    const monthNames = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
 
     const handleOpenUpdateDialog = (eventId: string) => {
         setSelectedEventId(eventId)
@@ -299,25 +327,35 @@ const MeusEventosPannel = () => {
                             Gerencie seus eventos e acompanhe o desempenho
                         </p>
                         
-                        <div className="flex gap-3">
-                            <Input
-                                placeholder="Pesquisar por nome do evento..."
-                                value={searchName}
-                                onChange={(e) => setSearchName(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                        handleSearch()
-                                    }
-                                }}
-                                icon={Search}
-                                className="w-full bg-psi-light"
-                            />
+                        <div className="flex flex-col gap-3 sm:items-start">
+                            <div className="flex gap-3 flex-1">
+                                <Input
+                                    placeholder="Pesquisar por nome do evento..."
+                                    value={searchName}
+                                    onChange={(e) => setSearchName(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                            handleSearch()
+                                        }
+                                    }}
+                                    icon={Search}
+                                    className="w-full bg-psi-light"
+                                />
+                                <Button
+                                    variant="primary"
+                                    onClick={handleSearch}
+                                    className="shrink-0"
+                                >
+                                    Pesquisar
+                                </Button>
+                            </div>
                             <Button
-                                variant="primary"
-                                onClick={handleSearch}
-                                className="shrink-0"
+                                variant="outline"
+                                onClick={() => setNotasFiscaisSheetOpen(true)}
+                                className="shrink-0 gap-2"
                             >
-                                Pesquisar
+                                <FileText className="h-4 w-4" />
+                                Ver minhas notas fiscais
                             </Button>
                         </div>
                     </div>
@@ -430,6 +468,86 @@ const MeusEventosPannel = () => {
                 isLoading={isDeletingEvent}
                 variant="destructive"
             />
+
+            <Sheet open={notasFiscaisSheetOpen} onOpenChange={setNotasFiscaisSheetOpen}>
+                <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
+                    <SheetHeader>
+                        <SheetTitle className="text-xl font-semibold text-psi-primary">
+                            Minhas Notas Fiscais
+                        </SheetTitle>
+                        <SheetDescription asChild>
+                            <div className="space-y-3 text-left">
+                                <p className="text-sm text-psi-dark/70 leading-relaxed">
+                                    A plataforma libera a nota fiscal nos primeiros dias de cada mês, referente ao valor das <strong>taxas pagas pelo organizador</strong> na venda de cada ingresso no período (conforme item 7 dos Termos e Condições).
+                                </p>
+                                <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 flex items-start gap-2">
+                                    <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                                    <p className="text-sm text-amber-900 leading-relaxed">
+                                        Para <strong>emitir a nota fiscal ao cliente</strong>, utilize o menu do evento: <strong>Ingressos</strong> → no dropdown do evento, clique em <strong>&quot;Informações fiscais&quot;</strong> para enviar PDF/XML por compra.
+                                    </p>
+                                </div>
+                            </div>
+                        </SheetDescription>
+                    </SheetHeader>
+                    <div className="px-4 pb-6 space-y-6">
+                        {isLoadingNotasFiscais ? (
+                            <div className="space-y-3">
+                                {[1, 2, 3].map((i) => (
+                                    <div key={i} className="h-20 rounded-lg bg-psi-dark/5 animate-pulse" />
+                                ))}
+                            </div>
+                        ) : notasFiscaisGroupedByYearMonth.length === 0 ? (
+                            <p className="text-sm text-psi-dark/60 text-center py-8">
+                                Nenhuma nota fiscal encontrada.
+                            </p>
+                        ) : (
+                            notasFiscaisGroupedByYearMonth.map((group) => (
+                                <div key={`${group.year}-${group.month}`} className="space-y-2">
+                                    <h3 className="text-sm font-semibold text-psi-dark capitalize">
+                                        {monthNames[group.month - 1]} / {group.year}
+                                    </h3>
+                                    <div className="space-y-2 rounded-lg border border-psi-dark/10 p-3 bg-psi-light/30">
+                                        {group.items.map((nota) => (
+                                            <div key={nota.id} className="flex items-center justify-between gap-2 text-sm">
+                                                <span className="text-psi-dark/70 truncate">
+                                                    Nota fiscal (organizador)
+                                                </span>
+                                                <div className="flex gap-2 shrink-0">
+                                                    {nota.pdfLink ? (
+                                                        <a
+                                                            href={ImageUtils.getNotaFiscalFileUrl(nota.pdfLink)}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center gap-1 text-psi-primary hover:underline"
+                                                        >
+                                                            <FileText className="h-4 w-4" />
+                                                            PDF
+                                                        </a>
+                                                    ) : null}
+                                                    {nota.xmlLink ? (
+                                                        <a
+                                                            href={ImageUtils.getNotaFiscalFileUrl(nota.xmlLink)}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="inline-flex items-center gap-1 text-psi-primary hover:underline"
+                                                        >
+                                                            <ExternalLink className="h-4 w-4" />
+                                                            XML
+                                                        </a>
+                                                    ) : null}
+                                                    {!nota.pdfLink && !nota.xmlLink ? (
+                                                        <span className="text-psi-dark/50">Pendente</span>
+                                                    ) : null}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </SheetContent>
+            </Sheet>
         </Background>
     )
 }

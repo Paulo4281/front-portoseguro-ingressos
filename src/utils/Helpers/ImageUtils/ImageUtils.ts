@@ -40,6 +40,13 @@ class ImageUtilsClass {
         const bucketUrl = process.env.NEXT_PUBLIC_BUCKET_URL || ""
         return `${bucketUrl}/events-terms/${termsHash}`
     }
+
+    getNotaFiscalFileUrl(fileHash: string | null | undefined): string {
+        if (!fileHash) return ""
+
+        const bucketUrl = process.env.NEXT_PUBLIC_BUCKET_URL || ""
+        return `${bucketUrl}/notafiscais/${fileHash}`
+    }
 }
 
 export const ImageUtils = new ImageUtilsClass()

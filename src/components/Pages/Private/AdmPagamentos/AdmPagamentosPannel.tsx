@@ -1433,11 +1433,6 @@ const AdmPagamentosPannel = () => {
                                                                             </Button>
                                                                         )
                                                                     }
-                                                                    {payment.type === "TICKET" && (
-                                                                        <Button variant="primary" size="lg" disabled>
-                                                                            Solicitar nota fiscal
-                                                                        </Button>
-                                                                    )}
                                                                 </div>
                                                             </div>
                                                         </TableCell>

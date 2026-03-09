@@ -35,7 +35,8 @@ type Prefixes =
     "/cron-log" |
     "/lead" |
     "/partner" |
-    "/internal-campaign"
+    "/internal-campaign" |
+    "/notafiscal"
 
 type TAPIParams = {
     prefix: Prefixes

@@ -393,6 +393,19 @@ export function getPaymentStatusLabel(status: string): string {
     return PaymentStatusLabels[status] ?? status
 }
 
+export type TPaymentCalculateTotalOrganizerFeeParams = {
+    userId: string
+    yearReference: number
+    monthReference: number
+}
+
+export type TPaymentCalculateTotalOrganizerFeeResponse = {
+    totalOrganizerFee: number
+    yearReference: number
+    monthReference: number
+    organizerUserId: string
+}
+
 export type {
     TPaymentGatewayGetPIXQrCodeResponse,
     TPaymentStatusResponse,
@@ -402,4 +415,6 @@ export type {
     TPaymentRefundParams,
     TPaymentReleaseBalanceParams,
     TPaymentReleaseBalanceResponse,
+    TPaymentCalculateTotalOrganizerFeeParams,
+    TPaymentCalculateTotalOrganizerFeeResponse,
 }

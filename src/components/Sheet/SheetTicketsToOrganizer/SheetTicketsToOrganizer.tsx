@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, type ChangeEvent } from "react"
 import { Search, X, MoreVertical, User, Ban, CheckCircle2, XCircle, RefreshCw } from "lucide-react"
 import {
     Sheet,
@@ -31,14 +31,18 @@ import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Hel
 import { Pagination } from "@/components/Pagination/Pagination"
 import { DialogViewCustomer } from "./DialogViewCustomer/DialogViewCustomer"
 import { DialogCancelTicketWarning } from "./DialogCancelTicketWarning/DialogCancelTicketWarning"
+import { DialogNotaFiscalOrganizer } from "./DialogNotaFiscalOrganizer/DialogNotaFiscalOrganizer"
 import { useTicketOrganizerRequestRefund } from "@/hooks/Ticket/useTicketOrganizerRequestRefund"
 import { Toast } from "@/components/Toast/Toast"
 import type { TTicketToOrganizer } from "@/types/Ticket/TTicket"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import { ticketCancelledByConfig, refundStatusConfig } from "@/components/Pages/Private/AdmPagamentos/AdmPagamentosPannel"
 import { Badge } from "@/components/ui/badge"
-import { AlertTriangle, ExternalLink, Calendar, Clock, Store } from "lucide-react"
+import { AlertTriangle, ExternalLink, Calendar, Clock, Store, FileText } from "lucide-react"
 import { useEventFindByIdUser } from "@/hooks/Event/useEventFindByIdUser"
+import { useNotaFiscalOrganizerByPayments } from "@/hooks/NotaFiscal/useNotaFiscalOrganizerByPayments"
+import { NotaFiscalService } from "@/services/NotaFiscal/NotaFiscalService"
+import type { TNotaFiscal } from "@/types/NotaFiscal/TNotaFiscal"
 
 type TSheetTicketsToOrganizerProps = {
     open: boolean
@@ -85,6 +89,9 @@ const SheetTicketsToOrganizer = ({
     const [selectedTicketsForDialog, setSelectedTicketsForDialog] = useState<TTicketToOrganizer[]>([])
     const [viewCustomerOpen, setViewCustomerOpen] = useState(false)
     const [cancelTicketOpen, setCancelTicketOpen] = useState(false)
+    const [uploadingPdfPaymentId, setUploadingPdfPaymentId] = useState<string | null>(null)
+    const [uploadingXmlPaymentId, setUploadingXmlPaymentId] = useState<string | null>(null)
+    const [nfModalGroup, setNfModalGroup] = useState<{ paymentId: string; customerName: string } | null>(null)
 
     const limit = 30
     const offset = (currentPage - 1) * limit
@@ -136,6 +143,16 @@ const SheetTicketsToOrganizer = ({
             purchaseDate: group[0].payment?.paidAt || group[0].createdAt
         }))
     }, [tickets])
+
+    const paymentIdsForNf = useMemo(
+        () => groupedTickets.map((g) => g.payment?.id).filter((id): id is string => !!id),
+        [groupedTickets]
+    )
+
+    const { dataByPaymentId: notaFiscalByPaymentId, refetch: refetchNotasFiscais } = useNotaFiscalOrganizerByPayments({
+        paymentIds: paymentIdsForNf,
+        enabled: open && paymentIdsForNf.length > 0
+    })
 
     const total = useMemo(() => {
         return data?.data?.total || 0
@@ -234,6 +251,44 @@ const SheetTicketsToOrganizer = ({
         return parts.join(" • ")
     }
 
+    const handleUploadPdfByOrganizer = async (paymentId: string, event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0]
+        event.target.value = ""
+        if (!file) return
+
+        try {
+            setUploadingPdfPaymentId(paymentId)
+            await NotaFiscalService.uploadPdfByOrganizer(paymentId, file)
+            Toast.success("PDF da nota fiscal enviado com sucesso.")
+            await refetchNotasFiscais()
+        } catch {
+            // Tratamento detalhado já ocorre no interceptor da API.
+        } finally {
+            setUploadingPdfPaymentId(null)
+        }
+    }
+
+    const handleUploadXmlByOrganizer = async (paymentId: string, event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0]
+        event.target.value = ""
+        if (!file) return
+
+        try {
+            setUploadingXmlPaymentId(paymentId)
+            await NotaFiscalService.uploadXmlByOrganizer(paymentId, file)
+            Toast.success("XML da nota fiscal enviado com sucesso.")
+            await refetchNotasFiscais()
+        } catch {
+            // Tratamento detalhado já ocorre no interceptor da API.
+        } finally {
+            setUploadingXmlPaymentId(null)
+        }
+    }
+
+    const handleOpenNfModal = (paymentId: string, customerName: string) => {
+        setNfModalGroup({ paymentId, customerName })
+    }
+
     return (
         <>
             <Sheet open={open} onOpenChange={onOpenChange}>
@@ -316,7 +371,8 @@ const SheetTicketsToOrganizer = ({
                                         const isMultipleTickets = group.tickets.length > 1
                                         const totalValue = group.tickets.reduce((sum, t) => sum + (t.price || 0), 0)
                                         const seller = group.tickets.find((t) => t.seller)?.seller ?? null
-                                        
+                                        const paymentId = group.payment?.id || null
+
                                         return (
                                             <div
                                                 key={`group-${group.payment?.id || group.payment?.code || `no-payment-${group.customer.id}`}`}
@@ -392,6 +448,11 @@ const SheetTicketsToOrganizer = ({
                                                                                      group.payment.status}
                                                                                 </Badge>
                                                                             )}
+                                                                            {paymentId && notaFiscalByPaymentId[paymentId] && (notaFiscalByPaymentId[paymentId]?.pdfLink || notaFiscalByPaymentId[paymentId]?.xmlLink) && (
+                                                                                <Badge variant={"psi-tertiary"}>
+                                                                                    NF enviada
+                                                                                </Badge>
+                                                                            )}
                                                                         </div>
                                                                     )}
                                                                     {isMultipleTickets && (
@@ -421,6 +482,15 @@ const SheetTicketsToOrganizer = ({
                                                                     <User className="h-4 w-4 text-psi-dark" />
                                                                     Visualizar cliente
                                                                 </DropdownMenuItem>
+                                                                {paymentId && (
+                                                                    <DropdownMenuItem
+                                                                        className="cursor-pointer"
+                                                                        onClick={() => handleOpenNfModal(paymentId, group.customer.name)}
+                                                                    >
+                                                                        <FileText className="h-4 w-4 text-psi-dark" />
+                                                                        Informações fiscais
+                                                                    </DropdownMenuItem>
+                                                                )}
                                                             </DropdownMenuContent>
                                                         </DropdownMenu>
                                                     </div>
@@ -638,6 +708,18 @@ const SheetTicketsToOrganizer = ({
                     />
                 </>
             )}
+
+            <DialogNotaFiscalOrganizer
+                open={nfModalGroup !== null}
+                onOpenChange={(open) => !open && setNfModalGroup(null)}
+                customerName={nfModalGroup?.customerName ?? ""}
+                paymentId={nfModalGroup?.paymentId ?? null}
+                notaFiscal={nfModalGroup ? notaFiscalByPaymentId[nfModalGroup.paymentId] : undefined}
+                onUploadPdf={handleUploadPdfByOrganizer}
+                onUploadXml={handleUploadXmlByOrganizer}
+                uploadingPdf={nfModalGroup !== null && uploadingPdfPaymentId === nfModalGroup.paymentId}
+                uploadingXml={nfModalGroup !== null && uploadingXmlPaymentId === nfModalGroup.paymentId}
+            />
         </>
     )
 }
