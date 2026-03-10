@@ -22,6 +22,7 @@ const MeuPerfilPage = () => {
 
   return (
     <>
+    <title>Meu Perfil | Porto Seguro Ingressos</title>
     <meta
         name="description"
         content="Gerencie suas informações pessoais e de contato. Atualize seu perfil, senha e muito mais."

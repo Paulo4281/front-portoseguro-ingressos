@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { useAuthStore } from "@/stores/Auth/AuthStore"
 import { useTicketFindByUserId } from "@/hooks/Ticket/useTicketFindByUserId"
 import { useTicketCustomerRequestRefund } from "@/hooks/Ticket/useTicketCustomerRequestRefund"
+import { useNotaFiscalFindClientLinks } from "@/hooks/NotaFiscal/useNotaFiscalFindClientLinks"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import { formatEventDate, formatEventTime, getDateOrderValue } from "@/utils/Helpers/EventSchedule/EventScheduleUtils"
@@ -244,6 +245,56 @@ const renderFormFields = (form: TTicket["form"]) => {
                     ))}
                 </div>
             )}
+        </div>
+    )
+}
+
+type TNotaFiscalPurchaseActionsProps = {
+    paymentId: string | null | undefined
+}
+
+const NotaFiscalPurchaseActions = ({ paymentId }: TNotaFiscalPurchaseActionsProps) => {
+    const { data, isLoading } = useNotaFiscalFindClientLinks({
+        paymentId,
+        enabled: !!paymentId
+    })
+
+    if (!paymentId || isLoading) {
+        return null
+    }
+
+    const pdfLink = data?.data?.pdfLink ? `${process.env.NEXT_PUBLIC_BUCKET_URL}/notafiscais/${data?.data?.pdfLink}` : null
+    const xmlLink = data?.data?.xmlLink ? `${process.env.NEXT_PUBLIC_BUCKET_URL}/notafiscais/${data?.data?.xmlLink}` : null
+
+    if (!pdfLink && !xmlLink) {
+        return null
+    }
+
+    return (
+        <div className="space-y-2 mt-2">
+            <p className="text-xs text-psi-dark/60">Nota Fiscal disponível para esta compra</p>
+            <div className="flex flex-wrap items-center gap-2">
+                {pdfLink && (
+                    <Link
+                        href={pdfLink}
+                        target="_blank"
+                        className="inline-flex items-center gap-1 rounded-md border border-psi-primary/20 bg-psi-primary/5 px-2.5 py-1 text-xs text-psi-primary hover:bg-psi-primary/10"
+                    >
+                        <FileText className="h-3.5 w-3.5" />
+                        Baixar PDF
+                    </Link>
+                )}
+                {xmlLink && (
+                    <Link
+                        href={xmlLink}
+                        target="_blank"
+                        className="inline-flex items-center gap-1 rounded-md border border-psi-primary/20 bg-psi-primary/5 px-2.5 py-1 text-xs text-psi-primary hover:bg-psi-primary/10"
+                    >
+                        <FileText className="h-3.5 w-3.5" />
+                        Baixar XML
+                    </Link>
+                )}
+            </div>
         </div>
     )
 }
@@ -868,6 +919,7 @@ const MeusIngressosPannel = () => {
                                                                     Ver recibo
                                                                 </Link>
                                                             )}
+                                                            <NotaFiscalPurchaseActions paymentId={group.payment?.id} />
                                                         </div>
                                                     </div>
 

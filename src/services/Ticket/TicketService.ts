@@ -2,22 +2,35 @@ import { API } from "@/api/api"
 import type { AxiosResponse } from "axios"
 import type { TTicket, TTicketBuy, TTicketScanLinkGenerateResponse, TTicketScanResponse, TTicketScanLink, TTicketScanLinkCreate, TTicketScanLinkDelete, TTicketQRCodeResponse, TTicketToOrganizer, TTicketValidate, TTicketValidateQrCodeResponse, TTicketOrganizerRequestRefundResponse } from "@/types/Ticket/TTicket"
 import type { TApiResponse } from "@/types/TApiResponse"
+import { InternalCampaignTracking } from "@/utils/Helpers/InternalCampaignTracking/InternalCampaignTracking"
 
 class TicketServiceClass {
+    private attachInternalCampaignId(data: TTicketBuy): TTicketBuy {
+        const trackedUtmId = InternalCampaignTracking.readFromSessionStorage()
+        if (!trackedUtmId) return data
+
+        return {
+            ...data,
+            internalCampaignId: trackedUtmId
+        }
+    }
+
     async buy(data: TTicketBuy): Promise<AxiosResponse["data"]> {
+        const payload = this.attachInternalCampaignId(data)
         const response = (await API.POST({
             prefix: "/ticket",
             url: "/buy",
-            data: data
+            data: payload
         }))?.data
         return response
     }
 
     async buySeller(data: TTicketBuy): Promise<AxiosResponse["data"]> {
+        const payload = this.attachInternalCampaignId(data)
         const response = (await API.POST({
             prefix: "/ticket",
             url: "/buy/seller",
-            data: data
+            data: payload
         }))?.data
         return response
     }

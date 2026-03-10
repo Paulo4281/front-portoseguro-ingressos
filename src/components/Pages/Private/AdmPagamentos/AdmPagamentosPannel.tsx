@@ -583,6 +583,13 @@ const AdmPagamentosPannel = () => {
                                                                 <p className="text-xs text-psi-dark/50">
                                                                     {payment.Event?.location || "Sem localização"}
                                                                 </p>
+                                                                {payment.InternalCampaign && (
+                                                                    <div className="pt-1">
+                                                                        <Badge className="bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                                                            Campanha: {payment.InternalCampaign.name}
+                                                                        </Badge>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </TableCell>
@@ -742,6 +749,26 @@ const AdmPagamentosPannel = () => {
                                                                                 <Badge className={payment.Subscription.status === "ACTIVE" ? "bg-emerald-50 text-emerald-600 border-emerald-200" : payment.Subscription.status === "PENDING" ? "bg-amber-50 text-amber-600 border-amber-200" : payment.Subscription.status === "CANCELLED" ? "bg-red-50 text-red-600 border-red-200" : "bg-gray-50 text-gray-600 border-gray-200"}>
                                                                                     {payment.Subscription.status === "ACTIVE" ? "Ativa" : payment.Subscription.status === "PENDING" ? "Pendente" : payment.Subscription.status === "CANCELLED" ? "Cancelada" : payment.Subscription.status}
                                                                                 </Badge>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {payment.InternalCampaign && (
+                                                                        <div className="rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 space-y-2 shadow-sm">
+                                                                            <div className="flex items-center gap-2 text-xs font-medium text-indigo-700 uppercase tracking-wide">
+                                                                                <ExternalLink className="h-4 w-4 text-indigo-600" />
+                                                                                Campanha interna
+                                                                            </div>
+                                                                            <div className="space-y-1">
+                                                                                <p className="text-base font-medium text-psi-dark">
+                                                                                    {payment.InternalCampaign.name}
+                                                                                </p>
+                                                                                <p className="text-sm text-psi-dark/70">
+                                                                                    utm_campaign: {payment.InternalCampaign.utmCampaign}
+                                                                                </p>
+                                                                                <p className="text-sm text-psi-dark/70">
+                                                                                    utm_id: {payment.InternalCampaign.utmId}
+                                                                                </p>
                                                                             </div>
                                                                         </div>
                                                                     )}
@@ -1406,11 +1433,6 @@ const AdmPagamentosPannel = () => {
                                                                             </Button>
                                                                         )
                                                                     }
-                                                                    {payment.type === "TICKET" && (
-                                                                        <Button variant="primary" size="lg" disabled>
-                                                                            Solicitar nota fiscal
-                                                                        </Button>
-                                                                    )}
                                                                 </div>
                                                             </div>
                                                         </TableCell>

@@ -34,7 +34,9 @@ type Prefixes =
     "/resale/seller-balance" |
     "/cron-log" |
     "/lead" |
-    "/partner"
+    "/partner" |
+    "/internal-campaign" |
+    "/notafiscal"
 
 type TAPIParams = {
     prefix: Prefixes
@@ -189,6 +191,7 @@ class ApiClass {
             const response = await axios.delete(
                 `${process.env.NEXT_PUBLIC_API_URL}${params.prefix}${params.url}`,
                 {
+                    data: params.data,
                     headers: {
                         "Content-Type": "application/json"
                     },

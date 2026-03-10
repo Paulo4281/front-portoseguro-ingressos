@@ -32,6 +32,7 @@ import { useEventVerifyLastTicket } from "@/hooks/Event/useEventVerifyLastTicket
 import { Toast } from "@/components/Toast/Toast"
 import { useEventFindBySlug } from "@/hooks/Event/useEventFindBySlug"
 import { useOrganizerGetSupportInfo } from "@/hooks/Organizer/useOrganizerGetSupportInfo"
+import { InternalCampaignTracking } from "@/utils/Helpers/InternalCampaignTracking/InternalCampaignTracking"
 import { useRouter } from "next/navigation"
 import {
     Dialog,
@@ -297,6 +298,7 @@ const VerEventoInfo = (
 
         if (typeof window !== "undefined") {
             const searchParams = new URLSearchParams(window.location.search)
+            const trackedUtmId = InternalCampaignTracking.syncFromSearchParams(searchParams)
             const utmMappings: Record<string, keyof TEventClickCreate> = {
                 utm_id: "utmId",
                 utm_source: "utmSource",
@@ -312,6 +314,11 @@ const VerEventoInfo = (
                     payload[payloadKey] = value
                 }
             })
+
+            if (!payload.utmId && trackedUtmId) {
+                payload.utmId = trackedUtmId
+            }
+            payload.internalCampaignId = trackedUtmId || undefined
         }
 
         if (typeof document !== "undefined" && document.referrer) {

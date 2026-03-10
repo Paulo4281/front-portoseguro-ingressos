@@ -353,7 +353,25 @@ const TermosECondicoesInfo = () => {
                                             <span className="text-psi-primary mt-1">•</span>
                                             <span>Manter a verificação de identidade e documentos atualizados</span>
                                         </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-psi-primary mt-1">•</span>
+                                            <span>Emitir, quando aplicável, a nota fiscal referente à venda de ingressos, observando toda a legislação fiscal e tributária vigente</span>
+                                        </li>
                                     </ul>
+                                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-2">
+                                        <div className="flex items-start gap-3">
+                                            <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                                            <div className="flex-1">
+                                                <h3 className="font-medium text-amber-900 mb-1">7.1. Emissão de Nota Fiscal</h3>
+                                                <p className="text-amber-800 text-sm leading-relaxed">
+                                                    A emissão de nota fiscal referente à venda de ingressos é de <strong>responsabilidade exclusiva do organizador do evento</strong>.
+                                                </p>
+                                                <p className="text-amber-800 text-sm leading-relaxed mt-2">
+                                                    A responsabilidade pela emissão da nota fiscal referente ao ingresso é <strong>exclusivamente do organizador do evento</strong>, incluindo correção de dados fiscais, enquadramento tributário e cumprimento das obrigações acessórias.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </section>
@@ -400,7 +418,9 @@ const TermosECondicoesInfo = () => {
                                 <div className="flex-1 space-y-3">
                                     <h2 className="text-2xl font-semibold text-psi-dark">9. Limitação de Responsabilidade</h2>
                                     <p className="text-psi-dark/70 leading-relaxed">
-                                        A plataforma Porto Seguro Ingressos atua como intermediária entre compradores e organizadores. 
+                                        A plataforma Porto Seguro Ingressos atua <strong>apenas como intermediadora</strong> entre compradores e organizadores, não realizando a venda direta do ingresso em nome próprio.
+                                    </p>
+                                    <p className="text-psi-dark/70 leading-relaxed">
                                         Não nos responsabilizamos por:
                                     </p>
                                     <ul className="space-y-2 text-psi-dark/70">

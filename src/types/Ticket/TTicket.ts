@@ -212,6 +212,7 @@ type TTicketBuy = {
         couponCode: string
     }[] | null
     removeTicketHoldIds: string[] | null
+    internalCampaignId?: string | null
     vfc: number | null
     isInsured?: boolean
     /** Usado quando a compra é feita por revendedor */

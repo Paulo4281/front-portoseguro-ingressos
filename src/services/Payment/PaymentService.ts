@@ -8,7 +8,9 @@ import type {
     TPaymentMySalesItem,
     TPaymentLinkVerifyResponse,
     TPaymentLinkPayParams,
-    TPaymentLinkPayResponse
+    TPaymentLinkPayResponse,
+    TPaymentCalculateTotalOrganizerFeeParams,
+    TPaymentCalculateTotalOrganizerFeeResponse
 } from "@/types/Payment/TPayment"
 
 type TListPaymentsParams = {
@@ -68,6 +70,15 @@ class PaymentServiceClass {
             data: params
         }))?.data
         return response
+    }
+
+    async calculateTotalOrganizerFee(params: TPaymentCalculateTotalOrganizerFeeParams): Promise<AxiosResponse["data"]> {
+        const response = (await API.GET({
+            prefix: "/payment",
+            url: "/calculate-total-organizer-fee",
+            params: params
+        }))?.data
+        return response as TApiResponse<TPaymentCalculateTotalOrganizerFeeResponse>
     }
 
     async mySales(): Promise<AxiosResponse["data"]> {

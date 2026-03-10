@@ -158,6 +158,7 @@ type TPaymentAdminListResponse = {
     sellerCreditCardUsedInfo: any | null
     userId: string
     cardId: string | null
+    internalCampaignId: string | null
     createdAt: string
     updatedAt: string | null
     User: {
@@ -183,6 +184,18 @@ type TPaymentAdminListResponse = {
         brand: string
         expYear: string
         expMonth: string
+    } | null
+    InternalCampaign: {
+        id: string
+        name: string
+        utmCampaign: string
+        utmId: string
+        utmSource: string | null
+        utmContent: string | null
+        utmTerm: string | null
+        adminUserId: string
+        createdAt: string
+        updatedAt: string | null
     } | null
     Installments: TPaymentInstallment[]
     Tickets: Array<{
@@ -378,6 +391,19 @@ const PaymentStatusLabels: Record<string, string> = {
 
 export function getPaymentStatusLabel(status: string): string {
     return PaymentStatusLabels[status] ?? status
+}
+
+export type TPaymentCalculateTotalOrganizerFeeParams = {
+    userId: string
+    yearReference: number
+    monthReference: number
+}
+
+export type TPaymentCalculateTotalOrganizerFeeResponse = {
+    totalOrganizerFee: number
+    yearReference: number
+    monthReference: number
+    organizerUserId: string
 }
 
 export type {
