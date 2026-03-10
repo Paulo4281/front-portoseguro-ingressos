@@ -415,6 +415,4 @@ export type {
     TPaymentRefundParams,
     TPaymentReleaseBalanceParams,
     TPaymentReleaseBalanceResponse,
-    TPaymentCalculateTotalOrganizerFeeParams,
-    TPaymentCalculateTotalOrganizerFeeResponse,
 }
