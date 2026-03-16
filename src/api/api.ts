@@ -36,7 +36,8 @@ type Prefixes =
     "/lead" |
     "/partner" |
     "/internal-campaign" |
-    "/notafiscal"
+    "/notafiscal" |
+    "/billboard"
 
 type TAPIParams = {
     prefix: Prefixes

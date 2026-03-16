@@ -21,12 +21,19 @@ const CardEvent = (
     }: TCardEventProps
 ) => {
     const { data: eventVerifyLastTicketsData, isLoading: isLoadingEventVerifyLastTickets, isFetching: isFetchingEventVerifyLastTickets } = useEventVerifyLastTicket(event.id)
-
     const isLastTickets = useMemo(() => {
         if (!eventVerifyLastTicketsData?.data || !Array.isArray(eventVerifyLastTicketsData.data)) return false
         if (event.EventBatches.every((batch) => !batch.isActive)) return false
         return eventVerifyLastTicketsData.data.some(ticket => ticket.isLastTickets)
     }, [eventVerifyLastTicketsData])
+
+    const isNewEvent = useMemo(() => {
+        if (!event?.createdAt) return false
+        const created = new Date(event.createdAt)
+        const now = new Date()
+        const diffDays = (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)
+        return diffDays <= 7
+    }, [event?.createdAt])
 
     const getDateRange = (dates: TEvent["EventDates"]) => {
         if (!dates || !Array.isArray(dates) || dates.length === 0) return null
@@ -149,93 +156,99 @@ const CardEvent = (
     return (
         <Link href={`/ver-evento/${event.slug}`} className="block h-full">
             <Card className="h-full flex flex-col overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-black/10 hover:-translate-y-1 group">
-                <div className="relative w-full h-56 overflow-hidden bg-psi-dark/5">
-                    <img
-                        src={ImageUtils.getEventImageUrl(event.image)}
-                        alt={event.name}
-                        className="object-cover h-full w-full transition-transform duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
-                        {event.isFinished && (
-                            <div className="inline-flex items-center gap-1.5 bg-emerald-500/95 backdrop-blur-sm px-2.5 py-1 rounded-full border border-emerald-600/20 shadow-sm">
-                                <CheckCircle2 className="h-3 w-3 text-white" />
-                                <span className="text-xs font-medium text-white">
-                                    Finalizado
-                                </span>
-                            </div>
-                        )}
-                        {activeBatch && (
-                            <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full border border-psi-primary/20 shadow-sm">
-                                <Tag className="h-3 w-3 text-psi-primary" />
-                                <span className="text-xs font-medium text-psi-dark">
-                                    {activeBatch.name}
-                                </span>
-                            </div>
-                        )}
-                    </div>
-                </div>
-                
-                <div className="p-5 flex flex-col flex-1">
-                    {isLastTickets && (
-                        <div className="inline-flex mb-2 animate-pulse items-center gap-1.5 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full border border-psi-primary/20 shadow-sm">
-                            <Tag className="h-3 w-3 text-psi-primary" />
-                            <span className="text-xs font-medium text-psi-dark">Últimos ingressos!</span>
+                    <div className="relative w-full h-56 overflow-hidden bg-psi-dark/5">
+                        <img
+                            src={ImageUtils.getEventImageUrl(event.image)}
+                            alt={event.name}
+                            className="object-cover h-full w-full transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+                            {isNewEvent && (
+                                <div className="inline-flex items-center gap-1.5 bg-psi-primary/95 backdrop-blur-sm px-2.5 py-1 rounded-full border border-psi-primary shadow-sm">
+                                    <span className="text-xs font-medium text-white">
+                                        Novo
+                                    </span>
+                                </div>
+                            )}
+                            {event.isFinished && (
+                                <div className="inline-flex items-center gap-1.5 bg-emerald-500/95 backdrop-blur-sm px-2.5 py-1 rounded-full border border-emerald-600/20 shadow-sm">
+                                    <CheckCircle2 className="h-3 w-3 text-white" />
+                                    <span className="text-xs font-medium text-white">
+                                        Finalizado
+                                    </span>
+                                </div>
+                            )}
+                            {activeBatch && (
+                                <div className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-2.5 py-1 rounded-full border border-psi-primary/20 shadow-sm">
+                                    <Tag className="h-3 w-3 text-psi-primary" />
+                                    <span className="text-xs font-medium text-psi-dark">
+                                        {activeBatch.name}
+                                    </span>
+                                </div>
+                            )}
                         </div>
-                    )}
-
-                    <h3 className="text-lg font-semibold text-psi-dark mb-3 line-clamp-2 leading-tight group-hover:text-psi-primary transition-colors">
-                        {event.name} {onlineBadge} {freeBadge}
-                    </h3>
-
-                    <div className="space-y-2.5 flex-1">
-                        {!isRecurrent && (
-                            <>
-                                <div className="flex flex-wrap items-center gap-2 text-sm text-psi-dark/70">
-                                    <Calendar className="h-4 w-4 text-psi-primary shrink-0" />
-                                    <span className="font-medium">{getDateRange(event.EventDates)}</span>
-                                    {event.EventDates && Array.isArray(event.EventDates) && event.EventDates.length > 1 && (
-                                        <span className="text-xs text-psi-dark/50">
-                                            • {event.EventDates.length} datas
-                                        </span>
-                                    )}
-                                </div>
-                                
-                                {firstDate && (
-                                    <div className="flex items-center gap-2 text-sm text-psi-dark/70">
-                                        <Clock className="h-4 w-4 text-psi-primary shrink-0" />
-                                        <span>
-                                            {formatEventTime(firstDate.hourStart, firstDate.hourEnd)}
-                                        </span>
-                                    </div>
-                                )}
-                            </>
-                        )}
-
-                        {isRecurrent && recurrenceInfo && (
-                            <div className="flex items-start gap-2 text-sm text-psi-dark/70">
-                                <Clock className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="font-medium text-psi-primary">
-                                            {recurrenceInfo.type === "DAILY" && "Diário"}
-                                            {recurrenceInfo.type === "WEEKLY" && "Semanal"}
-                                            {recurrenceInfo.type === "MONTHLY" && "Mensal"}
-                                        </span>
-                                        <span className="text-psi-dark/50">•</span>
-                                        <span className="whitespace-pre-line leading-relaxed">{recurrenceInfo.text}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                        
-                        {event.location && (
-                            <div className="flex items-center gap-2 text-sm text-psi-dark/70 pt-1">
-                                <MapPin className="h-4 w-4 text-psi-primary shrink-0" />
-                                <span className="line-clamp-1">{event.location}</span>
-                            </div>
-                        )}
                     </div>
-                </div>
+                    <div className="p-5 flex flex-col flex-1">
+                        {isLastTickets && (
+                            <div className="inline-flex mb-2 animate-pulse items-center gap-1.5 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full border border-psi-primary/20 shadow-sm">
+                                <Tag className="h-3 w-3 text-psi-primary" />
+                                <span className="text-xs font-medium text-psi-dark">Últimos ingressos!</span>
+                            </div>
+                        )}
+
+                        <h3 className="text-lg font-semibold text-psi-dark mb-3 line-clamp-2 leading-tight group-hover:text-psi-primary transition-colors">
+                            {event.name} {onlineBadge} {freeBadge}
+                        </h3>
+
+                        <div className="space-y-2.5 flex-1">
+                            {!isRecurrent && (
+                                <>
+                                    <div className="flex flex-wrap items-center gap-2 text-sm text-psi-dark/70">
+                                        <Calendar className="h-4 w-4 text-psi-primary shrink-0" />
+                                        <span className="font-medium">{getDateRange(event.EventDates)}</span>
+                                        {event.EventDates && Array.isArray(event.EventDates) && event.EventDates.length > 1 && (
+                                            <span className="text-xs text-psi-dark/50">
+                                                • {event.EventDates.length} datas
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {firstDate && (
+                                        <div className="flex items-center gap-2 text-sm text-psi-dark/70">
+                                            <Clock className="h-4 w-4 text-psi-primary shrink-0" />
+                                            <span>
+                                                {formatEventTime(firstDate.hourStart, firstDate.hourEnd)}
+                                            </span>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
+                            {isRecurrent && recurrenceInfo && (
+                                <div className="flex items-start gap-2 text-sm text-psi-dark/70">
+                                    <Clock className="h-4 w-4 text-psi-primary shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="font-medium text-psi-primary">
+                                                {recurrenceInfo.type === "DAILY" && "Diário"}
+                                                {recurrenceInfo.type === "WEEKLY" && "Semanal"}
+                                                {recurrenceInfo.type === "MONTHLY" && "Mensal"}
+                                            </span>
+                                            <span className="text-psi-dark/50">•</span>
+                                            <span className="whitespace-pre-line leading-relaxed">{recurrenceInfo.text}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {event.location && (
+                                <div className="flex items-center gap-2 text-sm text-psi-dark/70 pt-1">
+                                    <MapPin className="h-4 w-4 text-psi-primary shrink-0" />
+                                    <span className="line-clamp-1">{event.location}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
             </Card>
         </Link>
     )

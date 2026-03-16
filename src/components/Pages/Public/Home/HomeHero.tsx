@@ -28,6 +28,9 @@ import { useAuthLoginWithGoogle } from "@/hooks/Auth/useAuthLoginWithGoogle"
 import { useRouter } from "next/navigation"
 import { LoadingButton } from "@/components/Loading/LoadingButton"
 import { useAuthStore } from "@/stores/Auth/AuthStore"
+import { Billboard, FRONTEND_AREA_BILLBOARD_01 } from "@/components/Billboard/Billboard"
+import { useBillboardClient } from "@/hooks/Billboard/useBillboardClient"
+import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 
 declare global {
     interface Window {
@@ -45,8 +48,21 @@ declare global {
 
 const HomeHero = () => {
     const { data: eventsData, isLoading, isError } = useEventFindFeatured()
+    const { data: billboardsData } = useBillboardClient()
     const [featuredEvents, setFeaturedEvents] = useState<TEvent[]>([])
     const { user, isAuthenticated, setUser } = useAuthStore()
+
+    const billboardSlot = useMemo(() => {
+        const list = billboardsData?.data && Array.isArray(billboardsData.data) ? billboardsData.data : []
+        const b = list.find((x) => x.frontendAreaId === FRONTEND_AREA_BILLBOARD_01)
+        if (!b || !b.url) return null
+        return {
+            id: b.id,
+            imageUrl: ImageUtils.getBillboardImageUrl(b.url),
+            href: b.gotoLink ?? undefined,
+            alt: b.altText
+        }
+    }, [billboardsData])
     const router = useRouter()
     const { mutateAsync: loginUser, isPending: isLoggingIn } = useAuthLogin()
     const { mutateAsync: loginWithGoogle, isPending: isLoggingInWithGoogle } = useAuthLoginWithGoogle()
@@ -260,9 +276,10 @@ const HomeHero = () => {
     const featuredSlides = useMemo(() => {
         if (!Array.isArray(featuredEvents)) return []
         return featuredEvents.map((event) => (
-            <div key={event.id} className="w-full max-w-[280px]
-            sm:max-w-[320px]
-            lg:max-w-[300px]">
+            <div
+                key={event.id}
+                className="w-full max-w-[280px] sm:max-w-[320px] lg:max-w-[300px]"
+            >
                 <CardEvent event={event} />
             </div>
         ))
@@ -395,7 +412,7 @@ const HomeHero = () => {
                                 </div>
                             </div>
 
-                            <div className="relative w-full flex justify-center mx-auto overflow-visible">
+                            <div className="relative w-full flex z-0! justify-center mx-auto overflow-visible">
                                 <Carousel
                                     items={featuredSlides}
                                     className="px-4 py-2
@@ -430,26 +447,34 @@ const HomeHero = () => {
                                 />
                             </div>
 
-                            {!isAuthenticated && (
+                            {(billboardSlot || !isAuthenticated) && (
                                 <div className="w-full mb-12">
                                     <div className="relative overflow-hidden bg-linear-to-t bg-[#EAE7FE] p-8 border-2 border-psi-primary/10
                                     sm:p-10
                                     lg:p-12 neon-border">
-                                        <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-                                        <div className="relative space-y-6">
-                                            <div className="text-center space-y-2">
-                                                <h3 className="text-2xl font-bold text-psi-dark
-                                                sm:text-3xl">
-                                                    Acesse sua conta e <span className="text-psi-primary">acelere suas compras</span>
-                                                </h3>
-                                                <p className="text-sm text-psi-dark/60
-                                                sm:text-base">
-                                                    Faça login rápido ou crie sua conta gratuitamente
-                                                </p>
-                                            </div>
+                                        <div className={`relative ${billboardSlot && !isAuthenticated ? "grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-center" : ""}`}>
+                                            {billboardSlot && (
+                                                <div className="w-screen max-w-none relative left-1/2 -translate-x-1/2 lg:left-0 lg:translate-x-0 lg:max-w-full lg:min-w-0 lg:w-full">
+                                                    <Billboard slot={billboardSlot} variant="banner" />
+                                                </div>
+                                            )}
+                                            {!isAuthenticated && (
+                                                <>
+                                                    <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                                                    <div className="relative space-y-6 min-w-0">
+                                                        <div className="text-center lg:text-left space-y-2">
+                                                            <h3 className="text-2xl font-bold text-psi-dark
+                                                            sm:text-3xl">
+                                                                Acesse sua conta e <span className="text-psi-primary">acelere suas compras</span>
+                                                            </h3>
+                                                            <p className="text-sm text-psi-dark/60
+                                                            sm:text-base">
+                                                                Faça login rápido ou crie sua conta gratuitamente
+                                                            </p>
+                                                        </div>
 
-                                            <div className="grid gap-6
-                                            lg:grid-cols-2 lg:gap-8 max-w-4xl mx-auto">
+                                                        <div className="grid gap-6
+                                                        lg:grid-cols-2 lg:gap-8 max-w-4xl lg:max-w-none mx-auto">
                                                 <div className="space-y-4">
                                                     <form onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4">
                                                         <div className="space-y-2">
@@ -569,6 +594,9 @@ const HomeHero = () => {
                                                     </Button>
                                                 </div>
                                             </div>
+                                        </div>
+                                            </>
+                                        )}
                                         </div>
                                     </div>
                                 </div>
@@ -965,8 +993,8 @@ const HomeHero = () => {
             </section>
 
             <section className="w-full bg-psi-dark text-white py-12
-            sm:py-16
-            lg:py-20">
+                sm:py-16
+                lg:py-20">
                 <div className="container space-y-10">
                     <div className="grid gap-8
                     lg:grid-cols-[1.2fr_0.8fr] items-start">

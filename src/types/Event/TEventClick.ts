@@ -9,6 +9,7 @@ type TEventClickCreate = {
     utmContent?: string
     utmTerm?: string
     referer?: string
+    billboardId?: string
 }
 
 export type {

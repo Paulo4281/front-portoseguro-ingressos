@@ -319,6 +319,11 @@ const VerEventoInfo = (
                 payload.utmId = trackedUtmId
             }
             payload.internalCampaignId = trackedUtmId || undefined
+
+            const billboardId = searchParams.get("billboardId")
+            if (billboardId) {
+                payload.billboardId = billboardId
+            }
         }
 
         if (typeof document !== "undefined" && document.referrer) {

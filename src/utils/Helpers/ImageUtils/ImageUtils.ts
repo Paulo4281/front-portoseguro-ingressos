@@ -47,6 +47,13 @@ class ImageUtilsClass {
         const bucketUrl = process.env.NEXT_PUBLIC_BUCKET_URL || ""
         return `${bucketUrl}/notafiscais/${fileHash}`
     }
+
+    getBillboardImageUrl(urlHash: string | null | undefined): string {
+        if (!urlHash) return ""
+
+        const bucketUrl = process.env.NEXT_PUBLIC_BUCKET_URL || ""
+        return `${bucketUrl}/billboards/${urlHash}`
+    }
 }
 
 export const ImageUtils = new ImageUtilsClass()
