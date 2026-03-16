@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Repeat, Tag, Search, X } from "lucide-react"
+import { Calendar, Clock, MapPin, Repeat, Tag, Search, X, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/Input/Input"
 import { useEventFindPublic } from "@/hooks/Event/useEventFindPublic"
@@ -33,6 +33,8 @@ const VerEventosPannel = () => {
     const [searchName, setSearchName] = useState("")
     const [searchQuery, setSearchQuery] = useState("")
     const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
+    const [hoverPreviewEventId, setHoverPreviewEventId] = useState<string | null>(null)
+    const hoverPreviewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     
     const handleSearch = () => {
         setSearchQuery(searchName)
@@ -49,6 +51,14 @@ const VerEventosPannel = () => {
         }
     }, [searchParams.categoryId])
 
+    useEffect(() => {
+        return () => {
+            if (hoverPreviewTimerRef.current) {
+                clearTimeout(hoverPreviewTimerRef.current)
+            }
+        }
+    }, [])
+
     const handleCategorySelect = (categoryId: string | null) => {
         setSelectedCategoryId(categoryId)
         setCurrentPage(1)
@@ -59,6 +69,23 @@ const VerEventosPannel = () => {
         setSearchQuery("")
         setSelectedCategoryId(null)
         setCurrentPage(1)
+    }
+
+    const handleCardMouseEnter = (eventId: string) => {
+        if (hoverPreviewTimerRef.current) {
+            clearTimeout(hoverPreviewTimerRef.current)
+        }
+        hoverPreviewTimerRef.current = setTimeout(() => {
+            setHoverPreviewEventId(eventId)
+        }, 2000)
+    }
+
+    const handleCardMouseLeave = () => {
+        if (hoverPreviewTimerRef.current) {
+            clearTimeout(hoverPreviewTimerRef.current)
+            hoverPreviewTimerRef.current = null
+        }
+        setHoverPreviewEventId(null)
     }
     
     const offset = (currentPage - 1) * 9
@@ -146,6 +173,13 @@ const VerEventosPannel = () => {
         }
 
         return `${firstDate} - ${lastDate}`
+    }
+
+    const isEventNew = (createdAt: string | undefined) => {
+        if (!createdAt) return false
+        const created = new Date(createdAt)
+        const now = new Date()
+        return (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24) <= 7
     }
 
     const getActiveBatch = (batches: TEvent["EventBatches"]): TEventBatch | null => {
@@ -321,12 +355,24 @@ const VerEventosPannel = () => {
                         lg:grid-cols-3 gap-6">
                             {events.map((event: TEvent) => {
                             const activeBatch = getActiveBatch(event.EventBatches)
+                            const showHoverPreview = hoverPreviewEventId === event.id
+                            const categoryNames = (event.EventCategoryEvents || [])
+                                .map((categoryEvent) => categories.find(c => c.id === categoryEvent.categoryId)?.name)
+                                .filter((name): name is string => Boolean(name))
+                            const descriptionPreview = event.description
+                                ? (event.description.length > 500 ? `${event.description.slice(0, 500)}...` : event.description)
+                                : "Sem descrição."
                             
                             return (
                                 <Link
                                     key={event.id}
                                     href={`/ver-evento/${event.slug}`}
-                                    className="group rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-black/10"
+                                    className={cn(
+                                        "group relative rounded-2xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5 transition-all duration-300 hover:shadow-xl hover:shadow-black/10",
+                                        showHoverPreview ? "z-50" : "z-0"
+                                    )}
+                                    onMouseEnter={() => handleCardMouseEnter(event.id)}
+                                    onMouseLeave={handleCardMouseLeave}
                                 >
                                     <div className="relative h-60 w-full overflow-hidden">
                                         <img
@@ -334,8 +380,24 @@ const VerEventosPannel = () => {
                                             alt={event.name}
                                             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                         />
-                                        {event.EventCategoryEvents && event.EventCategoryEvents.length > 0 && (
-                                            <div className="absolute top-3 left-3 flex flex-wrap gap-2">
+                                        <div className="absolute top-3 left-3 flex flex-wrap gap-2">
+                                            {isEventNew(event.createdAt) && (
+                                                <div className="inline-flex items-center gap-1.5 bg-psi-primary/95 backdrop-blur-sm px-2.5 py-1 rounded-full border border-psi-primary shadow-sm">
+                                                    <span className="text-xs font-medium text-white">
+                                                        Novo
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {event.isFinished && (
+                                                <div className="inline-flex items-center gap-1.5 bg-emerald-500/95 backdrop-blur-sm px-2.5 py-1 rounded-full border border-emerald-600/20 shadow-sm">
+                                                    <CheckCircle2 className="h-3 w-3 text-white" />
+                                                    <span className="text-xs font-medium text-white">
+                                                        Finalizado
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {event.EventCategoryEvents && event.EventCategoryEvents.length > 0 && (
+                                                <>
                                                 {event.EventCategoryEvents.slice(0, 2).map((categoryEvent: TEventCategoryEvent) => {
                                                     const category = categories.find(c => c.id === categoryEvent.categoryId)
                                                     if (!category) return null
@@ -351,8 +413,9 @@ const VerEventosPannel = () => {
                                                         </Badge>
                                                     )
                                                 })}
-                                            </div>
-                                        )}
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
 
                                     <div className="p-6 space-y-4">
@@ -456,6 +519,27 @@ const VerEventosPannel = () => {
                                             )}
                                         </div>
                                     </div>
+
+                                    {showHoverPreview && (
+                                        <div className="pointer-events-none hidden xl:block absolute left-full top-3 ml-3 z-60 w-[360px] rounded-2xl border border-[#E4E6F0] bg-white/98 shadow-2xl shadow-black/15 p-4">
+                                            <h4 className="text-base font-semibold text-psi-dark mb-2 line-clamp-1">{event.name}</h4>
+                                            <p className="text-xs text-psi-dark/70 leading-relaxed mb-3">{descriptionPreview}</p>
+                                            <div className="space-y-1.5 text-xs text-psi-dark/75">
+                                                <p>
+                                                    <span className="font-semibold text-psi-dark">Categorias:</span>{" "}
+                                                    {categoryNames.length > 0 ? categoryNames.join(", ") : "Sem categorias"}
+                                                </p>
+                                                <p><span className="font-semibold text-psi-dark">Local:</span> {event.location || "Não informado"}</p>
+                                                <p><span className="font-semibold text-psi-dark">Datas:</span> {getDateRange(event.EventDates)}</p>
+                                                {event.Recurrence && (
+                                                    <p><span className="font-semibold text-psi-dark">Recorrência:</span> {formatRecurrence(event.Recurrence)}</p>
+                                                )}
+                                                {activeBatch && (
+                                                    <p><span className="font-semibold text-psi-dark">Lote ativo:</span> {activeBatch.name}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
                                 </Link>
                             )
                         })}

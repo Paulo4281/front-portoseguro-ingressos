@@ -1,6 +1,6 @@
 "use client"
 
-import { useId, useMemo } from "react"
+import { useEffect, useId, useMemo } from "react"
 import type { ReactNode } from "react"
 import { Swiper, SwiperSlide } from "swiper/react"
 import { Autoplay, Navigation } from "swiper/modules"
@@ -27,6 +27,8 @@ type TCarouselProps = {
     allowTouchMove?: boolean
     itemWrapperClassName?: string
     continuous?: boolean
+    /** Índice do slide que deve ficar por cima dos outros (ex.: card com hover preview aberto). */
+    activeSlideIndex?: number
 }
 
 const CarouselComponent = (
@@ -45,12 +47,22 @@ const CarouselComponent = (
         centeredSlides = false,
         allowTouchMove = true,
         itemWrapperClassName,
-        continuous = false
+        continuous = false,
+        activeSlideIndex = -1
     }: TCarouselProps
 ) => {
     if (!items || items.length === 0) {
         return null
     }
+
+    useEffect(() => {
+        // Seleciona todos os elementos que possuem as 3 classes especificadas
+        const elems = document.querySelectorAll('.swiper-slide.swiper-slide-next.h-auto\\!')
+        elems.forEach(el => {
+            el.classList.add("z-[0]")
+        })
+        console.log(elems)
+    }, [])
 
     const uniqueId = useId().replace(/:/g, "")
 
@@ -127,8 +139,11 @@ const CarouselComponent = (
                 className="overflow-visible!"
             >
                 {items.map((item, index) => (
-                    <SwiperSlide key={`carousel-item-${index}`} className="h-auto!">
-                        <div className={cn("flex justify-center", itemWrapperClassName)}>
+                    <SwiperSlide
+                        key={`carousel-item-${index}`}
+                        className={cn("h-auto! self-start", activeSlideIndex >= 0 ? (activeSlideIndex === index ? "z-50!" : "z-[-1]!") : undefined)}
+                    >
+                        <div className={cn("flex justify-center items-start", itemWrapperClassName)}>
                             {item}
                         </div>
                     </SwiperSlide>

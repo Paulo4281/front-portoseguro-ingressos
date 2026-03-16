@@ -38,15 +38,17 @@ const LoadingScreen = () => {
         if (typeof window === "undefined" || typeof document === "undefined") return
         
         const handleClick = (e: MouseEvent) => {
-            const target = e.target as HTMLElement
-            const link = target.closest("a")
-            
-            if (link && link.href && !link.href.startsWith("#") && !link.hasAttribute("download")) {
+            const link = (e.target as HTMLElement).closest("a")
+            if (!link?.href || link.href.startsWith("#") || link.hasAttribute("download")) return
+            if (link.target === "_blank" || e.ctrlKey || e.metaKey || e.button === 1) return
+            try {
                 const url = new URL(link.href)
                 if (url.origin === window.location.origin) {
                     setIsLoading(true)
                     setDisplayLoading(true)
                 }
+            } catch {
+                // href inválido
             }
         }
 
