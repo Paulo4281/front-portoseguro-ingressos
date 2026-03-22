@@ -59,6 +59,15 @@ class OrganizerServiceClass {
         return response
     }
 
+    async verifyOrganizerVerificationStatus(): Promise<AxiosResponse["data"]> {
+        const response = (await API.GET({
+            prefix: "/user",
+            url: "/verify-organizer-verification-status"
+        }))?.data
+
+        return response
+    }
+
     async update(payload: TOrganizerUpdate): Promise<AxiosResponse["data"]> {
         const formData = new FormData()
 

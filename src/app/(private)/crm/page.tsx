@@ -1,4 +1,5 @@
 import { CRMPannel } from "@/components/Pages/Private/CRM/CRMPannel"
+import { VerificationStatusGuard } from "@/components/VerificationStatus/VerificationStatusGuard"
 import { Metadata } from "next"
 
 export const metadata: Metadata = {
@@ -9,7 +10,9 @@ export const metadata: Metadata = {
 const CRMPage = () => {
     return (
         <>
-        <CRMPannel />
+        <VerificationStatusGuard>
+            <CRMPannel />
+        </VerificationStatusGuard>
         </>
     )
 }

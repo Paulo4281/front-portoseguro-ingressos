@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
-import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent, Wallet, QrCode, HeartPlus, Info, HouseHeart, CreditCard, Book, Download, SquareArrowRight, Target, SearchCheck, CalendarCheck, HandCoins, Repeat2, BotMessageSquare, Handshake, LinkIcon, FileText, SquareStar } from "lucide-react"
+import { Home, LogIn, LogOut, Menu as MenuIcon, X, ChevronDown, Ticket, Calendar, Users, BarChart3, Lock, Plus, List, User, Settings, Bell, Loader2, TicketPercent, Wallet, QrCode, HeartPlus, Info, HouseHeart, CreditCard, Book, Download, SquareArrowRight, Target, SearchCheck, CalendarCheck, HandCoins, Repeat2, BotMessageSquare, Handshake, LinkIcon, FileText, SquareStar, AlertCircle, LogInIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Logo from "@/components/Logo/Logo"
 import { Avatar } from "@/components/Avatar/Avatar"
@@ -50,200 +50,6 @@ type TMenuLink = {
     sublinks?: TSubLink[]
 }
 
-const menuLinks: TMenuLink[] = [
-    {
-        href: "/",
-        label: "Home",
-        icon: Home,
-        roles: ["ADMIN", "CUSTOMER", "NOT_DEFINED", "ORGANIZER"]
-    },
-    {
-        href: "/dash-revendedor",
-        label: "Painel do Revendedor",
-        icon: HandCoins,
-        roles: ["SELLER"]
-    },
-    {
-        href: "/confirmar-social",
-        label: "Confirmar Cadastro",
-        icon: User,
-        roles: ["NOT_DEFINED"]
-    },
-    {
-        href: "/dashboard",
-        label: "Dashboard",
-        icon: BarChart3,
-        roles: ["ORGANIZER"]
-    },
-    {
-        href: "/meus-ingressos",
-        label: "Meus Ingressos",
-        icon: Ticket,
-        roles: ["CUSTOMER"]
-    },
-    {
-        label: "Eventos",
-        icon: Calendar,
-        roles: ["ORGANIZER"],
-        sublinks: [
-            {
-                href: "/meus-eventos",
-                label: "Ver todos",
-                icon: List
-            },
-            {
-                href: "/eventos/criar",
-                label: "Publicar",
-                icon: Plus
-            },
-        ]
-    },
-    {
-        label: "CRM Manager",
-        href: "/adm-crm",
-        icon: Target,
-        roles: ["ADMIN"]
-    },
-    {
-        label: "CRM",
-        href: "/crm",
-        icon: Target,
-        roles: ["ORGANIZER"]
-    },
-    {
-        label: "Pesquisa de Opinião",
-        href: "/pesquisa-de-opiniao",
-        icon: SearchCheck,
-        roles: ["ORGANIZER"]
-    },
-    {
-        label: "Revenda",
-        href: "/revenda",
-        icon: HandCoins,
-        roles: ["ORGANIZER"]
-    },
-    {
-        label: "Carteira",
-        href: "/carteira",
-        icon: Wallet,
-        roles: ["ORGANIZER"]
-    },
-    {
-        label: "Clientes",
-        href: "/clientes",
-        icon: Users,
-        roles: ["ORGANIZER"]
-    },
-    {
-        label: "Cupons",
-        href: "/cupons",
-        icon: TicketPercent,
-        roles: ["ORGANIZER"]
-    },
-    {
-        label: "QR Scanner",
-        href: "/qr-scanner",
-        icon: QrCode,
-        roles: ["ORGANIZER"]
-    },
-    {
-        href: "/meu-perfil",
-        label: "Meu Perfil",
-        icon: User,
-        roles: ["CUSTOMER", "ORGANIZER"]
-    },
-    {
-        href: "/suporte",
-        label: "Suporte",
-        icon: HeartPlus,
-        roles: ["ORGANIZER"]
-    },
-    {
-        href: "/adm-eventos",
-        label: "Eventos",
-        icon: Calendar,
-        roles: ["ADMIN"]
-    },
-    {
-        href: "/adm-organizadores",
-        label: "Usuários",
-        icon: Users,
-        roles: ["ADMIN"]
-    },
-    {
-        href: "/adm-leads",
-        label: "Leads",
-        icon: BotMessageSquare,
-        roles: ["ADMIN"]
-    },
-    {
-        href: "/adm-campanhas-internas",
-        label: "Campanhas Internas",
-        icon: LinkIcon,
-        roles: ["ADMIN"]
-    },
-    {
-        href: "/adm-pagamentos",
-        label: "Pagamentos",
-        icon: CreditCard,
-        roles: ["ADMIN"]
-    },
-    {
-        href: "/adm-assinaturas",
-        label: "Assinaturas",
-        icon: CalendarCheck,
-        roles: ["ADMIN"]
-    },
-    {
-        href: "/adm-transferencias",
-        label: "Transferencias",
-        icon: SquareArrowRight,
-        roles: ["ADMIN"]
-    },
-    {
-        href: "/adm-notas-fiscais",
-        label: "Notas Fiscais",
-        icon: FileText,
-        roles: ["ADMIN"]
-    },
-    {
-        href: "/adm-propagandas",
-        label: "Propagandas",
-        icon: SquareStar,
-        roles: ["ADMIN"]
-    },
-    {
-        href: "/adm-parceiros",
-        label: "Parceiros",
-        icon: Handshake,
-        roles: ["ADMIN"]
-    },
-    {
-        href: "/adm-suporte",
-        label: "Suporte",
-        icon: HeartPlus,
-        roles: ["ADMIN"]
-    },
-    {
-        href: "/adm-crons-log",
-        label: "Crons Log",
-        icon: Repeat2,
-        roles: ["ADMIN"]
-    },
-    {
-        href: "/configuracoes",
-        label: "Configurações",
-        icon: Settings,
-        roles: ["ORGANIZER"]
-    },
-    {
-        href: "/redefinir-senha-log",
-        label: "Redefinir Senha",
-        icon: Lock,
-        roles: ["CUSTOMER", "ORGANIZER", "ADMIN"]
-    },
-]
-
 const Menu = () => {
     const blockedPages = [
         "/login",
@@ -267,6 +73,206 @@ const Menu = () => {
     if (blockedPages.includes(pathname)) return null
 
     const { user, isAuthenticated, removeUser } = useAuthStore()
+
+    const menuLinks: TMenuLink[] = [
+        {
+            href: "/",
+            label: "Home",
+            icon: Home,
+            roles: ["ADMIN", "CUSTOMER", "NOT_DEFINED", "ORGANIZER"]
+        },
+        {
+            href: "/dash-revendedor",
+            label: "Painel do Revendedor",
+            icon: HandCoins,
+            roles: ["SELLER"]
+        },
+        {
+            href: "/confirmar-social",
+            label: "Confirmar Cadastro",
+            icon: User,
+            roles: ["NOT_DEFINED"]
+        },
+        {
+            href: "/dashboard",
+            label: "Dashboard",
+            icon: BarChart3,
+            roles: ["ORGANIZER"]
+        },
+        {
+            href: "/meus-ingressos",
+            label: "Meus Ingressos",
+            icon: Ticket,
+            roles: ["CUSTOMER"]
+        },
+        {
+            label: "Eventos",
+            icon: Calendar,
+            roles: ["ORGANIZER"],
+            sublinks: [
+                {
+                    href: "/meus-eventos",
+                    label: "Ver todos",
+                    icon: List
+                },
+                {
+                    href: "/eventos/criar",
+                    label: "Publicar",
+                    icon: Plus
+                },
+            ]
+        },
+        {
+            label: "CRM Manager",
+            href: "/adm-crm",
+            icon: Target,
+            roles: ["ADMIN"]
+        },
+        {
+            label: "CRM",
+            href: "/crm",
+            icon: Target,
+            roles: ["ORGANIZER"]
+        },
+        {
+            label: "Pesquisa de Opinião",
+            href: "/pesquisa-de-opiniao",
+            icon: SearchCheck,
+            roles: ["ORGANIZER"]
+        },
+        {
+            label: "Revenda",
+            href: "/revenda",
+            icon: HandCoins,
+            roles: ["ORGANIZER"]
+        },
+        {
+            label: "Carteira",
+            href: "/carteira",
+            icon: Wallet,
+            roles: ["ORGANIZER"]
+        },
+        {
+            label: "Clientes",
+            href: "/clientes",
+            icon: Users,
+            roles: ["ORGANIZER"]
+        },
+        {
+            label: "Cupons",
+            href: "/cupons",
+            icon: TicketPercent,
+            roles: ["ORGANIZER"]
+        },
+        {
+            label: "QR Scanner",
+            href: "/qr-scanner",
+            icon: QrCode,
+            roles: ["ORGANIZER"]
+        },
+        {
+            href: "/meu-perfil",
+            label: `${ user?.Organizer?.verificationStatus === "WAITING_DOCUMENTATION" ? "<strong>Meu Perfil</strong>" : "Meu Perfil" }`,
+            icon: User,
+            roles: ["CUSTOMER", "ORGANIZER"]
+        },
+        {
+            href: "/suporte",
+            label: "Suporte",
+            icon: HeartPlus,
+            roles: ["ORGANIZER"]
+        },
+        {
+            href: "/adm-eventos",
+            label: "Eventos",
+            icon: Calendar,
+            roles: ["ADMIN"]
+        },
+        {
+            href: "/adm-organizadores",
+            label: "Usuários",
+            icon: Users,
+            roles: ["ADMIN"]
+        },
+        {
+            href: "/adm-leads",
+            label: "Leads",
+            icon: BotMessageSquare,
+            roles: ["ADMIN"]
+        },
+        {
+            href: "/adm-campanhas-internas",
+            label: "Campanhas Internas",
+            icon: LinkIcon,
+            roles: ["ADMIN"]
+        },
+        {
+            href: "/adm-pagamentos",
+            label: "Pagamentos",
+            icon: CreditCard,
+            roles: ["ADMIN"]
+        },
+        {
+            href: "/adm-assinaturas",
+            label: "Assinaturas",
+            icon: CalendarCheck,
+            roles: ["ADMIN"]
+        },
+        {
+            href: "/adm-transferencias",
+            label: "Transferencias",
+            icon: SquareArrowRight,
+            roles: ["ADMIN"]
+        },
+        {
+            href: "/adm-notas-fiscais",
+            label: "Notas Fiscais",
+            icon: FileText,
+            roles: ["ADMIN"]
+        },
+        {
+            href: "/adm-propagandas",
+            label: "Propagandas",
+            icon: SquareStar,
+            roles: ["ADMIN"]
+        },
+        {
+            href: "/adm-parceiros",
+            label: "Parceiros",
+            icon: Handshake,
+            roles: ["ADMIN"]
+        },
+        {
+            href: "/adm-suporte",
+            label: "Suporte",
+            icon: HeartPlus,
+            roles: ["ADMIN"]
+        },
+        {
+            href: "/adm-acessos",
+            label: "Acessos",
+            icon: LogInIcon,
+            roles: ["ADMIN"]
+        },
+        {
+            href: "/adm-crons-log",
+            label: "Crons Log",
+            icon: Repeat2,
+            roles: ["ADMIN"]
+        },
+        {
+            href: "/configuracoes",
+            label: "Configurações",
+            icon: Settings,
+            roles: ["ORGANIZER"]
+        },
+        {
+            href: "/redefinir-senha-log",
+            label: "Redefinir Senha",
+            icon: Lock,
+            roles: ["CUSTOMER", "ORGANIZER", "ADMIN"]
+        },
+    ]
 
     const { mutateAsync: logoutUser, isPending: isLoggingOut } = useAuthLogout()
     const routerService = useRouter()
@@ -306,6 +312,9 @@ const Menu = () => {
         : []
 
     const fullName = user ? `${user.firstName} ${user.lastName}` : ""
+
+    const organizerAwaitingDocumentation =
+        user?.Organizer?.verificationStatus === "WAITING_DOCUMENTATION"
     
     const avatarSrc = useMemo(() => {
         if (!user) return null
@@ -575,13 +584,27 @@ const Menu = () => {
                                     <DropdownMenuTrigger asChild>
                                         <button
                                             className="flex items-center gap-2 cursor-pointer outline-none focus:ring-2 focus:ring-psi-primary/30 focus:ring-offset-2 rounded-full transition-opacity hover:opacity-90"
-                                            aria-label="Menu do usuário"
+                                            aria-label={
+                                                organizerAwaitingDocumentation
+                                                    ? "Menu do usuário, conta aguardando documentação"
+                                                    : "Menu do usuário"
+                                            }
                                         >
-                                            <Avatar
-                                                src={avatarSrc}
-                                                name={fullName}
-                                                size="md"
-                                            />
+                                            <span className="relative inline-flex shrink-0">
+                                                <Avatar
+                                                    src={avatarSrc}
+                                                    name={fullName}
+                                                    size="md"
+                                                />
+                                                {organizerAwaitingDocumentation && (
+                                                    <span
+                                                        className="pointer-events-none absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-amber-500 text-white ring-2 ring-white shadow-sm"
+                                                        title="Aguardando documentação"
+                                                    >
+                                                        <AlertCircle className="size-2.5 shrink-0" aria-hidden />
+                                                    </span>
+                                                )}
+                                            </span>
                                             <ChevronDown className="h-4 w-4 text-psi-dark/60" />
                                         </button>
                                     </DropdownMenuTrigger>
@@ -592,6 +615,19 @@ const Menu = () => {
                                                 <span className="text-xs text-psi-dark/60 font-normal truncate">
                                                     {user?.email}
                                                 </span>
+                                                {
+                                                    organizerAwaitingDocumentation && (
+                                                        <>
+                                                        <hr className="my-2 border-t border-[#E4E6F0]" />
+                                                        <div className="flex items-center gap-2">
+                                                            <AlertCircle className="h-4 w-4 text-amber-500" />
+                                                            <span className="text-xs text-amber-500 font-normal truncate">
+                                                                Aguardando documentação
+                                                            </span>
+                                                        </div>
+                                                        </>
+                                                    )
+                                                }
                                             </div>
                                         </DropdownMenuLabel>
                                         <DropdownMenuSeparator className="bg-[#E4E6F0]" />
@@ -603,8 +639,28 @@ const Menu = () => {
                                                     return (
                                                         <DropdownMenuSub key={link.label}>
                                                             <DropdownMenuSubTrigger className="rounded-xl cursor-pointer text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB]">
-                                                                <Icon className="h-4 w-4" />
-                                                                <span>{link.label}</span>
+                                                                {
+                                                                link.label.includes("<strong>")
+                                                                ?
+                                                                (
+                                                                    <Icon className="h-4 w-4 text-psi-primary animate-pulse" />
+                                                                )
+                                                                :
+                                                                (
+                                                                    <Icon className="h-4 w-4" />
+                                                                )
+                                                            }
+                                                            {
+                                                                link.label.includes("<strong>")
+                                                                ?
+                                                                (
+                                                                    <span className="text-psi-primary font-bold animate-pulse">{link.label.replace("<strong>", "").replace("</strong>", "")}</span>
+                                                                )
+                                                                :
+                                                                (
+                                                                    <span>{link.label}</span>
+                                                                )
+                                                            }
                                                             </DropdownMenuSubTrigger>
                                                             <DropdownMenuSubContent 
                                                             className="rounded-xl border border-[#E4E6F0] cursor-pointer bg-white/95 backdrop-blur-md shadow-lg z-100 overflow-visible!" 
@@ -633,8 +689,28 @@ const Menu = () => {
                                                 return (
                                                     <DropdownMenuItem key={link.href || link.label} asChild className={`rounded-xl text-sm ${isActive ? "bg-[#F3F4FB] text-psi-primary cursor-pointer" : "text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer"}`}>
                                                         <Link href={link.href || "#"}>
-                                                            <Icon className="h-4 w-4" />
-                                                            <span>{link.label}</span>
+                                                            {
+                                                                link.label.includes("<strong>")
+                                                                ?
+                                                                (
+                                                                    <Icon className="h-4 w-4 text-psi-primary animate-pulse" />
+                                                                )
+                                                                :
+                                                                (
+                                                                    <Icon className="h-4 w-4" />
+                                                                )
+                                                            }
+                                                            {
+                                                                link.label.includes("<strong>")
+                                                                ?
+                                                                (
+                                                                    <span className="text-psi-primary font-bold animate-pulse">{link.label.replace("<strong>", "").replace("</strong>", "")}</span>
+                                                                )
+                                                                :
+                                                                (
+                                                                    <span>{link.label}</span>
+                                                                )
+                                                            }
                                                         </Link>
                                                     </DropdownMenuItem>
                                                 )
@@ -693,13 +769,27 @@ const Menu = () => {
                                 <DropdownMenuTrigger asChild>
                                     <button
                                         className="flex items-center gap-2 cursor-pointer outline-none focus:ring-2 focus:ring-psi-primary/30 focus:ring-offset-2 rounded-full"
-                                        aria-label="Menu do usuário"
+                                        aria-label={
+                                            organizerAwaitingDocumentation
+                                                ? "Menu do usuário, conta aguardando documentação"
+                                                : "Menu do usuário"
+                                        }
                                     >
-                                        <Avatar
-                                            src={avatarSrc}
-                                            name={fullName}
-                                            size="md"
-                                        />
+                                        <span className="relative inline-flex shrink-0">
+                                            <Avatar
+                                                src={avatarSrc}
+                                                name={fullName}
+                                                size="md"
+                                            />
+                                            {organizerAwaitingDocumentation && (
+                                                <span
+                                                    className="pointer-events-none absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-amber-500 text-white ring-2 ring-white shadow-sm"
+                                                    title="Aguardando documentação"
+                                                >
+                                                    <AlertCircle className="size-2.5 shrink-0" aria-hidden />
+                                                </span>
+                                            )}
+                                        </span>
                                         <ChevronDown className="h-4 w-4 text-psi-dark/60" />
                                     </button>
                                 </DropdownMenuTrigger>
@@ -710,6 +800,19 @@ const Menu = () => {
                                             <span className="text-xs text-psi-dark/60 font-normal truncate">
                                                 {user?.email}
                                             </span>
+                                            {
+                                                    organizerAwaitingDocumentation && (
+                                                        <>
+                                                        <hr className="my-2 border-t border-[#E4E6F0]" />
+                                                        <div className="flex items-center gap-2">
+                                                            <AlertCircle className="h-4 w-4 text-amber-500" />
+                                                            <span className="text-xs text-amber-500 font-normal truncate">
+                                                                Aguardando documentação
+                                                            </span>
+                                                        </div>
+                                                        </>
+                                                    )
+                                                }
                                         </div>
                                     </DropdownMenuLabel>
                                     <DropdownMenuSeparator className="bg-[#E4E6F0]" />
@@ -721,8 +824,28 @@ const Menu = () => {
                                                 return (
                                                     <DropdownMenuSub key={link.label}>
                                                         <DropdownMenuSubTrigger className="rounded-xl text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB]">
-                                                            <Icon className="h-4 w-4" />
-                                                            <span>{link.label}</span>
+                                                        {
+                                                                link.label.includes("<strong>")
+                                                                ?
+                                                                (
+                                                                    <Icon className="h-4 w-4 text-psi-primary animate-pulse" />
+                                                                )
+                                                                :
+                                                                (
+                                                                    <Icon className="h-4 w-4" />
+                                                                )
+                                                            }
+                                                            {
+                                                                link.label.includes("<strong>")
+                                                                ?
+                                                                (
+                                                                    <span className="text-psi-primary font-bold animate-pulse">{link.label.replace("<strong>", "").replace("</strong>", "")}</span>
+                                                                )
+                                                                :
+                                                                (
+                                                                    <span>{link.label}</span>
+                                                                )
+                                                            }
                                                         </DropdownMenuSubTrigger>
                                                         <DropdownMenuSubContent 
                                                             className="rounded-xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg z-100 overflow-visible!" 
@@ -751,8 +874,28 @@ const Menu = () => {
                                             return (
                                                 <DropdownMenuItem key={link.href || link.label} asChild className={`rounded-xl text-sm ${isActive ? "bg-[#F3F4FB] text-psi-primary" : "text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB]"}`}>
                                                     <Link href={link.href || "#"}>
-                                                        <Icon className="h-4 w-4" />
-                                                        <span>{link.label}</span>
+                                                    {
+                                                                link.label.includes("<strong>")
+                                                                ?
+                                                                (
+                                                                    <Icon className="h-4 w-4 text-psi-primary animate-pulse" />
+                                                                )
+                                                                :
+                                                                (
+                                                                    <Icon className="h-4 w-4" />
+                                                                )
+                                                            }
+                                                            {
+                                                                link.label.includes("<strong>")
+                                                                ?
+                                                                (
+                                                                    <span className="text-psi-primary font-bold animate-pulse">{link.label.replace("<strong>", "").replace("</strong>", "")}</span>
+                                                                )
+                                                                :
+                                                                (
+                                                                    <span>{link.label}</span>
+                                                                )
+                                                            }
                                                     </Link>
                                                 </DropdownMenuItem>
                                             )

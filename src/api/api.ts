@@ -4,6 +4,7 @@ import { APIErrorHandler } from "@/utils/Errors/APIErrorHandler"
 
 type Prefixes =
     "/auth" |
+    "/access" |
     "/user" |
     "/user-confirmation" |
     "/event" |

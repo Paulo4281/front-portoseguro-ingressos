@@ -1,4 +1,5 @@
 import { PesquisaDeOpiniaoPannel } from "@/components/Pages/Private/PesquisaDeOpiniao/PesquisaDeOpiniaoPannel"
+import { VerificationStatusGuard } from "@/components/VerificationStatus/VerificationStatusGuard"
 import { Metadata } from "next"
 
 export const metadata: Metadata = {
@@ -9,7 +10,9 @@ export const metadata: Metadata = {
 const PesquisaDeOpiniaoPage = () => {
     return (
         <>
-        <PesquisaDeOpiniaoPannel />
+        <VerificationStatusGuard>
+            <PesquisaDeOpiniaoPannel />
+        </VerificationStatusGuard>
         </>
     )
 }

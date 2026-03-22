@@ -3,8 +3,9 @@
 import { useMemo } from "react"
 import { useAuthStore } from "@/stores/Auth/AuthStore"
 import { Background } from "@/components/Background/Background"
-import { Clock, XCircle, AlertCircle, TrendingDown, Zap, Shield, Users, Star, Sparkles } from "lucide-react"
+import { Clock, XCircle, AlertCircle, TrendingDown, Zap, Shield, Users, Star, Sparkles, ArrowRight } from "lucide-react"
 import { Skeleton } from "../ui/skeleton"
+import Link from "next/link"
 
 type TVerificationStatusGuardProps = {
     children: React.ReactNode
@@ -39,6 +40,37 @@ const VerificationStatusGuard = ({ children }: TVerificationStatusGuardProps) =>
                                 <p className="text-sm text-amber-700">
                                     Acesse seu perfil para enviar os documentos necessários.
                                 </p>
+                                <Link
+                                    href="/meu-perfil"
+                                    className="
+                                        inline-flex
+                                        items-center
+                                        justify-center
+                                        px-4
+                                        py-2
+                                        rounded-full
+                                        bg-gradient-to-r
+                                        from-psi-primary
+                                        via-psi-primary/80
+                                        to-psi-secondary/80
+                                        text-white
+                                        font-normal
+                                        text-md
+                                        shadow-lg
+                                        hover:scale-105
+                                        hover:from-psi-secondary/80
+                                        hover:via-psi-primary
+                                        hover:to-psi-primary/80
+                                        transition
+                                        duration-200
+                                        ease-in-out
+                                        gap-2
+                                        mt-2
+                                    "
+                                >
+                                    <ArrowRight className="h-5 w-5" />
+                                    Ir para Meu Perfil
+                                </Link>
                             </div>
                         </div>
 

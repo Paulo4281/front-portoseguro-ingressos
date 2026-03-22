@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Check, ChevronDown, X } from "lucide-react"
+import { Check, ChevronDown, X, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
 type TMultiSelectOption = {
     value: string
     label: string
+    icon?: LucideIcon
 }
 
 type TMultiSelectProps = {
@@ -125,6 +126,7 @@ const MultiSelect = ({
                                 ? !isSelected && value.length >= maxSelections
                                 : false
 
+                            const Icon = option.icon
                             return (
                                 <div
                                     key={option.value}
@@ -137,7 +139,7 @@ const MultiSelect = ({
                                     )}
                                 >
                                     <div className={cn(
-                                        "flex items-center justify-center w-4 h-4 rounded border-2 transition-colors",
+                                        "flex items-center justify-center w-4 h-4 rounded border-2 transition-colors shrink-0",
                                         isSelected
                                             ? "bg-psi-primary border-psi-primary"
                                             : "border-input"
@@ -146,6 +148,9 @@ const MultiSelect = ({
                                             <Check className="h-3 w-3 text-white" />
                                         )}
                                     </div>
+                                    {Icon && (
+                                        <Icon className={cn("h-4 w-4 shrink-0 text-muted-foreground", isSelected && "text-psi-primary")} />
+                                    )}
                                     <span className={cn(
                                         "text-sm flex-1",
                                         isSelected && "font-medium text-psi-primary"
@@ -161,23 +166,27 @@ const MultiSelect = ({
 
             {value.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-2">
-                    {selectedOptions.map((option) => (
-                        <div
-                            key={option.value}
-                            className="inline-flex items-center gap-1.5 px-2 py-1 bg-psi-primary/10 text-psi-primary rounded-md text-xs font-medium"
-                        >
-                            <span>{option.label}</span>
-                            {!disabled && (!minSelections || value.length > minSelections) && (
-                                <button
-                                    type="button"
-                                    onClick={(e) => removeOption(option.value, e)}
-                                    className="hover:bg-psi-primary/20 rounded-full p-0.5 transition-colors"
-                                >
-                                    <X className="h-3 w-3" />
-                                </button>
-                            )}
-                        </div>
-                    ))}
+                    {selectedOptions.map((option) => {
+                        const TagIcon = option.icon
+                        return (
+                            <div
+                                key={option.value}
+                                className="inline-flex items-center gap-1.5 px-2 py-1 bg-psi-primary/10 text-psi-primary rounded-md text-xs font-medium"
+                            >
+                                {TagIcon && <TagIcon className="h-3.5 w-3.5 shrink-0" />}
+                                <span>{option.label}</span>
+                                {!disabled && (!minSelections || value.length > minSelections) && (
+                                    <button
+                                        type="button"
+                                        onClick={(e) => removeOption(option.value, e)}
+                                        className="hover:bg-psi-primary/20 rounded-full p-0.5 transition-colors"
+                                    >
+                                        <X className="h-3 w-3" />
+                                    </button>
+                                )}
+                            </div>
+                        )
+                    })}
                 </div>
             )}
         </div>
