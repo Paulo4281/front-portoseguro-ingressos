@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CTAButton } from "@/components/CTAButton/CTAButton"
-import { ArrowUpRight, Lock, ShieldCheck, Ticket, Music2, SunMedium, Waves, PartyPopper, TrendingDown, Users, CreditCard, TrendingUp, Megaphone, Tag, Fingerprint, Cpu, Sparkles, Globe2, CheckCircle2, HeartHandshake, DollarSign, Star, BookOpen, ArrowRight, DollarSignIcon, Book, Car, Building2, Trophy, UtensilsCrossed, Heart, Music, Church, Mail, UserPlus, Zap, FileText, QrCode, Shield, Headphones, HandCoins } from "lucide-react"
+import { ArrowUpRight, Lock, ShieldCheck, Ticket, Music2, SunMedium, Waves, PartyPopper, TrendingDown, Users, CreditCard, TrendingUp, Megaphone, Tag, Fingerprint, Cpu, Sparkles, Globe2, CheckCircle2, HeartHandshake, DollarSign, Star, BookOpen, ArrowRight, DollarSignIcon, Book, Car, Building2, Trophy, UtensilsCrossed, Heart, Music, Church, Mail, UserPlus, Zap, FileText, QrCode, Shield, Headphones, HandCoins, XCircle } from "lucide-react"
 import { useEventFindFeatured } from "@/hooks/Event/useEventFindFeatured"
 import { CardEvent } from "@/components/Card/CardEvent/CardEvent"
 import { Carousel } from "@/components/Carousel/Carousel"
@@ -1056,7 +1056,7 @@ const HomeHero = () => {
                                 <div className="rounded-2xl bg-white/10 p-4">
                                     <div className="flex-col lg:flex items-start gap-2">
                                         <DollarSign className="mb-2 lg:mb-0 size-4 text-white/60" />
-                                        <p className="text-xs text-white/60 uppercase tracking-widest">Tempo médio de repasse</p>
+                                        <p className="text-xs text-white/60 uppercase tracking-widest"><span className="font-bold">Tempo médio</span> de repasse</p>
                                     </div>
                                     <p className="text-3xl font-semibold text-psi-tertiary mt-2">48h</p>
                                 </div>
@@ -1238,7 +1238,7 @@ const HomeHero = () => {
                 </div>
             </section>
             
-            <section>
+            <section id="home-faq" className="scroll-mt-24">
                 <div className="container mx-auto mt-8">
                     <h3 className="text-2xl font-semibold text-psi-dark mb-6 text-center">
                         Perguntas Frequentes (FAQ)
@@ -1326,6 +1326,109 @@ const HomeHero = () => {
                             <div id="faq-5" className="mt-2 text-psi-dark/70 text-sm">
                                 Não! A plataforma é dedicada aos eventos locais de Porto Seguro, mas está aberta para turistas comprarem ingressos online antes ou durante sua estadia. Para anunciar, basta comprovar vínculo e passar pela verificação.
                             </div>
+                        </div>
+                        <div id="faq-publico-alvo" className="rounded-2xl border border-psi-primary/10 bg-white/95 p-5 scroll-mt-24">
+                            <button
+                                type="button"
+                                aria-expanded="false"
+                                aria-controls="faq-6"
+                                className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-psi-primary"
+                                tabIndex={0}
+                            >
+                                <span className="text-psi-primary font-medium">
+                                    Para quem é a plataforma e para quem não é?
+                                </span>
+                            </button>
+                            <div id="faq-6" className="mt-2 text-psi-dark/70 text-sm space-y-3">
+                                <p>
+                                    É para organizadores, casas de show e produtoras que promovem eventos legítimos na região de Porto Seguro, e para o público que quer comprar ingressos com segurança — alinhado ao que explicamos em &quot;Quem pode anunciar eventos na plataforma?&quot;
+                                </p>
+                                <p>
+                                    Não aceitamos usos ligados a atividades ilegais, apostas, conteúdo adulto exploratório, fraudes ou outros cenários listados no{' '}
+                                    <a
+                                        href="#uso-plataforma-publico"
+                                        className="text-psi-primary font-medium underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-psi-primary rounded"
+                                    >
+                                        resumo abaixo nesta página
+                                    </a>
+                                    . A redação completa e vinculante está nos{' '}
+                                    <Link
+                                        href="/termos-e-condicoes#termos-uso-permitido"
+                                        className="text-psi-primary font-medium underline underline-offset-2 hover:text-psi-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-psi-primary rounded"
+                                    >
+                                        Termos e Condições (cláusula 2)
+                                    </Link>
+                                    .
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="uso-plataforma-publico" aria-labelledby="heading-uso-plataforma">
+                <div className="container mx-auto mb-16 px-4">
+                    <h3 id="heading-uso-plataforma" className="text-2xl font-semibold text-psi-dark mb-3 text-center">
+                        Para quem é — e para quem não é
+                    </h3>
+                    <p className="text-center text-sm text-psi-dark/65 mb-6 max-w-2xl mx-auto">
+                        A redação completa e vinculante está nos{' '}
+                        <Link
+                            href="/termos-e-condicoes#termos-uso-permitido"
+                            className="text-psi-primary font-medium underline underline-offset-2 hover:text-psi-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-psi-primary rounded"
+                        >
+                            Termos e Condições (cláusula 2)
+                        </Link>
+                        .
+                    </p>
+                    <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
+                        <div className="rounded-3xl border border-psi-primary/15 bg-white/95 p-6 shadow-sm backdrop-blur-sm">
+                            <div className="flex items-center gap-3 mb-4">
+                                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10">
+                                    <HeartHandshake className="h-6 w-6 text-emerald-600" />
+                                </span>
+                                <h4 className="text-lg font-semibold text-psi-dark">Para quem é</h4>
+                            </div>
+                            <p className="text-sm text-psi-dark/75 mb-4 leading-relaxed">
+                                Produtoras, espaços e organizadores que vendem ingressos para eventos reais e em conformidade com a lei — e compradores que buscam experiências locais com pagamento e ingresso digitais seguros.
+                            </p>
+                            <ul className="grid gap-2">
+                                <li className="flex gap-2 text-sm text-psi-dark/85">
+                                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                                    Eventos culturais, shows, festas e experiências presenciais na região
+                                </li>
+                                <li className="flex gap-2 text-sm text-psi-dark/85">
+                                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                                    Organizadores verificados e compra transparente para turistas e moradores
+                                </li>
+                            </ul>
+                        </div>
+                        <div className="rounded-3xl border border-red-200/60 bg-white/95 p-6 shadow-sm backdrop-blur-sm">
+                            <div className="flex items-center gap-3 mb-4">
+                                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-500/10">
+                                    <Shield className="h-6 w-6 text-red-600" />
+                                </span>
+                                <h4 className="text-lg font-semibold text-psi-dark">Para quem não é</h4>
+                            </div>
+                            <p className="text-sm text-psi-dark/75 mb-4 leading-relaxed">
+                                Não é para você se a sua operação envolve ou se beneficia de qualquer um dos cenários abaixo:
+                            </p>
+                            <ul className="grid gap-2">
+                                {[
+                                    'black, hot ou nichos adultos',
+                                    'Rifas, cassinos, apostas ou sorteios',
+                                    'Qualquer atividade ilegal ou de alto risco',
+                                    'Fraudes, golpes ou pirâmides financeiras',
+                                    'Produtos falsificados, drogas ou armas',
+                                    'Deepfakes, invasões, spams ou vazamento de dados',
+                                    'Conteúdo de ódio, violência ou discriminação',
+                                ].map((line) => (
+                                    <li key={line} className="flex gap-2 text-sm text-psi-dark/85">
+                                        <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
+                                        {line}
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     </div>
                 </div>
