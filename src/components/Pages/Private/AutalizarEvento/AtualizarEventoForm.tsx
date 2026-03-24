@@ -29,6 +29,7 @@ import {
 import { z } from "zod"
 import { cn } from "@/lib/utils"
 import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
+import { EventCategoryIconHandler } from "@/utils/Helpers/EventCategoryIconHandler/EventCategoryIconHandler"
 import { useEventFindByIdUser } from "@/hooks/Event/useEventFindByIdUser"
 import { useEventUpdate } from "@/hooks/Event/useEventUpdate"
 import useEventUpdateImage from "@/hooks/Event/useEventUpdateImage"
@@ -1046,7 +1047,11 @@ const AtualizarEventoForm = () => {
                                             )
                                             return (
                                                 <MultiSelect
-                                                    options={sortedCategories.map((category) => ({ value: category.id, label: category.name }))}
+                                                    options={sortedCategories.map((category) => ({
+                                                        value: category.id,
+                                                        label: category.name,
+                                                        icon: EventCategoryIconHandler(category.name),
+                                                    }))}
                                                     value={field.value || []}
                                                     onChange={field.onChange}
                                                     placeholder="Selecione as categorias..."

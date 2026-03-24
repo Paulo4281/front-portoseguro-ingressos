@@ -5,11 +5,14 @@ export const metadata: Metadata = {
 }
 
 import { RevendaPannel } from "@/components/Pages/Private/Revenda/RevendaPannel"
+import { VerificationStatusGuard } from "@/components/VerificationStatus/VerificationStatusGuard"
 
 const RevendaPage = () => {
     return (
         <>
-        <RevendaPannel />
+        <VerificationStatusGuard>
+            <RevendaPannel />
+        </VerificationStatusGuard>
         </>
     )
 }

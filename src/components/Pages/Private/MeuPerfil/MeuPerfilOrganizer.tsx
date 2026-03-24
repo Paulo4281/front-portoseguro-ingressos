@@ -2,7 +2,7 @@
 
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useMemo, useEffect, useState } from "react"
+import { useMemo, useEffect, useState, type ReactNode } from "react"
 import { 
     Building2, 
     CreditCard, 
@@ -14,6 +14,7 @@ import {
     Mail, 
     Phone,
     AlertCircle,
+    Check,
     CheckCircle2,
     Clock,
     XCircle,
@@ -47,6 +48,14 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@/components/ui/collapsible"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { useOrganizerUpdate } from "@/hooks/Organizer/useOrganizerUpdate"
 import { useBankFind } from "@/hooks/Organizer/useBankFind"
@@ -58,6 +67,37 @@ import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
 import { getStates, getCitiesByState } from "@/utils/Helpers/IBGECitiesAndStates/IBGECitiesAndStates"
 import { getCountries, getCountriesSync } from "@/utils/Helpers/Countries/Countries"
+import { cn } from "@/lib/utils"
+import { OrganizerService } from "@/services/Organizer/OrganizerService"
+
+const FILLED_REQUIRED_CLASS = "border-lime-300 bg-lime-50"
+const FILLED_REQUIRED_INPUT_END_PAD = "pr-10"
+const FILLED_REQUIRED_SELECT_END_PAD = "pr-11"
+
+function RequiredFilledWithCheck({
+    filled,
+    variant = "input",
+    children,
+}: {
+    filled: boolean
+    variant?: "input" | "select"
+    children: ReactNode
+}) {
+    return (
+        <div className="relative w-full">
+            {children}
+            {filled && (
+                <Check
+                    className={cn(
+                        "pointer-events-none absolute top-1/2 z-1 size-4 shrink-0 -translate-y-1/2 text-lime-600",
+                        variant === "select" ? "right-10" : "right-3"
+                    )}
+                    aria-hidden
+                />
+            )}
+        </div>
+    )
+}
 
 const genres = [
     { value: "MALE", label: "Masculino" },
@@ -81,6 +121,10 @@ const MeuPerfilOrganizer = () => {
         socialMedia: false,
         support: false,
     })
+    const [cnpjQuickInput, setCnpjQuickInput] = useState("")
+    const [loadingCnpj, setLoadingCnpj] = useState(false)
+    const [cnpjError, setCnpjError] = useState<string | null>(null)
+    const [showConfirmDataModal, setShowConfirmDataModal] = useState(false)
 
     const organizer = useMemo(() => {
         return user?.Organizer || null
@@ -165,6 +209,37 @@ const MeuPerfilOrganizer = () => {
     }, [selectedState])
 
     useEffect(() => {
+        let mounted = true
+
+        const syncVerificationStatus = async () => {
+            if (!user || user.role !== "ORGANIZER" || !user.Organizer) return
+
+            const response = await OrganizerService.verifyOrganizerVerificationStatus()
+            const verificationStatus = response?.data?.verificationStatus as TOrganizer["verificationStatus"] | undefined
+
+            if (!mounted || !verificationStatus || user.Organizer.verificationStatus === verificationStatus) {
+                return
+            }
+
+            const updatedUser: TUser = {
+                ...user,
+                Organizer: {
+                    ...user.Organizer,
+                    verificationStatus
+                }
+            }
+
+            setUser(updatedUser)
+        }
+
+        syncVerificationStatus()
+
+        return () => {
+            mounted = false
+        }
+    }, [user, setUser])
+
+    useEffect(() => {
         const loadCountries = async () => {
             const countriesList = await getCountries()
             setCountries(countriesList)
@@ -238,6 +313,90 @@ const MeuPerfilOrganizer = () => {
         }
     }, [organizer, user])
 
+    type CnpjaOfficeResponse = {
+        alias?: string
+        taxId?: string
+        company?: { name?: string }
+        address?: {
+            street?: string
+            number?: string
+            details?: string
+            district?: string
+            city?: string
+            state?: string
+            zip?: string
+            country?: { name?: string }
+        }
+        phones?: Array<{ type?: string; area?: string; number?: string }>
+        emails?: Array<{ address?: string }>
+    }
+
+    const fetchCnpjData = async () => {
+        const digitsOnly = cnpjQuickInput.replace(/\D/g, "")
+        if (digitsOnly.length !== 14) {
+            setCnpjError("Digite um CNPJ válido com 14 dígitos.")
+            return
+        }
+        setCnpjError(null)
+        setLoadingCnpj(true)
+        try {
+            const res = await fetch(`https://open.cnpja.com/office/${digitsOnly}`)
+            if (!res.ok) {
+                if (res.status === 429) throw new Error("rate_limit")
+                throw new Error("request_failed")
+            }
+            const data: CnpjaOfficeResponse = await res.json()
+
+            const companyName = data.alias ?? data.company?.name ?? ""
+            if (companyName) form.setValue("companyName", companyName)
+            if (data.taxId != null) form.setValue("companyDocument", data.taxId)
+
+            const addr = data.address
+            if (addr) {
+                const currentAddress = form.getValues("address") || {}
+                const newAddress = {
+                    ...currentAddress,
+                    ...(addr.street != null && { street: addr.street }),
+                    ...(addr.number != null && { number: addr.number }),
+                    ...(addr.details != null && { complement: addr.details }),
+                    ...(addr.district != null && { neighborhood: addr.district }),
+                    ...(addr.city != null && { city: addr.city }),
+                    ...(addr.state != null && { state: addr.state }),
+                    ...(addr.zip != null && { zipCode: addr.zip }),
+                    ...(addr.country?.name != null && { country: addr.country.name }),
+                }
+                form.setValue("address", newAddress)
+                const fullAddr = [addr.street, addr.number, addr.details, addr.district, addr.city, addr.state, addr.zip]
+                    .filter(Boolean)
+                    .join(", ")
+                if (fullAddr) form.setValue("companyAddress", fullAddr)
+            }
+
+            const firstPhone = data.phones?.[0]
+            if (firstPhone?.area != null && firstPhone?.number != null) {
+                let digits = firstPhone.area + firstPhone.number
+                if (firstPhone.type === "MOBILE" && digits.length === 10) digits = firstPhone.area + "9" + firstPhone.number
+                form.setValue("supportPhone", digits)
+            }
+
+            const firstEmail = data.emails?.[0]
+            if (firstEmail?.address != null) form.setValue("supportEmail", firstEmail.address)
+
+            setCnpjQuickInput("")
+            setOpenSections((prev) => ({
+                ...prev,
+                companyInfo: true,
+                personalData: true,
+                support: true,
+            }))
+            setShowConfirmDataModal(true)
+        } catch {
+            setCnpjError("Algo deu errado. Tente novamente em alguns instantes.")
+        } finally {
+            setLoadingCnpj(false)
+        }
+    }
+
     const hasBankAccount = useMemo(() => {
         const values = form.watch()
         return !!(
@@ -284,7 +443,72 @@ const MeuPerfilOrganizer = () => {
             } else {
             }
         } catch (error) {
+            console.error(error)
         }
+    }
+
+    const getSectionsWithErrors = (errors: Record<string, unknown>): Set<string> => {
+        const sections = new Set<string>()
+        const pathToSection: Record<string, string> = {
+            firstName: "personalData",
+            lastName: "personalData",
+            birth: "personalData",
+            nationality: "personalData",
+            gender: "personalData",
+            address: "personalData",
+            companyName: "companyInfo",
+            companyDocument: "companyInfo",
+            companyAddress: "companyInfo",
+            bankId: "bankAccount",
+            bankAccountType: "bankAccount",
+            bankAccountAgency: "bankAccount",
+            bankAccountNumber: "bankAccount",
+            bankAccountDigit: "bankAccount",
+            bankAccountName: "bankAccount",
+            bankAccountOwnerName: "bankAccount",
+            bankAccountOwnerBirth: "bankAccount",
+            bankAccountOwnerDocumentType: "bankAccount",
+            bankAccountOwnerDocument: "bankAccount",
+            pixAddressKey: "pix",
+            pixAddressType: "pix",
+            payoutMethod: "pix",
+            identityDocumentFronUrl: "documents",
+            identityDocumentBackUrl: "documents",
+            identityDocumentSelfieUrl: "documents",
+            supportEmail: "support",
+            supportPhone: "support",
+        }
+        const collect = (obj: Record<string, unknown>, prefix = ""): void => {
+            for (const key of Object.keys(obj)) {
+                const value = obj[key]
+                const path = prefix ? `${prefix}.${key}` : key
+                if (value && typeof value === "object" && "message" in value) {
+                    const section = pathToSection[path.split(".")[0]] ?? pathToSection[path]
+                    if (section) sections.add(section)
+                } else if (value && typeof value === "object" && !Array.isArray(value)) {
+                    collect(value as Record<string, unknown>, path)
+                }
+            }
+        }
+        collect(errors)
+        return sections
+    }
+
+    const onInvalidSubmit = (errors: Record<string, unknown>) => {
+        Toast.error("Verifique os campos obrigatórios. Abra as seções destacadas e preencha os campos em vermelho.")
+        const sectionsWithErrors = getSectionsWithErrors(errors)
+        setOpenSections((prev) => {
+            const next = { ...prev }
+            for (const section of sectionsWithErrors) {
+                next[section] = true
+            }
+            return next
+        })
+        setTimeout(() => {
+            const formEl = document.getElementById("meu-perfil-organizer-form")
+            const firstErrorMsg = formEl?.querySelector(".text-red-500")
+            firstErrorMsg?.scrollIntoView({ behavior: "smooth", block: "center" })
+        }, 400)
     }
 
     const getVerificationStatusMessage = () => {
@@ -332,6 +556,14 @@ const MeuPerfilOrganizer = () => {
 
     const statusInfo = getVerificationStatusMessage()
     const StatusIcon = statusInfo.icon
+
+    const Required = () => {
+        return (
+            <>
+            <span className="text-[10.5px] text-red-400">(Obrigatório *)</span>
+            </>
+        )
+    }
 
     return (
         <Background variant="light" className="min-h-screen">
@@ -381,12 +613,56 @@ const MeuPerfilOrganizer = () => {
                                             : "text-amber-900"
                                     }`}>
                                         {statusInfo.message}
+                                        {
+                                            organizer.verificationStatus === "PENDING" && (
+                                                <>
+                                                <br />
+                                                <span className="text-[12px] text-psi-dark/60">Se você já recebeu a notificação de aprovação, e ainda está aparecendo o status de pendente, tente sair e entrar novamente na plataforma.</span>
+                                                </>
+                                            )
+                                        }
                                     </p>
                                 </div>
                             </div>
                         )}
 
-                        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+                        <form id="meu-perfil-organizer-form" onSubmit={form.handleSubmit(handleSubmit, onInvalidSubmit)} className="space-y-8">
+
+                            {
+                                user?.Organizer?.verificationStatus === "WAITING_DOCUMENTATION" && (
+                                    <>
+                                    <div className="rounded-xl border-2 border-psi-primary/30 bg-psi-primary/5 p-4 space-y-3">
+                                                <label className="block text-base font-semibold text-psi-primary">
+                                                    Digite seu CNPJ para preencher rapidamente seus dados
+                                                </label>
+                                                <div className="flex flex-col sm:flex-row gap-2">
+                                                    <Input
+                                                        value={cnpjQuickInput}
+                                                        onChange={(e) => {
+                                                            setCnpjQuickInput(e.target.value)
+                                                            setCnpjError(null)
+                                                        }}
+                                                        placeholder="00.000.000/0000-00"
+                                                        inputMode="numeric"
+                                                        onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), fetchCnpjData())}
+                                                    />
+                                                    <Button
+                                                        type="button"
+                                                        variant="primary"
+                                                        onClick={fetchCnpjData}
+                                                        disabled={loadingCnpj || cnpjQuickInput.replace(/\D/g, "").length !== 14}
+                                                    >
+                                                        {loadingCnpj ? <Loader2 className="h-4 w-4 animate-spin" /> : "Preencher dados"}
+                                                    </Button>
+                                                </div>
+                                                {cnpjError && (
+                                                    <p className="text-sm text-red-600 font-medium">{cnpjError}</p>
+                                                )}
+                                    </div>
+                                    </>
+                                )
+                            }
+
                             <Collapsible
                                 open={openSections.personalData}
                                 onOpenChange={(open) => setOpenSections(prev => ({ ...prev, personalData: open }))}
@@ -417,18 +693,25 @@ const MeuPerfilOrganizer = () => {
                                 sm:grid-cols-2">
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Nome
+                                            Nome <Required />
                                         </label>
                                         <Controller
                                             name="firstName"
                                             control={form.control}
                                             render={({ field }) => (
-                                                <Input
-                                                    {...field}
-                                                    value={field.value || ""}
-                                                    placeholder="Nome"
-                                                    icon={User}
-                                                />
+                                                <RequiredFilledWithCheck filled={!!field.value}>
+                                                    <Input
+                                                        {...field}
+                                                        value={field.value || ""}
+                                                        placeholder="Nome"
+                                                        icon={User}
+                                                        className={cn(
+                                                            field.value && FILLED_REQUIRED_CLASS,
+                                                            field.value && FILLED_REQUIRED_INPUT_END_PAD
+                                                        )}
+                                                        required
+                                                    />
+                                                </RequiredFilledWithCheck>
                                             )}
                                         />
                                         <FieldError message={form.formState.errors.firstName?.message || ""} />
@@ -436,18 +719,25 @@ const MeuPerfilOrganizer = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Sobrenome
+                                            Sobrenome <Required />
                                         </label>
                                         <Controller
                                             name="lastName"
                                             control={form.control}
                                             render={({ field }) => (
-                                                <Input
-                                                    {...field}
-                                                    value={field.value || ""}
-                                                    placeholder="Sobrenome"
-                                                    icon={User}
-                                                />
+                                                <RequiredFilledWithCheck filled={!!field.value}>
+                                                    <Input
+                                                        {...field}
+                                                        value={field.value || ""}
+                                                        placeholder="Sobrenome"
+                                                        icon={User}
+                                                        className={cn(
+                                                            field.value && FILLED_REQUIRED_CLASS,
+                                                            field.value && FILLED_REQUIRED_INPUT_END_PAD
+                                                        )}
+                                                        required
+                                                    />
+                                                </RequiredFilledWithCheck>
                                             )}
                                         />
                                         <FieldError message={form.formState.errors.lastName?.message || ""} />
@@ -458,20 +748,27 @@ const MeuPerfilOrganizer = () => {
                                 sm:grid-cols-3">
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Data de Nascimento
+                                            Data de Nascimento <Required />
                                         </label>
                                         <Controller
                                             name="birth"
                                             control={form.control}
                                             render={({ field }) => (
-                                                <InputMask
-                                                    {...field}
-                                                    value={field.value || ""}
-                                                    mask="00/00/0000"
-                                                    placeholder="DD/MM/AAAA"
-                                                    icon={FileText}
-                                                    inputMode="numeric"
-                                                />
+                                                <RequiredFilledWithCheck filled={!!field.value}>
+                                                    <InputMask
+                                                        {...field}
+                                                        value={field.value || ""}
+                                                        mask="00/00/0000"
+                                                        placeholder="DD/MM/AAAA"
+                                                        icon={FileText}
+                                                        inputMode="numeric"
+                                                        className={cn(
+                                                            field.value && FILLED_REQUIRED_CLASS,
+                                                            field.value && FILLED_REQUIRED_INPUT_END_PAD
+                                                        )}
+                                                        required
+                                                    />
+                                                </RequiredFilledWithCheck>
                                             )}
                                         />
                                         <FieldError message={form.formState.errors.birth?.message || ""} />
@@ -494,6 +791,7 @@ const MeuPerfilOrganizer = () => {
                                                     disabled={ field.value ? true : false }
                                                     className={`${field.value ? "bg-psi-dark/5" : ""}`}
                                                     inputMode="numeric"
+                                                    required
                                                 />
                                             )}
                                         />
@@ -502,14 +800,15 @@ const MeuPerfilOrganizer = () => {
 
                                         <div>
                                             <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                Email
+                                                E-mail
                                             </label>
                                                 <Input
                                                     value={user?.email || ""}
-                                                    placeholder="Email"
+                                                    placeholder="E-mail"
                                                     icon={Mail}
                                                     disabled={ true }
                                                     className="bg-psi-dark/5"
+                                                    required
                                                 />
                                         </div>
 
@@ -519,20 +818,28 @@ const MeuPerfilOrganizer = () => {
                                 sm:grid-cols-2">
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Nacionalidade
+                                            Nacionalidade <Required />
                                         </label>
                                         <Controller
                                             name="nationality"
                                             control={form.control}
                                             render={({ field }) => (
-                                                <Select
-                                                    { ...field }
-                                                    value={field.value || undefined}
-                                                    onValueChange={(value) => {
-                                                        field.onChange(value || null)
-                                                    }}
-                                                >
-                                                    <SelectTrigger className="w-full">
+                                                <RequiredFilledWithCheck filled={!!field.value} variant="input">
+                                                    <Select
+                                                        { ...field }
+                                                        value={field.value || undefined}
+                                                        onValueChange={(value) => {
+                                                            field.onChange(value || null)
+                                                        }}
+                                                        required
+                                                    >
+                                                        <SelectTrigger
+                                                            className={cn(
+                                                                "w-full",
+                                                                field.value && FILLED_REQUIRED_CLASS,
+                                                                field.value && FILLED_REQUIRED_SELECT_END_PAD
+                                                            )}
+                                                        >
                                                         <div className="flex items-center gap-2">
                                                             <Globe className="size-4 text-muted-foreground" />
                                                             <SelectValue placeholder="Selecione..." />
@@ -546,6 +853,7 @@ const MeuPerfilOrganizer = () => {
                                                         ))}
                                                     </SelectContent>
                                                 </Select>
+                                                </RequiredFilledWithCheck>
                                             )}
                                         />
                                         <FieldError message={form.formState.errors.nationality?.message || ""} />
@@ -553,20 +861,28 @@ const MeuPerfilOrganizer = () => {
 
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Gênero
+                                            Gênero <Required />
                                         </label>
                                         <Controller
                                             name="gender"
                                             control={form.control}
                                             render={({ field }) => (
-                                                <Select
-                                                    { ...field }
-                                                    value={field.value || undefined}
-                                                    onValueChange={(value) => {
-                                                        field.onChange(value || null)
-                                                    }}
-                                                >
-                                                    <SelectTrigger className="w-full">
+                                                <RequiredFilledWithCheck filled={!!field.value} variant="input">
+                                                    <Select
+                                                        { ...field }
+                                                        value={field.value || undefined}
+                                                        onValueChange={(value) => {
+                                                            field.onChange(value || null)
+                                                        }}
+                                                        required
+                                                    >
+                                                        <SelectTrigger
+                                                            className={cn(
+                                                                "w-full",
+                                                                field.value && FILLED_REQUIRED_CLASS,
+                                                                field.value && FILLED_REQUIRED_SELECT_END_PAD
+                                                            )}
+                                                        >
                                                         <SelectValue placeholder="Selecione..." />
                                                     </SelectTrigger>
                                                     <SelectContent>
@@ -577,6 +893,7 @@ const MeuPerfilOrganizer = () => {
                                                         ))}
                                                     </SelectContent>
                                                 </Select>
+                                                </RequiredFilledWithCheck>
                                             )}
                                         />
                                         <FieldError message={form.formState.errors.gender?.message || ""} />
@@ -588,26 +905,33 @@ const MeuPerfilOrganizer = () => {
                                     
                                     <div>
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            CEP
+                                            CEP <Required />
                                         </label>
                                         <Controller
                                             name="address.zipCode"
                                             control={form.control}
                                             render={({ field }) => (
-                                                <InputMask
-                                                    mask="00000-000"
-                                                    value={field.value || ""}
-                                                    onAccept={(value) => {
-                                                        const currentAddress = form.getValues("address") || {}
-                                                        form.setValue("address", {
-                                                            ...currentAddress,
-                                                            zipCode: value as string || null
-                                                        })
-                                                    }}
-                                                    placeholder="00000-000"
-                                                    icon={Hash}
-                                                    inputMode="numeric"
-                                                />
+                                                <RequiredFilledWithCheck filled={!!field.value}>
+                                                    <InputMask
+                                                        mask="00000-000"
+                                                        value={field.value || ""}
+                                                        onAccept={(value) => {
+                                                            const currentAddress = form.getValues("address") || {}
+                                                            form.setValue("address", {
+                                                                ...currentAddress,
+                                                                zipCode: value as string || null
+                                                            })
+                                                        }}
+                                                        placeholder="00000-000"
+                                                        icon={Hash}
+                                                        inputMode="numeric"
+                                                        className={cn(
+                                                            field.value && FILLED_REQUIRED_CLASS,
+                                                            field.value && FILLED_REQUIRED_INPUT_END_PAD
+                                                        )}
+                                                        required
+                                                    />
+                                                </RequiredFilledWithCheck>
                                             )}
                                         />
                                         <FieldError message={form.formState.errors.address?.zipCode?.message || ""} />
@@ -617,12 +941,13 @@ const MeuPerfilOrganizer = () => {
                                     sm:grid-cols-2 mt-4">
                                         <div>
                                             <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                Rua
+                                                Rua <Required />
                                             </label>
-                                            <Controller
-                                                name="address.street"
-                                                control={form.control}
-                                                render={({ field }) => (
+                                        <Controller
+                                            name="address.street"
+                                            control={form.control}
+                                            render={({ field }) => (
+                                                <RequiredFilledWithCheck filled={!!field.value}>
                                                     <Input
                                                         value={field.value || ""}
                                                         onChange={(e) => {
@@ -634,32 +959,45 @@ const MeuPerfilOrganizer = () => {
                                                         }}
                                                         placeholder="Nome da rua"
                                                         icon={MapPin}
+                                                        className={cn(
+                                                            field.value && FILLED_REQUIRED_CLASS,
+                                                            field.value && FILLED_REQUIRED_INPUT_END_PAD
+                                                        )}
+                                                        required
                                                     />
-                                                )}
-                                            />
+                                                </RequiredFilledWithCheck>
+                                            )}
+                                        />
                                             <FieldError message={form.formState.errors.address?.street?.message || ""} />
                                         </div>
                                         
                                         <div>
                                             <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                Número (opcional)
+                                                Número <Required />
                                             </label>
                                             <Controller
                                                 name="address.number"
                                                 control={form.control}
                                                 render={({ field }) => (
-                                                    <Input
-                                                        value={field.value || ""}
-                                                        onChange={(e) => {
-                                                            const currentAddress = form.getValues("address") || {}
-                                                            form.setValue("address", {
-                                                                ...currentAddress,
-                                                                number: e.target.value || null
-                                                            })
-                                                        }}
-                                                        placeholder="123"
-                                                        inputMode="numeric"
-                                                    />
+                                                    <RequiredFilledWithCheck filled={!!field.value}>
+                                                        <Input
+                                                            value={field.value || ""}
+                                                            onChange={(e) => {
+                                                                const currentAddress = form.getValues("address") || {}
+                                                                form.setValue("address", {
+                                                                    ...currentAddress,
+                                                                    number: e.target.value || null
+                                                                })
+                                                            }}
+                                                            placeholder="123"
+                                                            inputMode="numeric"
+                                                            className={cn(
+                                                                field.value && FILLED_REQUIRED_CLASS,
+                                                                field.value && FILLED_REQUIRED_INPUT_END_PAD
+                                                            )}
+                                                            required
+                                                        />
+                                                    </RequiredFilledWithCheck>
                                                 )}
                                             />
                                             <FieldError message={form.formState.errors.address?.number?.message || ""} />
@@ -668,7 +1006,7 @@ const MeuPerfilOrganizer = () => {
                                     
                                     <div className="mt-4">
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Complemento (opcional)
+                                            Complemento
                                         </label>
                                         <Controller
                                             name="address.complement"
@@ -692,24 +1030,31 @@ const MeuPerfilOrganizer = () => {
                                     
                                     <div className="mt-4">
                                         <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Bairro
+                                            Bairro <Required />
                                         </label>
                                         <Controller
                                             name="address.neighborhood"
                                             control={form.control}
                                             render={({ field }) => (
-                                                <Input
-                                                    value={field.value || ""}
-                                                    onChange={(e) => {
-                                                        const currentAddress = form.getValues("address") || {}
-                                                        form.setValue("address", {
-                                                            ...currentAddress,
-                                                            neighborhood: e.target.value || null
-                                                        })
-                                                    }}
-                                                    placeholder="Nome do bairro"
-                                                    icon={Building2}
-                                                />
+                                                <RequiredFilledWithCheck filled={!!field.value}>
+                                                    <Input
+                                                        value={field.value || ""}
+                                                        onChange={(e) => {
+                                                            const currentAddress = form.getValues("address") || {}
+                                                            form.setValue("address", {
+                                                                ...currentAddress,
+                                                                neighborhood: e.target.value || null
+                                                            })
+                                                        }}
+                                                        placeholder="Nome do bairro"
+                                                        icon={Building2}
+                                                        className={cn(
+                                                            field.value && FILLED_REQUIRED_CLASS,
+                                                            field.value && FILLED_REQUIRED_INPUT_END_PAD
+                                                        )}
+                                                        required
+                                                    />
+                                                </RequiredFilledWithCheck>
                                             )}
                                         />
                                         <FieldError message={form.formState.errors.address?.neighborhood?.message || ""} />
@@ -719,24 +1064,32 @@ const MeuPerfilOrganizer = () => {
                                     sm:grid-cols-3 mt-4">
                                         <div>
                                             <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                Estado
+                                                Estado <Required />
                                             </label>
                                             <Controller
                                                 name="address.state"
                                                 control={form.control}
                                                 render={({ field }) => (
-                                                    <Select
-                                                        value={field.value || undefined}
-                                                        onValueChange={(value) => {
-                                                            const currentAddress = form.getValues("address") || {}
-                                                            form.setValue("address", {
-                                                                ...currentAddress,
-                                                                state: value || null,
-                                                                city: null
-                                                            })
-                                                        }}
-                                                    >
-                                                        <SelectTrigger className="w-full">
+                                                    <RequiredFilledWithCheck filled={!!field.value} variant="input">
+                                                        <Select
+                                                            value={field.value || undefined}
+                                                            onValueChange={(value) => {
+                                                                const currentAddress = form.getValues("address") || {}
+                                                                form.setValue("address", {
+                                                                    ...currentAddress,
+                                                                    state: value || null,
+                                                                    city: null
+                                                                })
+                                                            }}
+                                                            required
+                                                        >
+                                                            <SelectTrigger
+                                                                className={cn(
+                                                                    "w-full",
+                                                                    field.value && FILLED_REQUIRED_CLASS,
+                                                                    field.value && FILLED_REQUIRED_SELECT_END_PAD
+                                                                )}
+                                                            >
                                                             <SelectValue placeholder="Selecione..." />
                                                         </SelectTrigger>
                                                         <SelectContent>
@@ -747,6 +1100,7 @@ const MeuPerfilOrganizer = () => {
                                                             ))}
                                                         </SelectContent>
                                                     </Select>
+                                                    </RequiredFilledWithCheck>
                                                 )}
                                             />
                                             <FieldError message={form.formState.errors.address?.state?.message || ""} />
@@ -754,24 +1108,32 @@ const MeuPerfilOrganizer = () => {
                                         
                                         <div>
                                             <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                Cidade
+                                                Cidade <Required />
                                             </label>
                                             <Controller
                                                 name="address.city"
                                                 control={form.control}
                                                 render={({ field }) => (
-                                                    <Select
-                                                        value={field.value || undefined}
-                                                        onValueChange={(value) => {
-                                                            const currentAddress = form.getValues("address") || {}
-                                                            form.setValue("address", {
-                                                                ...currentAddress,
-                                                                city: value || null
-                                                            })
-                                                        }}
-                                                        disabled={!selectedState}
-                                                    >
-                                                        <SelectTrigger className="w-full">
+                                                    <RequiredFilledWithCheck filled={!!field.value} variant="input">
+                                                        <Select
+                                                            value={field.value || undefined}
+                                                            onValueChange={(value) => {
+                                                                const currentAddress = form.getValues("address") || {}
+                                                                form.setValue("address", {
+                                                                    ...currentAddress,
+                                                                    city: value || null
+                                                                })
+                                                            }}
+                                                            disabled={!selectedState}
+                                                            required
+                                                        >
+                                                            <SelectTrigger
+                                                                className={cn(
+                                                                    "w-full",
+                                                                    field.value && FILLED_REQUIRED_CLASS,
+                                                                    field.value && FILLED_REQUIRED_SELECT_END_PAD
+                                                                )}
+                                                            >
                                                             <SelectValue placeholder={selectedState ? "Selecione..." : "Selecione um estado primeiro"} />
                                                         </SelectTrigger>
                                                         <SelectContent key={selectedState || "no-state"}>
@@ -792,6 +1154,7 @@ const MeuPerfilOrganizer = () => {
                                                             )}
                                                         </SelectContent>
                                                     </Select>
+                                                    </RequiredFilledWithCheck>
                                                 )}
                                             />
                                             <FieldError message={form.formState.errors.address?.city?.message || ""} />
@@ -799,23 +1162,31 @@ const MeuPerfilOrganizer = () => {
                                         
                                         <div>
                                             <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                País
+                                                País <Required />
                                             </label>
                                             <Controller
                                                 name="address.country"
                                                 control={form.control}
                                                 render={({ field }) => (
-                                                    <Select
-                                                        value={field.value || undefined}
-                                                        onValueChange={(value) => {
-                                                            const currentAddress = form.getValues("address") || {}
-                                                            form.setValue("address", {
-                                                                ...currentAddress,
-                                                                country: value || null
-                                                            })
-                                                        }}
-                                                    >
-                                                        <SelectTrigger className="w-full">
+                                                    <RequiredFilledWithCheck filled={!!field.value} variant="input">
+                                                        <Select
+                                                            value={field.value || undefined}
+                                                            onValueChange={(value) => {
+                                                                const currentAddress = form.getValues("address") || {}
+                                                                form.setValue("address", {
+                                                                    ...currentAddress,
+                                                                    country: value || null
+                                                                })
+                                                            }}
+                                                            required
+                                                        >
+                                                            <SelectTrigger
+                                                                className={cn(
+                                                                    "w-full",
+                                                                    field.value && FILLED_REQUIRED_CLASS,
+                                                                    field.value && FILLED_REQUIRED_SELECT_END_PAD
+                                                                )}
+                                                            >
                                                             <SelectValue placeholder="Selecione..." />
                                                         </SelectTrigger>
                                                         <SelectContent>
@@ -826,6 +1197,7 @@ const MeuPerfilOrganizer = () => {
                                                             ))}
                                                         </SelectContent>
                                                     </Select>
+                                                    </RequiredFilledWithCheck>
                                                 )}
                                             />
                                             <FieldError message={form.formState.errors.address?.country?.message || ""} />
@@ -850,7 +1222,7 @@ const MeuPerfilOrganizer = () => {
                                                 </div>
                                                 <div className="text-start">
                                                     <h2 className="text-lg font-medium text-psi-dark">Informações da Empresa</h2>
-                                                    <p className="text-sm text-psi-dark/60">Opcional - Preencha se for pessoa jurídica</p>
+                                                    <p className="text-sm text-psi-dark/60"><span className="font-bold">(Opcional)</span> - Preencha se for pessoa jurídica</p>
                                                 </div>
                                             </div>
                                             {openSections.companyInfo ? (
@@ -944,7 +1316,7 @@ const MeuPerfilOrganizer = () => {
                                                 </div>
                                                 <div className="text-start">
                                                     <h2 className="text-lg font-medium text-psi-dark">Logo e Descrição</h2>
-                                                    <p className="text-sm text-amber-700 font-medium">Altamente recomendado</p>
+                                                    <p className="text-sm text-psi-dark/60 font-medium"><span className="font-bold">(Opcional)</span> Altamente recomendado</p>
                                                 </div>
                                             </div>
                                             {openSections.logoDescription ? (
@@ -1019,360 +1391,435 @@ const MeuPerfilOrganizer = () => {
                                 </div>
                             </Collapsible>
 
-                            <Collapsible
-                                open={openSections.bankAccount}
-                                onOpenChange={(open) => setOpenSections(prev => ({ ...prev, bankAccount: open }))}
-                            >
-                                <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
-                                sm:p-8 shadow-sm">
-                                    <CollapsibleTrigger className="w-full">
-                                        <div className="flex items-center justify-between pb-4 border-b border-psi-dark/10">
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
-                                                    <CreditCard className="h-5 w-5 text-psi-primary" />
+                            <div className="space-y-4 border-2 rounded-2xl border-psi-dark/10 p-6">
+
+                                <h3 className="text-lg font-medium text-psi-dark">Informações Bancárias</h3>
+                                <p className="text-sm text-psi-dark/60">Deve preencher pelo menos uma das opções: conta bancária ou chave PIX</p>
+
+                                <Collapsible
+                                    open={openSections.bankAccount}
+                                    onOpenChange={(open) => setOpenSections(prev => ({ ...prev, bankAccount: open }))}
+                                >
+                                    <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
+                                    sm:p-8 shadow-sm">
+                                        <CollapsibleTrigger className="w-full">
+                                            <div className="flex items-center justify-between pb-4 border-b border-psi-dark/10">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
+                                                        <CreditCard className="h-5 w-5 text-psi-primary" />
+                                                    </div>
+                                                    <div className="text-start">
+                                                        <h2 className="text-lg font-medium text-psi-dark">Conta Bancária</h2>
+                                                        <p className="text-sm text-psi-dark/60">Opcional - Se preencher, todos os campos são obrigatórios</p>
+                                                        <p className="text-xs text-psi-dark/50 mt-1">Taxa de transferência: R$ 5,00</p>
+                                                    </div>
                                                 </div>
-                                                <div className="text-start">
-                                                    <h2 className="text-lg font-medium text-psi-dark">Conta Bancária</h2>
-                                                    <p className="text-sm text-psi-dark/60">Opcional - Se preencher, todos os campos marcados com * são obrigatórios</p>
-                                                    <p className="text-xs text-psi-dark/50 mt-1">Taxa de transferência: R$ 5,00</p>
-                                                </div>
+                                                {openSections.bankAccount ? (
+                                                    <ChevronUp className="h-5 w-5 text-psi-dark/60" />
+                                                ) : (
+                                                    <ChevronDown className="h-5 w-5 text-psi-dark/60" />
+                                                )}
                                             </div>
-                                            {openSections.bankAccount ? (
-                                                <ChevronUp className="h-5 w-5 text-psi-dark/60" />
-                                            ) : (
-                                                <ChevronDown className="h-5 w-5 text-psi-dark/60" />
-                                            )}
-                                        </div>
-                                    </CollapsibleTrigger>
-                                    <CollapsibleContent className="space-y-6 pt-6">
-                                        <div className="grid gap-4
-                                        sm:grid-cols-2
-                                        lg:grid-cols-3">
-                                            <div>
-                                                <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    Banco *
-                                                </label>
-                                                <Controller
-                                                    name="bankId"
-                                                    control={form.control}
-                                                    render={({ field }) => (
-                                                        <Select
-                                                            value={field.value ? String(field.value) : undefined}
-                                                            onValueChange={(value) => field.onChange(value || "")}
-                                                            disabled={isLoadingBanks}
-                                                        >
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Selecione o banco" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {banks.map((bank) => (
-                                                                    <SelectItem key={bank.id} value={bank.id}>
-                                                                        {bank.name} ({bank.code})
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                    )}
-                                                />
-                                                <FieldError message={form.formState.errors.bankId?.message || ""} />
+                                        </CollapsibleTrigger>
+                                        <CollapsibleContent className="space-y-6 pt-6">
+                                            <div className="grid gap-4
+                                            sm:grid-cols-2
+                                            lg:grid-cols-3">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                        Banco <Required />
+                                                    </label>
+                                                    <Controller
+                                                        name="bankId"
+                                                        control={form.control}
+                                                        render={({ field }) => (
+                                                            <RequiredFilledWithCheck filled={!!field.value} variant="input">
+                                                                <Select
+                                                                    value={field.value ? String(field.value) : undefined}
+                                                                    onValueChange={(value) => field.onChange(value || "")}
+                                                                    disabled={isLoadingBanks}
+                                                                >
+                                                                    <SelectTrigger
+                                                                        className={cn(
+                                                                            "w-full",
+                                                                            field.value && FILLED_REQUIRED_CLASS,
+                                                                            field.value && FILLED_REQUIRED_SELECT_END_PAD
+                                                                        )}
+                                                                    >
+                                                                    <SelectValue placeholder="Selecione o banco" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {banks.map((bank) => (
+                                                                        <SelectItem key={bank.id} value={bank.id}>
+                                                                            {bank.name} ({bank.code})
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                            </RequiredFilledWithCheck>
+                                                        )}
+                                                    />
+                                                    <FieldError message={form.formState.errors.bankId?.message || ""} />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                        Tipo de conta <Required />
+                                                    </label>
+                                                    <Controller
+                                                        name="bankAccountType"
+                                                        control={form.control}
+                                                        render={({ field }) => (
+                                                            <RequiredFilledWithCheck filled={!!field.value} variant="input">
+                                                                <Select
+                                                                    value={field.value ? String(field.value) : undefined}
+                                                                    onValueChange={(value) => field.onChange(value || null)}
+                                                                >
+                                                                    <SelectTrigger
+                                                                        className={cn(
+                                                                            "w-full",
+                                                                            field.value && FILLED_REQUIRED_CLASS,
+                                                                            field.value && FILLED_REQUIRED_SELECT_END_PAD
+                                                                        )}
+                                                                    >
+                                                                    <SelectValue placeholder="Selecione o tipo" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="CONTA_CORRENTE">Conta Corrente</SelectItem>
+                                                                    <SelectItem value="CONTA_POUPANCA">Conta Poupança</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            </RequiredFilledWithCheck>
+                                                        )}
+                                                    />
+                                                    <FieldError message={form.formState.errors.bankAccountType?.message || ""} />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                        Agência <Required />
+                                                    </label>
+                                                    <Controller
+                                                        name="bankAccountAgency"
+                                                        control={form.control}
+                                                        render={({ field }) => (
+                                                            <Input
+                                                                {...field}
+                                                                value={field.value || ""}
+                                                                placeholder="Número da agência"
+                                                                inputMode="numeric"
+                                                            />
+                                                        )}
+                                                    />
+                                                    <FieldError message={form.formState.errors.bankAccountAgency?.message || ""} />
+                                                </div>
                                             </div>
 
-                                            <div>
-                                                <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    Tipo de conta *
-                                                </label>
-                                                <Controller
-                                                    name="bankAccountType"
-                                                    control={form.control}
-                                                    render={({ field }) => (
+                                            <div className="grid gap-4
+                                            sm:grid-cols-2
+                                            lg:grid-cols-3">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                        Número da conta <Required />
+                                                    </label>
+                                                    <Controller
+                                                        name="bankAccountNumber"
+                                                        control={form.control}
+                                                        render={({ field }) => (
+                                                            <RequiredFilledWithCheck filled={!!field.value}>
+                                                                <Input
+                                                                    {...field}
+                                                                    value={field.value || ""}
+                                                                    placeholder="Número da conta"
+                                                                    inputMode="numeric"
+                                                                    className={cn(
+                                                                        field.value && FILLED_REQUIRED_CLASS,
+                                                                        field.value && FILLED_REQUIRED_INPUT_END_PAD
+                                                                    )}
+                                                                />
+                                                            </RequiredFilledWithCheck>
+                                                        )}
+                                                    />
+                                                    <FieldError message={form.formState.errors.bankAccountNumber?.message || ""} />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                        Dígito verificador <Required />
+                                                    </label>
+                                                    <Controller
+                                                        name="bankAccountDigit"
+                                                        control={form.control}
+                                                        render={({ field }) => (
+                                                            <Input
+                                                                {...field}
+                                                                value={field.value || ""}
+                                                                placeholder="Dígito"
+                                                                maxLength={2}
+                                                                inputMode="numeric"
+                                                            />
+                                                        )}
+                                                    />
+                                                    <FieldError message={form.formState.errors.bankAccountDigit?.message || ""} />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                        Nome da conta <Required />
+                                                    </label>
+                                                    <Controller
+                                                        name="bankAccountName"
+                                                        control={form.control}
+                                                        render={({ field }) => (
+                                                            <RequiredFilledWithCheck filled={!!field.value}>
+                                                                <Input
+                                                                    {...field}
+                                                                    value={field.value || ""}
+                                                                    placeholder="Nome da conta"
+                                                                    className={cn(
+                                                                        field.value && FILLED_REQUIRED_CLASS,
+                                                                        field.value && FILLED_REQUIRED_INPUT_END_PAD
+                                                                    )}
+                                                                />
+                                                            </RequiredFilledWithCheck>
+                                                        )}
+                                                    />
+                                                    <FieldError message={form.formState.errors.bankAccountName?.message || ""} />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid gap-4
+                                            sm:grid-cols-2">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                        Nome do titular <Required />
+                                                    </label>
+                                                    <Controller
+                                                        name="bankAccountOwnerName"
+                                                        control={form.control}
+                                                        render={({ field }) => (
+                                                            <RequiredFilledWithCheck filled={!!field.value}>
+                                                                <Input
+                                                                    {...field}
+                                                                    value={field.value || ""}
+                                                                    placeholder="Nome completo do titular"
+                                                                    className={cn(
+                                                                        field.value && FILLED_REQUIRED_CLASS,
+                                                                        field.value && FILLED_REQUIRED_INPUT_END_PAD
+                                                                    )}
+                                                                />
+                                                            </RequiredFilledWithCheck>
+                                                        )}
+                                                    />
+                                                    <FieldError message={form.formState.errors.bankAccountOwnerName?.message || ""} />
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                        Data de nascimento do titular <Required />
+                                                    </label>
+                                                    <Controller
+                                                        name="bankAccountOwnerBirth"
+                                                        control={form.control}
+                                                        render={({ field }) => (
+                                                            <RequiredFilledWithCheck filled={!!field.value}>
+                                                                <InputMask
+                                                                    {...field}
+                                                                    value={field.value || ""}
+                                                                    mask="00/00/0000"
+                                                                    placeholder="DD/MM/AAAA"
+                                                                    icon={FileText}
+                                                                    inputMode="numeric"
+                                                                    className={cn(
+                                                                        field.value && FILLED_REQUIRED_CLASS,
+                                                                        field.value && FILLED_REQUIRED_INPUT_END_PAD
+                                                                    )}
+                                                                />
+                                                            </RequiredFilledWithCheck>
+                                                        )}
+                                                    />
+                                                    <FieldError message={form.formState.errors.bankAccountOwnerBirth?.message || ""} />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid gap-4
+                                            sm:grid-cols-2
+                                            lg:grid-cols-3">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                        Tipo de documento <Required />
+                                                    </label>
+                                                    <Controller
+                                                        name="bankAccountOwnerDocumentType"
+                                                        control={form.control}
+                                                        render={({ field }) => (
+                                                            <RequiredFilledWithCheck filled={!!field.value} variant="input">
+                                                                <Select
+                                                                    value={field.value || undefined}
+                                                                    onValueChange={(value) => {
+                                                                        field.onChange(value || null)
+                                                                        if (!value) {
+                                                                            form.setValue("bankAccountOwnerDocument", "")
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <SelectTrigger
+                                                                        className={cn(
+                                                                            "w-full",
+                                                                            field.value && FILLED_REQUIRED_CLASS,
+                                                                            field.value && FILLED_REQUIRED_SELECT_END_PAD
+                                                                        )}
+                                                                    >
+                                                                    <SelectValue placeholder="Tipo" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="CPF">CPF</SelectItem>
+                                                                    <SelectItem value="CNPJ">CNPJ</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                            </RequiredFilledWithCheck>
+                                                        )}
+                                                    />
+                                                    <FieldError message={form.formState.errors.bankAccountOwnerDocumentType?.message || ""} />
+                                                </div>
+
+                                                <div className="lg:col-span-2">
+                                                    <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                        CPF/CNPJ do titular <Required />
+                                                    </label>
+                                                    <Controller
+                                                        name="bankAccountOwnerDocument"
+                                                        control={form.control}
+                                                        render={({ field }) => {
+                                                            const documentType = form.watch("bankAccountOwnerDocumentType")
+                                                            const mask = documentType === "CPF" ? "000.000.000-00" : "00.000.000/0000-00"
+                                                            const placeholder = documentType === "CPF" ? "000.000.000-00" : "00.000.000/0000-00"
+                                                            
+                                                            return (
+                                                                <RequiredFilledWithCheck filled={!!field.value}>
+                                                                    <InputMask
+                                                                        {...field}
+                                                                        value={field.value || ""}
+                                                                        mask={mask}
+                                                                        placeholder={placeholder}
+                                                                        icon={FileText}
+                                                                        disabled={!documentType}
+                                                                        inputMode="numeric"
+                                                                        className={cn(
+                                                                            field.value && FILLED_REQUIRED_CLASS,
+                                                                            field.value && FILLED_REQUIRED_INPUT_END_PAD
+                                                                        )}
+                                                                    />
+                                                                </RequiredFilledWithCheck>
+                                                            )
+                                                        }}
+                                                    />
+                                                    <FieldError message={form.formState.errors.bankAccountOwnerDocument?.message || ""} />
+                                                </div>
+                                            </div>
+                                        </CollapsibleContent>
+                                    </div>
+                                </Collapsible>
+
+                                <Collapsible
+                                    open={openSections.pix}
+                                    onOpenChange={(open) => setOpenSections(prev => ({ ...prev, pix: open }))}
+                                >
+                                    <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
+                                    sm:p-8 shadow-sm">
+                                        <CollapsibleTrigger className="w-full">
+                                            <div className="flex items-center justify-between pb-4 border-b border-psi-dark/10">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
+                                                        <Wallet className="h-5 w-5 text-psi-primary" />
+                                                    </div>
+                                                    <div className="text-start">
+                                                        <h2 className="text-lg font-medium text-psi-dark">Chave PIX</h2>
+                                                        <p className="text-sm text-psi-dark/60">Opcional - Se preencher, todos os campos são obrigatórios</p>
+                                                        <p className="text-xs text-psi-dark/50 mt-1">Taxa de transferência: R$ 2,00</p>
+                                                    </div>
+                                                </div>
+                                                {openSections.pix ? (
+                                                    <ChevronUp className="h-5 w-5 text-psi-dark/60" />
+                                                ) : (
+                                                    <ChevronDown className="h-5 w-5 text-psi-dark/60" />
+                                                )}
+                                            </div>
+                                        </CollapsibleTrigger>
+                                        <CollapsibleContent className="space-y-6 pt-6">
+                                            <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4">
+                                                <p className="text-sm text-amber-900">
+                                                    <strong>Importante:</strong> É necessário preencher pelo menos uma conta bancária ou chave PIX para receber os pagamentos.
+                                                </p>
+                                            </div>
+
+                                            <div className="grid gap-4
+                                            sm:grid-cols-2">
+                                        <div>
+                                            <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                Tipo de chave PIX <Required />
+                                            </label>
+                                            <Controller
+                                                name="pixAddressType"
+                                                control={form.control}
+                                                render={({ field }) => (
+                                                    <RequiredFilledWithCheck filled={!!field.value} variant="input">
                                                         <Select
                                                             value={field.value ? String(field.value) : undefined}
                                                             onValueChange={(value) => field.onChange(value || null)}
                                                         >
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Selecione o tipo" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="CONTA_CORRENTE">Conta Corrente</SelectItem>
-                                                                <SelectItem value="CONTA_POUPANCA">Conta Poupança</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    )}
-                                                />
-                                                <FieldError message={form.formState.errors.bankAccountType?.message || ""} />
-                                            </div>
+                                                            <SelectTrigger
+                                                                className={cn(
+                                                                    "w-full",
+                                                                    field.value && FILLED_REQUIRED_CLASS,
+                                                                    field.value && FILLED_REQUIRED_SELECT_END_PAD
+                                                                )}
+                                                            >
+                                                            <SelectValue placeholder="Selecione o tipo" />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="CPF">CPF</SelectItem>
+                                                            <SelectItem value="CNPJ">CNPJ</SelectItem>
+                                                            <SelectItem value="EMAIL">E-mail</SelectItem>
+                                                            <SelectItem value="PHONE">Telefone</SelectItem>
+                                                            <SelectItem value="EVP">Chave aleatória</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    </RequiredFilledWithCheck>
+                                                )}
+                                            />
+                                            <FieldError message={form.formState.errors.pixAddressType?.message || ""} />
+                                        </div>
 
-                                            <div>
-                                                <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    Agência *
-                                                </label>
-                                                <Controller
-                                                    name="bankAccountAgency"
-                                                    control={form.control}
-                                                    render={({ field }) => (
+                                        <div>
+                                            <label className="block text-sm font-medium text-psi-dark mb-2">
+                                                Chave PIX <Required />
+                                            </label>
+                                            <Controller
+                                                name="pixAddressKey"
+                                                control={form.control}
+                                                render={({ field }) => (
+                                                    <RequiredFilledWithCheck filled={!!field.value}>
                                                         <Input
                                                             {...field}
                                                             value={field.value || ""}
-                                                            placeholder="Número da agência"
-                                                            inputMode="numeric"
+                                                            placeholder="Digite a chave PIX"
+                                                            className={cn(
+                                                                field.value && FILLED_REQUIRED_CLASS,
+                                                                field.value && FILLED_REQUIRED_INPUT_END_PAD
+                                                            )}
                                                         />
-                                                    )}
-                                                />
-                                                <FieldError message={form.formState.errors.bankAccountAgency?.message || ""} />
-                                            </div>
+                                                    </RequiredFilledWithCheck>
+                                                )}
+                                            />
+                                            <FieldError message={form.formState.errors.pixAddressKey?.message || ""} />
                                         </div>
-
-                                        <div className="grid gap-4
-                                        sm:grid-cols-2
-                                        lg:grid-cols-3">
-                                            <div>
-                                                <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    Número da conta *
-                                                </label>
-                                                <Controller
-                                                    name="bankAccountNumber"
-                                                    control={form.control}
-                                                    render={({ field }) => (
-                                                        <Input
-                                                            {...field}
-                                                            value={field.value || ""}
-                                                            placeholder="Número da conta"
-                                                            inputMode="numeric"
-                                                        />
-                                                    )}
-                                                />
-                                                <FieldError message={form.formState.errors.bankAccountNumber?.message || ""} />
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    Dígito verificador *
-                                                </label>
-                                                <Controller
-                                                    name="bankAccountDigit"
-                                                    control={form.control}
-                                                    render={({ field }) => (
-                                                        <Input
-                                                            {...field}
-                                                            value={field.value || ""}
-                                                            placeholder="Dígito"
-                                                            maxLength={2}
-                                                            inputMode="numeric"
-                                                        />
-                                                    )}
-                                                />
-                                                <FieldError message={form.formState.errors.bankAccountDigit?.message || ""} />
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    Nome da conta *
-                                                </label>
-                                                <Controller
-                                                    name="bankAccountName"
-                                                    control={form.control}
-                                                    render={({ field }) => (
-                                                        <Input
-                                                            {...field}
-                                                            value={field.value || ""}
-                                                            placeholder="Nome da conta"
-                                                        />
-                                                    )}
-                                                />
-                                                <FieldError message={form.formState.errors.bankAccountName?.message || ""} />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid gap-4
-                                        sm:grid-cols-2">
-                                            <div>
-                                                <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    Nome do titular *
-                                                </label>
-                                                <Controller
-                                                    name="bankAccountOwnerName"
-                                                    control={form.control}
-                                                    render={({ field }) => (
-                                                        <Input
-                                                            {...field}
-                                                            value={field.value || ""}
-                                                            placeholder="Nome completo do titular"
-                                                        />
-                                                    )}
-                                                />
-                                                <FieldError message={form.formState.errors.bankAccountOwnerName?.message || ""} />
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    Data de nascimento do titular *
-                                                </label>
-                                                <Controller
-                                                    name="bankAccountOwnerBirth"
-                                                    control={form.control}
-                                                    render={({ field }) => (
-                                                        <InputMask
-                                                            {...field}
-                                                            value={field.value || ""}
-                                                            mask="00/00/0000"
-                                                            placeholder="DD/MM/AAAA"
-                                                            icon={FileText}
-                                                            inputMode="numeric"
-                                                        />
-                                                    )}
-                                                />
-                                                <FieldError message={form.formState.errors.bankAccountOwnerBirth?.message || ""} />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid gap-4
-                                        sm:grid-cols-2
-                                        lg:grid-cols-3">
-                                            <div>
-                                                <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    Tipo de documento *
-                                                </label>
-                                                <Controller
-                                                    name="bankAccountOwnerDocumentType"
-                                                    control={form.control}
-                                                    render={({ field }) => (
-                                                        <Select
-                                                            value={field.value || undefined}
-                                                            onValueChange={(value) => {
-                                                                field.onChange(value || null)
-                                                                if (!value) {
-                                                                    form.setValue("bankAccountOwnerDocument", "")
-                                                                }
-                                                            }}
-                                                        >
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Tipo" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="CPF">CPF</SelectItem>
-                                                                <SelectItem value="CNPJ">CNPJ</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    )}
-                                                />
-                                                <FieldError message={form.formState.errors.bankAccountOwnerDocumentType?.message || ""} />
-                                            </div>
-
-                                            <div className="lg:col-span-2">
-                                                <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    CPF/CNPJ do titular *
-                                                </label>
-                                                <Controller
-                                                    name="bankAccountOwnerDocument"
-                                                    control={form.control}
-                                                    render={({ field }) => {
-                                                        const documentType = form.watch("bankAccountOwnerDocumentType")
-                                                        const mask = documentType === "CPF" ? "000.000.000-00" : "00.000.000/0000-00"
-                                                        const placeholder = documentType === "CPF" ? "000.000.000-00" : "00.000.000/0000-00"
-                                                        
-                                                        return (
-                                                            <InputMask
-                                                                {...field}
-                                                                value={field.value || ""}
-                                                                mask={mask}
-                                                                placeholder={placeholder}
-                                                                icon={FileText}
-                                                                disabled={!documentType}
-                                                                inputMode="numeric"
-                                                            />
-                                                        )
-                                                    }}
-                                                />
-                                                <FieldError message={form.formState.errors.bankAccountOwnerDocument?.message || ""} />
-                                            </div>
-                                        </div>
-                                    </CollapsibleContent>
-                                </div>
-                            </Collapsible>
-
-                            <Collapsible
-                                open={openSections.pix}
-                                onOpenChange={(open) => setOpenSections(prev => ({ ...prev, pix: open }))}
-                            >
-                                <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
-                                sm:p-8 shadow-sm">
-                                    <CollapsibleTrigger className="w-full">
-                                        <div className="flex items-center justify-between pb-4 border-b border-psi-dark/10">
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-10 w-10 rounded-xl bg-psi-primary/10 flex items-center justify-center">
-                                                    <Wallet className="h-5 w-5 text-psi-primary" />
-                                                </div>
-                                                <div className="text-start">
-                                                    <h2 className="text-lg font-medium text-psi-dark">Chave PIX</h2>
-                                                    <p className="text-sm text-psi-dark/60">Opcional - Se preencher, todos os campos marcados com * são obrigatórios</p>
-                                                    <p className="text-xs text-psi-dark/50 mt-1">Taxa de transferência: R$ 2,00</p>
-                                                </div>
-                                            </div>
-                                            {openSections.pix ? (
-                                                <ChevronUp className="h-5 w-5 text-psi-dark/60" />
-                                            ) : (
-                                                <ChevronDown className="h-5 w-5 text-psi-dark/60" />
-                                            )}
-                                        </div>
-                                    </CollapsibleTrigger>
-                                    <CollapsibleContent className="space-y-6 pt-6">
-                                        <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4">
-                                            <p className="text-sm text-amber-900">
-                                                <strong>Importante:</strong> É necessário preencher pelo menos uma conta bancária ou chave PIX para receber os pagamentos.
-                                            </p>
-                                        </div>
-
-                                        <div className="grid gap-4
-                                        sm:grid-cols-2">
-                                    <div>
-                                        <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Tipo de chave PIX *
-                                        </label>
-                                        <Controller
-                                            name="pixAddressType"
-                                            control={form.control}
-                                            render={({ field }) => (
-                                                <Select
-                                                    value={field.value ? String(field.value) : undefined}
-                                                    onValueChange={(value) => field.onChange(value || null)}
-                                                >
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Selecione o tipo" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="CPF">CPF</SelectItem>
-                                                        <SelectItem value="CNPJ">CNPJ</SelectItem>
-                                                        <SelectItem value="EMAIL">E-mail</SelectItem>
-                                                        <SelectItem value="PHONE">Telefone</SelectItem>
-                                                        <SelectItem value="EVP">Chave aleatória</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
-                                        />
-                                        <FieldError message={form.formState.errors.pixAddressType?.message || ""} />
                                     </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-psi-dark mb-2">
-                                            Chave PIX *
-                                        </label>
-                                        <Controller
-                                            name="pixAddressKey"
-                                            control={form.control}
-                                            render={({ field }) => (
-                                                <Input
-                                                    {...field}
-                                                    value={field.value || ""}
-                                                    placeholder="Digite a chave PIX"
-                                                />
-                                            )}
-                                        />
-                                        <FieldError message={form.formState.errors.pixAddressKey?.message || ""} />
+                                        </CollapsibleContent>
                                     </div>
-                                </div>
-                                    </CollapsibleContent>
-                                </div>
-                            </Collapsible>
+                                </Collapsible>
+                            </div>
+
 
                             {hasBankAccount && hasPix && (
                                 <div className="rounded-2xl border border-[#E4E6F0] bg-white p-6
@@ -1426,11 +1873,11 @@ const MeuPerfilOrganizer = () => {
                                             <div className="flex items-center justify-between pb-4 border-b border-psi-dark/10">
                                                 <div className="flex items-center gap-3">
                                                     <div className="h-10 w-10 rounded-xl bg-red-100 flex items-center justify-center">
-                                                        <FileText className="h-5 w-5 text-red-600" />
+                                                        <FileText className="h-5 w-5 text-red-500" />
                                                     </div>
                                                     <div className="text-start">
                                                         <h2 className="text-lg font-medium text-psi-dark">Documentos de Identidade</h2>
-                                                        <p className="text-sm text-red-600 font-medium">Obrigatório</p>
+                                                        <p className="text-sm text-red-500 font-medium">Obrigatório *</p>
                                                     </div>
                                                 </div>
                                                 {openSections.documents ? (
@@ -1451,18 +1898,22 @@ const MeuPerfilOrganizer = () => {
                                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
                                         <div>
                                             <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                Foto da frente do RG *
+                                                Foto da frente do RG <Required />
                                             </label>
                                             <Controller
                                                 name="identityDocumentFronUrl"
                                                 control={form.control}
                                                 render={({ field }) => (
-                                                    <ImageUpload
-                                                        value={field.value}
-                                                        onChange={(file) => field.onChange(file)}
-                                                        error={form.formState.errors.identityDocumentFronUrl?.message}
-                                                        variant="document"
-                                                    />
+                                                    <div className={cn("relative rounded-xl transition-colors", field.value && "ring-2 ring-lime-300 bg-lime-50/50 p-1")}>
+                                                        {field.value && (
+                                                            <Check className="pointer-events-none absolute right-2 top-2 z-1 size-5 text-lime-600" aria-hidden />
+                                                        )}
+                                                        <ImageUpload
+                                                            value={field.value}
+                                                            onChange={(file) => field.onChange(file)}
+                                                            variant="document"
+                                                        />
+                                                    </div>
                                                 )}
                                             />
                                             <FieldError message={form.formState.errors.identityDocumentFronUrl?.message || ""} />
@@ -1470,18 +1921,22 @@ const MeuPerfilOrganizer = () => {
 
                                         <div>
                                             <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                Foto do verso do RG *
+                                                Foto do verso do RG <Required />
                                             </label>
                                             <Controller
                                                 name="identityDocumentBackUrl"
                                                 control={form.control}
                                                 render={({ field }) => (
-                                                    <ImageUpload
-                                                        value={field.value}
-                                                        onChange={(file) => field.onChange(file)}
-                                                        error={form.formState.errors.identityDocumentBackUrl?.message}
-                                                        variant="document"
-                                                    />
+                                                    <div className={cn("relative rounded-xl transition-colors", field.value && "ring-2 ring-lime-300 bg-lime-50/50 p-1")}>
+                                                        {field.value && (
+                                                            <Check className="pointer-events-none absolute right-2 top-2 z-1 size-5 text-lime-600" aria-hidden />
+                                                        )}
+                                                        <ImageUpload
+                                                            value={field.value}
+                                                            onChange={(file) => field.onChange(file)}
+                                                            variant="document"
+                                                        />
+                                                    </div>
                                                 )}
                                             />
                                             <FieldError message={form.formState.errors.identityDocumentBackUrl?.message || ""} />
@@ -1489,18 +1944,22 @@ const MeuPerfilOrganizer = () => {
 
                                         <div>
                                             <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                Selfie segurando o RG *
+                                                Selfie segurando o RG <Required />
                                             </label>
                                             <Controller
                                                 name="identityDocumentSelfieUrl"
                                                 control={form.control}
                                                 render={({ field }) => (
-                                                    <ImageUpload
-                                                        value={field.value}
-                                                        onChange={(file) => field.onChange(file)}
-                                                        error={form.formState.errors.identityDocumentSelfieUrl?.message}
-                                                        variant="document"
-                                                    />
+                                                    <div className={cn("relative rounded-xl transition-colors", field.value && "ring-2 ring-lime-300 bg-lime-50/50 p-1")}>
+                                                        {field.value && (
+                                                            <Check className="pointer-events-none absolute right-2 top-2 z-1 size-5 text-lime-600" aria-hidden />
+                                                        )}
+                                                        <ImageUpload
+                                                            value={field.value}
+                                                            onChange={(file) => field.onChange(file)}
+                                                            variant="document"
+                                                        />
+                                                    </div>
                                                 )}
                                             />
                                             <FieldError message={form.formState.errors.identityDocumentSelfieUrl?.message || ""} />
@@ -1525,7 +1984,7 @@ const MeuPerfilOrganizer = () => {
                                                 </div>
                                                 <div className="text-start">
                                                     <h2 className="text-lg font-medium text-psi-dark">Redes Sociais</h2>
-                                                    <p className="text-sm text-psi-dark/60">Opcional - Links para suas redes sociais</p>
+                                                    <p className="text-sm text-psi-dark/60"><span className="font-bold">(Opcional)</span> Links para suas redes sociais</p>
                                                 </div>
                                             </div>
                                             {openSections.socialMedia ? (
@@ -1594,7 +2053,7 @@ const MeuPerfilOrganizer = () => {
                                                 </div>
                                                 <div className="text-start">
                                                     <h2 className="text-lg font-medium text-psi-dark">Contato de Suporte</h2>
-                                                    <p className="text-sm text-amber-700 font-medium">Obrigatório - Preencha pelo menos um dos campos marcados com *</p>
+                                                    <p className="text-sm text-psi-dark/60 font-medium"><span className="font-bold">(Obrigatório)</span> - Preencha pelo menos um dos campos</p>
                                                 </div>
                                             </div>
                                             {openSections.support ? (
@@ -1607,7 +2066,7 @@ const MeuPerfilOrganizer = () => {
                                     <CollapsibleContent className="space-y-6 pt-6">
                                         <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4">
                                             <p className="text-sm text-amber-900">
-                                                <strong>Importante:</strong> É necessário informar pelo menos um email ou telefone de suporte para que os clientes possam entrar em contato caso necessário.
+                                                <strong>Importante:</strong> É necessário informar pelo menos um e-mail ou telefone de suporte para que os clientes possam entrar em contato caso necessário.
                                             </p>
                                         </div>
 
@@ -1615,7 +2074,7 @@ const MeuPerfilOrganizer = () => {
                                         sm:grid-cols-2">
                                             <div>
                                                 <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    Email de suporte *
+                                                    E-mail de suporte
                                                 </label>
                                                 <Controller
                                                     name="supportEmail"
@@ -1635,7 +2094,7 @@ const MeuPerfilOrganizer = () => {
 
                                             <div>
                                                 <label className="block text-sm font-medium text-psi-dark mb-2">
-                                                    Telefone de suporte *
+                                                    Telefone de suporte
                                                 </label>
                                                 <Controller
                                                     name="supportPhone"
@@ -1662,6 +2121,7 @@ const MeuPerfilOrganizer = () => {
                                 <Button
                                     type="submit"
                                     variant="primary"
+                                    form="meu-perfil-organizer-form"
                                     disabled={isUpdating}
                                 >
                                     {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -1672,6 +2132,22 @@ const MeuPerfilOrganizer = () => {
                     </div>
                 </div>
             </div>
+
+            <Dialog open={showConfirmDataModal} onOpenChange={setShowConfirmDataModal}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Dados preenchidos</DialogTitle>
+                        <DialogDescription>
+                            Os dados da empresa foram preenchidos automaticamente. Por favor, confira se todas as informações estão corretas antes de salvar.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button type="button" variant="primary" onClick={() => setShowConfirmDataModal(false)}>
+                            Entendi, vou conferir
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </Background>
     )
 }

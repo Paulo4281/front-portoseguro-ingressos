@@ -4,13 +4,12 @@ import Link from "next/link"
 import Logo from "@/components/Logo/Logo"
 import { Download, Shield, HeadphonesIcon, CreditCard } from "lucide-react"
 import { usePathname } from "next/navigation"
-import { Button } from "../ui/button"
 
 const navigation = [
     {
         title: "Explore",
         items: [
-            { label: "Eventos", href: "/eventos" },
+            { label: "Eventos", href: "/ver-eventos" },
         ]
     },
     {

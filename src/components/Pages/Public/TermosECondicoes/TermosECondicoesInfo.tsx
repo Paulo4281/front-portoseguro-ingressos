@@ -1,6 +1,7 @@
 "use client"
 
-import { FileText, RefreshCw, CreditCard, QrCode, Wallet, AlertCircle, Shield, Users, CheckCircle2 } from "lucide-react"
+import { FileText, RefreshCw, CreditCard, QrCode, Wallet, AlertCircle, Shield, Users, CheckCircle2, HeartHandshake, XCircle } from "lucide-react"
+import Link from "next/link"
 import { Background } from "@/components/Background/Background"
 
 const TermosECondicoesInfo = () => {
@@ -73,6 +74,93 @@ const TermosECondicoesInfo = () => {
                             </div>
                         </section>
 
+                        <section id="termos-uso-permitido" className="bg-white rounded-xl border border-psi-primary/20 p-6
+                        sm:p-8 space-y-4 scroll-mt-28">
+                            <div className="flex items-start gap-4">
+                                <div className="p-3 rounded-lg bg-psi-primary/10 shrink-0">
+                                    <HeartHandshake className="h-6 w-6 text-psi-primary" />
+                                </div>
+                                <div className="flex-1 space-y-4">
+                                    <h2 className="text-2xl font-semibold text-psi-dark">2. Uso permitido da plataforma e atividades vedadas</h2>
+                                    <p className="text-psi-dark/70 leading-relaxed">
+                                        Esta cláusula complementa a aceitação dos Termos e deixa explícito, sem prejuízo das demais obrigações legais e contratuais,{' '}
+                                        <strong className="text-psi-dark">para quem</strong> a plataforma se destina e{' '}
+                                        <strong className="text-psi-dark">quais usos são proibidos</strong>. Um resumo orientativo com a mesma finalidade também aparece na página inicial, na seção{' '}
+                                        <span className="text-psi-primary font-medium underline underline-offset-2 hover:text-psi-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-psi-primary rounded">
+                                            Para quem é — e para quem não é
+                                        </span>
+                                        .
+                                    </p>
+
+                                    <div className="rounded-lg border border-emerald-200/90 bg-emerald-50/60 p-4 sm:p-5 space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle2 className="h-5 w-5 text-emerald-700 shrink-0" />
+                                            <h3 className="font-semibold text-psi-dark">2.1. Para quem a plataforma se destina</h3>
+                                        </div>
+                                        <p className="text-psi-dark/75 text-sm leading-relaxed">
+                                            A plataforma Porto Seguro Ingressos destina-se à intermediação tecnológica da venda de ingressos para{' '}
+                                            <strong className="text-psi-dark">eventos presenciais ou online legítimos</strong> vinculados à região de Porto Seguro, realizada por organizadores submetidos ao processo de verificação, e à compra desses ingressos por compradores (residentes, visitantes ou pessoas jurídicas), com pagamento e entrega de ingresso digital de forma segura.
+                                        </p>
+                                        <ul className="space-y-2 text-psi-dark/75 text-sm">
+                                            <li className="flex items-start gap-2">
+                                                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                                                <span>
+                                                    <strong className="text-psi-dark">Organizadores:</strong> produtoras, casas de show, espaços e demais responsáveis por eventos culturais, artísticos, de entretenimento ou correlatos presenciais, em conformidade com a legislação aplicável (incluindo autorizações, alvarás e exigências municipais ou setoriais, quando couber).
+                                                </span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                                                <span>
+                                                    <strong className="text-psi-dark">Compradores:</strong> quem adquire ingressos para participação legítima nos eventos divulgados, mediante cadastro e pagamento pelos meios disponibilizados na plataforma.
+                                                </span>
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="rounded-lg border border-red-200/90 bg-red-50/50 p-4 sm:p-5 space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <Shield className="h-5 w-5 text-red-700 shrink-0" />
+                                            <h3 className="font-semibold text-psi-dark">2.2. Usos não admitidos — para quem a plataforma não se destina</h3>
+                                        </div>
+                                        <p className="text-psi-dark/75 text-sm leading-relaxed">
+                                            É <strong className="text-psi-dark">expressamente vedado</strong> utilizar a plataforma — inclusive para cadastro, criação ou divulgação de eventos, páginas públicas, anúncios, cobranças ou qualquer transação — quando a operação envolver, promover ou se beneficiar de qualquer dos cenários abaixo (lista exemplificativa e não exaustiva, desde que compatível com a lei e com a política da plataforma):
+                                        </p>
+                                        <ul className="space-y-2 text-psi-dark/75 text-sm">
+                                            {[
+                                                'black, hot ou nichos adultos',
+                                                'rifas, cassinos, apostas ou sorteios',
+                                                'qualquer atividade ilegal ou de alto risco à vida humana',
+                                                'fraudes, golpes ou pirâmides financeiras',
+                                                'produtos falsificados, drogas ou armas',
+                                                'deepfakes, invasões, spams ou vazamento de dados',
+                                                'conteúdo de ódio, violência ou discriminação',
+                                            ].map((item) => (
+                                                <li key={item} className="flex items-start gap-2">
+                                                    <XCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+                                                    <span>{item}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        <p className="text-psi-dark/75 text-sm leading-relaxed">
+                                            A mera listagem acima não autoriza usos não listados que sejam ilícitos, abusivos ou incompatíveis com o propósito da plataforma. Dúvidas sobre enquadramento devem ser esclarecidas com o suporte <strong className="text-psi-dark">antes</strong> de publicar eventos ou receber pagamentos.
+                                        </p>
+                                    </div>
+
+                                    <div className="rounded-lg border border-amber-200 bg-amber-50/80 p-4 sm:p-5">
+                                        <div className="flex items-start gap-3">
+                                            <AlertCircle className="h-5 w-5 text-amber-700 shrink-0 mt-0.5" />
+                                            <div className="flex-1 space-y-2">
+                                                <h3 className="font-semibold text-amber-950">2.3. Consequências do descumprimento</h3>
+                                                <p className="text-amber-950/90 text-sm leading-relaxed">
+                                                    O descumprimento desta cláusula poderá implicar, conforme a gravidade e a análise caso a caso: recusa ou revogação de cadastro; remoção de eventos, conteúdos ou mídias; suspensão ou encerramento de conta; bloqueio ou estorno de transações quando exigido por lei, por parceiros de pagamento ou por políticas antifraude; e comunicação às autoridades competentes quando houver fundado indício de ilícito. Nada nesta cláusula limita o exercício de direitos pela plataforma, pelos usuários ou por terceiros em sede judicial ou administrativa.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
                         <section className="bg-white rounded-xl border border-psi-primary/20 p-6
                         sm:p-8 space-y-4">
                             <div className="flex items-start gap-4">
@@ -80,7 +168,7 @@ const TermosECondicoesInfo = () => {
                                     <RefreshCw className="h-6 w-6 text-psi-primary" />
                                 </div>
                                 <div className="flex-1 space-y-3">
-                                    <h2 className="text-2xl font-semibold text-psi-dark">2. Política de Reembolso</h2>
+                                    <h2 className="text-2xl font-semibold text-psi-dark">3. Política de Reembolso</h2>
                                     <p className="text-psi-dark/70 leading-relaxed">
                                         O reembolso de ingressos pode ocorrer nas seguintes situações:
                                     </p>
@@ -89,7 +177,7 @@ const TermosECondicoesInfo = () => {
                                             <div className="flex items-start gap-3">
                                                 <CheckCircle2 className="h-5 w-5 text-psi-primary shrink-0 mt-0.5" />
                                                 <div className="flex-1">
-                                                    <h3 className="font-medium text-psi-dark mb-2">2.1. Direito de Arrependimento (7 dias)</h3>
+                                                    <h3 className="font-medium text-psi-dark mb-2">3.1. Direito de Arrependimento (7 dias)</h3>
                                                     <p className="text-psi-dark/70 text-sm leading-relaxed">
                                                         De acordo com o Código de Defesa do Consumidor (CDC), Art. 49, você tem direito ao arrependimento da compra em até 7 dias corridos, 
                                                         contados a partir da data da compra. <strong className="text-psi-dark">Importante:</strong> Este direito não se aplica se o evento ocorrer em menos de 7 dias 
@@ -102,7 +190,7 @@ const TermosECondicoesInfo = () => {
                                             <div className="flex items-start gap-3">
                                                 <CheckCircle2 className="h-5 w-5 text-psi-primary shrink-0 mt-0.5" />
                                                 <div className="flex-1">
-                                                    <h3 className="font-medium text-psi-dark mb-2">2.2. Adiamento de Evento</h3>
+                                                    <h3 className="font-medium text-psi-dark mb-2">3.2. Adiamento de Evento</h3>
                                                     <p className="text-psi-dark/70 text-sm leading-relaxed">
                                                         Em caso de adiamento do evento, o reembolso é <strong className="text-psi-dark">facultativo</strong> por parte do consumidor. 
                                                         Você pode optar por manter seu ingresso para a nova data ou solicitar o reembolso integral, incluindo a taxa de serviço.
@@ -114,7 +202,7 @@ const TermosECondicoesInfo = () => {
                                             <div className="flex items-start gap-3">
                                                 <CheckCircle2 className="h-5 w-5 text-psi-primary shrink-0 mt-0.5" />
                                                 <div className="flex-1">
-                                                    <h3 className="font-medium text-psi-dark mb-2">2.3. Cancelamento de Evento</h3>
+                                                    <h3 className="font-medium text-psi-dark mb-2">3.3. Cancelamento de Evento</h3>
                                                     <p className="text-psi-dark/70 text-sm leading-relaxed">
                                                         Se um evento for cancelado pelo organizador, o reembolso será <strong className="text-psi-dark">integral e automático</strong>, 
                                                         incluindo o valor do ingresso e a taxa de serviço. O valor será devolvido automaticamente na forma de pagamento original.
@@ -126,7 +214,7 @@ const TermosECondicoesInfo = () => {
                                             <div className="flex items-start gap-3">
                                                 <CheckCircle2 className="h-5 w-5 text-psi-primary shrink-0 mt-0.5" />
                                                 <div className="flex-1">
-                                                    <h3 className="font-medium text-psi-dark mb-2">2.4. Cancelamento de Ingresso pelo Organizador</h3>
+                                                    <h3 className="font-medium text-psi-dark mb-2">3.4. Cancelamento de Ingresso pelo Organizador</h3>
                                                     <p className="text-psi-dark/70 text-sm leading-relaxed">
                                                         O organizador do evento pode optar pelo cancelamento de um ingresso específico a qualquer momento. 
                                                         Nessa situação, o valor do ingresso e a taxa de serviço são <strong className="text-psi-dark">devolvidos integralmente</strong> ao comprador, por meio do mesmo método de pagamento utilizado na compra.
@@ -146,10 +234,10 @@ const TermosECondicoesInfo = () => {
                                     <CreditCard className="h-6 w-6 text-psi-primary" />
                                 </div>
                                 <div className="flex-1 space-y-3">
-                                    <h2 className="text-2xl font-semibold text-psi-dark">3. Taxas e Valores</h2>
+                                    <h2 className="text-2xl font-semibold text-psi-dark">4. Taxas e Valores</h2>
                                     <div className="space-y-4">
                                         <div>
-                                            <h3 className="font-medium text-psi-dark mb-2">3.1. Taxa de Serviço</h3>
+                                            <h3 className="font-medium text-psi-dark mb-2">4.1. Taxa de Serviço</h3>
                                             <p className="text-psi-dark/70 leading-relaxed">
                                                 A taxa de serviço cobrada ao cliente é de <strong className="text-psi-primary">R$ 1,99 por ingresso</strong>. 
                                                 Este valor pode aumentar caso o organizador opte por repassar parte de sua taxa para o comprador.
@@ -179,7 +267,7 @@ const TermosECondicoesInfo = () => {
                                     <QrCode className="h-6 w-6 text-psi-primary" />
                                 </div>
                                 <div className="flex-1 space-y-3">
-                                    <h2 className="text-2xl font-semibold text-psi-dark">4. Responsabilidade pelo QR Code</h2>
+                                    <h2 className="text-2xl font-semibold text-psi-dark">5. Responsabilidade pelo QR Code</h2>
                                     <div className="bg-transparent rounded-lg p-4">
                                         <div className="flex items-start gap-3">
                                             <AlertCircle className="h-5 w-5 text-purple-600 shrink-0 mt-0.5" />
@@ -224,20 +312,20 @@ const TermosECondicoesInfo = () => {
                                     <Shield className="h-6 w-6 text-psi-primary" />
                                 </div>
                                 <div className="flex-1 space-y-3">
-                                    <h2 className="text-2xl font-semibold text-psi-dark">5. Seguro da Compra</h2>
+                                    <h2 className="text-2xl font-semibold text-psi-dark">6. Seguro da Compra</h2>
                                     <p className="text-psi-dark/70 leading-relaxed">
                                         Oferecemos um seguro opcional para proteger sua compra de ingressos contra imprevistos que possam impedir sua participação no evento.
                                     </p>
                                     <div className="space-y-4 pt-2">
                                         <div className="bg-psi-primary/5 rounded-lg p-4 border border-psi-primary/10">
-                                            <h3 className="font-medium text-psi-dark mb-2">5.1. Contratação do Seguro</h3>
+                                            <h3 className="font-medium text-psi-dark mb-2">6.1. Contratação do Seguro</h3>
                                             <p className="text-psi-dark/70 text-sm leading-relaxed">
                                                 O seguro da compra é <strong className="text-psi-dark">opcional</strong> e pode ser contratado durante o processo de finalização da compra. 
                                                 Você pode escolher incluir ou não o seguro antes de finalizar o pagamento.
                                             </p>
                                         </div>
                                         <div className="bg-psi-primary/5 rounded-lg p-4 border border-psi-primary/10">
-                                            <h3 className="font-medium text-psi-dark mb-2">5.2. Valor do Seguro</h3>
+                                            <h3 className="font-medium text-psi-dark mb-2">6.2. Valor do Seguro</h3>
                                             <p className="text-psi-dark/70 text-sm leading-relaxed mb-2">
                                                 O valor do seguro é calculado com base no valor total da compra (incluindo taxas da plataforma, mas antes das taxas de pagamento do gateway):
                                             </p>
@@ -253,7 +341,7 @@ const TermosECondicoesInfo = () => {
                                             </ul>
                                         </div>
                                         <div className="bg-psi-primary/5 rounded-lg p-4 border border-psi-primary/10">
-                                            <h3 className="font-medium text-psi-dark mb-2">5.3. Cobertura do Seguro</h3>
+                                            <h3 className="font-medium text-psi-dark mb-2">6.3. Cobertura do Seguro</h3>
                                             <p className="text-psi-dark/70 text-sm leading-relaxed">
                                                 O seguro cobre situações imprevistas que possam impedir sua participação no evento, como problemas de saúde, emergências familiares, 
                                                 entre outras situações cobertas pela apólice. O seguro oferece proteção adicional para sua compra, facilitando o processo de reembolso 
@@ -273,7 +361,7 @@ const TermosECondicoesInfo = () => {
                                             </div>
                                         </div>
                                         <div className="bg-psi-primary/5 rounded-lg p-4 border border-psi-primary/10">
-                                            <h3 className="font-medium text-psi-dark mb-2">5.4. Aplicação do Seguro</h3>
+                                            <h3 className="font-medium text-psi-dark mb-2">6.4. Aplicação do Seguro</h3>
                                             <p className="text-psi-dark/70 text-sm leading-relaxed">
                                                 O seguro é aplicado a cada ingresso individualmente. Quando você contrata o seguro, ele é vinculado a cada ingresso da compra, 
                                                 garantindo proteção individual para cada um deles.
@@ -291,25 +379,25 @@ const TermosECondicoesInfo = () => {
                                     <Wallet className="h-6 w-6 text-psi-primary" />
                                 </div>
                                 <div className="flex-1 space-y-3">
-                                    <h2 className="text-2xl font-semibold text-psi-dark">6. Repasse aos Organizadores</h2>
+                                    <h2 className="text-2xl font-semibold text-psi-dark">7. Repasse aos Organizadores</h2>
                                     <p className="text-psi-dark/70 leading-relaxed">
                                         O repasse do valor das vendas de ingressos aos organizadores segue as seguintes regras:
                                     </p>
                                     <div className="space-y-3 pt-2">
                                         <div className="bg-psi-primary/5 rounded-lg p-4 border border-psi-primary/10">
-                                            <h3 className="font-medium text-psi-dark mb-2">6.1. Prazo de Repasse</h3>
+                                            <h3 className="font-medium text-psi-dark mb-2">7.1. Prazo de Repasse</h3>
                                             <p className="text-psi-dark/70 text-sm leading-relaxed">
                                                 O repasse é realizado <strong className="text-psi-dark">após a conclusão do evento</strong>, em até <strong className="text-psi-primary">72 horas</strong>.
                                             </p>
                                         </div>
                                         <div className="bg-psi-primary/5 rounded-lg p-4 border border-psi-primary/10">
-                                            <h3 className="font-medium text-psi-dark mb-2">6.2. Pagamentos via PIX</h3>
+                                            <h3 className="font-medium text-psi-dark mb-2">7.2. Pagamentos via PIX</h3>
                                             <p className="text-psi-dark/70 text-sm leading-relaxed">
                                                 Para pagamentos realizados via PIX, que são recebidos integralmente, o repasse será feito em até <strong className="text-psi-primary">72 horas</strong> após o término do evento.
                                             </p>
                                         </div>
                                         <div className="bg-psi-primary/5 rounded-lg p-4 border border-psi-primary/10">
-                                            <h3 className="font-medium text-psi-dark mb-2">6.3. Pagamentos via Cartão de Crédito</h3>
+                                            <h3 className="font-medium text-psi-dark mb-2">7.3. Pagamentos via Cartão de Crédito</h3>
                                             <p className="text-psi-dark/70 text-sm leading-relaxed">
                                                 Para compras parceladas no cartão de crédito, o repasse será feito <strong className="text-psi-dark">conforme as parcelas forem sendo pagas</strong>. 
                                                 Por exemplo: se um ingresso foi dividido em 6x e já se passaram 4 meses quando o evento se encerrou, será repassado ao organizador o valor das 4 parcelas já pagas. 
@@ -328,7 +416,7 @@ const TermosECondicoesInfo = () => {
                                     <Users className="h-6 w-6 text-psi-primary" />
                                 </div>
                                 <div className="flex-1 space-y-3">
-                                    <h2 className="text-2xl font-semibold text-psi-dark">7. Responsabilidades dos Organizadores</h2>
+                                    <h2 className="text-2xl font-semibold text-psi-dark">8. Responsabilidades dos Organizadores</h2>
                                     <p className="text-psi-dark/70 leading-relaxed">
                                         Os organizadores são responsáveis por:
                                     </p>
@@ -362,7 +450,7 @@ const TermosECondicoesInfo = () => {
                                         <div className="flex items-start gap-3">
                                             <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
                                             <div className="flex-1">
-                                                <h3 className="font-medium text-amber-900 mb-1">7.1. Emissão de Nota Fiscal</h3>
+                                                <h3 className="font-medium text-amber-900 mb-1">8.1. Emissão de Nota Fiscal</h3>
                                                 <p className="text-amber-800 text-sm leading-relaxed">
                                                     A emissão de nota fiscal referente à venda de ingressos é de <strong>responsabilidade exclusiva do organizador do evento</strong>.
                                                 </p>
@@ -383,7 +471,7 @@ const TermosECondicoesInfo = () => {
                                     <Shield className="h-6 w-6 text-psi-primary" />
                                 </div>
                                 <div className="flex-1 space-y-3">
-                                    <h2 className="text-2xl font-semibold text-psi-dark">8. Segurança e Proteção</h2>
+                                    <h2 className="text-2xl font-semibold text-psi-dark">9. Segurança e Proteção</h2>
                                     <p className="text-psi-dark/70 leading-relaxed">
                                         Nossa plataforma utiliza tecnologia de ponta para garantir a segurança de todas as transações:
                                     </p>
@@ -416,7 +504,7 @@ const TermosECondicoesInfo = () => {
                                     <AlertCircle className="h-6 w-6 text-psi-primary" />
                                 </div>
                                 <div className="flex-1 space-y-3">
-                                    <h2 className="text-2xl font-semibold text-psi-dark">9. Limitação de Responsabilidade</h2>
+                                    <h2 className="text-2xl font-semibold text-psi-dark">10. Limitação de Responsabilidade</h2>
                                     <p className="text-psi-dark/70 leading-relaxed">
                                         A plataforma Porto Seguro Ingressos atua <strong>apenas como intermediadora</strong> entre compradores e organizadores, não realizando a venda direta do ingresso em nome próprio.
                                     </p>
@@ -452,7 +540,7 @@ const TermosECondicoesInfo = () => {
                                     <FileText className="h-6 w-6 text-psi-primary" />
                                 </div>
                                 <div className="flex-1 space-y-3">
-                                    <h2 className="text-2xl font-semibold text-psi-dark">10. Alterações nos Termos</h2>
+                                    <h2 className="text-2xl font-semibold text-psi-dark">11. Alterações nos Termos</h2>
                                     <p className="text-psi-dark/70 leading-relaxed">
                                         Reservamo-nos o direito de modificar estes Termos e Condições a qualquer momento. 
                                         Alterações significativas serão comunicadas através da plataforma. 

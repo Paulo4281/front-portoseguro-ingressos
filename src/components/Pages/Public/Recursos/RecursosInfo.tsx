@@ -29,7 +29,8 @@ import {
     CreditCard,
     TrendingDown,
     Award,
-    Target
+    Target,
+    FileSpreadsheet
 } from "lucide-react"
 
 const RecursosInfo = () => {
@@ -75,9 +76,9 @@ const RecursosInfo = () => {
         },
         {
             title: "Repasse Rápido",
-            description: "Receba seus valores em até 48h após o evento, diretamente na sua conta bancária cadastrada.",
+            description: "Receba seus valores em até 72h após o evento, diretamente na sua conta bancária cadastrada.",
             icon: Clock,
-            stat: "48h pós-evento"
+            stat: "72h pós-evento"
         },
         {
             title: "Zero Burocracia",
@@ -122,9 +123,9 @@ const RecursosInfo = () => {
             icon: Sparkles
         },
         {
-            title: "API Integrada",
-            description: "Integre nossa API com seus sistemas para sincronização automática de dados e repasses.",
-            icon: Database
+            title: "Leitura e Vendas por QR Code",
+            description: "Venda ingressos presencialmente e valide a entrada com QR Code.",
+            icon: QrCode
         }
     ]
 

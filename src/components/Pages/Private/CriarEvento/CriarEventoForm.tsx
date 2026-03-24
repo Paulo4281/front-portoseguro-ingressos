@@ -30,6 +30,7 @@ import {
 import { z } from "zod"
 import { cn } from "@/lib/utils"
 import { useEventCategoryFind } from "@/hooks/EventCategory/useEventCategoryFind"
+import { EventCategoryIconHandler } from "@/utils/Helpers/EventCategoryIconHandler/EventCategoryIconHandler"
 import { useEventCreate } from "@/hooks/Event/useEventCreate"
 import { useAICreateEventDescription } from "@/hooks/AI/useAICreateEventDescription"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
@@ -623,7 +624,11 @@ const CriarEventoForm = () => {
                                             )
                                             return (
                                                 <MultiSelect
-                                                    options={sortedCategories.map((category) => ({ value: category.id, label: category.name }))}
+                                                    options={sortedCategories.map((category) => ({
+                                                        value: category.id,
+                                                        label: category.name,
+                                                        icon: EventCategoryIconHandler(category.name),
+                                                    }))}
                                                     value={field.value || []}
                                                     onChange={field.onChange}
                                                     placeholder="Selecione as categorias..."

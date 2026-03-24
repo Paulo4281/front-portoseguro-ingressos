@@ -5,7 +5,7 @@ import Image from "next/image"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Background } from "@/components/Background/Background"
-import { Facebook, Key, Save, HelpCircle } from "lucide-react"
+import { Facebook, Key, Save, HelpCircle, Copy } from "lucide-react"
 import { useMetaUpdateFacebookPixel } from "@/hooks/Meta/useMetaUpdateFacebookPixel"
 import { useMetaGetFacebookPixel } from "@/hooks/Meta/useMetaGetFacebookPixel"
 import { Toast } from "@/components/Toast/Toast"
@@ -105,6 +105,11 @@ const ConfiguracoesPannel = () => {
                                     <p className="text-xs text-psi-dark/50">
                                         O ID do seu Facebook Pixel. Você pode encontrá-lo no Gerenciador de Eventos do Facebook.
                                     </p>
+                                    <div className="mt-2 rounded-md bg-psi-primary/5 border border-psi-primary/30 px-3 py-2">
+                                        <span className="text-xs text-psi-dark/80">
+                                            <b>Não tem um Pixel próprio?</b> Se preferir, você pode usar o nosso Pixel do Facebook: <span className="font-mono text-psi-primary">1234567891234567</span>
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <div className="space-y-2">
