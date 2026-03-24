@@ -65,6 +65,10 @@ const readCartItemsFromPersistStorage = (): TCartItem[] | null => {
     }
 }
 
+const areCartItemsEqual = (a: TCartItem[], b: TCartItem[]): boolean => {
+    return JSON.stringify(a) === JSON.stringify(b)
+}
+
 export const CartProvider = ({ children }: { children: ReactNode }) => {
     const cachedItems = loadCartItemsFromCache()
     const [items, setItems] = useState<TCartItem[]>(cachedItems || [])
@@ -304,7 +308,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         const sync = () => {
             const persistedItems = readCartItemsFromPersistStorage()
-            setItems(persistedItems || [])
+            setItems((prev) => {
+                const next = persistedItems || []
+                if (areCartItemsEqual(prev, next)) return prev
+                return next
+            })
         }
 
         const onStorage = (event: StorageEvent) => {

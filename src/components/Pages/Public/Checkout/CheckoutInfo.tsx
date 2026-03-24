@@ -483,15 +483,17 @@ const CheckoutInfo = () => {
 
     const [ticketHoldData, setTicketHoldData] = useState<TTicketHoldCreateResponse[] | null>(null)
     const hasRun = useRef(false)
+    const isCreatingTicketHoldRef = useRef(false)
 
     useEffect(() => {
-        if (items.length > 0 && currentEvent && eventId) {
-            if (hasRun.current) return
+        if (!isAuthenticated || items.length === 0 || !currentEvent || !eventId) return
+        if (hasRun.current || isCreatingTicketHoldRef.current) return
 
-            const createTicketHoldFunc = async () => {
+        const createTicketHoldFunc = async () => {
+            isCreatingTicketHoldRef.current = true
+            try {
                 const ticketHolds: TTicketHoldCreate[] = []
                 for (const item of items) {
-
                     let hasTicketTypes = false
                     let hasMultipleDaysWithTicketTypes = false
 
@@ -536,19 +538,18 @@ const CheckoutInfo = () => {
                     }
                 }
 
-                if (isAuthenticated) {
-                    const response = await createTicketHold(ticketHolds)
-
-                    if (response?.success && response?.data) {
-                        setTicketHoldData(response.data)
-                        hasRun.current = true
-                    }
+                const response = await createTicketHold(ticketHolds)
+                if (response?.success && response?.data) {
+                    setTicketHoldData(response.data)
+                    hasRun.current = true
                 }
+            } finally {
+                isCreatingTicketHoldRef.current = false
             }
-
-            createTicketHoldFunc()
         }
-    }, [items, currentEvent, eventId, isAuthenticated])
+
+        createTicketHoldFunc()
+    }, [items, currentEvent, eventId, isAuthenticated, createTicketHold, getActiveEventDateId])
 
     const eventsWithForms = useMemo(() => {
         return eventsData.filter(event => {
