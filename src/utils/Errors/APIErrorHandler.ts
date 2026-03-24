@@ -37,6 +37,7 @@ export const APIErrorHandler: Record<number, string> = {
     35: "Pagamento já confirmado.",
     36: "Pagamento já foi tentado e falhou. Por favor, tente novamente.",
     37: "Há uma solicitação de reembolso para esse pagamento. Não é possível realizar o pagamento.",
+    38: "Essa conta foi suspensa. Por favor, contate o suporte.",
 
     700: "Não é possível alterar datas do evento que já possuem ingressos vendidos. FALE COM O SUPORTE",
     701: "Não é possível alterar datas do evento que começarão em menos de 72 horas e já possuem ingressos vendidos. FALE COM O SUPORTE",

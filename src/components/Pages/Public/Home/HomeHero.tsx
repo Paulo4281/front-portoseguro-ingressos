@@ -1345,12 +1345,7 @@ const HomeHero = () => {
                                 </p>
                                 <p>
                                     Não aceitamos usos ligados a atividades ilegais, apostas, conteúdo adulto exploratório, fraudes ou outros cenários listados no{' '}
-                                    <a
-                                        href="#uso-plataforma-publico"
-                                        className="text-psi-primary font-medium underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-psi-primary rounded"
-                                    >
-                                        resumo abaixo nesta página
-                                    </a>
+                                    resumo abaixo nesta página
                                     . A redação completa e vinculante está nos{' '}
                                     <Link
                                         href="/termos-e-condicoes#termos-uso-permitido"
