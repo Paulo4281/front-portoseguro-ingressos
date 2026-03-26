@@ -86,6 +86,7 @@ import {
 } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import { useQueryClient } from "@tanstack/react-query"
 import { CTAButton } from "@/components/CTAButton/CTAButton"
 import { Toast } from "@/components/Toast/Toast"
 import { useCouponCheck } from "@/hooks/Coupon/useCouponCheck"
@@ -137,6 +138,7 @@ export type THandleUpdateQuantityParams = {
 }
 
 const CheckoutInfo = () => {
+    const queryClient = useQueryClient()
     const { items, updateQuantity, updateTicketTypeQuantity, addItem, removeItem, getTotal, clearCart } = useCart()
     const { user, isAuthenticated, setUser } = useAuthStore()
     const searchParams = useSearchParams()
@@ -224,6 +226,10 @@ const CheckoutInfo = () => {
     const [newOrganizerClientAddressNumber, setNewOrganizerClientAddressNumber] = useState("")
     const [newCreatedCustomerUserId, setNewCreatedCustomerUserId] = useState("")
     const [newOrganizerClientDialogOpen, setNewOrganizerClientDialogOpen] = useState(false)
+    const selectedOrganizerClient = useMemo(
+        () => organizerClients.find((client) => client.id === selectedOrganizerClientId) || null,
+        [organizerClients, selectedOrganizerClientId]
+    )
 
     const [buyTicketResponse, setBuyTicketResponse] = useState<TTicketBuyResponse | null>(null)
     const [showCreditCardErrorDialog, setShowCreditCardErrorDialog] = useState(false)
@@ -482,6 +488,7 @@ const CheckoutInfo = () => {
     }, [])
 
     const [ticketHoldData, setTicketHoldData] = useState<TTicketHoldCreateResponse[] | null>(null)
+    const [ticketHoldExpiresAt, setTicketHoldExpiresAt] = useState<string | null>(null)
     const hasRun = useRef(false)
     const isCreatingTicketHoldRef = useRef(false)
 
@@ -541,6 +548,18 @@ const CheckoutInfo = () => {
                 const response = await createTicketHold(ticketHolds)
                 if (response?.success && response?.data) {
                     setTicketHoldData(response.data)
+                    const expiresAtCandidates = response.data
+                        .map((th) => th.expiresAt)
+                        .filter((value): value is string => Boolean(value && !Number.isNaN(new Date(value).getTime())))
+                    if (expiresAtCandidates.length > 0) {
+                        const earliestExpiresAt = expiresAtCandidates.reduce((earliest, current) => {
+                            return new Date(current).getTime() < new Date(earliest).getTime() ? current : earliest
+                        }, expiresAtCandidates[0])
+                        setTicketHoldExpiresAt(earliestExpiresAt)
+                    } else {
+                        // fallback defensivo: mantém padrão esperado de 15 minutos
+                        setTicketHoldExpiresAt(new Date(Date.now() + 15 * 60 * 1000).toISOString())
+                    }
                     hasRun.current = true
                 }
             } finally {
@@ -1265,7 +1284,13 @@ const CheckoutInfo = () => {
                         : data && typeof data === "object" && data !== null && "user" in data
                             ? (data as { user: { id?: string } }).user?.id
                             : undefined
-                if (createdId) setNewCreatedCustomerUserId(createdId)
+                if (createdId) {
+                    setNewCreatedCustomerUserId(createdId)
+                    setSelectedOrganizerClientId(createdId)
+                    setIsNewOrganizerClient(false)
+                    setClientSelectOpen(false)
+                    await queryClient.invalidateQueries({ queryKey: ["clients"] })
+                }
                 Toast.success("Cliente cadastrado. Um e-mail foi enviado para ele definir a senha.")
                 setNewOrganizerClientDialogOpen(false)
             } else {
@@ -1569,9 +1594,9 @@ const CheckoutInfo = () => {
                             Finalize sua compra de ingressos
                         </p>
                         {
-                            isAuthenticated && (
+                            isAuthenticated && ticketHoldExpiresAt && (
                                 <div className="mt-4">
-                                    <CheckoutTimer expiresAt={new Date(new Date().getTime() + 1000 * 60 * 60 * 24).toISOString()} onExpire={() => { }} />
+                                    <CheckoutTimer expiresAt={ticketHoldExpiresAt} onExpire={() => { }} />
                                 </div>
                             )
                         }
@@ -2616,6 +2641,32 @@ const CheckoutInfo = () => {
                                                     )
                                             }
                                         </p>
+                                        {isSellerCheckout && (
+                                            <div className="rounded-xl border border-psi-primary/20 bg-psi-primary/5 px-4 py-3 text-left">
+                                                <p className="text-xs font-medium text-psi-dark mb-1">
+                                                    Cliente desta venda
+                                                </p>
+                                                {selectedOrganizerClient ? (
+                                                    <p className="text-xs text-psi-dark/70">
+                                                        {selectedOrganizerClient.firstName} {selectedOrganizerClient.lastName}
+                                                        {" • "}
+                                                        {selectedOrganizerClient.email}
+                                                        {selectedOrganizerClient.phone ? ` • ${selectedOrganizerClient.phone}` : ""}
+                                                    </p>
+                                                ) : newCreatedCustomerUserId ? (
+                                                    <p className="text-xs text-psi-dark/70">
+                                                        {newOrganizerClientFirstName} {newOrganizerClientLastName}
+                                                        {" • "}
+                                                        {newOrganizerClientEmail}
+                                                        {newOrganizerClientPhone ? ` • ${newOrganizerClientPhone}` : ""}
+                                                    </p>
+                                                ) : (
+                                                    <p className="text-xs text-amber-700">
+                                                        Nenhum cliente selecionado.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="space-y-6">
@@ -2728,10 +2779,10 @@ const CheckoutInfo = () => {
                                                                     <p className="text-sm font-medium text-psi-dark mb-1">Link de pagamento</p>
                                                                     <p className="text-xs text-psi-dark/70">
                                                                         Ao gerar, você poderá copiar o link e enviar ao cliente. O pagamento poderá ser feito por {acceptsPixPayment && acceptsCreditCardPayment
-                                                                            ? "PIX (pré-gerado) ou cartão"
+                                                                            ? "PIX (pré-gerado) ou cartão de crédito"
                                                                             : acceptsPixPayment
                                                                                 ? "PIX (pré-gerado)"
-                                                                                : "cartão"}.
+                                                                                : "cartão de crédito"}.
                                                                     </p>
                                                                 </div>
 

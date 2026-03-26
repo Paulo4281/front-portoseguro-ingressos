@@ -73,7 +73,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     const cachedItems = loadCartItemsFromCache()
     const [items, setItems] = useState<TCartItem[]>(cachedItems || [])
     const router = useRouter()
-    const { user } = useAuthStore()
+    const { user, isAuthenticated } = useAuthStore()
 
     const { mutateAsync: deleteTicketHoldByUserId } = useTicketHoldDeleteByUserId()
 
@@ -163,12 +163,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             prev.filter((item) => !(item.eventId === eventId && item.batchId === batchId))
         )
 
-        const { isAuthenticated } = useAuthStore()
-
         if (isAuthenticated) {
             deleteTicketHoldByUserId()
         }
-    }, [])
+    }, [isAuthenticated, deleteTicketHoldByUserId])
 
     const updateQuantity = useCallback((eventId: string, batchId: string | undefined, quantity: number) => {
         if (quantity <= 0) {
@@ -284,7 +282,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     const clearCart = useCallback(() => {
         setItems([])
-    }, [])
+        if (isAuthenticated) {
+            deleteTicketHoldByUserId()
+        }
+    }, [isAuthenticated, deleteTicketHoldByUserId])
 
     const getTotal = useCallback(() => {
         return items.reduce((total, item) => {

@@ -42,6 +42,7 @@ type TEvent = {
     isFree: boolean
     isOnline: boolean
     isClientTaxed: boolean
+    isTaxed: boolean
     maxInstallments: number
     acceptsPixPayment: boolean
     acceptsCreditCardPayment: boolean

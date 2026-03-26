@@ -27,6 +27,7 @@ type TTicketHoldCreateResponse = {
     id: string
     eventDateId: string | null
     ticketTypeId: string | null
+    expiresAt?: string
 }
 
 export type {

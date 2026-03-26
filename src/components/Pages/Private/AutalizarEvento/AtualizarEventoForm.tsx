@@ -1250,6 +1250,22 @@ const AtualizarEventoForm = () => {
                             </div>
 
                             <div className="space-y-4">
+                                {eventData?.data?.isTaxed === false && (
+                                    <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-200">
+                                        <div className="flex items-start gap-3">
+                                            <Info className="h-5 w-5 text-indigo-600 shrink-0 mt-0.5" />
+                                            <div>
+                                                <p className="text-sm font-medium text-indigo-900 mb-1">
+                                                    Taxa do organizador desativada
+                                                </p>
+                                                <p className="text-sm text-indigo-800">
+                                                    Não haverá pagamento de taxa por parte do organizador para este evento. Esta configuração foi definida pela administração.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <Controller
                                     name="isClientTaxed"
                                     control={form.control}

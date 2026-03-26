@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Repeat, Tag, MoreVertical, Search, ChevronDown, ChevronUp, CalendarClock, Ban, Users, Building2, FileText, Wallet } from "lucide-react"
+import { Calendar, Clock, MapPin, Repeat, Tag, MoreVertical, Search, ChevronDown, ChevronUp, CalendarClock, Ban, Users, Building2, FileText, Wallet, Settings, Percent, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/Input/Input"
 import {
@@ -12,8 +12,10 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useEventFindAdmin } from "@/hooks/Event/useEventFindAdmint"
 import { useEventCancel } from "@/hooks/Event/useEventCancel"
+import { useEventUpdateIsTaxed } from "@/hooks/Event/useEventUpdateIsTaxed"
 import { usePaymentReleaseBalance } from "@/hooks/Payment/usePaymentReleaseBalance"
 import { useBalanceVerifyIsReleased } from "@/hooks/Balance/useBalanceVerifyIsReleased"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -97,10 +99,14 @@ const EventosAdminPannel = () => {
     const [pendingActionType, setPendingActionType] = useState<"cancel" | "changeDate" | "releaseBalance" | null>(null)
     const [releaseBalanceDialogOpen, setReleaseBalanceDialogOpen] = useState(false)
     const [selectedEventDateId, setSelectedEventDateId] = useState<string | null>(null)
+    const [settingsDialogOpen, setSettingsDialogOpen] = useState(false)
+    const [selectedSettingsEvent, setSelectedSettingsEvent] = useState<TEvent | null>(null)
 
     const queryClient = useQueryClient()
     const { mutateAsync: cancelEvent } = useEventCancel()
+    const { mutateAsync: updateEventIsTaxed, isPending: isUpdatingEventIsTaxed } = useEventUpdateIsTaxed()
     const { mutateAsync: releaseBalance, isPending: isReleasingBalance } = usePaymentReleaseBalance()
+    const [updatingTaxedEventId, setUpdatingTaxedEventId] = useState<string | null>(null)
 
     const handleSearch = () => {
         setSearchQuery(searchName)
@@ -147,6 +153,11 @@ const EventosAdminPannel = () => {
         setSelectedEvent(event)
         setSelectedEventId(event.id)
         setReleaseBalanceDialogOpen(true)
+    }
+
+    const handleOpenSettingsDialog = (event: TEvent) => {
+        setSelectedSettingsEvent(event)
+        setSettingsDialogOpen(true)
     }
 
     const toggleCollapse = (eventId: string) => {
@@ -207,6 +218,26 @@ const EventosAdminPannel = () => {
         }
         setPendingActionType(null)
     }, [pendingActionType, selectedEventId, selectedEventDateId, handleCancelEvent, handleReleaseBalance])
+
+    const handleToggleEventIsTaxed = useCallback(async (event: TEvent) => {
+        if (!event?.id) return
+
+        setUpdatingTaxedEventId(event.id)
+        try {
+            const response = await updateEventIsTaxed(event.id)
+            if (response?.success) {
+                Toast.success(event.isTaxed ? "Taxa do organizador desativada com sucesso!" : "Taxa do organizador ativada com sucesso!")
+                queryClient.invalidateQueries({ queryKey: ["events", "admin"] })
+                setSettingsDialogOpen(false)
+                setSelectedSettingsEvent(null)
+            }
+        } catch (error: any) {
+            const errorMessage = error?.response?.data?.message || "Erro ao atualizar taxa do organizador."
+            Toast.error(errorMessage)
+        } finally {
+            setUpdatingTaxedEventId(null)
+        }
+    }, [updateEventIsTaxed, queryClient])
 
     if (isLoading) {
         return (
@@ -302,6 +333,8 @@ const EventosAdminPannel = () => {
                                 onChangeDate={handleOpenChangeDateDialog}
                                 onCancel={handleOpenCancelDialog}
                                 onReleaseBalance={handleOpenReleaseBalanceDialog}
+                                onOpenSettings={handleOpenSettingsDialog}
+                                isUpdatingEventIsTaxed={isUpdatingEventIsTaxed && updatingTaxedEventId === event.id}
                                 isCollapsed={openCollapses[event.id] || false}
                                 onToggleCollapse={() => toggleCollapse(event.id)}
                             />
@@ -405,6 +438,55 @@ const EventosAdminPannel = () => {
                     setPasswordDialogOpen(true)
                 }}
             />
+
+            <Dialog
+                open={settingsDialogOpen}
+                onOpenChange={(open) => {
+                    setSettingsDialogOpen(open)
+                    if (!open) setSelectedSettingsEvent(null)
+                }}
+            >
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Configurações do Evento</DialogTitle>
+                        <DialogDescription>
+                            {selectedSettingsEvent
+                                ? `Ajuste as configurações de "${selectedSettingsEvent.name}".`
+                                : "Ajuste as configurações do evento."}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="rounded-xl border border-[#E4E6F0] bg-psi-dark/2 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <p className="text-sm font-medium text-psi-dark">Taxa do organizador</p>
+                                <p className="text-xs text-psi-dark/60 mt-1">
+                                    Status atual: {selectedSettingsEvent?.isTaxed ? "Ativada" : "Desativada"}
+                                </p>
+                            </div>
+                            <Button
+                                type="button"
+                                variant={selectedSettingsEvent?.isTaxed ? "outline" : "primary"}
+                                size="sm"
+                                disabled={!selectedSettingsEvent || isUpdatingEventIsTaxed}
+                                onClick={() => selectedSettingsEvent && handleToggleEventIsTaxed(selectedSettingsEvent)}
+                            >
+                                {isUpdatingEventIsTaxed ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        Atualizando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Percent className="h-4 w-4" />
+                                        {selectedSettingsEvent?.isTaxed ? "Desativar" : "Ativar"}
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </Background>
     )
 }
@@ -418,6 +500,8 @@ type TEventCardProps = {
     onChangeDate: (event: TEvent) => void
     onCancel: (event: TEvent) => void
     onReleaseBalance: (event: TEvent) => void
+    onOpenSettings: (event: TEvent) => void
+    isUpdatingEventIsTaxed: boolean
     isCollapsed: boolean
     onToggleCollapse: () => void
 }
@@ -427,6 +511,8 @@ const EventCard = ({
     onChangeDate,
     onCancel,
     onReleaseBalance,
+    onOpenSettings,
+    isUpdatingEventIsTaxed,
     isCollapsed,
     onToggleCollapse
 }: TEventCardProps) => {
@@ -482,6 +568,18 @@ const EventCard = ({
                             >
                                 <CalendarClock className="h-4 w-4 text-psi-primary" />
                                 Alterar data
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer"
+                                onClick={() => onOpenSettings(event)}
+                                disabled={isUpdatingEventIsTaxed}
+                            >
+                                {isUpdatingEventIsTaxed ? (
+                                    <Loader2 className="h-4 w-4 text-psi-primary animate-spin" />
+                                ) : (
+                                    <Settings className="h-4 w-4 text-psi-primary" />
+                                )}
+                                Configurações
                             </DropdownMenuItem>
                             {isFinished && (
                                 <>

@@ -1140,7 +1140,7 @@ const DashRevendedorPannel = () => {
                     </div>
 
                     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                        {(isLoadingEventCache || isFetchingEventCache) ? (
+                        {isLoadingEventCache && events.length === 0 ? (
                             <div className="flex items-center gap-2 p-4 text-sm text-psi-dark/70">
                                 <Loader2 className="h-4 w-4 animate-spin" />Carregando eventos do organizador...
                             </div>
