@@ -334,6 +334,8 @@ export type TPaymentMySalesItem = {
     totalPaidByCustomer: number | null
     sellerCommissionRate: number | null
     sellerCommissionValue: number | null
+    organizerFee: number | null
+    customerFee: number | null
     paidAt: string | null
     createdAt: string
     customer: {
