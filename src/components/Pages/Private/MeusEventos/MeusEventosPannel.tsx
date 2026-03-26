@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Share2, Download, Ban, Search, Copy, TicketIcon, Sparkle, AlertCircle, XCircle, CheckCircle2, FileText, ExternalLink, Loader2, Send } from "lucide-react"
+import { Calendar, Clock, MapPin, Eye, Ticket, Edit, Trash2, TrendingUp, Repeat, Tag, MoreVertical, FileSpreadsheet, BarChart3, Share2, Download, Ban, Search, Copy, TicketIcon, Sparkle, AlertCircle, XCircle, CheckCircle2, FileText, ExternalLink, Loader2, Send, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/Input/Input"
 import {
@@ -752,6 +752,15 @@ const EventCard = ({
                             <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-xs font-medium rounded-full flex items-center gap-1">
                                 <AlertCircle className="h-3 w-3" />
                                 Adiado
+                            </span>
+                        )}
+                        {event.isTaxed === false && (
+                            <span
+                                className="px-2 py-0.5 bg-indigo-100 text-indigo-800 text-xs font-medium rounded-full flex items-center gap-1 cursor-help"
+                                title="Não haverá pagamento de taxa por parte do organizador para este evento. Esta configuração foi definida pela administração."
+                            >
+                                <Info className="h-3 w-3" />
+                                Sem taxa do organizador
                             </span>
                         )}
                     </div>

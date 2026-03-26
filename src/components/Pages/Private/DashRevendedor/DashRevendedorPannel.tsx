@@ -957,8 +957,8 @@ const DashRevendedorPannel = () => {
                                                                         ) : (
                                                                             <Badge variant="secondary" className="bg-psi-dark/10 text-psi-dark/70 text-xs">Histórico</Badge>
                                                                         )}
-                                                                        <span className="text-xs text-psi-dark/60">{getPaymentStatusLabel(sale.status)}</span>
                                                                     </div>
+                                                                    {/* <p className="text-xs text-psi-dark/60">{getPaymentStatusLabel(sale.status)}</p> */}
                                                                     <p className="text-xs text-psi-dark/60">Código: {sale.code}</p>
                                                                     {sale.customer && (
                                                                         <p className="text-xs text-psi-dark/60 mt-1">
@@ -967,15 +967,29 @@ const DashRevendedorPannel = () => {
                                                                     )}
                                                                     <p className="text-xs text-psi-dark/60 mt-1">{DateUtils.formatDate(sale.createdAt)}</p>
                                                                 </div>
-                                                                <div className="text-right">
+                                                                <div className="text-right space-y-0.5 min-w-[160px]">
                                                                     {sale.totalPaidByCustomer != null && (
-                                                                        <p className="text-sm text-psi-dark/70">Total: {ValueUtils.centsToCurrency(sale.totalPaidByCustomer)}</p>
+                                                                        <p className="text-xs text-psi-dark/60">
+                                                                            Total: <span className="font-medium text-psi-dark">{ValueUtils.centsToCurrency(sale.totalPaidByCustomer)}</span>
+                                                                        </p>
+                                                                    )}
+                                                                    {sale.organizerFee != null && (
+                                                                        <p className="text-xs text-psi-dark/60">
+                                                                            Taxa do organizador: <span className="font-medium text-psi-dark/80">− {ValueUtils.centsToCurrency(sale.organizerFee)}</span>
+                                                                        </p>
+                                                                    )}
+                                                                    {sale.customerFee != null && (
+                                                                        <p className="text-xs text-psi-dark/60">
+                                                                            Taxa do comprador: <span className="font-medium text-psi-dark/80">− {ValueUtils.centsToCurrency(sale.customerFee)}</span>
+                                                                        </p>
                                                                     )}
                                                                     {sale.sellerCommissionValue != null && (
-                                                                        <p className="text-sm font-medium text-emerald-600">Sua comissão: {ValueUtils.centsToCurrency(sale.sellerCommissionValue)}</p>
-                                                                    )}
-                                                                    {sale.sellerCommissionRate != null && (
-                                                                        <p className="text-xs text-psi-dark/60">Taxa: {sale.sellerCommissionRate}%</p>
+                                                                        <p className="text-sm font-semibold text-emerald-600 pt-0.5 border-t border-emerald-200 mt-1">
+                                                                            Sua comissão: {ValueUtils.centsToCurrency(sale.sellerCommissionValue)}
+                                                                            {sale.sellerCommissionRate != null && (
+                                                                                <span className="text-xs font-normal text-psi-dark/50 ml-1">({sale.sellerCommissionRate}%)</span>
+                                                                            )}
+                                                                        </p>
                                                                     )}
                                                                 </div>
                                                             </div>
@@ -1140,7 +1154,7 @@ const DashRevendedorPannel = () => {
                     </div>
 
                     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                        {(isLoadingEventCache || isFetchingEventCache) ? (
+                        {isLoadingEventCache && events.length === 0 ? (
                             <div className="flex items-center gap-2 p-4 text-sm text-psi-dark/70">
                                 <Loader2 className="h-4 w-4 animate-spin" />Carregando eventos do organizador...
                             </div>
