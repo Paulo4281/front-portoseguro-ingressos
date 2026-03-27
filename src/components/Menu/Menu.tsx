@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge"
 import { TNotification } from "@/types/Notification/TNotification"
 import { ValueUtils } from "@/utils/Helpers/ValueUtils/ValueUtils"
 import { ImageUtils } from "@/utils/Helpers/ImageUtils/ImageUtils"
+import { DateUtils } from "@/utils/Helpers/DateUtils/DateUtils"
 import { SearchEvent } from "../Search/SearchEvent/SearchEvent"
 import webpush from "web-push"
 
@@ -1063,6 +1064,23 @@ const NotificationBell = () => {
 
     const unreadCount = notifications.filter((n) => !n.isRead).length
 
+    const notificationsGroupedByDate = useMemo(() => {
+        const sorted = [...notifications].sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+        const groups: { dateLabel: string; items: TNotification[] }[] = []
+        for (const notification of sorted) {
+            const dateLabel = DateUtils.formatDate(notification.createdAt, "DD/MM/YYYY")
+            const last = groups[groups.length - 1]
+            if (last?.dateLabel === dateLabel) {
+                last.items.push(notification)
+            } else {
+                groups.push({ dateLabel, items: [notification] })
+            }
+        }
+        return groups
+    }, [notifications])
+
     const handleDeleteNotification = (notificationId: string) => {
         if (!notificationId) return
         setDeletingIds((prev) => {
@@ -1353,59 +1371,70 @@ const NotificationBell = () => {
                             <p className="text-sm text-psi-dark/60">Nenhuma notificação</p>
                         </div>
                     ) : (
-                        notifications.map((notification) => {
-                            const colors = getImportanceColors(notification.importance)
-                            const isUnread = !notification.isRead
-                            const isNotificationDeleting = deletingIds.has(notification.id)
-                            
-                            return (
-                                <div
-                                    key={notification.id}
-                                    className={`rounded-xl border p-3 transition-all hover:shadow-md ${
-                                        isUnread
-                                            ? `${colors.border} ${colors.bg} border-2`
-                                            : "border-[#E4E6F0] bg-white"
-                                    }`}
-                                >
-                                    <div className="flex items-start gap-3">
-                                        <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${colors.badge}`} />
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between gap-2 mb-1">
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full`}>
-                                                        {getSubjectLabel(notification.subject)}
-                                                    </span>
+                        <div className="space-y-4">
+                            {notificationsGroupedByDate.map(({ dateLabel, items }) => (
+                                <div key={dateLabel} className="space-y-2">
+                                    <p className="px-2 text-xs font-semibold uppercase tracking-wide text-psi-dark/45">
+                                        {dateLabel}
+                                    </p>
+                                    <div className="space-y-2">
+                                        {items.map((notification) => {
+                                            const colors = getImportanceColors(notification.importance)
+                                            const isUnread = !notification.isRead
+                                            const isNotificationDeleting = deletingIds.has(notification.id)
+
+                                            return (
+                                                <div
+                                                    key={notification.id}
+                                                    className={`rounded-xl border p-3 transition-all hover:shadow-md ${
+                                                        isUnread
+                                                            ? `${colors.border} ${colors.bg} border-2`
+                                                            : "border-[#E4E6F0] bg-white"
+                                                    }`}
+                                                >
+                                                    <div className="flex items-start gap-3">
+                                                        <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${colors.badge}`} />
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center justify-between gap-2 mb-1">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-xs font-medium px-2 py-0.5 rounded-full">
+                                                                        {getSubjectLabel(notification.subject)}
+                                                                    </span>
+                                                                </div>
+                                                                <span className="text-xs text-psi-dark/50 shrink-0">
+                                                                    {formatDateTime(notification.createdAt)}
+                                                                </span>
+                                                            </div>
+                                                            <p className={`text-sm leading-relaxed ${colors.text}`}>
+                                                                {getNotificationMessage(notification)}
+                                                            </p>
+                                                        </div>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={(event) => {
+                                                                event.preventDefault()
+                                                                event.stopPropagation()
+                                                                handleDeleteNotification(notification.id)
+                                                            }}
+                                                            disabled={isNotificationDeleting || isDeletingAll}
+                                                            aria-label={`Excluir notificação ${getSubjectLabel(notification.subject)}`}
+                                                        >
+                                                            {isNotificationDeleting ? (
+                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                            ) : (
+                                                                <X className="h-4 w-4" />
+                                                            )}
+                                                        </Button>
+                                                    </div>
                                                 </div>
-                                                <span className="text-xs text-psi-dark/50 shrink-0">
-                                                    {formatDateTime(notification.createdAt)}
-                                                </span>
-                                            </div>
-                                            <p className={`text-sm leading-relaxed ${colors.text}`}>
-                                                {getNotificationMessage(notification)}
-                                            </p>
-                                        </div>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={(event) => {
-                                                event.preventDefault()
-                                                event.stopPropagation()
-                                                handleDeleteNotification(notification.id)
-                                            }}
-                                            disabled={isNotificationDeleting || isDeletingAll}
-                                            aria-label={`Excluir notificação ${getSubjectLabel(notification.subject)}`}
-                                        >
-                                            {isNotificationDeleting ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            ) : (
-                                                <X className="h-4 w-4" />
-                                            )}
-                                        </Button>
+                                            )
+                                        })}
                                     </div>
                                 </div>
-                            )
-                        })
+                            ))}
+                        </div>
                     )}
                 </div>
             </DropdownMenuContent>

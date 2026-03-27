@@ -350,6 +350,14 @@ class EventServiceClass {
         return response
     }
 
+    async activateBatches(eventId: string): Promise<AxiosResponse["data"]> {
+        const response = (await API.POST({
+            prefix: "/event",
+            url: `/activate-batches/${eventId}`
+        }))?.data
+        return response
+    }
+
     async updateImage(eventId: string, file: File): Promise<AxiosResponse["data"]> {
         const formData = new FormData()
         formData.append("image", file)
