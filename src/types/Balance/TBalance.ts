@@ -1,10 +1,24 @@
+export type TBalancePendingEntry = {
+    value: number
+    eventName: string
+    paymentId: string
+    method: string
+    installmentNumber: number
+    totalInstallments: number
+    externalInstallmentId: string
+    estimatedCreditDate: string
+    createdAt: string
+}
+
 export type TBalanceResponse = {
     currentValue: number
+    pendingValue: number
     balances: {
         value: number
         description: string | null
         createdAt: string
     }[]
+    pendingBalances: TBalancePendingEntry[]
 }
 
 export type TBalanceDatesAdminListResponse = {

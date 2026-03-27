@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback } from "react"
 import Link from "next/link"
-import { Calendar, Clock, MapPin, Repeat, Tag, MoreVertical, Search, ChevronDown, ChevronUp, CalendarClock, Ban, Users, Building2, FileText, Wallet, Settings, Percent, Loader2 } from "lucide-react"
+import { Calendar, Clock, MapPin, Repeat, Tag, MoreVertical, Search, ChevronDown, ChevronUp, CalendarClock, Ban, Users, Building2, FileText, Wallet, Settings, Percent, Loader2, Flag, Rocket } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/Input/Input"
 import {
@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useEventFindAdmin } from "@/hooks/Event/useEventFindAdmint"
 import { useEventCancel } from "@/hooks/Event/useEventCancel"
 import { useEventUpdateIsTaxed } from "@/hooks/Event/useEventUpdateIsTaxed"
+import { useEventActivateBatches } from "@/hooks/Event/useEventActivateBatches"
 import { usePaymentReleaseBalance } from "@/hooks/Payment/usePaymentReleaseBalance"
 import { useBalanceVerifyIsReleased } from "@/hooks/Balance/useBalanceVerifyIsReleased"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -105,8 +106,10 @@ const EventosAdminPannel = () => {
     const queryClient = useQueryClient()
     const { mutateAsync: cancelEvent } = useEventCancel()
     const { mutateAsync: updateEventIsTaxed, isPending: isUpdatingEventIsTaxed } = useEventUpdateIsTaxed()
+    const { mutateAsync: activateEventBatches, isPending: isActivatingBatches } = useEventActivateBatches()
     const { mutateAsync: releaseBalance, isPending: isReleasingBalance } = usePaymentReleaseBalance()
     const [updatingTaxedEventId, setUpdatingTaxedEventId] = useState<string | null>(null)
+    const [activatingBatchesEventId, setActivatingBatchesEventId] = useState<string | null>(null)
 
     const handleSearch = () => {
         setSearchQuery(searchName)
@@ -218,6 +221,23 @@ const EventosAdminPannel = () => {
         }
         setPendingActionType(null)
     }, [pendingActionType, selectedEventId, selectedEventDateId, handleCancelEvent, handleReleaseBalance])
+
+    const handleActivateBatches = useCallback(async (event: TEvent) => {
+        if (!event?.id) return
+        setActivatingBatchesEventId(event.id)
+        try {
+            const response = await activateEventBatches(event.id)
+            if (response?.success) {
+                Toast.success("Primeiro lote ativado. As vendas foram iniciadas.")
+                queryClient.invalidateQueries({ queryKey: ["events", "admin"] })
+            }
+        } catch (error: any) {
+            const errorMessage = error?.response?.data?.message || "Erro ao ativar o primeiro lote."
+            Toast.error(errorMessage)
+        } finally {
+            setActivatingBatchesEventId(null)
+        }
+    }, [activateEventBatches, queryClient])
 
     const handleToggleEventIsTaxed = useCallback(async (event: TEvent) => {
         if (!event?.id) return
@@ -334,7 +354,10 @@ const EventosAdminPannel = () => {
                                 onCancel={handleOpenCancelDialog}
                                 onReleaseBalance={handleOpenReleaseBalanceDialog}
                                 onOpenSettings={handleOpenSettingsDialog}
+                                onActivateBatches={handleActivateBatches}
                                 isUpdatingEventIsTaxed={isUpdatingEventIsTaxed && updatingTaxedEventId === event.id}
+                                isActivatingBatchesThisEvent={isActivatingBatches && activatingBatchesEventId === event.id}
+                                isBatchesActivationPending={isActivatingBatches}
                                 isCollapsed={openCollapses[event.id] || false}
                                 onToggleCollapse={() => toggleCollapse(event.id)}
                             />
@@ -501,7 +524,12 @@ type TEventCardProps = {
     onCancel: (event: TEvent) => void
     onReleaseBalance: (event: TEvent) => void
     onOpenSettings: (event: TEvent) => void
+    onActivateBatches: (event: TEvent) => void
     isUpdatingEventIsTaxed: boolean
+    /** Spinner só neste card */
+    isActivatingBatchesThisEvent: boolean
+    /** Bloqueia ativar em qualquer card enquanto uma requisição está em andamento */
+    isBatchesActivationPending: boolean
     isCollapsed: boolean
     onToggleCollapse: () => void
 }
@@ -512,7 +540,10 @@ const EventCard = ({
     onCancel,
     onReleaseBalance,
     onOpenSettings,
+    onActivateBatches,
     isUpdatingEventIsTaxed,
+    isActivatingBatchesThisEvent,
+    isBatchesActivationPending,
     isCollapsed,
     onToggleCollapse
 }: TEventCardProps) => {
@@ -527,6 +558,10 @@ const EventCard = ({
 
     const isRecurrent = !!event.Recurrence
     const isFinished = verifyEventIsFinished()
+    const eventIsFinished = event.isFinished
+    const hasSalesStarted = event.EventBatches?.some((b) => b.isActive) ?? false
+    const hasBatches = (event.EventBatches?.length ?? 0) > 0
+    const canActivateFirstBatch = hasBatches && !hasSalesStarted
 
     const { data: balanceVerifyData, isLoading: isLoadingBalanceVerify } = useBalanceVerifyIsReleased(
         event.id,
@@ -562,12 +597,31 @@ const EventCard = ({
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56 rounded-xl border border-[#E4E6F0] bg-white/95 backdrop-blur-md shadow-lg shadow-black/10 p-2">
-                            <DropdownMenuItem 
-                                className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer"
-                                onClick={() => onChangeDate(event)}
+                            <DropdownMenuItem
+                                className={`rounded-lg text-sm ${eventIsFinished ? "text-psi-dark/40 cursor-not-allowed opacity-60" : "text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer"}`}
+                                onClick={() => !eventIsFinished && onChangeDate(event)}
+                                disabled={eventIsFinished}
                             >
-                                <CalendarClock className="h-4 w-4 text-psi-primary" />
+                                <CalendarClock className={`h-4 w-4 ${eventIsFinished ? "text-psi-dark/40" : "text-psi-primary"}`} />
                                 Alterar data
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                className={`rounded-lg text-sm ${
+                                    !canActivateFirstBatch || isBatchesActivationPending
+                                        ? "text-psi-dark/40 cursor-not-allowed opacity-60"
+                                        : "text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer"
+                                }`}
+                                onClick={() =>
+                                    canActivateFirstBatch && !isBatchesActivationPending && onActivateBatches(event)
+                                }
+                                disabled={!canActivateFirstBatch || isBatchesActivationPending}
+                            >
+                                {isActivatingBatchesThisEvent ? (
+                                    <Loader2 className="h-4 w-4 text-psi-primary animate-spin" />
+                                ) : (
+                                    <Rocket className={`h-4 w-4 ${!canActivateFirstBatch ? "text-psi-dark/40" : "text-psi-primary"}`} />
+                                )}
+                                Ativar primeiro lote
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 className="rounded-lg text-sm text-psi-dark/80 hover:text-psi-dark hover:bg-[#F3F4FB] cursor-pointer"
@@ -608,11 +662,12 @@ const EventCard = ({
                                 </>
                             )}
                             <DropdownMenuSeparator className="bg-[#E4E6F0]" />
-                            <DropdownMenuItem 
-                                className="rounded-lg text-sm text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-                                onClick={() => onCancel(event)}
+                            <DropdownMenuItem
+                                className={`rounded-lg text-sm ${eventIsFinished ? "text-destructive/40 cursor-not-allowed opacity-60" : "text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"}`}
+                                onClick={() => !eventIsFinished && onCancel(event)}
+                                disabled={eventIsFinished}
                             >
-                                <Ban className="h-4 w-4 text-destructive" />
+                                <Ban className={`h-4 w-4 ${eventIsFinished ? "text-destructive/40" : "text-destructive"}`} />
                                 Cancelar
                             </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -626,6 +681,12 @@ const EventCard = ({
                         <h3 className="text-xl font-semibold text-psi-dark line-clamp-1">
                             {event.name}
                         </h3>
+                        {eventIsFinished && (
+                            <span className="px-2 py-0.5 bg-slate-100 text-slate-700 border border-slate-200 text-xs font-medium rounded-full flex items-center gap-1">
+                                <Flag className="h-3 w-3" />
+                                Evento finalizado
+                            </span>
+                        )}
                         {needsAttention && (
                             <span className="px-2 py-0.5 bg-amber-500 text-white text-xs font-medium rounded-full flex items-center gap-1 animate-pulse">
                                 <Wallet className="h-3 w-3" />

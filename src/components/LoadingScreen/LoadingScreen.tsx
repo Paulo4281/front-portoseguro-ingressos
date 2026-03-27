@@ -117,12 +117,21 @@ const LoadingScreen = () => {
                     <p className="text-sm text-psi-dark/60 text-center">
                         Está demorando mais que o normal...
                     </p>
-                    <Link
-                        href="/"
-                        className="inline-flex items-center justify-center rounded-xl border border-psi-primary/30 bg-white px-4 py-2 text-sm font-medium text-psi-primary shadow-sm transition-colors hover:bg-psi-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-psi-primary"
-                    >
-                        Ir para home
-                    </Link>
+                    <div className="flex gap-2">
+                        <Link
+                            href="/"
+                            className="inline-flex items-center justify-center rounded-xl border border-psi-primary/30 bg-white px-4 py-2 text-sm font-medium text-psi-primary shadow-sm transition-colors hover:bg-psi-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-psi-primary"
+                        >
+                            Ir para home
+                        </Link>
+                        <button
+                            type="button"
+                            onClick={() => window.location.reload()}
+                            className="inline-flex items-center justify-center rounded-xl border border-psi-primary/30 bg-white px-4 py-2 text-sm font-medium text-psi-primary shadow-sm transition-colors hover:bg-psi-primary/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-psi-primary"
+                        >
+                            Recarregar página
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
